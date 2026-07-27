@@ -12,26 +12,35 @@ const ROLES = ['PM', 'Dev Lead', 'Desenvolvedor', 'Consultor', 'Analista', 'Clie
 
 export default function TeamTab({ project }: Props) {
   const { t } = useTranslation()
-  const { addTeamMember, updateTeamMember, removeTeamMember } = useAppStore()
+  const { addTeamMember, updateTeamMember, removeTeamMember, teamDirectory } = useAppStore()
   const [open, setOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
+  const [mode, setMode] = useState<'directory' | 'text'>('directory')
   const [form, setForm] = useState<Omit<TeamMember, 'id'>>({ name: '', role: 'PM', email: '' })
 
   function openAdd() {
     setEditId(null)
+    setMode('directory')
     setForm({ name: '', role: 'PM', email: '' })
     setOpen(true)
   }
 
   function openEdit(m: TeamMember) {
     setEditId(m.id)
-    setForm({ name: m.name, role: m.role, email: m.email ?? '' })
+    setMode(m.userId ? 'directory' : 'text')
+    setForm({ name: m.name, role: m.role, email: m.email ?? '', userId: m.userId })
     setOpen(true)
+  }
+
+  function pickFromDirectory(profileId: string) {
+    const profile = teamDirectory.find((p) => p.id === profileId)
+    if (!profile) return
+    setForm((f) => ({ ...f, userId: profile.id, name: profile.name ?? profile.email ?? '', email: profile.email ?? '' }))
   }
 
   function handleSave() {
     if (!form.name) return
-    const member = { ...form, email: form.email || undefined }
+    const member = { ...form, email: form.email || undefined, userId: mode === 'directory' ? form.userId : undefined }
     if (editId) {
       updateTeamMember(project.id, editId, member)
     } else {
@@ -113,9 +122,51 @@ export default function TeamTab({ project }: Props) {
         }
       >
         <div className="space-y-4">
-          <Field label={t('team.name')} required>
-            <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Nome completo" />
-          </Field>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setMode('directory')}
+              className={`flex-1 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+                mode === 'directory' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300'
+              }`}
+            >
+              {t('entry.fromUser')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('text')}
+              className={`flex-1 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+                mode === 'text' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300'
+              }`}
+            >
+              {t('entry.freeText')}
+            </button>
+          </div>
+
+          {mode === 'directory' ? (
+            <Field label={t('team.name')} required>
+              <select
+                value={form.userId ?? ''}
+                onChange={(e) => pickFromDirectory(e.target.value)}
+                className="block w-full rounded-md border px-3 py-2 text-sm focus:outline-none"
+                style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)' }}
+              >
+                <option value="">Selecione um usuário cadastrado...</option>
+                {teamDirectory.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name ?? p.email}</option>
+                ))}
+              </select>
+              {teamDirectory.length === 0 && (
+                <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                  Nenhum usuário cadastrado encontrado ainda — use "{t('entry.freeText')}" para pessoas externas.
+                </p>
+              )}
+            </Field>
+          ) : (
+            <Field label={t('team.name')} required>
+              <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value, userId: undefined }))} placeholder="Nome completo" />
+            </Field>
+          )}
           <Field label={t('team.role')}>
             <div className="flex flex-wrap gap-2 mt-1">
               {ROLES.map((r) => (

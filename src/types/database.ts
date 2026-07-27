@@ -34,6 +34,7 @@ export interface DbTeamMember {
   name: string
   role: string
   email?: string
+  user_id?: string
 }
 
 export interface DbActionTask {
@@ -205,15 +206,64 @@ export interface DbOpenPoint {
   status: string | null
   priority: string | null
   owner: string | null
+  owner_user_id: string | null
   due_date: string | null
   linked_entry_id: string | null
-  resolution: string | null
+  linked_phase_id: string | null
+  resolution_note: string | null
   resolved_at: string | null
   resolved_by: string | null
   created_at: string | null
   created_by: string | null
   created_by_name: string | null
   created_by_avatar: string | null
+}
+
+export interface DbMeetingLog {
+  id: string
+  project_id: string | null
+  title: string
+  date: string
+  participants: any[] | null   // JSONB — EntryOwner[]
+  notes: string | null
+  items: any[] | null          // JSONB — MeetingItem[]
+  attachments: any[] | null    // JSONB — FileAttachment[]
+  created_at: string | null
+  created_by: string | null
+  created_by_name: string | null
+  created_by_avatar: string | null
+  updated_at: string | null
+  updated_by: string | null
+  updated_by_name: string | null
+}
+
+export interface DbHistory {
+  id: string
+  project_id: string | null
+  type: 'auto' | 'manual' | null
+  event: string
+  title: string
+  detail: string | null
+  linked_id: string | null
+  linked_type: string | null
+  attachments: any[] | null    // JSONB — FileAttachment[]
+  date: string | null
+  author_id: string | null
+  author_name: string | null
+  author_avatar: string | null
+}
+
+export interface DbDiaryComment {
+  id: string
+  project_id: string | null
+  parent_type: 'open_point' | 'meeting' | 'history'
+  parent_id: string
+  text: string
+  author_id: string | null
+  author_name: string | null
+  author_avatar: string | null
+  author_role: string | null
+  created_at: string | null
 }
 
 // ─── Fetch / write bundles ────────────────────────────────────────────────────
@@ -227,6 +277,9 @@ export interface DbProjectFull {
   delay_log: DbDelayLog[]
   risks: DbRisk[]
   open_points: DbOpenPoint[]
+  meeting_logs: DbMeetingLog[]
+  history: DbHistory[]
+  diary_comments: DbDiaryComment[]
 }
 
 /** All rows that need to be upserted when writing a full Project to the DB. */

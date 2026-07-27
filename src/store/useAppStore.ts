@@ -22,7 +22,7 @@ import {
   storeRiskToDb,
   storeDelayLogToDb,
 } from '@/utils/dbConversions'
-import type { DbProjectFull } from '@/types/database'
+import type { DbProjectFull, DbProfile } from '@/types/database'
 
 const TEMPLATES_VERSION = 2
 
@@ -111,11 +111,13 @@ interface AppStore {
   archivedProjects: Project[]
   archivedProjectsLoaded: boolean
   settings: AppSettings
+  teamDirectory: DbProfile[]
 
   // Load / archive
   loadProjects: () => Promise<void>
   loadSettings: () => Promise<void>
   loadArchivedProjects: () => Promise<void>
+  loadTeamDirectory: () => Promise<void>
   archiveProject: (id: string) => Promise<void>
   unarchiveProject: (id: string) => Promise<void>
 
@@ -350,6 +352,7 @@ export const useAppStore = create<AppStore>()(
       projectSaving: false,
       archivedProjects: [],
       archivedProjectsLoaded: false,
+      teamDirectory: [],
       settings: {
         holidays: [],
         holidayNames: {},
@@ -379,13 +382,16 @@ export const useAppStore = create<AppStore>()(
 
           const ids = projectRows.map((p) => p.id)
 
-          const [phasesRes, entriesRes, commentsRes, risksRes, delayRes, openPointsRes] = await Promise.all([
+          const [phasesRes, entriesRes, commentsRes, risksRes, delayRes, openPointsRes, meetingLogsRes, historyRes, diaryCommentsRes] = await Promise.all([
             supabase.from('phases').select('*').in('project_id', ids),
             supabase.from('entries').select('*').in('project_id', ids),
             supabase.from('comments').select('*').in('project_id', ids),
             supabase.from('risks').select('*').in('project_id', ids),
             supabase.from('delay_log').select('*').in('project_id', ids),
             supabase.from('open_points').select('*').in('project_id', ids).order('created_at', { ascending: false }),
+            supabase.from('meeting_logs').select('*').in('project_id', ids).order('date', { ascending: false }),
+            supabase.from('history').select('*').in('project_id', ids).order('date', { ascending: false }),
+            supabase.from('diary_comments').select('*').in('project_id', ids),
           ])
 
           const phases = phasesRes.data ?? []
@@ -394,6 +400,9 @@ export const useAppStore = create<AppStore>()(
           const risks = risksRes.data ?? []
           const delay_log = delayRes.data ?? []
           const open_points = openPointsRes.data ?? []
+          const meeting_logs = meetingLogsRes.data ?? []
+          const history = historyRes.data ?? []
+          const diary_comments = diaryCommentsRes.data ?? []
 
           const projects = projectRows.map((project) =>
             dbProjectToStore({
@@ -404,6 +413,9 @@ export const useAppStore = create<AppStore>()(
               delay_log: delay_log.filter((d) => d.project_id === project.id),
               risks: risks.filter((r) => r.project_id === project.id),
               open_points: open_points.filter((op) => op.project_id === project.id),
+              meeting_logs: meeting_logs.filter((m) => m.project_id === project.id),
+              history: history.filter((h) => h.project_id === project.id),
+              diary_comments: diary_comments.filter((c) => c.project_id === project.id),
             } as DbProjectFull)
           )
 
@@ -438,6 +450,15 @@ export const useAppStore = create<AppStore>()(
           }))
         } catch {
           // silently fail — settings will use defaults
+        }
+      },
+
+      async loadTeamDirectory() {
+        try {
+          const { data } = await supabase.from('profiles').select('*').order('name')
+          set({ teamDirectory: data ?? [] })
+        } catch {
+          // silently fail — directory picker just won't offer any registered users
         }
       },
 
@@ -477,13 +498,16 @@ export const useAppStore = create<AppStore>()(
             return
           }
           const ids = projectRows.map((p) => p.id)
-          const [phasesRes, entriesRes, commentsRes, risksRes, delayRes, openPointsRes] = await Promise.all([
+          const [phasesRes, entriesRes, commentsRes, risksRes, delayRes, openPointsRes, meetingLogsRes, historyRes, diaryCommentsRes] = await Promise.all([
             supabase.from('phases').select('*').in('project_id', ids),
             supabase.from('entries').select('*').in('project_id', ids),
             supabase.from('comments').select('*').in('project_id', ids),
             supabase.from('risks').select('*').in('project_id', ids),
             supabase.from('delay_log').select('*').in('project_id', ids),
             supabase.from('open_points').select('*').in('project_id', ids).order('created_at', { ascending: false }),
+            supabase.from('meeting_logs').select('*').in('project_id', ids).order('date', { ascending: false }),
+            supabase.from('history').select('*').in('project_id', ids).order('date', { ascending: false }),
+            supabase.from('diary_comments').select('*').in('project_id', ids),
           ])
           const archivedProjects = projectRows.map((project) =>
             dbProjectToStore({
@@ -494,6 +518,9 @@ export const useAppStore = create<AppStore>()(
               delay_log: (delayRes.data ?? []).filter((d) => d.project_id === project.id),
               risks: (risksRes.data ?? []).filter((r) => r.project_id === project.id),
               open_points: (openPointsRes.data ?? []).filter((op) => op.project_id === project.id),
+              meeting_logs: (meetingLogsRes.data ?? []).filter((m) => m.project_id === project.id),
+              history: (historyRes.data ?? []).filter((h) => h.project_id === project.id),
+              diary_comments: (diaryCommentsRes.data ?? []).filter((c) => c.project_id === project.id),
             } as DbProjectFull)
           )
           set({ archivedProjects, archivedProjectsLoaded: true })
@@ -1784,7 +1811,7 @@ export const useAppStore = create<AppStore>()(
         }))
         sync(async () => {
           const { error } = await supabase.from('open_points').update({
-            status: 'resolved', resolution, resolved_at: now, resolved_by: resolvedBy,
+            status: 'resolved', resolution_note: resolution, resolved_at: now, resolved_by: resolvedBy,
           }).eq('id', opId)
           if (error) throw new Error(error.message)
         })
@@ -1817,19 +1844,18 @@ export const useAppStore = create<AppStore>()(
           })),
         }))
         sync(async () => {
+          const authUser = useAuthStore.getState().user
           const { error } = await supabase.from('meeting_logs').insert({
             id,
             project_id: projectId,
             title: newMeeting.title,
             date: newMeeting.date,
-            duration_minutes: newMeeting.durationMinutes ?? null,
-            location: newMeeting.location ?? null,
-            attendees: newMeeting.attendees ?? null,
-            objective: newMeeting.objective ?? null,
+            participants: newMeeting.participants,
             notes: newMeeting.notes ?? null,
-            linked_entry_id: newMeeting.linkedEntryId ?? null,
             items: newMeeting.items,
-            created_by: newMeeting.createdBy ?? null,
+            created_by: authUser?.id ?? null,
+            created_by_name: authUser?.user_metadata?.full_name ?? authUser?.email ?? null,
+            created_by_avatar: authUser?.user_metadata?.avatar_url ?? null,
             created_at: now,
           })
           if (error) throw new Error(error.message)
@@ -1844,17 +1870,17 @@ export const useAppStore = create<AppStore>()(
           })),
         }))
         sync(async () => {
+          const authUser = useAuthStore.getState().user
           const fields: Record<string, unknown> = {}
           if (patch.title !== undefined) fields.title = patch.title
           if (patch.date !== undefined) fields.date = patch.date
-          if (patch.durationMinutes !== undefined) fields.duration_minutes = patch.durationMinutes
-          if (patch.location !== undefined) fields.location = patch.location
-          if (patch.attendees !== undefined) fields.attendees = patch.attendees
-          if (patch.objective !== undefined) fields.objective = patch.objective
+          if (patch.participants !== undefined) fields.participants = patch.participants
           if (patch.notes !== undefined) fields.notes = patch.notes
-          if (patch.linkedEntryId !== undefined) fields.linked_entry_id = patch.linkedEntryId
           if (patch.items !== undefined) fields.items = patch.items
           if (Object.keys(fields).length === 0) return
+          fields.updated_at = new Date().toISOString()
+          fields.updated_by = authUser?.id ?? null
+          fields.updated_by_name = authUser?.user_metadata?.full_name ?? authUser?.email ?? null
           const { error } = await supabase.from('meeting_logs').update(fields).eq('id', meetingId)
           if (error) throw new Error(error.message)
         })
@@ -1941,17 +1967,20 @@ export const useAppStore = create<AppStore>()(
           })),
         }))
         sync(async () => {
+          const authUser = useAuthStore.getState().user
           const { error } = await supabase.from('history').insert({
             id,
             project_id: projectId,
+            type: newEntry.isManualNote ? 'manual' : 'auto',
             event: newEntry.event,
             title: newEntry.title,
             detail: newEntry.detail ?? null,
             linked_id: newEntry.linkedId ?? null,
             linked_type: newEntry.linkedType ?? null,
-            is_manual_note: newEntry.isManualNote ?? false,
-            created_by: newEntry.createdBy ?? null,
-            created_at: now,
+            author_id: authUser?.id ?? null,
+            author_name: authUser?.user_metadata?.full_name ?? authUser?.email ?? null,
+            author_avatar: authUser?.user_metadata?.avatar_url ?? null,
+            date: now,
           })
           if (error) throw new Error(error.message)
         })

@@ -21,6 +21,7 @@ export default function App() {
       if (user) {
         useAppStore.getState().loadProjects()
         useAppStore.getState().loadSettings()
+        useAppStore.getState().loadTeamDirectory()
       }
     })
 
@@ -33,6 +34,7 @@ export default function App() {
         useAuthStore.getState().loadProfile().then(() => {
           useAppStore.getState().loadProjects()
           useAppStore.getState().loadSettings()
+          useAppStore.getState().loadTeamDirectory()
         })
       } else {
         useAuthStore.setState({ user: null, profile: null, loading: false })

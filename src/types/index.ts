@@ -168,12 +168,8 @@ export interface MeetingLog {
   id: string
   title: string
   date: string
-  durationMinutes?: number
-  location?: string
-  attendees?: string
-  objective?: string
+  participants: EntryOwner[]
   notes?: string
-  linkedEntryId?: string
   items: MeetingItem[]
   comments: DiaryComment[]
   attachments: FileAttachment[]

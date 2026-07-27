@@ -8,12 +8,14 @@ import type {
   DelayLogEntry, TeamMember, ProjectCharter, EntryType, EntryStatus,
   RiskFlag, ProjectStatus, ProjectType, AppLanguage,
   DelayResponsibility, DelayType, OpenPoint, OpenPointStatus, OpenPointPriority,
+  MeetingLog, MeetingItem, HistoryEntry, HistoryEventType, DiaryComment,
 } from '@/types'
 
 import type {
   DbProject, DbPhase, DbEntry, DbComment, DbDelayLog, DbRisk,
   DbCharter, DbLink, DbTeamMember, DbActionTask, DbSubtaskJson,
   DbCommentJson, DbProjectFull, DbProjectFlat, DbOpenPoint,
+  DbMeetingLog, DbHistory, DbDiaryComment,
 } from '@/types/database'
 
 // ─── DB → Store ───────────────────────────────────────────────────────────────
@@ -32,7 +34,7 @@ function dbLinkToStore(l: DbLink): Link {
 }
 
 function dbTeamMemberToStore(m: DbTeamMember): TeamMember {
-  return { id: m.id, name: m.name, role: m.role, email: m.email }
+  return { id: m.id, name: m.name, role: m.role, email: m.email, userId: m.user_id }
 }
 
 function dbActionTaskToStore(t: DbActionTask): ActionTask {
@@ -177,7 +179,7 @@ function dbRiskToStore(row: DbRisk): Risk {
   }
 }
 
-function dbOpenPointToStore(row: DbOpenPoint): OpenPoint {
+function dbOpenPointToStore(row: DbOpenPoint, comments: DbDiaryComment[]): OpenPoint {
   return {
     id: row.id,
     title: row.title,
@@ -187,13 +189,61 @@ function dbOpenPointToStore(row: DbOpenPoint): OpenPoint {
     responsible: row.owner ?? undefined,
     dueDate: row.due_date ?? undefined,
     linkedEntryId: row.linked_entry_id ?? undefined,
-    resolution: row.resolution ?? undefined,
+    resolution: row.resolution_note ?? undefined,
     resolvedAt: row.resolved_at ?? undefined,
     resolvedBy: row.resolved_by ?? undefined,
     createdAt: row.created_at ?? new Date().toISOString(),
     createdBy: row.created_by ?? undefined,
-    comments: [],
+    comments: comments
+      .filter(c => c.parent_type === 'open_point' && c.parent_id === row.id)
+      .sort((a, b) => (a.created_at ?? '').localeCompare(b.created_at ?? ''))
+      .map(dbDiaryCommentToStore),
     attachments: [],
+  }
+}
+
+function dbDiaryCommentToStore(row: DbDiaryComment): DiaryComment {
+  return {
+    id: row.id,
+    author: row.author_name ?? 'Anônimo',
+    text: row.text,
+    createdAt: row.created_at ?? new Date().toISOString(),
+  }
+}
+
+function dbMeetingLogToStore(row: DbMeetingLog, comments: DbDiaryComment[]): MeetingLog {
+  return {
+    id: row.id,
+    title: row.title,
+    date: row.date,
+    participants: (row.participants as EntryOwner[] | null) ?? [],
+    notes: row.notes ?? undefined,
+    items: (row.items as MeetingItem[] | null) ?? [],
+    comments: comments
+      .filter(c => c.parent_type === 'meeting' && c.parent_id === row.id)
+      .sort((a, b) => (a.created_at ?? '').localeCompare(b.created_at ?? ''))
+      .map(dbDiaryCommentToStore),
+    attachments: (row.attachments as MeetingLog['attachments']) ?? [],
+    createdAt: row.created_at ?? new Date().toISOString(),
+    createdBy: row.created_by ?? undefined,
+  }
+}
+
+function dbHistoryToStore(row: DbHistory, comments: DbDiaryComment[]): HistoryEntry {
+  return {
+    id: row.id,
+    event: row.event as HistoryEventType,
+    title: row.title,
+    detail: row.detail ?? undefined,
+    linkedId: row.linked_id ?? undefined,
+    linkedType: (row.linked_type as HistoryEntry['linkedType']) ?? undefined,
+    isManualNote: row.type === 'manual',
+    createdAt: row.date ?? new Date().toISOString(),
+    createdBy: row.author_id ?? undefined,
+    comments: comments
+      .filter(c => c.parent_type === 'history' && c.parent_id === row.id)
+      .sort((a, b) => (a.created_at ?? '').localeCompare(b.created_at ?? ''))
+      .map(dbDiaryCommentToStore),
   }
 }
 
@@ -214,7 +264,7 @@ function dbDelayLogToStore(row: DbDelayLog): DelayLogEntry {
 
 /** Reconstruct a full Project from all fetched DB rows. */
 export function dbProjectToStore(data: DbProjectFull): Project {
-  const { project, phases, entries, comments, delay_log, risks, open_points } = data
+  const { project, phases, entries, comments, delay_log, risks, open_points, meeting_logs, history, diary_comments } = data
 
   const sortedPhases = [...phases].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
 
@@ -237,7 +287,9 @@ export function dbProjectToStore(data: DbProjectFull): Project {
     phases: sortedPhases.map(ph => dbPhaseToStore(ph, entries, comments)),
     risks: risks.map(dbRiskToStore),
     delayLog: delay_log.map(dbDelayLogToStore),
-    openPoints: open_points.map(dbOpenPointToStore),
+    openPoints: open_points.map(op => dbOpenPointToStore(op, diary_comments)),
+    meetings: meeting_logs.map(m => dbMeetingLogToStore(m, diary_comments)),
+    history: history.map(h => dbHistoryToStore(h, diary_comments)),
     archived: project.archived ?? false,
   }
 }
@@ -262,7 +314,7 @@ function storeLinkToDb(l: Link): DbLink {
 }
 
 function storeTeamMemberToDb(m: TeamMember): DbTeamMember {
-  return { id: m.id, name: m.name, role: m.role, email: m.email }
+  return { id: m.id, name: m.name, role: m.role, email: m.email, user_id: m.userId }
 }
 
 function storeActionTaskToDb(t: ActionTask): DbActionTask {

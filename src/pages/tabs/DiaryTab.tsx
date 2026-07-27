@@ -73,6 +73,7 @@ export default function DiaryTab({ project }: Props) {
           projectId={project.id}
           meetings={meetings}
           phases={project.phases}
+          teamMembers={project.team}
         />
       )}
       {sub === 'history' && (

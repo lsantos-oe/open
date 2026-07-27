@@ -33,11 +33,22 @@ export default function OwnersField({ owners, onChange, teamMembers }: Props) {
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
+  function memberAlreadyAdded(member: TeamMember): boolean {
+    return member.userId
+      ? owners.some((o) => o.memberId === member.userId)
+      : owners.some((o) => o.type === 'text' && o.name === member.name)
+  }
+
   function addMember(member: TeamMember) {
-    if (owners.some((o) => o.memberId === member.id)) return
+    if (memberAlreadyAdded(member)) return
+    // Only a team member linked to a real registered user (userId) can be stored as
+    // type:'member' — entries.responsible_member_id has a FK to profiles(id), so an
+    // unlinked (external/free-text) team member must fall back to type:'text' instead.
     onChange([
       ...owners,
-      { id: crypto.randomUUID(), type: 'member', memberId: member.id, name: member.name, role: member.role },
+      member.userId
+        ? { id: crypto.randomUUID(), type: 'member', memberId: member.userId, name: member.name, role: member.role }
+        : { id: crypto.randomUUID(), type: 'text', name: member.name, role: member.role },
     ])
   }
 
@@ -128,7 +139,7 @@ export default function OwnersField({ owners, onChange, teamMembers }: Props) {
               ) : (
                 <div className="max-h-48 overflow-y-auto space-y-0.5">
                   {teamMembers.map((member) => {
-                    const already = owners.some((o) => o.memberId === member.id)
+                    const already = memberAlreadyAdded(member)
                     return (
                       <button
                         key={member.id}

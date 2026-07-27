@@ -1,37 +1,34 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
-import { MeetingLog, MeetingItem, Phase } from '@/types'
+import { MeetingLog, MeetingItem, Phase, TeamMember, EntryOwner } from '@/types'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input, Select, Field } from '@/components/ui/Input'
 import DiaryComments from '@/components/diary/DiaryComments'
 import FileAttachments from '@/components/diary/FileAttachments'
+import OwnersField from '@/components/plan/OwnersField'
 
 interface Props {
   projectId: string
   meetings: MeetingLog[]
   phases: Phase[]
+  teamMembers: TeamMember[]
 }
 
 interface MeetingForm {
   title: string
   date: string
-  durationMinutes: string
-  location: string
-  attendees: string
-  objective: string
   notes: string
-  linkedEntryId: string
 }
 
 function emptyMeetingForm(): MeetingForm {
-  return { title: '', date: new Date().toISOString().slice(0, 10), durationMinutes: '', location: '', attendees: '', objective: '', notes: '', linkedEntryId: '' }
+  return { title: '', date: new Date().toISOString().slice(0, 10), notes: '' }
 }
 
 const ITEM_TYPE_ICONS: Record<MeetingItem['type'], string> = { action: '⚡', decision: '✅', info: 'ℹ️' }
 
-export default function MeetingsTab({ projectId, meetings, phases }: Props) {
+export default function MeetingsTab({ projectId, meetings, phases, teamMembers }: Props) {
   const { t } = useTranslation()
   const { addMeetingLog, updateMeetingLog, deleteMeetingLog, addMeetingItem, updateMeetingItem, deleteMeetingItem, addDiaryAttachment, removeDiaryAttachment } = useAppStore()
 
@@ -39,6 +36,7 @@ export default function MeetingsTab({ projectId, meetings, phases }: Props) {
   const [editMeeting, setEditMeeting] = useState<MeetingLog | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [form, setForm] = useState<MeetingForm>(emptyMeetingForm())
+  const [participants, setParticipants] = useState<EntryOwner[]>([])
   const [newItemText, setNewItemText] = useState<Record<string, string>>({})
   const [newItemType, setNewItemType] = useState<Record<string, MeetingItem['type']>>({})
 
@@ -54,6 +52,7 @@ export default function MeetingsTab({ projectId, meetings, phases }: Props) {
 
   function openAdd() {
     setForm(emptyMeetingForm())
+    setParticipants([])
     setShowAdd(true)
   }
 
@@ -61,13 +60,9 @@ export default function MeetingsTab({ projectId, meetings, phases }: Props) {
     setForm({
       title: m.title,
       date: m.date,
-      durationMinutes: m.durationMinutes?.toString() ?? '',
-      location: m.location ?? '',
-      attendees: m.attendees ?? '',
-      objective: m.objective ?? '',
       notes: m.notes ?? '',
-      linkedEntryId: m.linkedEntryId ?? '',
     })
+    setParticipants(m.participants)
     setEditMeeting(m)
   }
 
@@ -76,12 +71,8 @@ export default function MeetingsTab({ projectId, meetings, phases }: Props) {
     addMeetingLog(projectId, {
       title: form.title.trim(),
       date: form.date,
-      durationMinutes: form.durationMinutes ? Number(form.durationMinutes) : undefined,
-      location: form.location || undefined,
-      attendees: form.attendees || undefined,
-      objective: form.objective || undefined,
+      participants,
       notes: form.notes || undefined,
-      linkedEntryId: form.linkedEntryId || undefined,
       items: [],
     })
     setShowAdd(false)
@@ -92,12 +83,8 @@ export default function MeetingsTab({ projectId, meetings, phases }: Props) {
     updateMeetingLog(projectId, editMeeting.id, {
       title: form.title.trim(),
       date: form.date,
-      durationMinutes: form.durationMinutes ? Number(form.durationMinutes) : undefined,
-      location: form.location || undefined,
-      attendees: form.attendees || undefined,
-      objective: form.objective || undefined,
+      participants,
       notes: form.notes || undefined,
-      linkedEntryId: form.linkedEntryId || undefined,
     })
     setEditMeeting(null)
   }
@@ -117,8 +104,6 @@ export default function MeetingsTab({ projectId, meetings, phases }: Props) {
     setForm((f) => ({ ...f, [k]: v }))
   }
 
-  const allEntries = phases.flatMap((ph) => ph.entries.map((e) => ({ id: e.id, name: `${ph.name} / ${e.name}` })))
-
   function MeetingFormFields() {
     return (
       <div className="space-y-4">
@@ -129,17 +114,8 @@ export default function MeetingsTab({ projectId, meetings, phases }: Props) {
           <Field label={t('diary.meetingDate')} required>
             <Input type="date" value={form.date} onChange={(e) => set('date', e.target.value)} />
           </Field>
-          <Field label={t('diary.meetingDuration')}>
-            <Input type="number" min={0} step={15} value={form.durationMinutes} onChange={(e) => set('durationMinutes', e.target.value)} />
-          </Field>
-          <Field label={t('diary.meetingLocation')} className="col-span-2">
-            <Input value={form.location} onChange={(e) => set('location', e.target.value)} />
-          </Field>
           <Field label={t('diary.meetingAttendees')} className="col-span-2">
-            <Input value={form.attendees} onChange={(e) => set('attendees', e.target.value)} placeholder="Nome1, Nome2..." />
-          </Field>
-          <Field label={t('diary.meetingObjective')} className="col-span-2">
-            <Input value={form.objective} onChange={(e) => set('objective', e.target.value)} />
+            <OwnersField owners={participants} onChange={setParticipants} teamMembers={teamMembers} />
           </Field>
           <Field label={t('diary.meetingNotes')} className="col-span-2">
             <textarea
@@ -149,12 +125,6 @@ export default function MeetingsTab({ projectId, meetings, phases }: Props) {
               className="block w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1"
               style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)', resize: 'none' }}
             />
-          </Field>
-          <Field label={t('diary.linkedTask')} className="col-span-2">
-            <Select value={form.linkedEntryId} onChange={(e) => set('linkedEntryId', e.target.value)}>
-              <option value="">—</option>
-              {allEntries.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-            </Select>
           </Field>
         </div>
       </div>
@@ -189,9 +159,6 @@ export default function MeetingsTab({ projectId, meetings, phases }: Props) {
                 >
                   <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{m.date}</span>
                   <span className="font-medium text-sm flex-1" style={{ color: 'var(--text-primary)' }}>{m.title}</span>
-                  {m.durationMinutes && (
-                    <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{m.durationMinutes}min</span>
-                  )}
                   {m.items.length > 0 && (
                     <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--surface-card)', color: 'var(--text-tertiary)' }}>
                       {doneCount}/{m.items.length}
@@ -227,15 +194,18 @@ export default function MeetingsTab({ projectId, meetings, phases }: Props) {
                 {/* Expanded body */}
                 {isOpen && (
                   <div className="px-4 py-4 space-y-4">
-                    {m.attendees && (
-                      <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                        👥 {m.attendees}
-                      </p>
-                    )}
-                    {m.objective && (
-                      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                        <span className="font-medium">{t('diary.meetingObjective')}:</span> {m.objective}
-                      </p>
+                    {m.participants.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {m.participants.map((p) => (
+                          <span
+                            key={p.id}
+                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                            style={{ background: 'var(--oe-primary-light)', color: 'var(--oe-primary)' }}
+                          >
+                            {p.name}
+                          </span>
+                        ))}
+                      </div>
                     )}
                     {m.notes && (
                       <div className="p-3 rounded-lg text-sm whitespace-pre-wrap" style={{ background: 'var(--surface-subtle)', color: 'var(--text-secondary)' }}>
