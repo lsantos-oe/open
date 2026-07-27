@@ -1,5 +1,5 @@
 {
-  "appName": "ProjectBase OE",
+  "appName": "OpEn",
   "nav": {
     "projects": "Proyectos",
     "tasks": "Tareas",
@@ -387,7 +387,7 @@
     "byResponsibility": "Por Responsabilidad",
     "byType": "Por Tipo",
     "openRisks": "Riesgos Abiertos",
-    "footer": "Generado por ProjectBase OE",
+    "footer": "Generado por OpEn",
     "noBaseline": "sin baseline",
     "workingDays": "d háb",
     "days": "d",

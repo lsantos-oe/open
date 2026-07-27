@@ -72,18 +72,7 @@ export function Sidebar() {
       >
         {!collapsed && (
           <span className="flex-1 flex items-center gap-1.5 min-w-0">
-            <span className="text-white text-[13px] font-[500] truncate">ProjectBase</span>
-            <span style={{
-              background: 'var(--oe-primary)',
-              borderRadius: 'var(--radius-pill)',
-              color: 'white',
-              fontSize: 9,
-              fontWeight: 500,
-              padding: '1px 6px',
-              letterSpacing: '0.04em',
-              textTransform: 'uppercase',
-              flexShrink: 0,
-            }}>OE</span>
+            <span className="text-white text-[13px] font-[500] truncate">OpEn</span>
           </span>
         )}
         <button

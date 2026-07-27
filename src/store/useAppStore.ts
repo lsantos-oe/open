@@ -2062,7 +2062,7 @@ export const useAppStore = create<AppStore>()(
       },
     }),
     {
-      name: 'project-base-store',
+      name: 'open-store',
       // Only persist local preferences — global settings are loaded from Supabase
       partialize: (state) => ({
         settings: {

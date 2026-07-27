@@ -31,18 +31,8 @@ export default function LoginPage() {
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
           <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>
-            ProjectBase
+            OpEn
           </span>
-          <span style={{
-            background: 'var(--oe-primary)',
-            borderRadius: 'var(--radius-pill)',
-            color: 'white',
-            fontSize: 10,
-            fontWeight: 600,
-            padding: '2px 8px',
-            letterSpacing: '0.05em',
-            textTransform: 'uppercase',
-          }}>OE</span>
         </div>
 
         {/* Subtitle */}

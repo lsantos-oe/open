@@ -131,6 +131,6 @@ export function exportAllProjectsToJson(
   }
   triggerDownload(
     JSON.stringify(data, null, 2),
-    `ProjectBase OE - Backup - ${todayISO()}.json`,
+    `OpEn - Backup - ${todayISO()}.json`,
   )
 }
