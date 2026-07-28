@@ -413,7 +413,7 @@ export default function ProjectDetailPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { projects, settings, updateProject, archiveProject } = useAppStore()
+  const { projects, settings, updateProject, archiveProject, clients: storeClients } = useAppStore()
   const initialTab = (TAB_IDS as readonly string[]).includes(searchParams.get('tab') ?? '')
     ? (searchParams.get('tab') as TabId)
     : 'overview'
@@ -533,7 +533,7 @@ export default function ProjectDetailPage() {
         {/* More options */}
         <MoreMenu
           onImportUpdate={() => setShowImportModal(true)}
-          onExportJson={() => exportProjectToJson(project)}
+          onExportJson={() => exportProjectToJson(project, storeClients)}
           onDuplicate={() => setShowDuplicateModal(true)}
           onArchive={() => setShowArchiveModal(true)}
         />

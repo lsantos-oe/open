@@ -321,12 +321,6 @@
     "holidayName": "Nombre (ej: Navidad)",
     "addHoliday": "Agregar",
     "noHolidays": "No hay feriados registrados.",
-    "clients": "Base de clientes",
-    "clientsDesc": "Clientes disponibles al crear nuevos proyectos.",
-    "addClient": "+ Cliente",
-    "noClients": "No hay clientes registrados.",
-    "clientProjects": "{{count}} proyecto",
-    "clientProjects_other": "{{count}} proyectos",
     "templates": "Plantillas de proyecto",
     "templatesDesc": "Estructura de fases y entradas usada al crear nuevos proyectos.",
     "editTemplate": "Editar plantilla"

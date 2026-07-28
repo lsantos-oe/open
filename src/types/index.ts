@@ -330,6 +330,5 @@ export interface AppSettings {
   defaultLanguage: AppLanguage
   dateFormat: DateFormat
   workdays: Workdays
-  clients: string[]
   sidebarCollapsed?: boolean
 }

@@ -1,4 +1,4 @@
-import { Project } from '@/types'
+import { Project, Client } from '@/types'
 
 function todayISO(): string {
   return new Date().toISOString().split('T')[0]
@@ -14,10 +14,14 @@ function triggerDownload(json: string, filename: string): void {
   URL.revokeObjectURL(url)
 }
 
-function projectToExportShape(project: Project) {
+function projectToExportShape(project: Project, clients: Client[]) {
+  // Client is exported/imported by NAME (portable across databases), not by clientId
+  // (a raw id is only meaningful within one specific Supabase project) — resolve the
+  // current Carteira name if linked, falling back to the legacy free-text field.
+  const clientName = (project.clientId && clients.find((c) => c.id === project.clientId)?.name) || project.client
   return {
     name: project.name,
-    client: project.client,
+    client: clientName,
     type: project.type,
     pm: project.pm,
     language: project.language,
@@ -105,11 +109,11 @@ function projectToExportShape(project: Project) {
   }
 }
 
-export function exportProjectToJson(project: Project): void {
+export function exportProjectToJson(project: Project, clients: Client[]): void {
   const data = {
     import_version: '1.0',
     exported_at: new Date().toISOString(),
-    project: projectToExportShape(project),
+    project: projectToExportShape(project, clients),
   }
   triggerDownload(JSON.stringify(data, null, 2), `${project.name} - ${todayISO()}.json`)
 }
@@ -117,6 +121,7 @@ export function exportProjectToJson(project: Project): void {
 export function exportAllProjectsToJson(
   activeProjects: Project[],
   archivedProjects: Project[],
+  clients: Client[],
   confirmMsg: string,
 ): void {
   let projects = [...activeProjects]
@@ -127,7 +132,7 @@ export function exportAllProjectsToJson(
     export_version: '1.0',
     exported_at: new Date().toISOString(),
     total_projects: projects.length,
-    projects: projects.map(projectToExportShape),
+    projects: projects.map((p) => projectToExportShape(p, clients)),
   }
   triggerDownload(
     JSON.stringify(data, null, 2),

@@ -246,8 +246,6 @@ interface AppStore {
   updateTemplate: (template: ProjectTemplate) => void
   addHoliday: (date: string, name?: string) => void
   removeHoliday: (date: string) => void
-  addClient: (name: string) => void
-  removeClient: (name: string) => void
 
   // Diary — Open Points
   addOpenPoint: (scope: DiaryScope, op: Omit<OpenPoint, 'id' | 'comments' | 'attachments' | 'createdAt'>) => void
@@ -421,7 +419,6 @@ async function syncGlobalSettings(settings: AppSettings, userId: string): Promis
     defaultLanguage: settings.defaultLanguage,
     dateFormat: settings.dateFormat,
     workdays: settings.workdays,
-    clients: settings.clients,
   }
   const { error } = await supabase
     .from('settings')
@@ -451,7 +448,6 @@ export const useAppStore = create<AppStore>()(
         defaultLanguage: 'pt',
         dateFormat: 'DD/MM/YYYY',
         workdays: 'mon-fri',
-        clients: [],
       },
 
       // ── Load / Settings ───────────────────────────────────────────────────
@@ -536,7 +532,6 @@ export const useAppStore = create<AppStore>()(
               ...(v.defaultLanguage !== undefined && { defaultLanguage: v.defaultLanguage }),
               ...(v.dateFormat !== undefined && { dateFormat: v.dateFormat }),
               ...(v.workdays !== undefined && { workdays: v.workdays }),
-              ...(v.clients !== undefined && { clients: v.clients }),
             },
           }))
         } catch {
@@ -1833,7 +1828,7 @@ export const useAppStore = create<AppStore>()(
       updateSettings(patch) {
         const prev = get().settings
         set((s) => ({ settings: { ...s.settings, ...patch } }))
-        const globalKeys: (keyof AppSettings)[] = ['holidays', 'holidayNames', 'defaultLanguage', 'dateFormat', 'workdays', 'clients']
+        const globalKeys: (keyof AppSettings)[] = ['holidays', 'holidayNames', 'defaultLanguage', 'dateFormat', 'workdays']
         const hasGlobal = (Object.keys(patch) as (keyof AppSettings)[]).some((k) => globalKeys.includes(k))
         if (hasGlobal) {
           sync(async () => syncGlobalSettings(get().settings, getUserId()), () => set({ settings: prev }))
@@ -1879,24 +1874,6 @@ export const useAppStore = create<AppStore>()(
             },
           }
         })
-        sync(async () => syncGlobalSettings(get().settings, getUserId()), () => set({ settings: prev }))
-      },
-
-      addClient(name) {
-        const prev = get().settings
-        set((s) => {
-          const trimmed = name.trim()
-          if (!trimmed || s.settings.clients.includes(trimmed)) return s
-          return { settings: { ...s.settings, clients: [...s.settings.clients, trimmed].sort() } }
-        })
-        sync(async () => syncGlobalSettings(get().settings, getUserId()), () => set({ settings: prev }))
-      },
-
-      removeClient(name) {
-        const prev = get().settings
-        set((s) => ({
-          settings: { ...s.settings, clients: s.settings.clients.filter((c) => c !== name) },
-        }))
         sync(async () => syncGlobalSettings(get().settings, getUserId()), () => set({ settings: prev }))
       },
 

@@ -612,7 +612,7 @@ export default function ProjectsPage() {
       await loadArchivedProjects()
       archived = useAppStore.getState().archivedProjects
     }
-    exportAllProjectsToJson(projects, archived, t('portfolio.backupIncludeArchived'))
+    exportAllProjectsToJson(projects, archived, storeClients, t('portfolio.backupIncludeArchived'))
   }
 
   return (

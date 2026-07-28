@@ -321,12 +321,6 @@
     "holidayName": "Name (e.g. Christmas)",
     "addHoliday": "Add",
     "noHolidays": "No holidays registered.",
-    "clients": "Client base",
-    "clientsDesc": "Clients available when creating new projects.",
-    "addClient": "+ Client",
-    "noClients": "No clients registered.",
-    "clientProjects": "{{count}} project",
-    "clientProjects_other": "{{count}} projects",
     "templates": "Project templates",
     "templatesDesc": "Phase and entry structure used when creating new projects.",
     "editTemplate": "Edit template"

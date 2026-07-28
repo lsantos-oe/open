@@ -320,6 +320,23 @@ function applyDurations(phases: Phase[], holidays: string[]): Phase[] {
   }))
 }
 
+// ─── Client resolution ─────────────────────────────────────────────────────────
+
+/**
+ * Client is imported by NAME (portable across databases — a raw clientId from
+ * the export would only be valid in the database it was exported from).
+ * Finds an existing Carteira client by exact case-insensitive name match, or
+ * creates a new one. Returns undefined if no client name was provided.
+ */
+function resolveClientId(name: string | undefined): string | undefined {
+  const trimmed = name?.trim()
+  if (!trimmed) return undefined
+  const { clients, createClient } = useAppStore.getState()
+  const existing = clients.find((c) => c.name.toLowerCase() === trimmed.toLowerCase())
+  if (existing) return existing.id
+  return createClient({ name: trimmed })
+}
+
 // ─── Import new project ───────────────────────────────────────────────────────
 
 export function importNewProject(raw: string): Project {
@@ -352,6 +369,7 @@ export function importNewProject(raw: string): Project {
     id: uuid(),
     name: p.name,
     client: p.client ?? '',
+    clientId: resolveClientId(p.client),
     type: p.type ?? 'novo_projeto',
     pm: p.pm ?? '',
     language: p.language ?? 'pt',
@@ -382,6 +400,7 @@ export function importUpdateProject(
       ...existing,
       name: imported.name,
       client: imported.client,
+      clientId: imported.clientId,
       type: imported.type,
       pm: imported.pm,
       language: imported.language,
