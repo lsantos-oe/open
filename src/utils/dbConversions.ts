@@ -9,7 +9,7 @@ import type {
   RiskFlag, ProjectStatus, ProjectType, AppLanguage,
   DelayResponsibility, DelayType, OpenPoint, OpenPointStatus, OpenPointPriority,
   MeetingLog, MeetingItem, HistoryEntry, HistoryEventType, DiaryComment,
-  Client, ClientContact, ClientCsAssignment,
+  Client, ClientContact, ClientCsAssignment, ClientStatus,
   Incident, IncidentStatus, Probability, Impact,
 } from '@/types'
 
@@ -553,6 +553,8 @@ export function dbClientToStore(row: DbClient, contacts: DbClientContact[], csHi
     country: row.country ?? undefined,
     ploomesLink: row.ploomes_link ?? undefined,
     notes: row.notes ?? undefined,
+    status: (row.status as ClientStatus) ?? 'sustentacao_novos_projetos',
+    owners: (row.owners as EntryOwner[] | null) ?? [],
     contacts: contacts.filter(c => c.client_id === row.id).map(dbClientContactToStore),
     csHistory: csHistory
       .filter(h => h.client_id === row.id)
@@ -569,6 +571,8 @@ export function storeClientToDb(c: Client, userId: string): DbClient {
     country: c.country ?? null,
     ploomes_link: c.ploomesLink ?? null,
     notes: c.notes ?? null,
+    status: c.status,
+    owners: c.owners.length > 0 ? c.owners : null,
     created_at: new Date().toISOString(),
     created_by: userId,
   }

@@ -33,7 +33,7 @@ export default function TeamTab({ project }: Props) {
   }
 
   function pickFromDirectory(profileId: string) {
-    const profile = teamDirectory.find((p) => p.id === profileId)
+    const profile = teamDirectory.filter((p) => p.active).find((p) => p.id === profileId)
     if (!profile) return
     setForm((f) => ({ ...f, userId: profile.id, name: profile.name ?? profile.email ?? '', email: profile.email ?? '' }))
   }
@@ -152,7 +152,7 @@ export default function TeamTab({ project }: Props) {
                 style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)' }}
               >
                 <option value="">Selecione um usuário cadastrado...</option>
-                {teamDirectory.map((p) => (
+                {teamDirectory.filter((p) => p.active).map((p) => (
                   <option key={p.id} value={p.id}>{p.name ?? p.email}</option>
                 ))}
               </select>

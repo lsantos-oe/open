@@ -82,7 +82,7 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, onCl
   // OwnersField expects TeamMember[] — map the global registered-user directory into that shape
   // (userId = profile.id) so picking a "member" owner always satisfies entries.responsible_member_id's FK.
   const directoryAsTeam: TeamMember[] = useMemo(
-    () => teamDirectory.map((p) => ({ id: p.id, name: p.name ?? p.email ?? '', role: '', email: p.email ?? undefined, userId: p.id })),
+    () => teamDirectory.filter((p) => p.active).map((p) => ({ id: p.id, name: p.name ?? p.email ?? '', role: '', email: p.email ?? undefined, userId: p.id })),
     [teamDirectory],
   )
 

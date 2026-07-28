@@ -81,3 +81,4 @@ create index if not exists history_incident_id_idx on history(incident_id);
 create index if not exists diary_comments_incident_id_idx on diary_comments(incident_id);
 
 -- Meetings are intentionally NOT extended — Incidents don't get a Meetings sub-tab (confirmed).
+

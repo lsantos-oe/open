@@ -279,6 +279,8 @@ export interface DbClient {
   country: string | null
   ploomes_link: string | null
   notes: string | null
+  status: string
+  owners: any            // JSONB — EntryOwner[]
   created_at: string | null
   created_by: string | null
 }

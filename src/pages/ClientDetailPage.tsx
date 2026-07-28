@@ -1,14 +1,23 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAppStore } from '@/store/useAppStore'
-import { ClientContact, ClientCsAssignment, EntryOwner } from '@/types'
+import { ClientContact, ClientCsAssignment, ClientStatus, EntryOwner, TeamMember } from '@/types'
 import { Button } from '@/components/ui/Button'
-import { Input, Field } from '@/components/ui/Input'
+import { Input, Field, Select } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import CountrySelect from '@/components/ui/CountrySelect'
+import OwnersField from '@/components/plan/OwnersField'
 import { findCountry } from '@/data/countries'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+
+const STATUS_LABEL: Record<ClientStatus, string> = {
+  pre_venda: 'Pré-venda',
+  implantacao: 'Implantação',
+  sustentacao_novos_projetos: 'Sustentação / Novos projetos',
+}
+
+const STATUSES: ClientStatus[] = ['pre_venda', 'implantacao', 'sustentacao_novos_projetos']
 
 type Tab = 'overview' | 'contacts' | 'csHistory' | 'timeline'
 
@@ -44,6 +53,11 @@ export default function ClientDetailPage() {
   const [csName, setCsName] = useState('')
   const [csDate, setCsDate] = useState(new Date().toISOString().slice(0, 10))
   const [csNote, setCsNote] = useState('')
+
+  const directoryAsTeam: TeamMember[] = useMemo(
+    () => teamDirectory.filter((p) => p.active).map((p) => ({ id: p.id, name: p.name ?? p.email ?? '', role: '', email: p.email ?? undefined, userId: p.id })),
+    [teamDirectory],
+  )
 
   if (!client) {
     return (
@@ -108,7 +122,7 @@ export default function ClientDetailPage() {
   function saveCs() {
     let owner: EntryOwner
     if (csMode === 'directory') {
-      const profile = teamDirectory.find((p) => p.id === csUserId)
+      const profile = teamDirectory.filter((p) => p.active).find((p) => p.id === csUserId)
       if (!profile) return
       owner = { id: crypto.randomUUID(), type: 'member', memberId: profile.id, name: profile.name ?? profile.email ?? '' }
     } else {
@@ -158,8 +172,19 @@ export default function ClientDetailPage() {
       <div className="p-6 max-w-3xl">
         {tab === 'overview' && (
           <div className="space-y-6">
-            <Field label="País">
-              <CountrySelect value={client.country} onChange={(code) => updateClient(client.id, { country: code })} />
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="País">
+                <CountrySelect value={client.country} onChange={(code) => updateClient(client.id, { country: code })} />
+              </Field>
+              <Field label="Status">
+                <Select value={client.status} onChange={(e) => updateClient(client.id, { status: e.target.value as ClientStatus })}>
+                  {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+                </Select>
+              </Field>
+            </div>
+
+            <Field label="Owner">
+              <OwnersField owners={client.owners} onChange={(owners) => updateClient(client.id, { owners })} teamMembers={directoryAsTeam} />
             </Field>
 
             <Field label="Link no Ploomes">
@@ -376,7 +401,7 @@ export default function ClientDetailPage() {
                 style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)' }}
               >
                 <option value="">Selecione...</option>
-                {teamDirectory.map((p) => <option key={p.id} value={p.id}>{p.name ?? p.email}</option>)}
+                {teamDirectory.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name ?? p.email}</option>)}
               </select>
             </Field>
           ) : (

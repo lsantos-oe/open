@@ -325,7 +325,7 @@ export default function TasksPage() {
 
   // OwnersField expects TeamMember[] — map the global registered-user directory into that shape
   const directoryAsTeam: TeamMember[] = useMemo(
-    () => teamDirectory.map((p) => ({ id: p.id, name: p.name ?? p.email ?? '', role: '', email: p.email ?? undefined, userId: p.id })),
+    () => teamDirectory.filter((p) => p.active).map((p) => ({ id: p.id, name: p.name ?? p.email ?? '', role: '', email: p.email ?? undefined, userId: p.id })),
     [teamDirectory],
   )
 

@@ -31,7 +31,7 @@ export default function IncidentsPage() {
   const [onlyMine, setOnlyMine] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [title, setTitle] = useState('')
-  const [newClientId, setNewClientId] = useState('')
+  const [newClientIds, setNewClientIds] = useState<string[]>([])
   const [newOwners, setNewOwners] = useState<EntryOwner[]>([])
   const [priority, setPriority] = useState<Probability>('medium')
   const [impact, setImpact] = useState<Probability>('medium')
@@ -44,7 +44,7 @@ export default function IncidentsPage() {
   const [bulkClientId, setBulkClientId] = useState('')
 
   const directoryAsTeam: TeamMember[] = useMemo(
-    () => teamDirectory.map((p) => ({ id: p.id, name: p.name ?? p.email ?? '', role: '', email: p.email ?? undefined, userId: p.id })),
+    () => teamDirectory.filter((p) => p.active).map((p) => ({ id: p.id, name: p.name ?? p.email ?? '', role: '', email: p.email ?? undefined, userId: p.id })),
     [teamDirectory],
   )
 
@@ -62,18 +62,22 @@ export default function IncidentsPage() {
   }
 
   function openAdd() {
-    setTitle(''); setNewClientId(''); setNewOwners([]); setPriority('medium'); setImpact('medium'); setDeadline('')
+    setTitle(''); setNewClientIds([]); setNewOwners([]); setPriority('medium'); setImpact('medium'); setDeadline('')
     setShowAdd(true)
   }
 
+  function toggleNewClient(clientId: string) {
+    setNewClientIds((prev) => prev.includes(clientId) ? prev.filter((id) => id !== clientId) : [...prev, clientId])
+  }
+
   function handleCreate() {
-    if (!title.trim() || !newClientId || !newOwners[0]) return
+    if (!title.trim() || newClientIds.length === 0 || !newOwners[0]) return
     const id = createIncident({
       title: title.trim(),
       priority,
       impact,
       deadline: deadline || undefined,
-      clientIds: [newClientId],
+      clientIds: newClientIds,
       owner: newOwners[0],
     })
     setShowAdd(false)
@@ -201,7 +205,7 @@ export default function IncidentsPage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowAdd(false)}>{t('actions.cancel')}</Button>
-            <Button onClick={handleCreate} disabled={!title.trim() || !newClientId || !newOwners[0]}>{t('actions.confirm')}</Button>
+            <Button onClick={handleCreate} disabled={!title.trim() || newClientIds.length === 0 || !newOwners[0]}>{t('actions.confirm')}</Button>
           </>
         }
       >
@@ -210,23 +214,36 @@ export default function IncidentsPage() {
             <Input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} />
           </Field>
           <Field label={t('incident.colClients')} required>
-            <Select value={newClientId} onChange={(e) => setNewClientId(e.target.value)}>
-              <option value="">Selecione um cliente</option>
-              {[...clients].sort((a, b) => a.name.localeCompare(b.name)).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </Select>
+            <div className="border rounded-[var(--radius-lg)] max-h-40 overflow-y-auto p-2 space-y-1" style={{ borderColor: 'var(--border-default)' }}>
+              {clients.length === 0 ? (
+                <p className="text-xs px-1 py-1" style={{ color: 'var(--text-tertiary)' }}>Nenhum cliente cadastrado ainda.</p>
+              ) : (
+                [...clients].sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
+                  <label key={c.id} className="flex items-center gap-2.5 p-1 rounded hover:bg-[var(--surface-subtle)] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newClientIds.includes(c.id)}
+                      onChange={() => toggleNewClient(c.id)}
+                      className="rounded border-[var(--border-strong)] accent-[var(--oe-primary)]"
+                    />
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{c.name}</span>
+                  </label>
+                ))
+              )}
+            </div>
           </Field>
           <Field label="Responsável" required>
             <OwnersField owners={newOwners.slice(0, 1)} onChange={(owners) => setNewOwners(owners.slice(-1))} teamMembers={directoryAsTeam} />
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label={t('incident.priority')}>
+            <Field label={t('incident.priority')} hint="Urgência de resolução: Alta = ação imediata, Média = prazo normal, Baixa = pode aguardar.">
               <Select value={priority} onChange={(e) => setPriority(e.target.value as Probability)}>
                 <option value="low">{t('risk.low')}</option>
                 <option value="medium">{t('risk.medium')}</option>
                 <option value="high">{t('risk.high')}</option>
               </Select>
             </Field>
-            <Field label={t('incident.impact')}>
+            <Field label={t('incident.impact')} hint="Quanto esse incidente afeta a operação do cliente: Alta = trava processos/muitos usuários, Média = afeta parcialmente, Baixa = afeta pouco.">
               <Select value={impact} onChange={(e) => setImpact(e.target.value as Probability)}>
                 <option value="low">{t('risk.low')}</option>
                 <option value="medium">{t('risk.medium')}</option>

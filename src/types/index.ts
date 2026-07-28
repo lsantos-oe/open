@@ -217,12 +217,16 @@ export interface ClientCsAssignment {
   note?: string
 }
 
+export type ClientStatus = 'pre_venda' | 'implantacao' | 'sustentacao_novos_projetos'
+
 export interface Client {
   id: string
   name: string
   country?: string
   ploomesLink?: string
   notes?: string
+  status: ClientStatus
+  owners: EntryOwner[]
   contacts: ClientContact[]
   csHistory: ClientCsAssignment[]
   createdAt: string

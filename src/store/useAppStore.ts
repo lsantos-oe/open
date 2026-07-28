@@ -6,7 +6,7 @@ import {
   Project, Phase, Entry, Risk, ActionTask, DelayLogEntry, TeamMember, Link, EntryComment,
   AppSettings, ProjectTemplate, AppLanguage, EntryStatus, RiskFlag, Workdays,
   OpenPoint, MeetingLog, MeetingItem, HistoryEntry, HistoryEventType, DiaryComment, FileAttachment,
-  Client, ClientContact, ClientCsAssignment,
+  Client, ClientContact, ClientCsAssignment, ClientStatus,
   Incident, IncidentStatus, EntryOwner,
 } from '@/types'
 import { applyDateChange } from '@/utils/dateEngine'
@@ -145,10 +145,10 @@ interface AppStore {
   setProfileActive: (id: string, active: boolean) => Promise<void>
 
   // Clients (Carteira)
-  createClient: (data: { name: string; country?: string; ploomesLink?: string; notes?: string }) => string
+  createClient: (data: { name: string; country?: string; ploomesLink?: string; notes?: string; status?: ClientStatus; owners?: EntryOwner[] }) => string
   updateClient: (id: string, patch: Partial<Client>) => void
   deleteClient: (id: string) => void
-  addClientContact: (clientId: string, contact: Omit<ClientContact, 'id'>) => void
+  addClientContact: (clientId: string, contact: Omit<ClientContact, 'id'>) => string
   updateClientContact: (clientId: string, contactId: string, patch: Partial<ClientContact>) => void
   removeClientContact: (clientId: string, contactId: string) => void
   addCsAssignment: (clientId: string, assignment: Omit<ClientCsAssignment, 'id'>) => void
@@ -2346,6 +2346,8 @@ export const useAppStore = create<AppStore>()(
           country: data.country,
           ploomesLink: data.ploomesLink,
           notes: data.notes,
+          status: data.status ?? 'sustentacao_novos_projetos',
+          owners: data.owners ?? [],
           contacts: [],
           csHistory: [],
           createdAt: now,
@@ -2368,6 +2370,8 @@ export const useAppStore = create<AppStore>()(
           if (patch.country !== undefined) fields.country = patch.country
           if (patch.ploomesLink !== undefined) fields.ploomes_link = patch.ploomesLink
           if (patch.notes !== undefined) fields.notes = patch.notes
+          if (patch.status !== undefined) fields.status = patch.status
+          if (patch.owners !== undefined) fields.owners = patch.owners.length > 0 ? patch.owners : null
           if (Object.keys(fields).length === 0) return
           const { error } = await supabase.from('clients').update(fields).eq('id', id)
           if (error) throw new Error(error.message)
@@ -2392,6 +2396,7 @@ export const useAppStore = create<AppStore>()(
           const { error } = await supabase.from('client_contacts').insert(storeClientContactToDb(newContact, clientId))
           if (error) throw new Error(error.message)
         })
+        return newContact.id
       },
 
       updateClientContact(clientId, contactId, patch) {
