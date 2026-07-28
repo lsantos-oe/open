@@ -244,6 +244,7 @@ export interface Incident {
   clientIds: string[]
   projectIds: string[]
   stakeholders: EntryOwner[]
+  entries: Entry[]
   openPoints: OpenPoint[]
   history: HistoryEntry[]
   createdAt: string

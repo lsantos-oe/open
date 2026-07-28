@@ -1,6 +1,15 @@
 import { parseISO } from 'date-fns'
-import { Entry, Phase, Project } from '@/types'
+import { Entry, Phase } from '@/types'
 import { addWorkdays, parseHolidays, toISODate, workdaysBetween } from './businessDays'
+
+/**
+ * The minimal shape the date engine needs — any `Project` already satisfies
+ * this structurally, and an Incident's flat entry list can be wrapped in a
+ * single synthetic phase to reuse the exact same cascade/rollup logic.
+ */
+export interface PhaseScope {
+  phases: Phase[]
+}
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -12,10 +21,10 @@ function entryStartDate(e: Entry): string | undefined {
   return e.type === 'task' ? e.plannedStart : e.plannedDate
 }
 
-/** Flatten all entries in a project (phases + subtasks) into a map id→Entry */
-export function buildEntryMap(project: Project): Map<string, Entry> {
+/** Flatten all entries in a scope (phases + subtasks) into a map id→Entry */
+export function buildEntryMap(scope: PhaseScope): Map<string, Entry> {
   const map = new Map<string, Entry>()
-  for (const phase of project.phases) {
+  for (const phase of scope.phases) {
     for (const entry of phase.entries) {
       map.set(entry.id, entry)
       for (const sub of entry.subtasks) map.set(sub.id, sub)
@@ -25,8 +34,8 @@ export function buildEntryMap(project: Project): Map<string, Entry> {
 }
 
 /** Find which top-level entry owns a given subtask id */
-function findParent(project: Project, subId: string): Entry | undefined {
-  for (const phase of project.phases) {
+function findParent(scope: PhaseScope, subId: string): Entry | undefined {
+  for (const phase of scope.phases) {
     for (const entry of phase.entries) {
       if (entry.subtasks.some((s) => s.id === subId)) return entry
     }
@@ -76,12 +85,12 @@ export function phaseRange(phase: Phase): { start?: string; end?: string } {
  * Returns a new phases array with all affected entries updated.
  */
 export function cascadeForward(
-  project: Project,
+  scope: PhaseScope,
   changedEntryId: string,
   holidays: string[],
 ): Phase[] {
   const holidayDates = parseHolidays(holidays)
-  const entryMap = buildEntryMap(project)
+  const entryMap = buildEntryMap(scope)
 
   // Build reverse dependency map: id → entries that depend on it
   const dependents = new Map<string, string[]>()
@@ -131,10 +140,10 @@ export function cascadeForward(
     }
   }
 
-  if (updatedEntries.size === 0) return project.phases
+  if (updatedEntries.size === 0) return scope.phases
 
   // Apply updates to the phases tree
-  return project.phases.map((phase) => ({
+  return scope.phases.map((phase) => ({
     ...phase,
     entries: phase.entries.map((entry) => {
       const updated = updatedEntries.get(entry.id)
@@ -177,7 +186,7 @@ export function recalcDuration(entry: Entry, holidays: string[]): number {
  * Returns the updated phases array.
  */
 export function applyDateChange(
-  project: Project,
+  scope: PhaseScope,
   entryId: string,
   field: 'plannedStart' | 'plannedEnd' | 'plannedDate' | 'actualStart' | 'actualEnd',
   value: string,
@@ -186,7 +195,7 @@ export function applyDateChange(
   const holidayDates = parseHolidays(holidays)
 
   // Step 1 — update the specific field
-  let phasesWithChange = project.phases.map((phase) => ({
+  let phasesWithChange = scope.phases.map((phase) => ({
     ...phase,
     entries: phase.entries.map((entry) => {
       if (entry.id === entryId) {
@@ -222,8 +231,7 @@ export function applyDateChange(
 
   // Step 2 — cascade forward only when planned end / date changes
   if (field === 'plannedEnd' || field === 'plannedDate' || field === 'plannedStart') {
-    const tempProject = { ...project, phases: phasesWithChange }
-    phasesWithChange = cascadeForward(tempProject, entryId, holidays)
+    phasesWithChange = cascadeForward({ phases: phasesWithChange }, entryId, holidays)
   }
 
   return phasesWithChange

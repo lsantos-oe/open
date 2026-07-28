@@ -158,6 +158,13 @@ interface AppStore {
   unlinkIncidentProject: (incidentId: string, projectId: string) => void
   addIncidentStakeholder: (incidentId: string, owner: EntryOwner) => void
   removeIncidentStakeholder: (incidentId: string, ownerId: string) => void
+
+  // Incident entries (Tasks) — flat, no phases/subtasks UI, but reuses the full Entry engine
+  addIncidentEntry: (incidentId: string, entryData: Omit<Entry, 'id' | 'isCritical' | 'subtasks' | 'comments' | 'links'>) => void
+  updateIncidentEntry: (incidentId: string, entryId: string, patch: Partial<Entry>) => void
+  deleteIncidentEntry: (incidentId: string, entryId: string) => void
+  updateIncidentEntryStatus: (incidentId: string, entryId: string, status: EntryStatus) => void
+  changeIncidentEntryDate: (incidentId: string, entryId: string, field: 'plannedStart' | 'plannedEnd' | 'plannedDate' | 'actualStart' | 'actualEnd', value: string) => void
   archiveProject: (id: string) => Promise<void>
   unarchiveProject: (id: string) => Promise<void>
 
@@ -365,6 +372,38 @@ async function dbSyncAllEntries(project: Project, userId: string): Promise<void>
   if (error) throw new Error(error.message)
 }
 
+// ─── Incident entry sync helpers (mirror the project ones above, flat — no phases) ──
+
+function refreshIncidentCriticalPath(incident: Incident): Incident {
+  const [wrapped] = applyIsCritical([{ id: '_incident', name: '', order: 0, entries: incident.entries }])
+  return { ...incident, entries: wrapped.entries }
+}
+
+async function dbSyncIncidentEntry(incident: Incident, entryId: string, userId: string): Promise<void> {
+  const entry = incident.entries.find((e) => e.id === entryId)
+  if (entry) {
+    const row = storeEntryToDb(entry, null, null, userId, incident.id)
+    const { created_at, created_by, ...updateFields } = row
+    const { error } = await supabase.from('entries').update({ ...updateFields, updated_at: new Date().toISOString() }).eq('id', entryId)
+    if (error) throw new Error(error.message)
+    return
+  }
+  const parentEntry = incident.entries.find((e) => e.subtasks.some((s) => s.id === entryId))
+  if (parentEntry) {
+    const row = storeEntryToDb(parentEntry, null, null, userId, incident.id)
+    const { created_at, created_by, ...updateFields } = row
+    const { error } = await supabase.from('entries').update({ ...updateFields, updated_at: new Date().toISOString() }).eq('id', parentEntry.id)
+    if (error) throw new Error(error.message)
+  }
+}
+
+async function dbSyncAllIncidentEntries(incident: Incident, userId: string): Promise<void> {
+  const rows = incident.entries.map((e) => storeEntryToDb(e, null, null, userId, incident.id))
+  if (!rows.length) return
+  const { error } = await supabase.from('entries').upsert(rows)
+  if (error) throw new Error(error.message)
+}
+
 async function dbSyncRisk(projectId: string, risk: Risk, userId: string): Promise<void> {
   const row = storeRiskToDb(risk, projectId, userId)
   const { created_at, created_by, ...updateFields } = row
@@ -548,10 +587,11 @@ export const useAppStore = create<AppStore>()(
             return
           }
           const ids = incidentRows.map((i) => i.id)
-          const [clientLinksRes, projectLinksRes, stakeholdersRes, openPointsRes, historyRes, diaryCommentsRes] = await Promise.all([
+          const [clientLinksRes, projectLinksRes, stakeholdersRes, entriesRes, openPointsRes, historyRes, diaryCommentsRes] = await Promise.all([
             supabase.from('incident_clients').select('*').in('incident_id', ids),
             supabase.from('incident_projects').select('*').in('incident_id', ids),
             supabase.from('incident_stakeholders').select('*').in('incident_id', ids),
+            supabase.from('entries').select('*').in('incident_id', ids),
             supabase.from('open_points').select('*').in('incident_id', ids),
             supabase.from('history').select('*').in('incident_id', ids),
             supabase.from('diary_comments').select('*').in('incident_id', ids),
@@ -559,11 +599,17 @@ export const useAppStore = create<AppStore>()(
           const clientLinks = clientLinksRes.data ?? []
           const projectLinks = projectLinksRes.data ?? []
           const stakeholders = stakeholdersRes.data ?? []
+          const entries = entriesRes.data ?? []
+          const entryIds = entries.map((e) => e.id)
+          const commentsRes = entryIds.length > 0
+            ? await supabase.from('comments').select('*').in('entry_id', entryIds)
+            : { data: [] }
+          const comments = commentsRes.data ?? []
           const openPoints = openPointsRes.data ?? []
           const history = historyRes.data ?? []
           const diaryComments = diaryCommentsRes.data ?? []
           const incidents = incidentRows.map((incident) =>
-            dbIncidentToStore({ incident, clientLinks, projectLinks, stakeholders, openPoints, history, diaryComments } as DbIncidentFull)
+            dbIncidentToStore({ incident, clientLinks, projectLinks, stakeholders, entries, comments, openPoints, history, diaryComments } as DbIncidentFull)
           )
           set({ incidents, incidentsLoading: false })
         } catch (err) {
@@ -2383,6 +2429,7 @@ export const useAppStore = create<AppStore>()(
           clientIds: data.clientIds ?? [],
           projectIds: data.projectIds ?? [],
           stakeholders: [],
+          entries: [],
           openPoints: [],
           history: [],
           createdAt: now,
@@ -2511,6 +2558,103 @@ export const useAppStore = create<AppStore>()(
           const { error } = await supabase.from('incident_stakeholders').delete().eq('id', ownerId)
           if (error) throw new Error(error.message)
         })
+      },
+
+      // ── Incident entries (Tasks) ──────────────────────────────────────────
+
+      addIncidentEntry(incidentId, entryData) {
+        const entryId = uuid()
+        const prev = get().incidents
+        set((s) => ({
+          incidents: mutateIncident(s.incidents, incidentId, (i) =>
+            refreshIncidentCriticalPath({
+              ...i,
+              entries: [...i.entries, { ...entryData, id: entryId, isCritical: false, subtasks: [], comments: [], links: [] }],
+            }),
+          ),
+        }))
+        sync(async () => {
+          const userId = getUserId()
+          const incident = get().incidents.find((i) => i.id === incidentId)
+          const entry = incident?.entries.find((e) => e.id === entryId)
+          if (!entry) return
+          const { error } = await supabase.from('entries').insert(storeEntryToDb(entry, null, null, userId, incidentId))
+          if (error) throw new Error(error.message)
+        }, () => set({ incidents: prev }))
+      },
+
+      updateIncidentEntry(incidentId, entryId, patch) {
+        const prev = get().incidents
+        set((s) => ({
+          incidents: mutateIncident(s.incidents, incidentId, (i) =>
+            refreshIncidentCriticalPath({
+              ...i,
+              entries: i.entries.map((e) => e.id === entryId ? { ...e, ...patch } : e),
+            }),
+          ),
+        }))
+        sync(async () => {
+          const incident = get().incidents.find((i) => i.id === incidentId)
+          if (!incident) return
+          await dbSyncIncidentEntry(incident, entryId, getUserId())
+        }, () => set({ incidents: prev }))
+      },
+
+      deleteIncidentEntry(incidentId, entryId) {
+        const prev = get().incidents
+        set((s) => ({
+          incidents: mutateIncident(s.incidents, incidentId, (i) =>
+            refreshIncidentCriticalPath({ ...i, entries: i.entries.filter((e) => e.id !== entryId) }),
+          ),
+        }))
+        sync(async () => {
+          const { error } = await supabase.from('entries').delete().eq('id', entryId)
+          if (error) throw new Error(error.message)
+        }, () => set({ incidents: prev }))
+      },
+
+      updateIncidentEntryStatus(incidentId, entryId, status) {
+        const now = new Date().toISOString().split('T')[0]
+        const prev = get().incidents
+        set((s) => ({
+          incidents: mutateIncident(s.incidents, incidentId, (i) => ({
+            ...i,
+            entries: i.entries.map((e) => {
+              if (e.id !== entryId) return e
+              const patch: Partial<Entry> = { status, statusOverride: true }
+              if (status === 'in_progress' && !e.actualStart) patch.actualStart = now
+              if (status === 'done' && !e.actualEnd) patch.actualEnd = now
+              return { ...e, ...patch }
+            }),
+          })),
+        }))
+        sync(async () => {
+          const incident = get().incidents.find((i) => i.id === incidentId)
+          if (!incident) return
+          await dbSyncIncidentEntry(incident, entryId, getUserId())
+        }, () => set({ incidents: prev }))
+      },
+
+      changeIncidentEntryDate(incidentId, entryId, field, value) {
+        const incident = get().incidents.find((i) => i.id === incidentId)
+        if (!incident) return
+        const { settings } = get()
+        const prev = get().incidents
+
+        const newPhases = applyIsCritical(
+          applyDateChange({ phases: [{ id: '_incident', name: '', order: 0, entries: incident.entries }] }, entryId, field, value, settings.holidays),
+        )
+        const today = new Date().toISOString().split('T')[0]
+        const updatedEntries = (newPhases[0]?.entries ?? []).map((e) => applyAutoStatus(e, today))
+
+        set((s) => ({
+          incidents: mutateIncident(s.incidents, incidentId, (i) => ({ ...i, entries: updatedEntries })),
+        }))
+        sync(async () => {
+          const updated = get().incidents.find((i) => i.id === incidentId)
+          if (!updated) return
+          await dbSyncAllIncidentEntries(updated, getUserId())
+        }, () => set({ incidents: prev }))
       },
     }),
     {

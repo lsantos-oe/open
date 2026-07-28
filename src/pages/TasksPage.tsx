@@ -7,8 +7,9 @@ import {
 } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { useAppStore } from '@/store/useAppStore'
-import { Entry, EntryOwner, EntryStatus, Project } from '@/types'
+import { Entry, EntryOwner, EntryStatus, Project, Incident } from '@/types'
 import EntryModal from '@/components/plan/EntryModal'
+import IncidentEntryModal from '@/components/plan/IncidentEntryModal'
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -31,10 +32,11 @@ const COL_STYLE: Record<string, { header: string; bg: string }> = {
 // ─── types ────────────────────────────────────────────────────────────────────
 
 type GlobalCard = Entry & {
-  _projectId: string
-  _projectName: string
-  _projectColor: string
-  _phaseId: string
+  _scopeType: 'project' | 'incident'
+  _scopeId: string
+  _scopeName: string
+  _scopeColor: string
+  _phaseId?: string
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -61,7 +63,7 @@ function entryOwners(entry: Entry): EntryOwner[] {
   return []
 }
 
-function buildCards(projects: Project[]): GlobalCard[] {
+function buildCards(projects: Project[], incidents: Incident[]): GlobalCard[] {
   const cards: GlobalCard[] = []
   for (let i = 0; i < projects.length; i++) {
     const proj = projects[i]
@@ -72,14 +74,24 @@ function buildCards(projects: Project[]): GlobalCard[] {
         // show in /tasks if it has owners (regardless of hiddenFromPlan)
         const owners = entryOwners(entry)
         if ((entry.type === 'task' || entry.type === 'meeting') && owners.length > 0) {
-          cards.push({ ...entry, _projectId: proj.id, _projectName: proj.name, _projectColor: color, _phaseId: ph.id })
+          cards.push({ ...entry, _scopeType: 'project', _scopeId: proj.id, _scopeName: proj.name, _scopeColor: color, _phaseId: ph.id })
         }
         for (const sub of entry.subtasks) {
           const subOwners = entryOwners(sub)
           if ((sub.type === 'task' || sub.type === 'meeting') && subOwners.length > 0) {
-            cards.push({ ...sub, _projectId: proj.id, _projectName: proj.name, _projectColor: color, _phaseId: ph.id })
+            cards.push({ ...sub, _scopeType: 'project', _scopeId: proj.id, _scopeName: proj.name, _scopeColor: color, _phaseId: ph.id })
           }
         }
+      }
+    }
+  }
+  for (let i = 0; i < incidents.length; i++) {
+    const inc = incidents[i]
+    const color = PALETTE[(projects.length + i) % PALETTE.length]
+    for (const entry of inc.entries) {
+      const owners = entryOwners(entry)
+      if ((entry.type === 'task' || entry.type === 'meeting') && owners.length > 0) {
+        cards.push({ ...entry, _scopeType: 'incident', _scopeId: inc.id, _scopeName: inc.title, _scopeColor: color })
       }
     }
   }
@@ -141,7 +153,7 @@ function TaskCard({ card, onClick, ghost = false }: {
       style={{
         background: 'var(--surface-card)',
         border: '0.5px solid var(--border-default)',
-        borderLeft: `3px solid ${card._projectColor}`,
+        borderLeft: `3px solid ${card._scopeColor}`,
         borderRadius: 'var(--radius-md)',
         padding: 12,
         boxShadow: ghost ? '0 4px 16px rgba(0,0,0,0.14)' : '0 1px 3px rgba(0,0,0,0.04)',
@@ -152,9 +164,9 @@ function TaskCard({ card, onClick, ghost = false }: {
     >
       {/* Project badge + indicators */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-        <span style={{ width: 6, height: 6, borderRadius: '50%', background: card._projectColor, flexShrink: 0 }} />
+        <span style={{ width: 6, height: 6, borderRadius: '50%', background: card._scopeColor, flexShrink: 0 }} />
         <span style={{ flex: 1, fontSize: 10, color: 'var(--text-tertiary)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {card._projectName}
+          {card._scopeType === 'incident' ? `🛠️ ${card._scopeName}` : card._scopeName}
         </span>
         {hasComments && (
           <span style={{ fontSize: 10, color: 'var(--text-disabled)' }}>💬{card.comments.length}</span>
@@ -301,9 +313,9 @@ function FilterSelect({ value, onChange, children }: {
 
 export default function TasksPage() {
   const { t } = useTranslation()
-  const { projects, updateEntryStatus } = useAppStore()
+  const { projects, incidents, updateEntryStatus, updateIncidentEntryStatus } = useAppStore()
 
-  const [filterProject, setFilterProject] = useState('')
+  const [filterScope, setFilterScope] = useState('')
   const [filterMember, setFilterMember] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -314,7 +326,7 @@ export default function TasksPage() {
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   )
 
-  const allCards = useMemo(() => buildCards(projects), [projects])
+  const allCards = useMemo(() => buildCards(projects, incidents), [projects, incidents])
 
   const allMembers = useMemo(() => {
     const names = new Set<string>()
@@ -326,7 +338,7 @@ export default function TasksPage() {
 
   const filteredCards = useMemo(() => {
     return allCards.filter(c => {
-      if (filterProject && c._projectId !== filterProject) return false
+      if (filterScope && c._scopeId !== filterScope) return false
       if (filterMember) {
         const owners = entryOwners(c)
         if (!owners.some(o => o.name === filterMember)) return false
@@ -334,7 +346,7 @@ export default function TasksPage() {
       if (filterStatus && c.status !== filterStatus) return false
       return true
     })
-  }, [allCards, filterProject, filterMember, filterStatus])
+  }, [allCards, filterScope, filterMember, filterStatus])
 
   const activeCard = activeId ? allCards.find(c => c.id === activeId) : null
   const validStatuses = new Set(KANBAN_COLS.map(c => c.status))
@@ -351,7 +363,11 @@ export default function TasksPage() {
     if (!validStatuses.has(newStatus)) return
     const card = allCards.find(c => c.id === active.id)
     if (card && card.status !== newStatus) {
-      updateEntryStatus(card._projectId, String(active.id), newStatus)
+      if (card._scopeType === 'incident') {
+        updateIncidentEntryStatus(card._scopeId, String(active.id), newStatus)
+      } else {
+        updateEntryStatus(card._scopeId, String(active.id), newStatus)
+      }
     }
   }
 
@@ -384,10 +400,13 @@ export default function TasksPage() {
 
         <div style={{ flex: 1 }} />
 
-        <FilterSelect value={filterProject} onChange={setFilterProject}>
+        <FilterSelect value={filterScope} onChange={setFilterScope}>
           <option value="">{t('tasks.filterProject')}</option>
           {projects.filter(p => !p.archived).map(p => (
             <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+          {incidents.map(i => (
+            <option key={i.id} value={i.id}>🛠️ {i.title}</option>
           ))}
         </FilterSelect>
 
@@ -441,12 +460,21 @@ export default function TasksPage() {
       />
 
       {/* Edit task modal */}
-      {editCard && (
+      {editCard && editCard._scopeType === 'incident' && (
+        <IncidentEntryModal
+          open
+          mode="edit"
+          incidentId={editCard._scopeId}
+          entry={editCard}
+          onClose={() => setEditCard(null)}
+        />
+      )}
+      {editCard && editCard._scopeType === 'project' && editCard._phaseId && (
         <EntryModal
           open
           mode="edit"
           entry={editCard}
-          entryProjectId={editCard._projectId}
+          entryProjectId={editCard._scopeId}
           entryPhaseId={editCard._phaseId}
           onClose={() => setEditCard(null)}
         />

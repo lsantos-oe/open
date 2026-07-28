@@ -2,16 +2,18 @@ import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
-import { EntryOwner, IncidentStatus, Probability } from '@/types'
+import { Entry, EntryOwner, IncidentStatus, Probability } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Input, Select, Field } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import OpenPointsTab from '@/pages/tabs/diary/OpenPointsTab'
 import HistoryTab from '@/pages/tabs/diary/HistoryTab'
+import EntryBoard, { BoardCard } from '@/components/plan/EntryBoard'
+import IncidentEntryModal from '@/components/plan/IncidentEntryModal'
 import { differenceInCalendarDays } from 'date-fns'
 
-type Tab = 'overview' | 'openPoints' | 'history'
+type Tab = 'overview' | 'tasks' | 'openPoints' | 'history'
 
 const STATUS_OPTIONS: IncidentStatus[] = ['open', 'in_progress', 'waiting_on_client', 'resolved', 'closed']
 const STATUS_VARIANT: Record<IncidentStatus, 'gray' | 'primary' | 'orange' | 'green' | 'red'> = {
@@ -26,7 +28,7 @@ export default function IncidentDetailPage() {
     incidents, clients, projects, teamDirectory,
     updateIncident, deleteIncident, updateIncidentStatus,
     linkIncidentClient, unlinkIncidentClient, linkIncidentProject, unlinkIncidentProject,
-    addIncidentStakeholder, removeIncidentStakeholder,
+    addIncidentStakeholder, removeIncidentStakeholder, updateIncidentEntryStatus,
   } = useAppStore()
 
   const [tab, setTab] = useState<Tab>('overview')
@@ -38,6 +40,7 @@ export default function IncidentDetailPage() {
   const [stakeholderUserId, setStakeholderUserId] = useState('')
   const [stakeholderContactKey, setStakeholderContactKey] = useState('')
   const [stakeholderName, setStakeholderName] = useState('')
+  const [taskModal, setTaskModal] = useState<{ mode: 'create' | 'edit'; entry?: Entry } | null>(null)
 
   const incident = incidents.find((i) => i.id === id)
 
@@ -87,9 +90,12 @@ export default function IncidentDetailPage() {
 
   const TABS: { id: Tab; label: string }[] = [
     { id: 'overview', label: t('incident.tabOverview') },
+    { id: 'tasks', label: `${t('incident.tabTasks')}${incident.entries.length ? ` (${incident.entries.length})` : ''}` },
     { id: 'openPoints', label: `${t('incident.tabOpenPoints')}${incident.openPoints.length ? ` (${incident.openPoints.length})` : ''}` },
     { id: 'history', label: t('incident.tabHistory') },
   ]
+
+  const boardCards: BoardCard[] = incident.entries.map((e) => ({ ...e }))
 
   return (
     <div>
@@ -119,7 +125,7 @@ export default function IncidentDetailPage() {
         ))}
       </div>
 
-      <div className="p-6 max-w-3xl">
+      <div className={tab === 'tasks' ? 'p-6' : 'p-6 max-w-3xl'}>
         {tab === 'overview' && (
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
@@ -209,6 +215,24 @@ export default function IncidentDetailPage() {
               )}
               <Button size="sm" variant="secondary" onClick={openAddStakeholder}>{t('incident.addStakeholder')}</Button>
             </Field>
+          </div>
+        )}
+
+        {tab === 'tasks' && (
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Button size="sm" onClick={() => setTaskModal({ mode: 'create' })}>{t('plan.addTask')}</Button>
+            </div>
+            {incident.entries.length === 0 ? (
+              <p className="text-sm text-center py-12" style={{ color: 'var(--text-tertiary)' }}>{t('plan.noEntries')}</p>
+            ) : (
+              <EntryBoard
+                cards={boardCards}
+                onStatusChange={(entryId, status) => updateIncidentEntryStatus(incident.id, entryId, status)}
+                onCardClick={(card) => setTaskModal({ mode: 'edit', entry: card })}
+                showInternalSection={false}
+              />
+            )}
           </div>
         )}
 
@@ -307,6 +331,16 @@ export default function IncidentDetailPage() {
           )}
         </div>
       </Modal>
+
+      {taskModal && (
+        <IncidentEntryModal
+          open
+          mode={taskModal.mode}
+          incidentId={incident.id}
+          entry={taskModal.entry}
+          onClose={() => setTaskModal(null)}
+        />
+      )}
 
       {/* Delete confirm */}
       <Modal

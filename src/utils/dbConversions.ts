@@ -365,12 +365,13 @@ function storeSubtaskToDb(e: Entry): DbSubtaskJson {
   }
 }
 
-function storeEntryToDb(entry: Entry, phaseId: string, projectId: string, userId: string): DbEntry {
+function storeEntryToDb(entry: Entry, phaseId: string | null, projectId: string | null, userId: string, incidentId?: string): DbEntry {
   const now = new Date().toISOString()
   return {
     id: entry.id,
     project_id: projectId,
     phase_id: phaseId,
+    incident_id: incidentId ?? null,
     type: entry.type,
     name: entry.name,
     responsible: (entry.owners && entry.owners.length > 0 ? entry.owners[0].name : entry.responsible) || null,
@@ -598,13 +599,15 @@ export interface DbIncidentFull {
   clientLinks: DbIncidentClient[]
   projectLinks: DbIncidentProject[]
   stakeholders: DbIncidentStakeholder[]
+  entries: DbEntry[]
+  comments: DbComment[]
   openPoints: DbOpenPoint[]
   history: DbHistory[]
   diaryComments: DbDiaryComment[]
 }
 
 export function dbIncidentToStore(data: DbIncidentFull): Incident {
-  const { incident, clientLinks, projectLinks, stakeholders, openPoints, history, diaryComments } = data
+  const { incident, clientLinks, projectLinks, stakeholders, entries, comments, openPoints, history, diaryComments } = data
   return {
     id: incident.id,
     title: incident.title,
@@ -619,6 +622,10 @@ export function dbIncidentToStore(data: DbIncidentFull): Incident {
     clientIds: clientLinks.filter(l => l.incident_id === incident.id).map(l => l.client_id),
     projectIds: projectLinks.filter(l => l.incident_id === incident.id).map(l => l.project_id),
     stakeholders: stakeholders.filter(s => s.incident_id === incident.id).map(s => s.owner as EntryOwner),
+    entries: entries
+      .filter(e => e.incident_id === incident.id)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .map(e => dbEntryToStore(e, comments)),
     openPoints: openPoints.filter(op => op.incident_id === incident.id).map(op => dbOpenPointToStore(op, diaryComments)),
     history: history.filter(h => h.incident_id === incident.id).map(h => dbHistoryToStore(h, diaryComments)),
     createdAt: incident.created_at ?? new Date().toISOString(),

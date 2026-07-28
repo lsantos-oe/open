@@ -125,6 +125,7 @@ export interface DbEntry {
   id: string
   project_id: string | null
   phase_id: string | null
+  incident_id: string | null
   type: EntryType
   name: string
   responsible: string | null
