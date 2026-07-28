@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useAppStore } from '@/store/useAppStore'
+import { useAppStore, DiaryScope } from '@/store/useAppStore'
 import { OpenPoint, OpenPointStatus, OpenPointPriority, Phase } from '@/types'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
@@ -21,7 +21,7 @@ const PRIORITY_BG: Record<OpenPointPriority, string> = {
 }
 
 interface Props {
-  projectId: string
+  scope: DiaryScope
   openPoints: OpenPoint[]
   phases: Phase[]
 }
@@ -86,7 +86,7 @@ function OpFormFields({ form, set, allEntries }: OpFormFieldsProps) {
   )
 }
 
-export default function OpenPointsTab({ projectId, openPoints, phases }: Props) {
+export default function OpenPointsTab({ scope, openPoints, phases }: Props) {
   const { t } = useTranslation()
   const { addOpenPoint, updateOpenPoint, resolveOpenPoint, deleteOpenPoint, addDiaryAttachment, removeDiaryAttachment } = useAppStore()
 
@@ -132,7 +132,7 @@ export default function OpenPointsTab({ projectId, openPoints, phases }: Props) 
 
   function handleSaveAdd() {
     if (!form.title.trim()) return
-    addOpenPoint(projectId, {
+    addOpenPoint(scope, {
       title: form.title.trim(),
       description: form.description || undefined,
       priority: form.priority,
@@ -146,7 +146,7 @@ export default function OpenPointsTab({ projectId, openPoints, phases }: Props) 
 
   function handleSaveEdit() {
     if (!editOp || !form.title.trim()) return
-    updateOpenPoint(projectId, editOp.id, {
+    updateOpenPoint(scope, editOp.id, {
       title: form.title.trim(),
       description: form.description || undefined,
       priority: form.priority,
@@ -160,7 +160,7 @@ export default function OpenPointsTab({ projectId, openPoints, phases }: Props) 
   function handleResolve() {
     if (!resolveOp || !resolution.trim()) return
     const { profile } = useAppStore.getState() as any
-    resolveOpenPoint(projectId, resolveOp.id, resolution.trim(), profile?.full_name ?? 'PM')
+    resolveOpenPoint(scope, resolveOp.id, resolution.trim(), profile?.full_name ?? 'PM')
     setResolveOp(null)
     setResolution('')
   }
@@ -277,7 +277,7 @@ export default function OpenPointsTab({ projectId, openPoints, phases }: Props) 
                         {t('actions.edit')}
                       </button>
                       <button
-                        onClick={() => { if (confirm(t('diary.deleteConfirm'))) deleteOpenPoint(projectId, op.id) }}
+                        onClick={() => { if (confirm(t('diary.deleteConfirm'))) deleteOpenPoint(scope, op.id) }}
                         className="text-xs px-2 py-1 rounded transition-colors"
                         style={{ color: 'var(--color-danger-text)' }}
                       >
@@ -398,14 +398,14 @@ export default function OpenPointsTab({ projectId, openPoints, phases }: Props) 
                 </div>
               )}
               <FileAttachments
-                projectId={projectId}
+                scopeId={scope.id}
                 parentId={drawerItem.id}
                 attachments={drawerItem.attachments}
-                onAdd={(att) => addDiaryAttachment(projectId, 'open_point', drawerItem.id, att)}
-                onRemove={(id) => removeDiaryAttachment(projectId, 'open_point', drawerItem.id, id)}
+                onAdd={(att) => addDiaryAttachment(scope, 'open_point', drawerItem.id, att)}
+                onRemove={(id) => removeDiaryAttachment(scope, 'open_point', drawerItem.id, id)}
               />
               <DiaryComments
-                projectId={projectId}
+                scope={scope}
                 parentType="open_point"
                 parentId={drawerItem.id}
                 comments={drawerItem.comments}

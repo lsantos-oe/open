@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useAppStore } from '@/store/useAppStore'
+import { useAppStore, DiaryScope } from '@/store/useAppStore'
 import { HistoryEntry, HistoryEventType } from '@/types'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
@@ -24,11 +24,11 @@ const EVENT_ICONS: Record<HistoryEventType, string> = {
 }
 
 interface Props {
-  projectId: string
+  scope: DiaryScope
   history: HistoryEntry[]
 }
 
-export default function HistoryTab({ projectId, history }: Props) {
+export default function HistoryTab({ scope, history }: Props) {
   const { t, i18n } = useTranslation()
   const { addHistoryEntry, updateHistoryEntry, deleteHistoryEntry } = useAppStore()
 
@@ -52,7 +52,7 @@ export default function HistoryTab({ projectId, history }: Props) {
 
   function handleAddNote() {
     if (!noteTitle.trim()) return
-    addHistoryEntry(projectId, {
+    addHistoryEntry(scope, {
       event: 'note',
       title: noteTitle.trim(),
       detail: noteDetail || undefined,
@@ -65,7 +65,7 @@ export default function HistoryTab({ projectId, history }: Props) {
 
   function handleSaveEdit() {
     if (!editEntry || !noteTitle.trim()) return
-    updateHistoryEntry(projectId, editEntry.id, {
+    updateHistoryEntry(scope, editEntry.id, {
       title: noteTitle.trim(),
       detail: noteDetail || undefined,
     })
@@ -149,7 +149,7 @@ export default function HistoryTab({ projectId, history }: Props) {
                             {t('actions.edit')}
                           </button>
                           <button
-                            onClick={() => { if (confirm(t('diary.deleteConfirm'))) deleteHistoryEntry(projectId, entry.id) }}
+                            onClick={() => { if (confirm(t('diary.deleteConfirm'))) deleteHistoryEntry(scope, entry.id) }}
                             className="text-xs px-2 py-1 rounded"
                             style={{ color: 'var(--color-danger-text)' }}
                           >
@@ -162,7 +162,7 @@ export default function HistoryTab({ projectId, history }: Props) {
 
                   {expandedComments.has(entry.id) && (
                     <DiaryComments
-                      projectId={projectId}
+                      scope={scope}
                       parentType="history"
                       parentId={entry.id}
                       comments={entry.comments}

@@ -202,6 +202,7 @@ export interface DbRisk {
 export interface DbOpenPoint {
   id: string
   project_id: string | null
+  incident_id: string | null
   title: string
   description: string | null
   status: string | null
@@ -222,7 +223,7 @@ export interface DbOpenPoint {
 
 export interface DbMeetingLog {
   id: string
-  project_id: string | null
+  project_id: string | null   // Meetings are project-only — no incident_id column
   title: string
   date: string
   participants: any[] | null   // JSONB — EntryOwner[]
@@ -241,6 +242,7 @@ export interface DbMeetingLog {
 export interface DbHistory {
   id: string
   project_id: string | null
+  incident_id: string | null
   type: 'auto' | 'manual' | null
   event: string
   title: string
@@ -287,6 +289,7 @@ export interface DbClientCsAssignment {
 export interface DbDiaryComment {
   id: string
   project_id: string | null
+  incident_id: string | null
   parent_type: 'open_point' | 'meeting' | 'history'
   parent_id: string
   text: string
@@ -294,6 +297,40 @@ export interface DbDiaryComment {
   author_name: string | null
   author_avatar: string | null
   author_role: string | null
+  created_at: string | null
+}
+
+export interface DbIncident {
+  id: string
+  title: string
+  description: string | null
+  owner: any | null          // JSONB — EntryOwner
+  status: string
+  status_changed_at: string
+  resolved_at: string | null
+  priority: string
+  impact: string
+  deadline: string | null
+  created_at: string | null
+  created_by: string | null
+  updated_at: string | null
+  updated_by: string | null
+}
+
+export interface DbIncidentClient {
+  incident_id: string
+  client_id: string
+}
+
+export interface DbIncidentProject {
+  incident_id: string
+  project_id: string
+}
+
+export interface DbIncidentStakeholder {
+  id: string
+  incident_id: string
+  owner: any          // JSONB — EntryOwner
   created_at: string | null
 }
 

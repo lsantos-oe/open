@@ -268,14 +268,14 @@ export default function MeetingsTab({ projectId, meetings, phases, teamMembers }
                     </div>
 
                     <FileAttachments
-                      projectId={projectId}
+                      scopeId={projectId}
                       parentId={m.id}
                       attachments={m.attachments}
-                      onAdd={(att) => addDiaryAttachment(projectId, 'meeting', m.id, att)}
-                      onRemove={(id) => removeDiaryAttachment(projectId, 'meeting', m.id, id)}
+                      onAdd={(att) => addDiaryAttachment({ type: 'project', id: projectId }, 'meeting', m.id, att)}
+                      onRemove={(id) => removeDiaryAttachment({ type: 'project', id: projectId }, 'meeting', m.id, id)}
                     />
                     <DiaryComments
-                      projectId={projectId}
+                      scope={{ type: 'project', id: projectId }}
                       parentType="meeting"
                       parentId={m.id}
                       comments={m.comments}

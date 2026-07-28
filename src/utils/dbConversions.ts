@@ -10,6 +10,7 @@ import type {
   DelayResponsibility, DelayType, OpenPoint, OpenPointStatus, OpenPointPriority,
   MeetingLog, MeetingItem, HistoryEntry, HistoryEventType, DiaryComment,
   Client, ClientContact, ClientCsAssignment,
+  Incident, IncidentStatus, Probability, Impact,
 } from '@/types'
 
 import type {
@@ -18,6 +19,7 @@ import type {
   DbCommentJson, DbProjectFull, DbProjectFlat, DbOpenPoint,
   DbMeetingLog, DbHistory, DbDiaryComment,
   DbClient, DbClientContact, DbClientCsAssignment,
+  DbIncident, DbIncidentClient, DbIncidentProject, DbIncidentStakeholder,
 } from '@/types/database'
 
 // ─── DB → Store ───────────────────────────────────────────────────────────────
@@ -586,5 +588,59 @@ export function storeCsAssignmentToDb(assignment: ClientCsAssignment, clientId: 
     note: assignment.note ?? null,
     created_at: new Date().toISOString(),
     created_by: userId,
+  }
+}
+
+// ─── Incidents (Sustentação) ────────────────────────────────────────────────
+
+export interface DbIncidentFull {
+  incident: DbIncident
+  clientLinks: DbIncidentClient[]
+  projectLinks: DbIncidentProject[]
+  stakeholders: DbIncidentStakeholder[]
+  openPoints: DbOpenPoint[]
+  history: DbHistory[]
+  diaryComments: DbDiaryComment[]
+}
+
+export function dbIncidentToStore(data: DbIncidentFull): Incident {
+  const { incident, clientLinks, projectLinks, stakeholders, openPoints, history, diaryComments } = data
+  return {
+    id: incident.id,
+    title: incident.title,
+    description: incident.description ?? undefined,
+    owner: incident.owner ? (incident.owner as EntryOwner) : undefined,
+    status: incident.status as IncidentStatus,
+    statusChangedAt: incident.status_changed_at,
+    resolvedAt: incident.resolved_at ?? undefined,
+    priority: incident.priority as Probability,
+    impact: incident.impact as Impact,
+    deadline: incident.deadline ?? undefined,
+    clientIds: clientLinks.filter(l => l.incident_id === incident.id).map(l => l.client_id),
+    projectIds: projectLinks.filter(l => l.incident_id === incident.id).map(l => l.project_id),
+    stakeholders: stakeholders.filter(s => s.incident_id === incident.id).map(s => s.owner as EntryOwner),
+    openPoints: openPoints.filter(op => op.incident_id === incident.id).map(op => dbOpenPointToStore(op, diaryComments)),
+    history: history.filter(h => h.incident_id === incident.id).map(h => dbHistoryToStore(h, diaryComments)),
+    createdAt: incident.created_at ?? new Date().toISOString(),
+    createdBy: incident.created_by ?? undefined,
+  }
+}
+
+export function storeIncidentToDb(incident: Incident, userId: string): DbIncident {
+  return {
+    id: incident.id,
+    title: incident.title,
+    description: incident.description ?? null,
+    owner: incident.owner ?? null,
+    status: incident.status,
+    status_changed_at: incident.statusChangedAt,
+    resolved_at: incident.resolvedAt ?? null,
+    priority: incident.priority,
+    impact: incident.impact,
+    deadline: incident.deadline ?? null,
+    created_at: new Date().toISOString(),
+    created_by: userId,
+    updated_at: new Date().toISOString(),
+    updated_by: userId,
   }
 }

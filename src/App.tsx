@@ -12,6 +12,8 @@ import TemplateEditorPage from '@/pages/TemplateEditorPage'
 import TasksPage from '@/pages/TasksPage'
 import ClientsPage from '@/pages/ClientsPage'
 import ClientDetailPage from '@/pages/ClientDetailPage'
+import IncidentsPage from '@/pages/IncidentsPage'
+import IncidentDetailPage from '@/pages/IncidentDetailPage'
 import LoginPage from '@/pages/LoginPage'
 import AuthCallback from '@/pages/AuthCallback'
 
@@ -25,6 +27,7 @@ export default function App() {
         useAppStore.getState().loadSettings()
         useAppStore.getState().loadTeamDirectory()
         useAppStore.getState().loadClients()
+        useAppStore.getState().loadIncidents()
       }
     })
 
@@ -57,6 +60,8 @@ export default function App() {
           <Route path="/" element={<ProjectsPage />} />
           <Route path="/wallet" element={<ClientsPage />} />
           <Route path="/wallet/:id" element={<ClientDetailPage />} />
+          <Route path="/support" element={<IncidentsPage />} />
+          <Route path="/support/:id" element={<IncidentDetailPage />} />
           <Route path="/tasks" element={<TasksPage />} />
           <Route path="/projects/:id" element={<ProjectDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />

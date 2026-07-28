@@ -26,8 +26,9 @@ export interface Link {
 
 export interface EntryOwner {
   id: string
-  type: 'member' | 'text'
+  type: 'member' | 'text' | 'contact'
   memberId?: string
+  contactId?: string
   name: string
   role?: string
 }
@@ -225,6 +226,28 @@ export interface Client {
   contacts: ClientContact[]
   csHistory: ClientCsAssignment[]
   createdAt: string
+}
+
+export type IncidentStatus = 'open' | 'in_progress' | 'waiting_on_client' | 'resolved' | 'closed'
+
+export interface Incident {
+  id: string
+  title: string
+  description?: string
+  owner?: EntryOwner
+  status: IncidentStatus
+  statusChangedAt: string
+  resolvedAt?: string
+  priority: Probability
+  impact: Impact
+  deadline?: string
+  clientIds: string[]
+  projectIds: string[]
+  stakeholders: EntryOwner[]
+  openPoints: OpenPoint[]
+  history: HistoryEntry[]
+  createdAt: string
+  createdBy?: string
 }
 
 export interface ProjectCharter {

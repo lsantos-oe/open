@@ -95,6 +95,10 @@ export function Sidebar() {
           <span className="shrink-0 w-4 h-4 flex items-center justify-center"><PortfolioIcon /></span>
           {!collapsed && <span>{t('nav.portfolio')}</span>}
         </NavLink>
+        <NavLink to="/support" className={navLinkCls} title={t('nav.supportTooltip')}>
+          <span className="shrink-0 w-4 h-4 flex items-center justify-center"><SupportIcon /></span>
+          {!collapsed && <span>{t('nav.support')}</span>}
+        </NavLink>
         <NavLink to="/tasks" className={navLinkCls} title={collapsed ? t('nav.tasks') : undefined}>
           <span className="shrink-0 w-4 h-4 flex items-center justify-center"><TasksIcon /></span>
           {!collapsed && <span>{t('nav.tasks')}</span>}
@@ -231,6 +235,15 @@ function WalletIcon() {
     <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M21 12V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h14a2 2 0 002-2v-5m-4 0a1 1 0 100 2 1 1 0 000-2z" />
       <path strokeLinecap="round" strokeLinejoin="round" d="M3 8h18" />
+    </svg>
+  )
+}
+
+function SupportIcon() {
+  return (
+    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 15.75h.007v.008H12v-.008z" />
     </svg>
   )
 }

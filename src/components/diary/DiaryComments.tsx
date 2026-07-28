@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useAppStore } from '@/store/useAppStore'
+import { useAppStore, DiaryScope } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { DiaryComment } from '@/types'
 import { Input, Field } from '@/components/ui/Input'
@@ -11,13 +11,13 @@ import { ptBR, enUS, es, type Locale } from 'date-fns/locale'
 const LOCALES: Record<string, Locale> = { pt: ptBR, en: enUS, es }
 
 interface Props {
-  projectId: string
+  scope: DiaryScope
   parentType: 'open_point' | 'meeting' | 'history'
   parentId: string
   comments: DiaryComment[]
 }
 
-export default function DiaryComments({ projectId, parentType, parentId, comments }: Props) {
+export default function DiaryComments({ scope, parentType, parentId, comments }: Props) {
   const { t, i18n } = useTranslation()
   const { addDiaryComment, deleteDiaryComment } = useAppStore()
   const { profile } = useAuthStore()
@@ -27,7 +27,7 @@ export default function DiaryComments({ projectId, parentType, parentId, comment
 
   function handleAdd() {
     if (!text.trim() || !author.trim()) return
-    addDiaryComment(projectId, parentType, parentId, { author: author.trim(), text: text.trim() })
+    addDiaryComment(scope, parentType, parentId, { author: author.trim(), text: text.trim() })
     setText('')
     setAdding(false)
   }
@@ -53,7 +53,7 @@ export default function DiaryComments({ projectId, parentType, parentId, comment
                   {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true, locale })}
                 </span>
                 <button
-                  onClick={() => deleteDiaryComment(projectId, parentType, parentId, c.id)}
+                  onClick={() => deleteDiaryComment(scope, parentType, parentId, c.id)}
                   className="ml-auto text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
                   style={{ color: 'var(--color-danger-text)' }}
                 >

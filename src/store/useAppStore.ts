@@ -7,6 +7,7 @@ import {
   AppSettings, ProjectTemplate, AppLanguage, EntryStatus, RiskFlag, Workdays,
   OpenPoint, MeetingLog, MeetingItem, HistoryEntry, HistoryEventType, DiaryComment, FileAttachment,
   Client, ClientContact, ClientCsAssignment,
+  Incident, IncidentStatus, EntryOwner,
 } from '@/types'
 import { applyDateChange } from '@/utils/dateEngine'
 import { applyIsCritical } from '@/utils/criticalPath'
@@ -26,8 +27,13 @@ import {
   storeClientToDb,
   storeClientContactToDb,
   storeCsAssignmentToDb,
+  dbIncidentToStore,
+  storeIncidentToDb,
 } from '@/utils/dbConversions'
 import type { DbProjectFull, DbProfile } from '@/types/database'
+import type { DbIncidentFull } from '@/utils/dbConversions'
+
+export type DiaryScope = { type: 'project'; id: string } | { type: 'incident'; id: string }
 
 const TEMPLATES_VERSION = 2
 
@@ -119,6 +125,8 @@ interface AppStore {
   teamDirectory: DbProfile[]
   clients: Client[]
   clientsLoading: boolean
+  incidents: Incident[]
+  incidentsLoading: boolean
 
   // Load / archive
   loadProjects: () => Promise<void>
@@ -126,6 +134,7 @@ interface AppStore {
   loadArchivedProjects: () => Promise<void>
   loadTeamDirectory: () => Promise<void>
   loadClients: () => Promise<void>
+  loadIncidents: () => Promise<void>
 
   // Clients (Carteira)
   createClient: (data: { name: string; country?: string; ploomesLink?: string; notes?: string }) => string
@@ -137,6 +146,18 @@ interface AppStore {
   addCsAssignment: (clientId: string, assignment: Omit<ClientCsAssignment, 'id'>) => void
   updateCsAssignment: (clientId: string, assignmentId: string, patch: Partial<ClientCsAssignment>) => void
   removeCsAssignment: (clientId: string, assignmentId: string) => void
+
+  // Incidents (Sustentação)
+  createIncident: (data: { title: string; description?: string; owner?: EntryOwner; priority: 'low' | 'medium' | 'high'; impact: 'low' | 'medium' | 'high'; deadline?: string; clientIds?: string[]; projectIds?: string[] }) => string
+  updateIncident: (id: string, patch: Partial<Incident>) => void
+  deleteIncident: (id: string) => void
+  updateIncidentStatus: (id: string, status: IncidentStatus) => void
+  linkIncidentClient: (incidentId: string, clientId: string) => void
+  unlinkIncidentClient: (incidentId: string, clientId: string) => void
+  linkIncidentProject: (incidentId: string, projectId: string) => void
+  unlinkIncidentProject: (incidentId: string, projectId: string) => void
+  addIncidentStakeholder: (incidentId: string, owner: EntryOwner) => void
+  removeIncidentStakeholder: (incidentId: string, ownerId: string) => void
   archiveProject: (id: string) => Promise<void>
   unarchiveProject: (id: string) => Promise<void>
 
@@ -222,10 +243,10 @@ interface AppStore {
   removeClient: (name: string) => void
 
   // Diary — Open Points
-  addOpenPoint: (projectId: string, op: Omit<OpenPoint, 'id' | 'comments' | 'attachments' | 'createdAt'>) => void
-  updateOpenPoint: (projectId: string, opId: string, patch: Partial<OpenPoint>) => void
-  resolveOpenPoint: (projectId: string, opId: string, resolution: string, resolvedBy: string) => void
-  deleteOpenPoint: (projectId: string, opId: string) => void
+  addOpenPoint: (scope: DiaryScope, op: Omit<OpenPoint, 'id' | 'comments' | 'attachments' | 'createdAt'>) => void
+  updateOpenPoint: (scope: DiaryScope, opId: string, patch: Partial<OpenPoint>) => void
+  resolveOpenPoint: (scope: DiaryScope, opId: string, resolution: string, resolvedBy: string) => void
+  deleteOpenPoint: (scope: DiaryScope, opId: string) => void
 
   // Diary — Meetings
   addMeetingLog: (projectId: string, meeting: Omit<MeetingLog, 'id' | 'comments' | 'attachments' | 'createdAt'>) => void
@@ -236,17 +257,17 @@ interface AppStore {
   deleteMeetingItem: (projectId: string, meetingId: string, itemId: string) => void
 
   // Diary — History
-  addHistoryEntry: (projectId: string, entry: Omit<HistoryEntry, 'id' | 'comments' | 'createdAt'>) => void
-  updateHistoryEntry: (projectId: string, entryId: string, patch: Partial<HistoryEntry>) => void
-  deleteHistoryEntry: (projectId: string, entryId: string) => void
+  addHistoryEntry: (scope: DiaryScope, entry: Omit<HistoryEntry, 'id' | 'comments' | 'createdAt'>) => void
+  updateHistoryEntry: (scope: DiaryScope, entryId: string, patch: Partial<HistoryEntry>) => void
+  deleteHistoryEntry: (scope: DiaryScope, entryId: string) => void
 
   // Diary — Comments (on open_points, meetings, history)
-  addDiaryComment: (projectId: string, parentType: 'open_point' | 'meeting' | 'history', parentId: string, comment: Omit<DiaryComment, 'id' | 'createdAt'>) => void
-  deleteDiaryComment: (projectId: string, parentType: 'open_point' | 'meeting' | 'history', parentId: string, commentId: string) => void
+  addDiaryComment: (scope: DiaryScope, parentType: 'open_point' | 'meeting' | 'history', parentId: string, comment: Omit<DiaryComment, 'id' | 'createdAt'>) => void
+  deleteDiaryComment: (scope: DiaryScope, parentType: 'open_point' | 'meeting' | 'history', parentId: string, commentId: string) => void
 
   // Diary — Attachments (local state only; storage handled by FileAttachments component)
-  addDiaryAttachment: (projectId: string, parentType: 'open_point' | 'meeting', parentId: string, attachment: FileAttachment) => void
-  removeDiaryAttachment: (projectId: string, parentType: 'open_point' | 'meeting', parentId: string, attachmentId: string) => void
+  addDiaryAttachment: (scope: DiaryScope, parentType: 'open_point' | 'meeting', parentId: string, attachment: FileAttachment) => void
+  removeDiaryAttachment: (scope: DiaryScope, parentType: 'open_point' | 'meeting', parentId: string, attachmentId: string) => void
 }
 
 // ─── local helpers ────────────────────────────────────────────────────────────
@@ -257,6 +278,10 @@ function mutateProject(projects: Project[], id: string, fn: (p: Project) => Proj
 
 function mutateClient(clients: Client[], id: string, fn: (c: Client) => Client): Client[] {
   return clients.map((c) => (c.id === id ? fn(c) : c))
+}
+
+function mutateIncident(incidents: Incident[], id: string, fn: (i: Incident) => Incident): Incident[] {
+  return incidents.map((i) => (i.id === id ? fn(i) : i))
 }
 
 function findEntryDeep(phases: Phase[], entryId: string): Entry | undefined {
@@ -378,6 +403,8 @@ export const useAppStore = create<AppStore>()(
       teamDirectory: [],
       clients: [],
       clientsLoading: false,
+      incidents: [],
+      incidentsLoading: false,
       settings: {
         holidays: [],
         holidayNames: {},
@@ -508,6 +535,40 @@ export const useAppStore = create<AppStore>()(
         } catch (err) {
           useToastStore.getState().addToast(err instanceof Error ? err.message : 'Erro ao carregar clientes')
           set({ clientsLoading: false })
+        }
+      },
+
+      async loadIncidents() {
+        set({ incidentsLoading: true })
+        try {
+          const { data: incidentRows, error } = await supabase.from('incidents').select('*').order('created_at', { ascending: false })
+          if (error) throw new Error(error.message)
+          if (!incidentRows?.length) {
+            set({ incidents: [], incidentsLoading: false })
+            return
+          }
+          const ids = incidentRows.map((i) => i.id)
+          const [clientLinksRes, projectLinksRes, stakeholdersRes, openPointsRes, historyRes, diaryCommentsRes] = await Promise.all([
+            supabase.from('incident_clients').select('*').in('incident_id', ids),
+            supabase.from('incident_projects').select('*').in('incident_id', ids),
+            supabase.from('incident_stakeholders').select('*').in('incident_id', ids),
+            supabase.from('open_points').select('*').in('incident_id', ids),
+            supabase.from('history').select('*').in('incident_id', ids),
+            supabase.from('diary_comments').select('*').in('incident_id', ids),
+          ])
+          const clientLinks = clientLinksRes.data ?? []
+          const projectLinks = projectLinksRes.data ?? []
+          const stakeholders = stakeholdersRes.data ?? []
+          const openPoints = openPointsRes.data ?? []
+          const history = historyRes.data ?? []
+          const diaryComments = diaryCommentsRes.data ?? []
+          const incidents = incidentRows.map((incident) =>
+            dbIncidentToStore({ incident, clientLinks, projectLinks, stakeholders, openPoints, history, diaryComments } as DbIncidentFull)
+          )
+          set({ incidents, incidentsLoading: false })
+        } catch (err) {
+          useToastStore.getState().addToast(err instanceof Error ? err.message : 'Erro ao carregar incidentes')
+          set({ incidentsLoading: false })
         }
       },
 
@@ -673,7 +734,7 @@ export const useAppStore = create<AppStore>()(
 
         const prevProjects = get().projects
         set((s) => ({ projects: [...s.projects, project], projectSaving: true }))
-        get().addHistoryEntry(id, { event: 'project_created', title: data.name })
+        get().addHistoryEntry({ type: 'project', id }, { event: 'project_created', title: data.name })
 
         ;(async () => {
           try {
@@ -1138,7 +1199,7 @@ export const useAppStore = create<AppStore>()(
         }))
         // auto-history: status changed
         const entry = findEntryDeep(get().projects.find((p) => p.id === projectId)?.phases ?? [], entryId)
-        if (entry) get().addHistoryEntry(projectId, { event: 'status_changed', title: entry.name, detail: status, linkedId: entryId, linkedType: 'entry' })
+        if (entry) get().addHistoryEntry({ type: 'project', id: projectId }, { event: 'status_changed', title: entry.name, detail: status, linkedId: entryId, linkedType: 'entry' })
 
         sync(async () => {
           const project = get().projects.find((p) => p.id === projectId)
@@ -1300,7 +1361,7 @@ export const useAppStore = create<AppStore>()(
             })),
           })),
         }))
-        get().addHistoryEntry(projectId, { event: 'baseline_set', title: 'Baseline' })
+        get().addHistoryEntry({ type: 'project', id: projectId }, { event: 'baseline_set', title: 'Baseline' })
 
         sync(async () => {
           const userId = getUserId()
@@ -1355,7 +1416,7 @@ export const useAppStore = create<AppStore>()(
             risks: [...p.risks, newRisk],
           })),
         }))
-        get().addHistoryEntry(projectId, { event: 'risk_added', title: risk.description, linkedId: id, linkedType: 'risk' })
+        get().addHistoryEntry({ type: 'project', id: projectId }, { event: 'risk_added', title: risk.description, linkedId: id, linkedType: 'risk' })
 
         sync(async () => {
           const userId = getUserId()
@@ -1469,7 +1530,7 @@ export const useAppStore = create<AppStore>()(
             delayLog: [...p.delayLog, newEntry],
           })),
         }))
-        get().addHistoryEntry(projectId, { event: 'delay_logged', title: entry.entryName, detail: `${entry.days > 0 ? '+' : ''}${entry.days}d — ${entry.description}`, linkedType: 'entry' })
+        get().addHistoryEntry({ type: 'project', id: projectId }, { event: 'delay_logged', title: entry.entryName, detail: `${entry.days > 0 ? '+' : ''}${entry.days}d — ${entry.description}`, linkedType: 'entry' })
 
         sync(async () => {
           const userId = getUserId()
@@ -1543,7 +1604,7 @@ export const useAppStore = create<AppStore>()(
             team: [...p.team, { ...member, id }],
           })),
         }))
-        get().addHistoryEntry(projectId, { event: 'member_added', title: member.name, detail: member.role })
+        get().addHistoryEntry({ type: 'project', id: projectId }, { event: 'member_added', title: member.name, detail: member.role })
 
         sync(async () => {
           const project = get().projects.find((p) => p.id === projectId)
@@ -1795,21 +1856,21 @@ export const useAppStore = create<AppStore>()(
 
       // ── Diary — Open Points ───────────────────────────────────────────────
 
-      addOpenPoint(projectId, op) {
+      addOpenPoint(scope, op) {
         const id = uuid()
         const now = new Date().toISOString()
         const newOp: OpenPoint = { ...op, id, comments: [], attachments: [], createdAt: now }
-        set((s) => ({
-          projects: mutateProject(s.projects, projectId, (p) => ({
-            ...p,
-            openPoints: [...(p.openPoints ?? []), newOp],
-          })),
-        }))
+        if (scope.type === 'project') {
+          set((s) => ({ projects: mutateProject(s.projects, scope.id, (p) => ({ ...p, openPoints: [...(p.openPoints ?? []), newOp] })) }))
+        } else {
+          set((s) => ({ incidents: mutateIncident(s.incidents, scope.id, (i) => ({ ...i, openPoints: [...i.openPoints, newOp] })) }))
+        }
         sync(async () => {
           const authUser = useAuthStore.getState().user
           const { error } = await supabase.from('open_points').insert({
             id,
-            project_id: projectId,
+            project_id: scope.type === 'project' ? scope.id : null,
+            incident_id: scope.type === 'incident' ? scope.id : null,
             title: newOp.title,
             description: newOp.description || newOp.title,
             status: newOp.status,
@@ -1826,13 +1887,12 @@ export const useAppStore = create<AppStore>()(
         })
       },
 
-      updateOpenPoint(projectId, opId, patch) {
-        set((s) => ({
-          projects: mutateProject(s.projects, projectId, (p) => ({
-            ...p,
-            openPoints: (p.openPoints ?? []).map((op) => op.id === opId ? { ...op, ...patch } : op),
-          })),
-        }))
+      updateOpenPoint(scope, opId, patch) {
+        if (scope.type === 'project') {
+          set((s) => ({ projects: mutateProject(s.projects, scope.id, (p) => ({ ...p, openPoints: (p.openPoints ?? []).map((op) => op.id === opId ? { ...op, ...patch } : op) })) }))
+        } else {
+          set((s) => ({ incidents: mutateIncident(s.incidents, scope.id, (i) => ({ ...i, openPoints: i.openPoints.map((op) => op.id === opId ? { ...op, ...patch } : op) })) }))
+        }
         sync(async () => {
           const fields: Record<string, unknown> = {}
           if (patch.title !== undefined) fields.title = patch.title
@@ -1848,16 +1908,14 @@ export const useAppStore = create<AppStore>()(
         })
       },
 
-      resolveOpenPoint(projectId, opId, resolution, resolvedBy) {
+      resolveOpenPoint(scope, opId, resolution, resolvedBy) {
         const now = new Date().toISOString()
-        set((s) => ({
-          projects: mutateProject(s.projects, projectId, (p) => ({
-            ...p,
-            openPoints: (p.openPoints ?? []).map((op) =>
-              op.id === opId ? { ...op, status: 'resolved', resolution, resolvedAt: now, resolvedBy } : op,
-            ),
-          })),
-        }))
+        const patchFn = (op: OpenPoint) => op.id === opId ? { ...op, status: 'resolved' as const, resolution, resolvedAt: now, resolvedBy } : op
+        if (scope.type === 'project') {
+          set((s) => ({ projects: mutateProject(s.projects, scope.id, (p) => ({ ...p, openPoints: (p.openPoints ?? []).map(patchFn) })) }))
+        } else {
+          set((s) => ({ incidents: mutateIncident(s.incidents, scope.id, (i) => ({ ...i, openPoints: i.openPoints.map(patchFn) })) }))
+        }
         sync(async () => {
           const { error } = await supabase.from('open_points').update({
             status: 'resolved', resolution_note: resolution, resolved_at: now, resolved_by: resolvedBy,
@@ -1866,18 +1924,18 @@ export const useAppStore = create<AppStore>()(
         })
       },
 
-      deleteOpenPoint(projectId, opId) {
-        const prev = get().projects
-        set((s) => ({
-          projects: mutateProject(s.projects, projectId, (p) => ({
-            ...p,
-            openPoints: (p.openPoints ?? []).filter((op) => op.id !== opId),
-          })),
-        }))
+      deleteOpenPoint(scope, opId) {
+        const prevProjects = get().projects
+        const prevIncidents = get().incidents
+        if (scope.type === 'project') {
+          set((s) => ({ projects: mutateProject(s.projects, scope.id, (p) => ({ ...p, openPoints: (p.openPoints ?? []).filter((op) => op.id !== opId) })) }))
+        } else {
+          set((s) => ({ incidents: mutateIncident(s.incidents, scope.id, (i) => ({ ...i, openPoints: i.openPoints.filter((op) => op.id !== opId) })) }))
+        }
         sync(async () => {
           const { error } = await supabase.from('open_points').delete().eq('id', opId)
           if (error) throw new Error(error.message)
-        }, () => set({ projects: prev }))
+        }, () => set({ projects: prevProjects, incidents: prevIncidents }))
       },
 
       // ── Diary — Meetings ──────────────────────────────────────────────────
@@ -2005,21 +2063,21 @@ export const useAppStore = create<AppStore>()(
 
       // ── Diary — History ───────────────────────────────────────────────────
 
-      addHistoryEntry(projectId, entry) {
+      addHistoryEntry(scope, entry) {
         const id = uuid()
         const now = new Date().toISOString()
         const newEntry: HistoryEntry = { ...entry, id, comments: [], createdAt: now }
-        set((s) => ({
-          projects: mutateProject(s.projects, projectId, (p) => ({
-            ...p,
-            history: [...(p.history ?? []), newEntry],
-          })),
-        }))
+        if (scope.type === 'project') {
+          set((s) => ({ projects: mutateProject(s.projects, scope.id, (p) => ({ ...p, history: [...(p.history ?? []), newEntry] })) }))
+        } else {
+          set((s) => ({ incidents: mutateIncident(s.incidents, scope.id, (i) => ({ ...i, history: [...i.history, newEntry] })) }))
+        }
         sync(async () => {
           const authUser = useAuthStore.getState().user
           const { error } = await supabase.from('history').insert({
             id,
-            project_id: projectId,
+            project_id: scope.type === 'project' ? scope.id : null,
+            incident_id: scope.type === 'incident' ? scope.id : null,
             type: newEntry.isManualNote ? 'manual' : 'auto',
             event: newEntry.event,
             title: newEntry.title,
@@ -2035,13 +2093,12 @@ export const useAppStore = create<AppStore>()(
         })
       },
 
-      updateHistoryEntry(projectId, entryId, patch) {
-        set((s) => ({
-          projects: mutateProject(s.projects, projectId, (p) => ({
-            ...p,
-            history: (p.history ?? []).map((h) => h.id === entryId ? { ...h, ...patch } : h),
-          })),
-        }))
+      updateHistoryEntry(scope, entryId, patch) {
+        if (scope.type === 'project') {
+          set((s) => ({ projects: mutateProject(s.projects, scope.id, (p) => ({ ...p, history: (p.history ?? []).map((h) => h.id === entryId ? { ...h, ...patch } : h) })) }))
+        } else {
+          set((s) => ({ incidents: mutateIncident(s.incidents, scope.id, (i) => ({ ...i, history: i.history.map((h) => h.id === entryId ? { ...h, ...patch } : h) })) }))
+        }
         sync(async () => {
           const fields: Record<string, unknown> = {}
           if (patch.title !== undefined) fields.title = patch.title
@@ -2052,41 +2109,53 @@ export const useAppStore = create<AppStore>()(
         })
       },
 
-      deleteHistoryEntry(projectId, entryId) {
-        const prev = get().projects
-        set((s) => ({
-          projects: mutateProject(s.projects, projectId, (p) => ({
-            ...p,
-            history: (p.history ?? []).filter((h) => h.id !== entryId),
-          })),
-        }))
+      deleteHistoryEntry(scope, entryId) {
+        const prevProjects = get().projects
+        const prevIncidents = get().incidents
+        if (scope.type === 'project') {
+          set((s) => ({ projects: mutateProject(s.projects, scope.id, (p) => ({ ...p, history: (p.history ?? []).filter((h) => h.id !== entryId) })) }))
+        } else {
+          set((s) => ({ incidents: mutateIncident(s.incidents, scope.id, (i) => ({ ...i, history: i.history.filter((h) => h.id !== entryId) })) }))
+        }
         sync(async () => {
           const { error } = await supabase.from('history').delete().eq('id', entryId)
           if (error) throw new Error(error.message)
-        }, () => set({ projects: prev }))
+        }, () => set({ projects: prevProjects, incidents: prevIncidents }))
       },
 
       // ── Diary — Comments ──────────────────────────────────────────────────
 
-      addDiaryComment(projectId, parentType, parentId, comment) {
+      addDiaryComment(scope, parentType, parentId, comment) {
         const id = uuid()
         const now = new Date().toISOString()
         const newComment: DiaryComment = { ...comment, id, createdAt: now }
-        set((s) => ({
-          projects: mutateProject(s.projects, projectId, (p) => {
-            if (parentType === 'open_point') {
-              return { ...p, openPoints: (p.openPoints ?? []).map((op) => op.id === parentId ? { ...op, comments: [...op.comments, newComment] } : op) }
-            }
-            if (parentType === 'meeting') {
-              return { ...p, meetings: (p.meetings ?? []).map((m) => m.id === parentId ? { ...m, comments: [...m.comments, newComment] } : m) }
-            }
-            return { ...p, history: (p.history ?? []).map((h) => h.id === parentId ? { ...h, comments: [...h.comments, newComment] } : h) }
-          }),
-        }))
+        if (scope.type === 'project') {
+          set((s) => ({
+            projects: mutateProject(s.projects, scope.id, (p) => {
+              if (parentType === 'open_point') {
+                return { ...p, openPoints: (p.openPoints ?? []).map((op) => op.id === parentId ? { ...op, comments: [...op.comments, newComment] } : op) }
+              }
+              if (parentType === 'meeting') {
+                return { ...p, meetings: (p.meetings ?? []).map((m) => m.id === parentId ? { ...m, comments: [...m.comments, newComment] } : m) }
+              }
+              return { ...p, history: (p.history ?? []).map((h) => h.id === parentId ? { ...h, comments: [...h.comments, newComment] } : h) }
+            }),
+          }))
+        } else {
+          set((s) => ({
+            incidents: mutateIncident(s.incidents, scope.id, (i) => {
+              if (parentType === 'open_point') {
+                return { ...i, openPoints: i.openPoints.map((op) => op.id === parentId ? { ...op, comments: [...op.comments, newComment] } : op) }
+              }
+              return { ...i, history: i.history.map((h) => h.id === parentId ? { ...h, comments: [...h.comments, newComment] } : h) }
+            }),
+          }))
+        }
         sync(async () => {
           const { error } = await supabase.from('diary_comments').insert({
             id,
-            project_id: projectId,
+            project_id: scope.type === 'project' ? scope.id : null,
+            incident_id: scope.type === 'incident' ? scope.id : null,
             parent_type: parentType,
             parent_id: parentId,
             author_name: newComment.author,
@@ -2097,18 +2166,29 @@ export const useAppStore = create<AppStore>()(
         })
       },
 
-      deleteDiaryComment(projectId, parentType, parentId, commentId) {
-        set((s) => ({
-          projects: mutateProject(s.projects, projectId, (p) => {
-            if (parentType === 'open_point') {
-              return { ...p, openPoints: (p.openPoints ?? []).map((op) => op.id === parentId ? { ...op, comments: op.comments.filter((c) => c.id !== commentId) } : op) }
-            }
-            if (parentType === 'meeting') {
-              return { ...p, meetings: (p.meetings ?? []).map((m) => m.id === parentId ? { ...m, comments: m.comments.filter((c) => c.id !== commentId) } : m) }
-            }
-            return { ...p, history: (p.history ?? []).map((h) => h.id === parentId ? { ...h, comments: h.comments.filter((c) => c.id !== commentId) } : h) }
-          }),
-        }))
+      deleteDiaryComment(scope, parentType, parentId, commentId) {
+        if (scope.type === 'project') {
+          set((s) => ({
+            projects: mutateProject(s.projects, scope.id, (p) => {
+              if (parentType === 'open_point') {
+                return { ...p, openPoints: (p.openPoints ?? []).map((op) => op.id === parentId ? { ...op, comments: op.comments.filter((c) => c.id !== commentId) } : op) }
+              }
+              if (parentType === 'meeting') {
+                return { ...p, meetings: (p.meetings ?? []).map((m) => m.id === parentId ? { ...m, comments: m.comments.filter((c) => c.id !== commentId) } : m) }
+              }
+              return { ...p, history: (p.history ?? []).map((h) => h.id === parentId ? { ...h, comments: h.comments.filter((c) => c.id !== commentId) } : h) }
+            }),
+          }))
+        } else {
+          set((s) => ({
+            incidents: mutateIncident(s.incidents, scope.id, (i) => {
+              if (parentType === 'open_point') {
+                return { ...i, openPoints: i.openPoints.map((op) => op.id === parentId ? { ...op, comments: op.comments.filter((c) => c.id !== commentId) } : op) }
+              }
+              return { ...i, history: i.history.map((h) => h.id === parentId ? { ...h, comments: h.comments.filter((c) => c.id !== commentId) } : h) }
+            }),
+          }))
+        }
         sync(async () => {
           const { error } = await supabase.from('diary_comments').delete().eq('id', commentId)
           if (error) throw new Error(error.message)
@@ -2117,26 +2197,42 @@ export const useAppStore = create<AppStore>()(
 
       // ── Diary — Attachments ───────────────────────────────────────────────
 
-      addDiaryAttachment(projectId, parentType, parentId, attachment) {
-        set((s) => ({
-          projects: mutateProject(s.projects, projectId, (p) => {
-            if (parentType === 'open_point') {
-              return { ...p, openPoints: (p.openPoints ?? []).map((op) => op.id === parentId ? { ...op, attachments: [...op.attachments, attachment] } : op) }
-            }
-            return { ...p, meetings: (p.meetings ?? []).map((m) => m.id === parentId ? { ...m, attachments: [...m.attachments, attachment] } : m) }
-          }),
-        }))
+      addDiaryAttachment(scope, parentType, parentId, attachment) {
+        if (scope.type === 'project') {
+          set((s) => ({
+            projects: mutateProject(s.projects, scope.id, (p) => {
+              if (parentType === 'open_point') {
+                return { ...p, openPoints: (p.openPoints ?? []).map((op) => op.id === parentId ? { ...op, attachments: [...op.attachments, attachment] } : op) }
+              }
+              return { ...p, meetings: (p.meetings ?? []).map((m) => m.id === parentId ? { ...m, attachments: [...m.attachments, attachment] } : m) }
+            }),
+          }))
+        } else {
+          set((s) => ({
+            incidents: mutateIncident(s.incidents, scope.id, (i) => ({
+              ...i, openPoints: i.openPoints.map((op) => op.id === parentId ? { ...op, attachments: [...op.attachments, attachment] } : op),
+            })),
+          }))
+        }
       },
 
-      removeDiaryAttachment(projectId, parentType, parentId, attachmentId) {
-        set((s) => ({
-          projects: mutateProject(s.projects, projectId, (p) => {
-            if (parentType === 'open_point') {
-              return { ...p, openPoints: (p.openPoints ?? []).map((op) => op.id === parentId ? { ...op, attachments: op.attachments.filter((a) => a.id !== attachmentId) } : op) }
-            }
-            return { ...p, meetings: (p.meetings ?? []).map((m) => m.id === parentId ? { ...m, attachments: m.attachments.filter((a) => a.id !== attachmentId) } : m) }
-          }),
-        }))
+      removeDiaryAttachment(scope, parentType, parentId, attachmentId) {
+        if (scope.type === 'project') {
+          set((s) => ({
+            projects: mutateProject(s.projects, scope.id, (p) => {
+              if (parentType === 'open_point') {
+                return { ...p, openPoints: (p.openPoints ?? []).map((op) => op.id === parentId ? { ...op, attachments: op.attachments.filter((a) => a.id !== attachmentId) } : op) }
+              }
+              return { ...p, meetings: (p.meetings ?? []).map((m) => m.id === parentId ? { ...m, attachments: m.attachments.filter((a) => a.id !== attachmentId) } : m) }
+            }),
+          }))
+        } else {
+          set((s) => ({
+            incidents: mutateIncident(s.incidents, scope.id, (i) => ({
+              ...i, openPoints: i.openPoints.map((op) => op.id === parentId ? { ...op, attachments: op.attachments.filter((a) => a.id !== attachmentId) } : op),
+            })),
+          }))
+        }
       },
 
       // ── Clients (Carteira) ────────────────────────────────────────────────
@@ -2267,6 +2363,154 @@ export const useAppStore = create<AppStore>()(
           const { error } = await supabase.from('client_cs_history').delete().eq('id', assignmentId)
           if (error) throw new Error(error.message)
         }, () => set({ clients: prev }))
+      },
+
+      // ── Incidents (Sustentação) ────────────────────────────────────────────
+
+      createIncident(data) {
+        const id = uuid()
+        const now = new Date().toISOString()
+        const newIncident: Incident = {
+          id,
+          title: data.title,
+          description: data.description,
+          owner: data.owner,
+          status: 'open',
+          statusChangedAt: now,
+          priority: data.priority,
+          impact: data.impact,
+          deadline: data.deadline,
+          clientIds: data.clientIds ?? [],
+          projectIds: data.projectIds ?? [],
+          stakeholders: [],
+          openPoints: [],
+          history: [],
+          createdAt: now,
+        }
+        set((s) => ({ incidents: [...s.incidents, newIncident] }))
+        sync(async () => {
+          const userId = getUserId()
+          const { error } = await supabase.from('incidents').insert(storeIncidentToDb(newIncident, userId))
+          if (error) throw new Error(error.message)
+          if (newIncident.clientIds.length > 0) {
+            await supabase.from('incident_clients').insert(newIncident.clientIds.map((clientId) => ({ incident_id: id, client_id: clientId })))
+          }
+          if (newIncident.projectIds.length > 0) {
+            await supabase.from('incident_projects').insert(newIncident.projectIds.map((projectId) => ({ incident_id: id, project_id: projectId })))
+          }
+        }, () => set((s) => ({ incidents: s.incidents.filter((i) => i.id !== id) })))
+        return id
+      },
+
+      updateIncident(id, patch) {
+        const prev = get().incidents
+        set((s) => ({ incidents: mutateIncident(s.incidents, id, (i) => ({ ...i, ...patch })) }))
+        sync(async () => {
+          const fields: Record<string, unknown> = {}
+          if (patch.title !== undefined) fields.title = patch.title
+          if (patch.description !== undefined) fields.description = patch.description
+          if (patch.owner !== undefined) fields.owner = patch.owner
+          if (patch.priority !== undefined) fields.priority = patch.priority
+          if (patch.impact !== undefined) fields.impact = patch.impact
+          if (patch.deadline !== undefined) fields.deadline = patch.deadline
+          if (Object.keys(fields).length === 0) return
+          fields.updated_at = new Date().toISOString()
+          fields.updated_by = getUserId()
+          const { error } = await supabase.from('incidents').update(fields).eq('id', id)
+          if (error) throw new Error(error.message)
+        }, () => set({ incidents: prev }))
+      },
+
+      deleteIncident(id) {
+        const prev = get().incidents
+        set((s) => ({ incidents: s.incidents.filter((i) => i.id !== id) }))
+        sync(async () => {
+          const { error } = await supabase.from('incidents').delete().eq('id', id)
+          if (error) throw new Error(error.message)
+        }, () => set({ incidents: prev }))
+      },
+
+      updateIncidentStatus(id, status) {
+        const now = new Date().toISOString()
+        const current = get().incidents.find((i) => i.id === id)
+        const enteringResolved = (status === 'resolved' || status === 'closed') && !current?.resolvedAt
+        set((s) => ({
+          incidents: mutateIncident(s.incidents, id, (i) => ({
+            ...i,
+            status,
+            statusChangedAt: now,
+            // First time entering resolved/closed: stamp resolvedAt. Never cleared on reopen.
+            resolvedAt: enteringResolved ? now : i.resolvedAt,
+          })),
+        }))
+        sync(async () => {
+          const fields: Record<string, unknown> = { status, status_changed_at: now }
+          if (enteringResolved) fields.resolved_at = now
+          const { error } = await supabase.from('incidents').update(fields).eq('id', id)
+          if (error) throw new Error(error.message)
+        })
+      },
+
+      linkIncidentClient(incidentId, clientId) {
+        set((s) => ({
+          incidents: mutateIncident(s.incidents, incidentId, (i) =>
+            i.clientIds.includes(clientId) ? i : { ...i, clientIds: [...i.clientIds, clientId] }),
+        }))
+        sync(async () => {
+          const { error } = await supabase.from('incident_clients').insert({ incident_id: incidentId, client_id: clientId })
+          if (error) throw new Error(error.message)
+        })
+      },
+
+      unlinkIncidentClient(incidentId, clientId) {
+        set((s) => ({
+          incidents: mutateIncident(s.incidents, incidentId, (i) => ({ ...i, clientIds: i.clientIds.filter((id) => id !== clientId) })),
+        }))
+        sync(async () => {
+          const { error } = await supabase.from('incident_clients').delete().eq('incident_id', incidentId).eq('client_id', clientId)
+          if (error) throw new Error(error.message)
+        })
+      },
+
+      linkIncidentProject(incidentId, projectId) {
+        set((s) => ({
+          incidents: mutateIncident(s.incidents, incidentId, (i) =>
+            i.projectIds.includes(projectId) ? i : { ...i, projectIds: [...i.projectIds, projectId] }),
+        }))
+        sync(async () => {
+          const { error } = await supabase.from('incident_projects').insert({ incident_id: incidentId, project_id: projectId })
+          if (error) throw new Error(error.message)
+        })
+      },
+
+      unlinkIncidentProject(incidentId, projectId) {
+        set((s) => ({
+          incidents: mutateIncident(s.incidents, incidentId, (i) => ({ ...i, projectIds: i.projectIds.filter((id) => id !== projectId) })),
+        }))
+        sync(async () => {
+          const { error } = await supabase.from('incident_projects').delete().eq('incident_id', incidentId).eq('project_id', projectId)
+          if (error) throw new Error(error.message)
+        })
+      },
+
+      addIncidentStakeholder(incidentId, owner) {
+        set((s) => ({
+          incidents: mutateIncident(s.incidents, incidentId, (i) => ({ ...i, stakeholders: [...i.stakeholders, owner] })),
+        }))
+        sync(async () => {
+          const { error } = await supabase.from('incident_stakeholders').insert({ id: owner.id, incident_id: incidentId, owner })
+          if (error) throw new Error(error.message)
+        })
+      },
+
+      removeIncidentStakeholder(incidentId, ownerId) {
+        set((s) => ({
+          incidents: mutateIncident(s.incidents, incidentId, (i) => ({ ...i, stakeholders: i.stakeholders.filter((o) => o.id !== ownerId) })),
+        }))
+        sync(async () => {
+          const { error } = await supabase.from('incident_stakeholders').delete().eq('id', ownerId)
+          if (error) throw new Error(error.message)
+        })
       },
     }),
     {

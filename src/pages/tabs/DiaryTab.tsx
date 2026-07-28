@@ -63,7 +63,7 @@ export default function DiaryTab({ project }: Props) {
       {/* Content */}
       {sub === 'openPoints' && (
         <OpenPointsTab
-          projectId={project.id}
+          scope={{ type: 'project', id: project.id }}
           openPoints={openPoints}
           phases={project.phases}
         />
@@ -78,7 +78,7 @@ export default function DiaryTab({ project }: Props) {
       )}
       {sub === 'history' && (
         <HistoryTab
-          projectId={project.id}
+          scope={{ type: 'project', id: project.id }}
           history={history}
         />
       )}

@@ -7,7 +7,7 @@ import { useToastStore } from '@/stores/useToastStore'
 const BUCKET = 'project-files'
 
 interface Props {
-  projectId: string
+  scopeId: string
   parentId: string
   attachments: FileAttachment[]
   onAdd: (attachment: FileAttachment) => void
@@ -31,7 +31,7 @@ function fileIcon(name: string): string {
   return '📎'
 }
 
-export default function FileAttachments({ projectId, parentId, attachments, onAdd, onRemove }: Props) {
+export default function FileAttachments({ scopeId, parentId, attachments, onAdd, onRemove }: Props) {
   const { t } = useTranslation()
   const { addToast } = useToastStore()
   const [uploading, setUploading] = useState(false)
@@ -43,7 +43,7 @@ export default function FileAttachments({ projectId, parentId, attachments, onAd
     try {
       for (const file of Array.from(files)) {
         const ts = Date.now()
-        const path = `${projectId}/${parentId}/${ts}_${file.name}`
+        const path = `${scopeId}/${parentId}/${ts}_${file.name}`
         const { error: uploadError } = await supabase.storage
           .from(BUCKET)
           .upload(path, file, { upsert: false })
