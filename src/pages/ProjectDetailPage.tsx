@@ -449,7 +449,7 @@ export default function ProjectDetailPage() {
       <div className="p-8 text-center py-24" style={{ color: 'var(--text-tertiary)' }}>
         <div className="text-4xl mb-3">🔍</div>
         <p className="text-[13px]">{t('project.notFound')}</p>
-        <Button className="mt-4" variant="secondary" onClick={() => navigate('/')}>← {t('nav.portfolio')}</Button>
+        <Button className="mt-4" variant="secondary" onClick={() => navigate('/portfolio')}>← {t('nav.portfolio')}</Button>
       </div>
     )
   }
@@ -479,7 +479,7 @@ export default function ProjectDetailPage() {
         {/* Breadcrumb + project name */}
         <div className="flex items-center gap-1.5 min-w-0">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/portfolio')}
             className="text-[11px] transition-colors whitespace-nowrap shrink-0"
             style={{ color: 'var(--text-tertiary)' }}
             onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
@@ -640,7 +640,7 @@ export default function ProjectDetailPage() {
               onClick={async () => {
                 setShowArchiveModal(false)
                 await archiveProject(project.id)
-                navigate('/')
+                navigate('/portfolio')
               }}
               style={{ background: 'var(--color-danger-text)', borderColor: 'var(--color-danger-text)' }}
             >

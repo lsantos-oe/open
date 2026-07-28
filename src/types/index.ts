@@ -329,11 +329,20 @@ export interface ProjectTemplate {
 }
 
 // Settings
+export interface IncidentTemplate {
+  id: string
+  name: string
+  priority: Probability
+  impact: Probability
+  taskTitles: string[]
+}
+
 export interface AppSettings {
   holidays: string[]                    // ISO date strings for calculations
   holidayNames: Record<string, string>  // ISO date → display name
   templates: ProjectTemplate[]
   templatesVersion?: number
+  incidentTemplates: IncidentTemplate[]
   defaultLanguage: AppLanguage
   dateFormat: DateFormat
   workdays: Workdays

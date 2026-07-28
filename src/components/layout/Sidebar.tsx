@@ -3,6 +3,8 @@ import { NavLink, useNavigate, useMatch } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useCommandPaletteStore } from '@/stores/useCommandPaletteStore'
+import { NotificationBell } from './NotificationBell'
 import { Project } from '@/types'
 
 const PALETTE = ['#F59E0B','#10B981','#3B82F6','#8B5CF6','#EC4899','#EF4444','#06B6D4','#84CC16']
@@ -20,6 +22,7 @@ export function Sidebar() {
   const { t } = useTranslation()
   const { settings, updateSettings, projects } = useAppStore()
   const { user, profile, signOut } = useAuthStore()
+  const toggleCommandPalette = useCommandPaletteStore((s) => s.toggle)
   const navigate = useNavigate()
   const projectMatch = useMatch('/projects/:id')
   const activeProjectId = projectMatch?.params.id
@@ -87,11 +90,25 @@ export function Sidebar() {
 
       {/* Main nav */}
       <nav style={{ padding: collapsed ? '8px 6px' : '8px 8px' }}>
+        <button
+          onClick={toggleCommandPalette}
+          className={navLinkCls({ isActive: false }) + ' w-full'}
+          title={collapsed ? 'Buscar (⌘K)' : undefined}
+        >
+          <span className="shrink-0 w-4 h-4 flex items-center justify-center"><SearchIcon /></span>
+          {!collapsed && <span className="flex-1 text-left">Buscar</span>}
+          {!collapsed && <span className="text-[10px] shrink-0" style={{ color: 'var(--sidebar-text-muted)' }}>⌘K</span>}
+        </button>
+        <NotificationBell collapsed={collapsed} />
+        <NavLink to="/" end className={navLinkCls} title={collapsed ? 'Início' : undefined}>
+          <span className="shrink-0 w-4 h-4 flex items-center justify-center"><HomeIcon /></span>
+          {!collapsed && <span>Início</span>}
+        </NavLink>
         <NavLink to="/wallet" className={navLinkCls} title={t('nav.walletTooltip')}>
           <span className="shrink-0 w-4 h-4 flex items-center justify-center"><WalletIcon /></span>
           {!collapsed && <span>{t('nav.wallet')}</span>}
         </NavLink>
-        <NavLink to="/" end className={navLinkCls} title={t('nav.projects')}>
+        <NavLink to="/portfolio" className={navLinkCls} title={t('nav.projects')}>
           <span className="shrink-0 w-4 h-4 flex items-center justify-center"><PortfolioIcon /></span>
           {!collapsed && <span>{t('nav.portfolio')}</span>}
         </NavLink>
@@ -237,6 +254,22 @@ export function Sidebar() {
         </button>
       </div>
     </aside>
+  )
+}
+
+function SearchIcon() {
+  return (
+    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+    </svg>
+  )
+}
+
+function HomeIcon() {
+  return (
+    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75" />
+    </svg>
   )
 }
 

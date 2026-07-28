@@ -4,7 +4,7 @@ import { v4 as uuid } from 'uuid'
 import i18n from '@/i18n'
 import {
   Project, Phase, Entry, Risk, ActionTask, DelayLogEntry, TeamMember, Link, EntryComment,
-  AppSettings, ProjectTemplate, AppLanguage, EntryStatus, RiskFlag, Workdays,
+  AppSettings, ProjectTemplate, IncidentTemplate, AppLanguage, EntryStatus, RiskFlag, Workdays,
   OpenPoint, MeetingLog, MeetingItem, HistoryEntry, HistoryEventType, DiaryComment, FileAttachment,
   Client, ClientContact, ClientCsAssignment, ClientStatus,
   Incident, IncidentStatus, EntryOwner,
@@ -30,7 +30,7 @@ import {
   dbIncidentToStore,
   storeIncidentToDb,
 } from '@/utils/dbConversions'
-import type { DbProjectFull, DbProfile, DbInvitedUser, UserRole } from '@/types/database'
+import type { DbProjectFull, DbProfile, DbInvitedUser, DbNotification, UserRole } from '@/types/database'
 import type { DbIncidentFull } from '@/utils/dbConversions'
 
 export type DiaryScope = { type: 'project'; id: string } | { type: 'incident'; id: string }
@@ -124,6 +124,7 @@ interface AppStore {
   settings: AppSettings
   teamDirectory: DbProfile[]
   invitedUsers: DbInvitedUser[]
+  notifications: DbNotification[]
   clients: Client[]
   clientsLoading: boolean
   incidents: Incident[]
@@ -143,6 +144,11 @@ interface AppStore {
   deleteInvite: (id: string) => Promise<void>
   updateProfileRole: (id: string, role: UserRole) => Promise<void>
   setProfileActive: (id: string, active: boolean) => Promise<void>
+
+  // Notifications
+  loadNotifications: () => Promise<void>
+  markNotificationRead: (id: string) => Promise<void>
+  markAllNotificationsRead: () => Promise<void>
 
   // Clients (Carteira)
   createClient: (data: { name: string; country?: string; ploomesLink?: string; notes?: string; status?: ClientStatus; owners?: EntryOwner[] }) => string
@@ -253,6 +259,9 @@ interface AppStore {
   // Settings
   updateSettings: (patch: Partial<AppSettings>) => void
   updateTemplate: (template: ProjectTemplate) => void
+  createIncidentTemplate: (data: Omit<IncidentTemplate, 'id'>) => string
+  updateIncidentTemplate: (template: IncidentTemplate) => void
+  deleteIncidentTemplate: (id: string) => void
   addHoliday: (date: string, name?: string) => void
   removeHoliday: (date: string) => void
 
@@ -318,6 +327,26 @@ function getUserId(): string {
   const { user } = useAuthStore.getState()
   if (!user?.id) throw new Error('Usuário não autenticado')
   return user.id
+}
+
+/** Fire-and-forget: creates a notification row for another user. Never notifies yourself. */
+function notifyUser(userId: string, message: string, link?: string): void {
+  const { user } = useAuthStore.getState()
+  if (!userId || userId === user?.id) return
+  supabase.from('notifications').insert({ user_id: userId, message, link: link ?? null }).then(({ error }) => {
+    if (error) console.error('Falha ao criar notificação:', error.message)
+  })
+}
+
+/** Notifies newly-added `type: 'member'` owners that weren't in the previous owner list. */
+function notifyNewOwners(prevOwners: EntryOwner[] | undefined, nextOwners: EntryOwner[] | undefined, message: string, link: string): void {
+  if (!nextOwners) return
+  const prevMemberIds = new Set((prevOwners ?? []).filter((o) => o.type === 'member' && o.memberId).map((o) => o.memberId))
+  for (const owner of nextOwners) {
+    if (owner.type === 'member' && owner.memberId && !prevMemberIds.has(owner.memberId)) {
+      notifyUser(owner.memberId, message, link)
+    }
+  }
 }
 
 /**
@@ -447,6 +476,7 @@ export const useAppStore = create<AppStore>()(
       archivedProjectsLoaded: false,
       teamDirectory: [],
       invitedUsers: [],
+      notifications: [],
       clients: [],
       clientsLoading: false,
       incidents: [],
@@ -455,6 +485,7 @@ export const useAppStore = create<AppStore>()(
         holidays: [],
         holidayNames: {},
         templates: DEFAULT_TEMPLATES,
+        incidentTemplates: [],
         defaultLanguage: 'pt',
         dateFormat: 'DD/MM/YYYY',
         workdays: 'mon-fri',
@@ -609,6 +640,38 @@ export const useAppStore = create<AppStore>()(
           set({ teamDirectory: prev })
           useToastStore.getState().addToast(error.message)
         }
+      },
+
+      async loadNotifications() {
+        try {
+          const userId = getUserId()
+          const { data, error } = await supabase
+            .from('notifications')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(30)
+          if (error) throw new Error(error.message)
+          set({ notifications: data ?? [] })
+        } catch {
+          // silently fail — not signed in yet, or table not migrated
+        }
+      },
+
+      async markNotificationRead(id) {
+        const prev = get().notifications
+        set((s) => ({ notifications: s.notifications.map((n) => n.id === id ? { ...n, read: true } : n) }))
+        const { error } = await supabase.from('notifications').update({ read: true }).eq('id', id)
+        if (error) set({ notifications: prev })
+      },
+
+      async markAllNotificationsRead() {
+        const prev = get().notifications
+        const unreadIds = prev.filter((n) => !n.read).map((n) => n.id)
+        if (unreadIds.length === 0) return
+        set((s) => ({ notifications: s.notifications.map((n) => ({ ...n, read: true })) }))
+        const { error } = await supabase.from('notifications').update({ read: true }).in('id', unreadIds)
+        if (error) set({ notifications: prev })
       },
 
       async loadClients() {
@@ -1202,6 +1265,7 @@ export const useAppStore = create<AppStore>()(
 
       updateEntry(projectId, entryId, patch) {
         const prev = get().projects
+        const prevEntry = findEntryDeep(prev.find((p) => p.id === projectId)?.phases ?? [], entryId)
         set((s) => ({
           projects: mutateProject(s.projects, projectId, (p) =>
             refreshCriticalPath({
@@ -1223,6 +1287,10 @@ export const useAppStore = create<AppStore>()(
           if (!project) return
           await dbSyncEntry(project, entryId, getUserId())
         }, () => set({ projects: prev }))
+        if (patch.owners) {
+          const entryName = patch.name ?? prevEntry?.name ?? 'uma tarefa'
+          notifyNewOwners(prevEntry?.owners, patch.owners, `Você foi adicionado como responsável em "${entryName}"`, `/projects/${projectId}`)
+        }
       },
 
       deleteEntry(projectId, phaseId, entryId) {
@@ -1921,6 +1989,29 @@ export const useAppStore = create<AppStore>()(
         }))
       },
 
+      createIncidentTemplate(data) {
+        const id = uuid()
+        set((s) => ({
+          settings: { ...s.settings, incidentTemplates: [...s.settings.incidentTemplates, { ...data, id }] },
+        }))
+        return id
+      },
+
+      updateIncidentTemplate(template) {
+        set((s) => ({
+          settings: {
+            ...s.settings,
+            incidentTemplates: s.settings.incidentTemplates.map((t) => (t.id === template.id ? template : t)),
+          },
+        }))
+      },
+
+      deleteIncidentTemplate(id) {
+        set((s) => ({
+          settings: { ...s.settings, incidentTemplates: s.settings.incidentTemplates.filter((t) => t.id !== id) },
+        }))
+      },
+
       addHoliday(date, name) {
         const prev = get().settings
         set((s) => {
@@ -2555,6 +2646,18 @@ export const useAppStore = create<AppStore>()(
           const { error } = await supabase.from('incidents').update(fields).eq('id', id)
           if (error) throw new Error(error.message)
         })
+        if (current) {
+          get().addHistoryEntry({ type: 'incident', id }, { event: 'status_changed', title: current.title, detail: status })
+          const statusLabel: Record<IncidentStatus, string> = {
+            open: 'Aberto', in_progress: 'Em andamento', waiting_on_client: 'Aguardando cliente', resolved: 'Resolvido', closed: 'Fechado',
+          }
+          const recipients = new Set<string>()
+          if (current.owner?.type === 'member' && current.owner.memberId) recipients.add(current.owner.memberId)
+          for (const s of current.stakeholders) if (s.type === 'member' && s.memberId) recipients.add(s.memberId)
+          for (const memberId of recipients) {
+            notifyUser(memberId, `Incidente "${current.title}" mudou para ${statusLabel[status]}`, `/support/${id}`)
+          }
+        }
       },
 
       linkIncidentClient(incidentId, clientId) {
@@ -2607,6 +2710,10 @@ export const useAppStore = create<AppStore>()(
           const { error } = await supabase.from('incident_stakeholders').insert({ id: owner.id, incident_id: incidentId, owner })
           if (error) throw new Error(error.message)
         })
+        if (owner.type === 'member' && owner.memberId) {
+          const incident = get().incidents.find((i) => i.id === incidentId)
+          notifyUser(owner.memberId, `Você foi adicionado como stakeholder em "${incident?.title ?? 'um incidente'}"`, `/support/${incidentId}`)
+        }
       },
 
       removeIncidentStakeholder(incidentId, ownerId) {
@@ -2644,6 +2751,7 @@ export const useAppStore = create<AppStore>()(
 
       updateIncidentEntry(incidentId, entryId, patch) {
         const prev = get().incidents
+        const prevEntry = prev.find((i) => i.id === incidentId)?.entries.find((e) => e.id === entryId)
         set((s) => ({
           incidents: mutateIncident(s.incidents, incidentId, (i) =>
             refreshIncidentCriticalPath({
@@ -2657,6 +2765,10 @@ export const useAppStore = create<AppStore>()(
           if (!incident) return
           await dbSyncIncidentEntry(incident, entryId, getUserId())
         }, () => set({ incidents: prev }))
+        if (patch.owners) {
+          const entryName = patch.name ?? prevEntry?.name ?? 'uma tarefa'
+          notifyNewOwners(prevEntry?.owners, patch.owners, `Você foi adicionado como responsável em "${entryName}"`, `/support/${incidentId}`)
+        }
       },
 
       deleteIncidentEntry(incidentId, entryId) {
@@ -2723,6 +2835,7 @@ export const useAppStore = create<AppStore>()(
         settings: {
           templates: state.settings.templates,
           templatesVersion: state.settings.templatesVersion,
+          incidentTemplates: state.settings.incidentTemplates,
           sidebarCollapsed: state.settings.sidebarCollapsed,
         },
       }),
@@ -2737,6 +2850,7 @@ export const useAppStore = create<AppStore>()(
             sidebarCollapsed: persistedSettings.sidebarCollapsed,
             templatesVersion: TEMPLATES_VERSION,
             templates: shouldResetTemplates ? DEFAULT_TEMPLATES : (persistedSettings.templates ?? DEFAULT_TEMPLATES),
+            incidentTemplates: persistedSettings.incidentTemplates ?? [],
           },
         } as AppStore
       },

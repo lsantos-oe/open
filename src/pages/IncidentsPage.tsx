@@ -11,6 +11,14 @@ import { SelectionBar } from '@/components/ui/SelectionBar'
 import { isIncidentMine } from '@/utils/involvement'
 import OwnersField from '@/components/plan/OwnersField'
 import { IncidentStatus, Probability, EntryOwner, TeamMember } from '@/types'
+import { exportIncidentsCsv } from '@/utils/exportListsCsv'
+
+function suggestDeadline(priority: Probability): string {
+  const days = priority === 'high' ? 2 : priority === 'medium' ? 5 : 10
+  const d = new Date()
+  d.setDate(d.getDate() + days)
+  return d.toISOString().slice(0, 10)
+}
 
 const STATUS_VARIANT: Record<IncidentStatus, 'gray' | 'primary' | 'orange' | 'green' | 'red'> = {
   open: 'gray',
@@ -23,7 +31,7 @@ const STATUS_VARIANT: Record<IncidentStatus, 'gray' | 'primary' | 'orange' | 'gr
 export default function IncidentsPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { incidents, clients, teamDirectory, createIncident, updateIncident, updateIncidentStatus, linkIncidentClient } = useAppStore()
+  const { incidents, clients, teamDirectory, settings, createIncident, addIncidentEntry, updateIncident, updateIncidentStatus, linkIncidentClient } = useAppStore()
   const { user } = useAuthStore()
 
   const [statusFilter, setStatusFilter] = useState('')
@@ -36,6 +44,7 @@ export default function IncidentsPage() {
   const [priority, setPriority] = useState<Probability>('medium')
   const [impact, setImpact] = useState<Probability>('medium')
   const [deadline, setDeadline] = useState('')
+  const [templateId, setTemplateId] = useState('')
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkOwnersOpen, setBulkOwnersOpen] = useState(false)
@@ -62,12 +71,26 @@ export default function IncidentsPage() {
   }
 
   function openAdd() {
-    setTitle(''); setNewClientIds([]); setNewOwners([]); setPriority('medium'); setImpact('medium'); setDeadline('')
+    setTitle(''); setNewClientIds([]); setNewOwners([]); setPriority('medium'); setImpact('medium'); setDeadline(''); setTemplateId('')
     setShowAdd(true)
   }
 
   function toggleNewClient(clientId: string) {
     setNewClientIds((prev) => prev.includes(clientId) ? prev.filter((id) => id !== clientId) : [...prev, clientId])
+  }
+
+  function handlePriorityChange(p: Probability) {
+    setPriority(p)
+    if (!deadline) setDeadline(suggestDeadline(p))
+  }
+
+  function applyTemplate(id: string) {
+    setTemplateId(id)
+    const tpl = settings.incidentTemplates.find((t) => t.id === id)
+    if (!tpl) return
+    setPriority(tpl.priority)
+    setImpact(tpl.impact)
+    if (!deadline) setDeadline(suggestDeadline(tpl.priority))
   }
 
   function handleCreate() {
@@ -80,6 +103,14 @@ export default function IncidentsPage() {
       clientIds: newClientIds,
       owner: newOwners[0],
     })
+    const tpl = settings.incidentTemplates.find((t) => t.id === templateId)
+    if (tpl) {
+      for (const taskTitle of tpl.taskTitles) {
+        addIncidentEntry(id, {
+          name: taskTitle, type: 'task', responsible: '', dependsOn: [], riskFlag: 'none', status: 'pending', order: 0,
+        })
+      }
+    }
     setShowAdd(false)
     navigate(`/support/${id}`)
   }
@@ -210,6 +241,14 @@ export default function IncidentsPage() {
         }
       >
         <div className="space-y-4">
+          {settings.incidentTemplates.length > 0 && (
+            <Field label="Template (opcional)">
+              <Select value={templateId} onChange={(e) => applyTemplate(e.target.value)}>
+                <option value="">Nenhum</option>
+                {settings.incidentTemplates.map((tpl) => <option key={tpl.id} value={tpl.id}>{tpl.name}</option>)}
+              </Select>
+            </Field>
+          )}
           <Field label={t('incident.colTitle')} required>
             <Input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} />
           </Field>
@@ -237,7 +276,7 @@ export default function IncidentsPage() {
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label={t('incident.priority')} hint="Urgência de resolução: Alta = ação imediata, Média = prazo normal, Baixa = pode aguardar.">
-              <Select value={priority} onChange={(e) => setPriority(e.target.value as Probability)}>
+              <Select value={priority} onChange={(e) => handlePriorityChange(e.target.value as Probability)}>
                 <option value="low">{t('risk.low')}</option>
                 <option value="medium">{t('risk.medium')}</option>
                 <option value="high">{t('risk.high')}</option>
@@ -330,6 +369,20 @@ export default function IncidentsPage() {
           </Select>
         </Field>
       </Modal>
+
+      {incidents.length > 0 && (
+        <div className="mt-8 flex justify-center">
+          <button
+            onClick={() => exportIncidentsCsv(filtered, clients)}
+            className="text-xs transition-colors"
+            style={{ color: 'var(--text-disabled)' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-disabled)')}
+          >
+            <span className="mr-1">↓</span>Exportar CSV
+          </button>
+        </div>
+      )}
     </div>
   )
 }

@@ -7,6 +7,7 @@ import { Modal } from '@/components/ui/Modal'
 import CountrySelect from '@/components/ui/CountrySelect'
 import OwnersField from '@/components/plan/OwnersField'
 import { findCountry } from '@/data/countries'
+import { exportClientsCsv } from '@/utils/exportListsCsv'
 import { ClientStatus, EntryOwner, TeamMember } from '@/types'
 
 const STATUS_LABEL: Record<ClientStatus, string> = {
@@ -232,6 +233,20 @@ export default function ClientsPage() {
           </Field>
         </div>
       </Modal>
+
+      {clients.length > 0 && (
+        <div className="mt-8 flex justify-center">
+          <button
+            onClick={() => exportClientsCsv(sorted, projectCount)}
+            className="text-xs transition-colors"
+            style={{ color: 'var(--text-disabled)' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-disabled)')}
+          >
+            <span className="mr-1">↓</span>Exportar CSV
+          </button>
+        </div>
+      )}
     </div>
   )
 }

@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
-import { DateFormat, Workdays } from '@/types'
+import { DateFormat, Workdays, IncidentTemplate, Probability } from '@/types'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
+import { Input, Field, Select, Textarea } from '@/components/ui/Input'
+import { Modal } from '@/components/ui/Modal'
 
 function Section({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
@@ -57,6 +58,7 @@ export default function SettingsPage() {
   const {
     settings, updateSettings, addHoliday, removeHoliday,
     archivedProjects, archivedProjectsLoaded, loadArchivedProjects, unarchiveProject, hideProject,
+    createIncidentTemplate, updateIncidentTemplate, deleteIncidentTemplate,
   } = useAppStore()
 
   useEffect(() => { loadArchivedProjects() }, [])
@@ -64,6 +66,13 @@ export default function SettingsPage() {
   const [holidayDate, setHolidayDate] = useState('')
   const [holidayName, setHolidayName] = useState('')
   const [homepageTab, setHomepageTab] = useState(() => localStorage.getItem(HOMEPAGE_KEY) ?? 'overview')
+
+  const [showIncidentTemplate, setShowIncidentTemplate] = useState(false)
+  const [editIncidentTemplate, setEditIncidentTemplate] = useState<IncidentTemplate | null>(null)
+  const [itName, setItName] = useState('')
+  const [itPriority, setItPriority] = useState<Probability>('medium')
+  const [itImpact, setItImpact] = useState<Probability>('medium')
+  const [itTasks, setItTasks] = useState('')
 
   function changeHomepageTab(v: string) {
     setHomepageTab(v)
@@ -85,6 +94,28 @@ export default function SettingsPage() {
   function handleDeleteArchived(id: string, name: string) {
     if (!confirm(`Excluir "${name}" da lista de arquivados? O projeto some do sistema, mas os dados continuam no banco.`)) return
     hideProject(id)
+  }
+
+  function openAddIncidentTemplate() {
+    setEditIncidentTemplate(null); setItName(''); setItPriority('medium'); setItImpact('medium'); setItTasks('')
+    setShowIncidentTemplate(true)
+  }
+
+  function openEditIncidentTemplate(tpl: IncidentTemplate) {
+    setEditIncidentTemplate(tpl); setItName(tpl.name); setItPriority(tpl.priority); setItImpact(tpl.impact)
+    setItTasks(tpl.taskTitles.join('\n'))
+    setShowIncidentTemplate(true)
+  }
+
+  function saveIncidentTemplate() {
+    if (!itName.trim()) return
+    const taskTitles = itTasks.split('\n').map((s) => s.trim()).filter(Boolean)
+    if (editIncidentTemplate) {
+      updateIncidentTemplate({ ...editIncidentTemplate, name: itName.trim(), priority: itPriority, impact: itImpact, taskTitles })
+    } else {
+      createIncidentTemplate({ name: itName.trim(), priority: itPriority, impact: itImpact, taskTitles })
+    }
+    setShowIncidentTemplate(false)
   }
 
   return (
@@ -207,6 +238,31 @@ export default function SettingsPage() {
         </div>
       </Section>
 
+      {/* Incident Templates */}
+      <Section title="Templates de incidente" description="Prioridade/impacto padrão e tarefas que já nascem junto ao criar um incidente desse tipo.">
+        <div className="space-y-3">
+          {settings.incidentTemplates.length === 0 ? (
+            <p className="text-sm text-[var(--text-tertiary)]">Nenhum template de incidente ainda.</p>
+          ) : (
+            settings.incidentTemplates.map((tpl) => (
+              <div key={tpl.id} className="flex items-center justify-between p-3 bg-[var(--surface-subtle)] rounded-[var(--radius-lg)] border border-[var(--border-default)]">
+                <div>
+                  <p className="text-sm font-medium text-[var(--text-primary)]">{tpl.name}</p>
+                  <p className="text-xs text-[var(--text-tertiary)]">
+                    {tpl.taskTitles.length} tarefa{tpl.taskTitles.length !== 1 ? 's' : ''} padrão
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="secondary" onClick={() => openEditIncidentTemplate(tpl)}>Editar</Button>
+                  <Button size="sm" variant="secondary" onClick={() => deleteIncidentTemplate(tpl.id)}>Excluir</Button>
+                </div>
+              </div>
+            ))
+          )}
+          <Button size="sm" onClick={openAddIncidentTemplate}>+ Template de incidente</Button>
+        </div>
+      </Section>
+
       {/* Archived projects */}
       <Section title="Projetos arquivados" description="Projetos ocultos do portfólio. Clique em Desarquivar para restaurá-los.">
         {!archivedProjectsLoaded ? (
@@ -242,6 +298,44 @@ export default function SettingsPage() {
           </div>
         )}
       </Section>
+
+      <Modal
+        open={showIncidentTemplate}
+        title={editIncidentTemplate ? 'Editar template de incidente' : 'Novo template de incidente'}
+        onClose={() => setShowIncidentTemplate(false)}
+        size="sm"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowIncidentTemplate(false)}>Cancelar</Button>
+            <Button onClick={saveIncidentTemplate} disabled={!itName.trim()}>Salvar</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Field label="Nome" required>
+            <Input autoFocus value={itName} onChange={(e) => setItName(e.target.value)} placeholder="Ex: Erro de sincronização" />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Prioridade padrão">
+              <Select value={itPriority} onChange={(e) => setItPriority(e.target.value as Probability)}>
+                <option value="low">Baixa</option>
+                <option value="medium">Média</option>
+                <option value="high">Alta</option>
+              </Select>
+            </Field>
+            <Field label="Impacto padrão">
+              <Select value={itImpact} onChange={(e) => setItImpact(e.target.value as Probability)}>
+                <option value="low">Baixa</option>
+                <option value="medium">Média</option>
+                <option value="high">Alta</option>
+              </Select>
+            </Field>
+          </div>
+          <Field label="Tarefas padrão" hint="Uma tarefa por linha — criadas automaticamente junto com o incidente.">
+            <Textarea value={itTasks} onChange={(e) => setItTasks(e.target.value)} rows={5} placeholder={'Ex:\nInvestigar causa raiz\nAplicar correção\nValidar com o cliente'} />
+          </Field>
+        </div>
+      </Modal>
     </div>
   )
 }

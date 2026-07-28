@@ -5,6 +5,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useAppStore } from '@/store/useAppStore'
 import { supabase } from '@/lib/supabase'
+import DashboardPage from '@/pages/DashboardPage'
 import ProjectsPage from '@/pages/ProjectsPage'
 import ProjectDetailPage from '@/pages/ProjectDetailPage'
 import SettingsPage from '@/pages/SettingsPage'
@@ -29,6 +30,7 @@ export default function App() {
         useAppStore.getState().loadSettings()
         useAppStore.getState().loadTeamDirectory()
         useAppStore.getState().loadInvitedUsers()
+        useAppStore.getState().loadNotifications()
         useAppStore.getState().loadClients()
         useAppStore.getState().loadIncidents()
       }
@@ -45,6 +47,7 @@ export default function App() {
           useAppStore.getState().loadSettings()
           useAppStore.getState().loadTeamDirectory()
         useAppStore.getState().loadInvitedUsers()
+        useAppStore.getState().loadNotifications()
         })
       } else {
         useAuthStore.setState({ user: null, profile: null, loading: false })
@@ -61,7 +64,8 @@ export default function App() {
 
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
-          <Route path="/" element={<ProjectsPage />} />
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/portfolio" element={<ProjectsPage />} />
           <Route path="/wallet" element={<ClientsPage />} />
           <Route path="/wallet/:id" element={<ClientDetailPage />} />
           <Route path="/support" element={<IncidentsPage />} />

@@ -102,6 +102,15 @@ export interface DbInvitedUser {
   invited_by: string | null
 }
 
+export interface DbNotification {
+  id: string
+  user_id: string
+  message: string
+  link: string | null
+  read: boolean
+  created_at: string
+}
+
 export interface DbProject {
   id: string
   name: string
