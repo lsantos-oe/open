@@ -4,10 +4,13 @@ import ImportJsonModal from '@/components/import/ImportJsonModal'
 import { exportAllProjectsToJson } from '@/utils/exportJson'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
+import { useAuthStore } from '@/stores/useAuthStore'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
-import { Input, Field } from '@/components/ui/Input'
+import { Input, Field, Select } from '@/components/ui/Input'
+import { SelectionBar } from '@/components/ui/SelectionBar'
+import { isProjectMine } from '@/utils/involvement'
 import { Project, ProjectStatus, ProjectType, ProjectTemplate, Client } from '@/types'
 import {
   projectDurationDays,
@@ -147,14 +150,18 @@ function FilterBar({ filters, setFilters, clients, pms }: FilterBarProps) {
 
 // ─── ListView ─────────────────────────────────────────────────────────────────
 
-interface ListViewProps { projects: Project[]; holidays: string[]; onOpen: (id: string) => void }
+interface ListViewProps {
+  projects: Project[]; holidays: string[]; onOpen: (id: string) => void
+  selected: Set<string>; onToggle: (id: string) => void
+}
 
-function ListView({ projects, holidays, onOpen }: ListViewProps) {
+function ListView({ projects, holidays, onOpen, selected, onToggle }: ListViewProps) {
   const { t } = useTranslation()
 
   if (projects.length === 0) return <EmptyFiltered />
 
   const COLS = [
+    '',
     t('portfolio.colProject'),
     t('portfolio.colClient'),
     t('portfolio.colPM'),
@@ -188,6 +195,9 @@ function ListView({ projects, holidays, onOpen }: ListViewProps) {
                 onClick={() => !isArchived && onOpen(p.id)}
                 className={`transition-colors ${isArchived ? 'opacity-60 cursor-default' : 'hover:bg-[var(--surface-subtle)] cursor-pointer'}`}
               >
+                <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                  <input type="checkbox" checked={selected.has(p.id)} onChange={() => onToggle(p.id)} />
+                </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-[var(--text-primary)]">{p.name}</p>
@@ -230,9 +240,12 @@ function ListView({ projects, holidays, onOpen }: ListViewProps) {
 
 // ─── KanbanView ───────────────────────────────────────────────────────────────
 
-interface KanbanViewProps { projects: Project[]; holidays: string[]; onOpen: (id: string) => void }
+interface KanbanViewProps {
+  projects: Project[]; holidays: string[]; onOpen: (id: string) => void
+  selected: Set<string>; onToggle: (id: string) => void
+}
 
-function KanbanView({ projects, holidays, onOpen }: KanbanViewProps) {
+function KanbanView({ projects, holidays, onOpen, selected, onToggle }: KanbanViewProps) {
   const { t } = useTranslation()
 
   if (projects.length === 0) return <EmptyFiltered />
@@ -254,12 +267,20 @@ function KanbanView({ projects, holidays, onOpen }: KanbanViewProps) {
                 const dur = projectDurationDays(p, holidays)
                 const variance = projectEndVariance(p, holidays)
                 return (
-                  <button
+                  <div
                     key={p.id}
                     onClick={() => onOpen(p.id)}
-                    className="w-full text-left bg-[var(--surface-card)] rounded-lg p-3 shadow-sm border border-[var(--border-default)] hover:border-[var(--oe-primary)] hover:shadow transition-all"
+                    role="button"
+                    className="relative w-full text-left bg-[var(--surface-card)] rounded-lg p-3 shadow-sm border border-[var(--border-default)] hover:border-[var(--oe-primary)] hover:shadow transition-all cursor-pointer"
                   >
-                    <p className="font-medium text-[var(--text-primary)] text-sm mb-1 line-clamp-2">{p.name}</p>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(p.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={() => onToggle(p.id)}
+                      className="absolute top-2 right-2"
+                    />
+                    <p className="font-medium text-[var(--text-primary)] text-sm mb-1 line-clamp-2 pr-5">{p.name}</p>
                     <p className="text-xs text-[var(--text-tertiary)] mb-2">{p.client}</p>
                     <div className="flex items-center justify-between">
                       <Badge variant={p.type === 'nova_conta' ? 'blue' : 'purple'} className="text-[10px]">
@@ -273,7 +294,7 @@ function KanbanView({ projects, holidays, onOpen }: KanbanViewProps) {
                       </div>
                     </div>
                     <p className="text-xs text-[var(--text-tertiary)] mt-1.5">PM: {p.pm}</p>
-                  </button>
+                  </div>
                 )
               })}
             </div>
@@ -575,15 +596,23 @@ function NewProjectModal({ open, onClose, clients, members, templates, onCreate 
 export default function ProjectsPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { projects, projectsLoading, settings, createProject, archivedProjects, archivedProjectsLoaded, loadArchivedProjects, clients: storeClients } = useAppStore()
+  const { projects, projectsLoading, settings, createProject, updateProject, archiveProject, archivedProjects, archivedProjectsLoaded, loadArchivedProjects, clients: storeClients } = useAppStore()
+  const { user } = useAuthStore()
 
   const [view, setView] = useState<'list' | 'kanban'>(() =>
     (localStorage.getItem('pb-portfolio-view') as 'list' | 'kanban') ?? 'list',
   )
   const [filters, setFilters] = useState<Filters>({ client: '', pm: '', type: '', dev: '' })
+  const [onlyMine, setOnlyMine] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
+
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkPmOpen, setBulkPmOpen] = useState(false)
+  const [bulkPm, setBulkPm] = useState('')
+  const [bulkClientOpen, setBulkClientOpen] = useState(false)
+  const [bulkClientId, setBulkClientId] = useState('')
 
   useEffect(() => { localStorage.setItem('pb-portfolio-view', view) }, [view])
 
@@ -593,7 +622,43 @@ export default function ProjectsPage() {
   )
   const pms = useMemo(() => uniquePMs(projects), [projects])
   const members = useMemo(() => uniqueMembers(projects), [projects])
-  const filtered = useMemo(() => applyFilters(projects, filters), [projects, filters])
+  const filtered = useMemo(() => {
+    const base = onlyMine ? projects.filter((p) => isProjectMine(p, user?.id)) : projects
+    return applyFilters(base, filters)
+  }, [projects, filters, onlyMine, user])
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  function applyBulkArchive() {
+    for (const id of selected) archiveProject(id)
+    setSelected(new Set())
+  }
+
+  function applyBulkStatus(status: ProjectStatus) {
+    for (const id of selected) updateProject(id, { status })
+    setSelected(new Set())
+  }
+
+  function applyBulkPm() {
+    if (!bulkPm.trim()) return
+    for (const id of selected) updateProject(id, { pm: bulkPm.trim() })
+    setSelected(new Set())
+    setBulkPmOpen(false)
+  }
+
+  function applyBulkClient() {
+    const client = storeClients.find((c) => c.id === bulkClientId)
+    if (!client) return
+    for (const id of selected) updateProject(id, { clientId: client.id, client: client.name })
+    setSelected(new Set())
+    setBulkClientOpen(false)
+  }
 
   function handleToggleArchived() {
     if (!showArchived && !archivedProjectsLoaded) loadArchivedProjects()
@@ -643,6 +708,17 @@ export default function ProjectsPage() {
               <KanbanIcon />
             </button>
           </div>
+          <button
+            onClick={() => setOnlyMine((v) => !v)}
+            className="px-3 py-1.5 text-xs font-medium rounded-full border transition-colors"
+            style={{
+              background: onlyMine ? 'var(--oe-primary)' : 'var(--surface-card)',
+              color: onlyMine ? 'white' : 'var(--text-secondary)',
+              borderColor: onlyMine ? 'var(--oe-primary)' : 'var(--border-default)',
+            }}
+          >
+            Meus
+          </button>
           <Button variant="secondary" onClick={() => setShowImportModal(true)}>
             {t('import.title')}
           </Button>
@@ -699,6 +775,8 @@ export default function ProjectsPage() {
             projects={showArchived ? [...filtered, ...archivedProjects] : filtered}
             holidays={settings.holidays}
             onOpen={(id) => navigate(`/projects/${id}`)}
+            selected={selected}
+            onToggle={toggleSelect}
           />
           <div className="mt-3 flex justify-center">
             <button
@@ -715,7 +793,7 @@ export default function ProjectsPage() {
           </div>
         </>
       ) : (
-        <KanbanView projects={filtered} holidays={settings.holidays} onOpen={(id) => navigate(`/projects/${id}`)} />
+        <KanbanView projects={filtered} holidays={settings.holidays} onOpen={(id) => navigate(`/projects/${id}`)} selected={selected} onToggle={toggleSelect} />
       )}
 
       <NewProjectModal
@@ -748,6 +826,76 @@ export default function ProjectsPage() {
           </button>
         </div>
       )}
+
+      <SelectionBar count={selected.size} onClear={() => setSelected(new Set())}>
+        <button
+          onClick={applyBulkArchive}
+          className="text-xs px-2 py-1 rounded-md"
+          style={{ background: 'rgba(255,255,255,0.15)' }}
+        >
+          Arquivar
+        </button>
+        <select
+          onChange={(e) => { if (e.target.value) applyBulkStatus(e.target.value as ProjectStatus) }}
+          value=""
+          className="text-xs rounded-md px-2 py-1"
+          style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
+        >
+          <option value="" disabled>Alterar status...</option>
+          {KANBAN_STATUSES.map((s) => <option key={s} value={s}>{t(`project.${s}`)}</option>)}
+        </select>
+        <button
+          onClick={() => { setBulkPm(''); setBulkPmOpen(true) }}
+          className="text-xs px-2 py-1 rounded-md"
+          style={{ background: 'rgba(255,255,255,0.15)' }}
+        >
+          Alterar PM
+        </button>
+        <button
+          onClick={() => { setBulkClientId(''); setBulkClientOpen(true) }}
+          className="text-xs px-2 py-1 rounded-md"
+          style={{ background: 'rgba(255,255,255,0.15)' }}
+        >
+          Alterar cliente
+        </button>
+      </SelectionBar>
+
+      <Modal
+        open={bulkPmOpen}
+        title={`Alterar PM de ${selected.size} item(ns)`}
+        onClose={() => setBulkPmOpen(false)}
+        size="sm"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setBulkPmOpen(false)}>{t('actions.cancel')}</Button>
+            <Button onClick={applyBulkPm} disabled={!bulkPm.trim()}>{t('actions.confirm')}</Button>
+          </>
+        }
+      >
+        <Field label={t('project.pm')}>
+          <Input autoFocus value={bulkPm} onChange={(e) => setBulkPm(e.target.value)} />
+        </Field>
+      </Modal>
+
+      <Modal
+        open={bulkClientOpen}
+        title={`Alterar cliente de ${selected.size} item(ns)`}
+        onClose={() => setBulkClientOpen(false)}
+        size="sm"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setBulkClientOpen(false)}>{t('actions.cancel')}</Button>
+            <Button onClick={applyBulkClient} disabled={!bulkClientId}>{t('actions.confirm')}</Button>
+          </>
+        }
+      >
+        <Field label={t('project.client')}>
+          <Select value={bulkClientId} onChange={(e) => setBulkClientId(e.target.value)}>
+            <option value="">—</option>
+            {[...storeClients].sort((a, b) => a.name.localeCompare(b.name)).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </Select>
+        </Field>
+      </Modal>
     </div>
   )
 }

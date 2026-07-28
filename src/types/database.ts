@@ -104,9 +104,12 @@ export interface DbProject {
   baseline_set_at: string | null
   charter: DbCharter | null          // JSONB
   overview: string | null
+  proposal_link: string | null
+  deal_link: string | null
   links: DbLink[] | null              // JSONB
   team: DbTeamMember[] | null         // JSONB
   archived: boolean | null
+  hidden: boolean | null
   created_at: string | null
   created_by: string | null
   updated_at: string | null

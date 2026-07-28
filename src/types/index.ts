@@ -271,6 +271,7 @@ export interface Project {
   pm: string
   color?: string
   archived?: boolean
+  hidden?: boolean
   devLead?: string
   devType?: 'integration' | 'application'
   devIntegration?: string
@@ -287,6 +288,8 @@ export interface Project {
   links: Link[]
   overview?: string
   charter?: ProjectCharter
+  proposalLink?: string
+  dealLink?: string
   openPoints?: OpenPoint[]
   meetings?: MeetingLog[]
   history?: HistoryEntry[]

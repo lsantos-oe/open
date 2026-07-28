@@ -43,18 +43,32 @@ function ToggleGroup<T extends string>({
   )
 }
 
+const HOMEPAGE_KEY = 'pb-default-project-tab'
+const HOMEPAGE_OPTIONS: { value: string; label: string }[] = [
+  { value: 'overview', label: 'Overview' },
+  { value: 'plan', label: 'Plano' },
+  { value: 'kanban', label: 'Kanban' },
+  { value: 'diary', label: 'Diário' },
+]
+
 export default function SettingsPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const {
     settings, updateSettings, addHoliday, removeHoliday,
-    archivedProjects, archivedProjectsLoaded, loadArchivedProjects, unarchiveProject,
+    archivedProjects, archivedProjectsLoaded, loadArchivedProjects, unarchiveProject, hideProject,
   } = useAppStore()
 
   useEffect(() => { loadArchivedProjects() }, [])
 
   const [holidayDate, setHolidayDate] = useState('')
   const [holidayName, setHolidayName] = useState('')
+  const [homepageTab, setHomepageTab] = useState(() => localStorage.getItem(HOMEPAGE_KEY) ?? 'overview')
+
+  function changeHomepageTab(v: string) {
+    setHomepageTab(v)
+    localStorage.setItem(HOMEPAGE_KEY, v)
+  }
 
   function handleAddHoliday() {
     if (!holidayDate) return
@@ -66,6 +80,11 @@ export default function SettingsPage() {
   function changeLanguage(lang: 'pt' | 'en' | 'es') {
     i18n.changeLanguage(lang)
     updateSettings({ defaultLanguage: lang })
+  }
+
+  function handleDeleteArchived(id: string, name: string) {
+    if (!confirm(`Excluir "${name}" da lista de arquivados? O projeto some do sistema, mas os dados continuam no banco.`)) return
+    hideProject(id)
   }
 
   return (
@@ -82,6 +101,16 @@ export default function SettingsPage() {
             { value: 'en', label: '🇺🇸 English' },
             { value: 'es', label: '🇪🇸 Español' },
           ]}
+        />
+      </Section>
+
+      {/* Personal preferences */}
+      <Section title="Preferências pessoais" description="Salvas apenas neste navegador.">
+        <p className="text-xs text-gray-500 mb-2">Página inicial ao abrir um projeto</p>
+        <ToggleGroup
+          value={homepageTab}
+          onChange={changeHomepageTab}
+          options={HOMEPAGE_OPTIONS}
         />
       </Section>
 
@@ -192,13 +221,22 @@ export default function SettingsPage() {
                   <p className="text-sm font-medium text-gray-800">{p.name}</p>
                   <p className="text-xs text-gray-400">{p.client} · {p.pm}</p>
                 </div>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => unarchiveProject(p.id)}
-                >
-                  Desarquivar
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => unarchiveProject(p.id)}
+                  >
+                    Desarquivar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => handleDeleteArchived(p.id, p.name)}
+                  >
+                    Excluir
+                  </Button>
+                </div>
               </div>
             ))}
           </div>

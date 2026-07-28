@@ -167,6 +167,7 @@ interface AppStore {
   changeIncidentEntryDate: (incidentId: string, entryId: string, field: 'plannedStart' | 'plannedEnd' | 'plannedDate' | 'actualStart' | 'actualEnd', value: string) => void
   archiveProject: (id: string) => Promise<void>
   unarchiveProject: (id: string) => Promise<void>
+  hideProject: (id: string) => Promise<void>
 
   // Projects
   createProject: (data: Omit<Project, 'id' | 'phases' | 'risks' | 'delayLog' | 'team' | 'links' | 'status'>) => string
@@ -642,6 +643,7 @@ export const useAppStore = create<AppStore>()(
             .from('projects')
             .select('*')
             .eq('archived', true)
+            .eq('hidden', false)
             .order('updated_at', { ascending: false })
           if (error) throw new Error(error.message)
           if (!projectRows?.length) {
@@ -700,6 +702,19 @@ export const useAppStore = create<AppStore>()(
             archivedProjects: prevArchived,
             projects: s.projects.filter((p) => p.id !== id),
           }))
+          useToastStore.getState().addToast(error.message)
+        }
+      },
+
+      async hideProject(id) {
+        const prevArchived = get().archivedProjects
+        set((s) => ({ archivedProjects: s.archivedProjects.filter((p) => p.id !== id) }))
+        const { error } = await supabase
+          .from('projects')
+          .update({ hidden: true, updated_at: new Date().toISOString() })
+          .eq('id', id)
+        if (error) {
+          set({ archivedProjects: prevArchived })
           useToastStore.getState().addToast(error.message)
         }
       },

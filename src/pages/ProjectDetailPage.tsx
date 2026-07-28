@@ -21,11 +21,10 @@ import KanbanPage from './KanbanPage'
 import RisksPage from './RisksPage'
 import DelayLogPage from './DelayLogPage'
 import OverviewTab from './tabs/OverviewTab'
-import CharterTab from './tabs/CharterTab'
 import TeamTab from './tabs/TeamTab'
 import DiaryTab from './tabs/DiaryTab'
 
-const TAB_IDS = ['overview', 'charter', 'team', 'plan', 'kanban', 'risks', 'delayLog', 'diary'] as const
+const TAB_IDS = ['overview', 'team', 'plan', 'kanban', 'risks', 'delayLog', 'diary'] as const
 type TabId = typeof TAB_IDS[number]
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -414,9 +413,13 @@ export default function ProjectDetailPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { projects, settings, updateProject, archiveProject, clients: storeClients } = useAppStore()
-  const initialTab = (TAB_IDS as readonly string[]).includes(searchParams.get('tab') ?? '')
-    ? (searchParams.get('tab') as TabId)
-    : 'overview'
+  const queryTab = searchParams.get('tab')
+  const defaultTab = localStorage.getItem('pb-default-project-tab')
+  const initialTab = (TAB_IDS as readonly string[]).includes(queryTab ?? '')
+    ? (queryTab as TabId)
+    : (TAB_IDS as readonly string[]).includes(defaultTab ?? '')
+      ? (defaultTab as TabId)
+      : 'overview'
   const [tab, setTab] = useState<TabId>(initialTab)
   const [focusRiskId, setFocusRiskId] = useState<string | null>(null)
   const [exportingReport, setExportingReport] = useState(false)
@@ -593,7 +596,6 @@ export default function ProjectDetailPage() {
       {/* ── Tab content ── */}
       <div className="flex-1 overflow-auto" style={{ background: 'var(--surface-page)' }}>
         {tab === 'overview'  && <OverviewTab project={project} />}
-        {tab === 'charter'   && <CharterTab project={project} />}
         {tab === 'team'      && <TeamTab project={project} />}
         {tab === 'plan'      && <PlanPage projectId={project.id} onNavigateToRisk={(riskId) => { setTab('risks'); setFocusRiskId(riskId) }} />}
         {tab === 'kanban'    && <KanbanPage projectId={project.id} />}

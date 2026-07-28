@@ -287,6 +287,8 @@ export function dbProjectToStore(data: DbProjectFull): Project {
     baselineSetAt: project.baseline_set_at ?? undefined,
     overview: project.overview ?? undefined,
     charter: project.charter ? dbCharterToStore(project.charter as DbCharter) : undefined,
+    proposalLink: project.proposal_link ?? undefined,
+    dealLink: project.deal_link ?? undefined,
     team: ((project.team as DbTeamMember[] | null) ?? []).map(dbTeamMemberToStore),
     links: ((project.links as DbLink[] | null) ?? []).map(dbLinkToStore),
     phases: sortedPhases.map(ph => dbPhaseToStore(ph, entries, comments)),
@@ -296,6 +298,7 @@ export function dbProjectToStore(data: DbProjectFull): Project {
     meetings: meeting_logs.map(m => dbMeetingLogToStore(m, diary_comments)),
     history: history.map(h => dbHistoryToStore(h, diary_comments)),
     archived: project.archived ?? false,
+    hidden: project.hidden ?? false,
   }
 }
 
@@ -490,9 +493,12 @@ export function storeProjectToDb(project: Project, userId: string): DbProjectFla
     baseline_set_at: project.baselineSetAt ?? null,
     overview: project.overview ?? null,
     charter: project.charter ? storeCharterToDb(project.charter) : null,
+    proposal_link: project.proposalLink ?? null,
+    deal_link: project.dealLink ?? null,
     team: project.team.length > 0 ? project.team.map(storeTeamMemberToDb) : null,
     links: project.links.length > 0 ? project.links.map(storeLinkToDb) : null,
     archived: project.archived ?? false,
+    hidden: project.hidden ?? false,
     created_at: now,
     created_by: userId,
     updated_at: now,

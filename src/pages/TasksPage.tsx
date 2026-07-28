@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   DndContext, DragEndEvent, DragStartEvent, DragOverlay,
@@ -7,9 +7,13 @@ import {
 } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { useAppStore } from '@/store/useAppStore'
-import { Entry, EntryOwner, EntryStatus, Project, Incident } from '@/types'
+import { useAuthStore } from '@/stores/useAuthStore'
+import { Entry, EntryOwner, EntryStatus, Project, Incident, TeamMember } from '@/types'
 import EntryModal from '@/components/plan/EntryModal'
 import IncidentEntryModal from '@/components/plan/IncidentEntryModal'
+import OwnersField from '@/components/plan/OwnersField'
+import { SelectionBar } from '@/components/ui/SelectionBar'
+import { isEntryMine } from '@/utils/involvement'
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -313,14 +317,33 @@ function FilterSelect({ value, onChange, children }: {
 
 export default function TasksPage() {
   const { t } = useTranslation()
-  const { projects, incidents, updateEntryStatus, updateIncidentEntryStatus } = useAppStore()
+  const {
+    projects, incidents, updateEntryStatus, updateIncidentEntryStatus,
+    updateEntry, updateIncidentEntry, teamDirectory,
+  } = useAppStore()
+  const { user } = useAuthStore()
 
+  // OwnersField expects TeamMember[] — map the global registered-user directory into that shape
+  const directoryAsTeam: TeamMember[] = useMemo(
+    () => teamDirectory.map((p) => ({ id: p.id, name: p.name ?? p.email ?? '', role: '', email: p.email ?? undefined, userId: p.id })),
+    [teamDirectory],
+  )
+
+  const [view, setView] = useState<'kanban' | 'table'>(() =>
+    (localStorage.getItem('pb-tasks-view') as 'kanban' | 'table') ?? 'kanban',
+  )
   const [filterScope, setFilterScope] = useState('')
   const [filterMember, setFilterMember] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
+  const [onlyMine, setOnlyMine] = useState(false)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [newTaskOpen, setNewTaskOpen] = useState(false)
   const [editCard, setEditCard] = useState<GlobalCard | null>(null)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkOwnersOpen, setBulkOwnersOpen] = useState(false)
+  const [bulkOwners, setBulkOwners] = useState<EntryOwner[]>([])
+
+  useEffect(() => { localStorage.setItem('pb-tasks-view', view) }, [view])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -338,6 +361,7 @@ export default function TasksPage() {
 
   const filteredCards = useMemo(() => {
     return allCards.filter(c => {
+      if (onlyMine && !isEntryMine(c, user?.id)) return false
       if (filterScope && c._scopeId !== filterScope) return false
       if (filterMember) {
         const owners = entryOwners(c)
@@ -346,7 +370,37 @@ export default function TasksPage() {
       if (filterStatus && c.status !== filterStatus) return false
       return true
     })
-  }, [allCards, filterScope, filterMember, filterStatus])
+  }, [allCards, onlyMine, user?.id, filterScope, filterMember, filterStatus])
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  function applyBulkStatus(status: EntryStatus) {
+    for (const id of selected) {
+      const card = allCards.find(c => c.id === id)
+      if (!card) continue
+      if (card._scopeType === 'incident') updateIncidentEntryStatus(card._scopeId, id, status)
+      else updateEntryStatus(card._scopeId, id, status)
+    }
+    setSelected(new Set())
+  }
+
+  function applyBulkOwners() {
+    for (const id of selected) {
+      const card = allCards.find(c => c.id === id)
+      if (!card) continue
+      const patch = { owners: bulkOwners, responsible: bulkOwners[0]?.name ?? '' }
+      if (card._scopeType === 'incident') updateIncidentEntry(card._scopeId, id, patch)
+      else updateEntry(card._scopeId, id, patch)
+    }
+    setSelected(new Set())
+    setBulkOwnersOpen(false)
+  }
 
   const activeCard = activeId ? allCards.find(c => c.id === activeId) : null
   const validStatuses = new Set(KANBAN_COLS.map(c => c.status))
@@ -398,6 +452,35 @@ export default function TasksPage() {
           + {t('tasks.newTask')}
         </button>
 
+        <div className="flex rounded-lg border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
+          <button
+            onClick={() => setView('kanban')}
+            className="px-3 py-1.5 text-xs font-medium transition-colors"
+            style={{ background: view === 'kanban' ? 'var(--text-primary)' : 'var(--surface-card)', color: view === 'kanban' ? 'white' : 'var(--text-secondary)' }}
+          >
+            Kanban
+          </button>
+          <button
+            onClick={() => setView('table')}
+            className="px-3 py-1.5 text-xs font-medium transition-colors"
+            style={{ background: view === 'table' ? 'var(--text-primary)' : 'var(--surface-card)', color: view === 'table' ? 'white' : 'var(--text-secondary)' }}
+          >
+            Tabela
+          </button>
+        </div>
+
+        <button
+          onClick={() => setOnlyMine((v) => !v)}
+          className="px-3 py-1.5 text-xs font-medium rounded-full border transition-colors"
+          style={{
+            background: onlyMine ? 'var(--oe-primary)' : 'var(--surface-card)',
+            color: onlyMine ? 'white' : 'var(--text-secondary)',
+            borderColor: onlyMine ? 'var(--oe-primary)' : 'var(--border-default)',
+          }}
+        >
+          Meus
+        </button>
+
         <div style={{ flex: 1 }} />
 
         <FilterSelect value={filterScope} onChange={setFilterScope}>
@@ -426,6 +509,44 @@ export default function TasksPage() {
       {/* Content */}
       {allCards.length === 0 ? (
         <EmptyState onNew={() => setNewTaskOpen(true)} />
+      ) : view === 'table' ? (
+        <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
+          <table className="w-full text-sm rounded-xl border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
+            <thead>
+              <tr style={{ background: 'var(--surface-subtle)' }}>
+                <th className="w-8 px-3 py-2" />
+                <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Nome</th>
+                <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Origem</th>
+                <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Responsáveis</th>
+                <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Status</th>
+                <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Data</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredCards.map((card) => {
+                const endDate = card.type === 'task' ? card.plannedEnd : card.plannedDate
+                return (
+                  <tr key={card.id} className="border-t transition-colors" style={{ borderColor: 'var(--border-default)' }}>
+                    <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+                      <input type="checkbox" checked={selected.has(card.id)} onChange={() => toggleSelect(card.id)} />
+                    </td>
+                    <td className="px-3 py-2.5 cursor-pointer" onClick={() => setEditCard(card)}>
+                      <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{card.name}</span>
+                    </td>
+                    <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)' }}>
+                      {card._scopeType === 'incident' ? `🛠️ ${card._scopeName}` : card._scopeName}
+                    </td>
+                    <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)' }}>
+                      {entryOwners(card).map((o) => o.name).join(', ') || '—'}
+                    </td>
+                    <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)' }}>{t(`entry.${card.status}` as any)}</td>
+                    <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)' }}>{endDate ? fmtDate(endDate) : '—'}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
           <DndContext
@@ -478,6 +599,38 @@ export default function TasksPage() {
           entryPhaseId={editCard._phaseId}
           onClose={() => setEditCard(null)}
         />
+      )}
+
+      <SelectionBar count={selected.size} onClear={() => setSelected(new Set())}>
+        <select
+          onChange={(e) => { if (e.target.value) applyBulkStatus(e.target.value as EntryStatus) }}
+          value=""
+          className="text-xs rounded-md px-2 py-1"
+          style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
+        >
+          <option value="" disabled>Alterar status...</option>
+          {KANBAN_COLS.map((col) => <option key={col.status} value={col.status}>{t(col.labelKey as any)}</option>)}
+        </select>
+        <button
+          onClick={() => { setBulkOwners([]); setBulkOwnersOpen(true) }}
+          className="text-xs px-2 py-1 rounded-md"
+          style={{ background: 'rgba(255,255,255,0.15)' }}
+        >
+          Alterar responsável
+        </button>
+      </SelectionBar>
+
+      {bulkOwnersOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)' }} onClick={() => setBulkOwnersOpen(false)}>
+          <div className="rounded-xl p-5 w-full max-w-sm" style={{ background: 'var(--surface-card)' }} onClick={(e) => e.stopPropagation()}>
+            <p className="text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>Alterar responsável de {selected.size} item(ns)</p>
+            <OwnersField owners={bulkOwners} onChange={setBulkOwners} teamMembers={directoryAsTeam} />
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setBulkOwnersOpen(false)} className="text-sm px-3 py-1.5 rounded-md" style={{ color: 'var(--text-secondary)' }}>Cancelar</button>
+              <button onClick={applyBulkOwners} className="text-sm px-3 py-1.5 rounded-md text-white" style={{ background: 'var(--oe-primary)' }}>Aplicar</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
