@@ -87,7 +87,11 @@ export function Sidebar() {
 
       {/* Main nav */}
       <nav style={{ padding: collapsed ? '8px 6px' : '8px 8px' }}>
-        <NavLink to="/" end className={navLinkCls} title={collapsed ? t('nav.portfolio') : undefined}>
+        <NavLink to="/wallet" className={navLinkCls} title={t('nav.walletTooltip')}>
+          <span className="shrink-0 w-4 h-4 flex items-center justify-center"><WalletIcon /></span>
+          {!collapsed && <span>{t('nav.wallet')}</span>}
+        </NavLink>
+        <NavLink to="/" end className={navLinkCls} title={t('nav.projects')}>
           <span className="shrink-0 w-4 h-4 flex items-center justify-center"><PortfolioIcon /></span>
           {!collapsed && <span>{t('nav.portfolio')}</span>}
         </NavLink>
@@ -219,6 +223,15 @@ export function Sidebar() {
         </button>
       </div>
     </aside>
+  )
+}
+
+function WalletIcon() {
+  return (
+    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 12V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h14a2 2 0 002-2v-5m-4 0a1 1 0 100 2 1 1 0 000-2z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 8h18" />
+    </svg>
   )
 }
 

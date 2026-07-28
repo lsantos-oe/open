@@ -186,11 +186,11 @@ function MoreMenu({ onImportUpdate, onExportJson, onDuplicate, onArchive }: { on
 function DuplicateModal({ open, project, onClose }: { open: boolean; project: Project; onClose: () => void }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { settings, projects, duplicateProject } = useAppStore()
+  const { projects, duplicateProject, clients: storeClients, createClient } = useAppStore()
   const { addToast } = useToastStore()
 
   const [name, setName] = useState('')
-  const [client, setClient] = useState('')
+  const [clientId, setClientId] = useState('')
   const [isNewClient, setIsNewClient] = useState(false)
   const [newClientName, setNewClientName] = useState('')
   const [pm, setPm] = useState('')
@@ -205,7 +205,7 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
   useEffect(() => {
     if (!open) return
     setName(`${project.name} — cópia`)
-    setClient(project.client ?? '')
+    setClientId(project.clientId ?? '')
     setIsNewClient(false)
     setNewClientName('')
     setPm(project.pm ?? '')
@@ -218,17 +218,13 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
     setAttempted(false)
   }, [open, project])
 
-  const allClients = useMemo(
-    () => [...new Set([...settings.clients, ...projects.map((p) => p.client).filter(Boolean)])].sort(),
-    [settings.clients, projects],
-  )
-
   const allMembers = useMemo(
     () => [...new Set(projects.flatMap((p) => [p.pm, p.devLead].filter(Boolean) as string[]))].sort(),
     [projects],
   )
 
-  const finalClient = isNewClient ? newClientName : client
+  const selectedClient = storeClients.find((c) => c.id === clientId)
+  const finalClient = isNewClient ? newClientName : (selectedClient?.name ?? '')
   const errors = {
     name: attempted && !name.trim() ? t('errors.nameRequired') : '',
     client: attempted && !finalClient.trim() ? t('errors.clientRequired') : '',
@@ -238,9 +234,11 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
   function handleDuplicate() {
     setAttempted(true)
     if (!name.trim() || !finalClient.trim() || !pm.trim()) return
+    const finalClientId = isNewClient ? createClient({ name: newClientName.trim() }) : (clientId || undefined)
     const newId = duplicateProject(project, {
       name: name.trim(),
       client: finalClient.trim(),
+      clientId: finalClientId,
       pm: pm.trim(),
       language,
       ...(hasDev && devType ? { devLead: devLead || undefined, devType, devIntegration: devIntegration || undefined } : {}),
@@ -294,15 +292,15 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
               </div>
             ) : (
               <select
-                value={client}
+                value={clientId}
                 onChange={(e) => {
-                  if (e.target.value === '__new__') { setIsNewClient(true); setClient('') }
-                  else setClient(e.target.value)
+                  if (e.target.value === '__new__') { setIsNewClient(true); setClientId('') }
+                  else setClientId(e.target.value)
                 }}
                 className={`block w-full rounded-md border px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] ${errors.client ? 'border-red-400' : 'border-[var(--border-default)]'}`}
               >
                 <option value="">{t('project.selectClient')}</option>
-                {allClients.map((c) => <option key={c} value={c}>{c}</option>)}
+                {[...storeClients].sort((a, b) => a.name.localeCompare(b.name)).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 <option value="__new__">{t('project.newClient')}</option>
               </select>
             )}

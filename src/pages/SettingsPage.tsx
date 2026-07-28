@@ -47,7 +47,7 @@ export default function SettingsPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const {
-    settings, updateSettings, addHoliday, removeHoliday, addClient, removeClient, projects,
+    settings, updateSettings, addHoliday, removeHoliday,
     archivedProjects, archivedProjectsLoaded, loadArchivedProjects, unarchiveProject,
   } = useAppStore()
 
@@ -55,23 +55,12 @@ export default function SettingsPage() {
 
   const [holidayDate, setHolidayDate] = useState('')
   const [holidayName, setHolidayName] = useState('')
-  const [newClient, setNewClient] = useState('')
-
-  // All clients = explicit list ∪ derived from projects
-  const projectClients = [...new Set(projects.map((p) => p.client).filter(Boolean))]
-  const allClients = [...new Set([...settings.clients, ...projectClients])].sort()
 
   function handleAddHoliday() {
     if (!holidayDate) return
     addHoliday(holidayDate, holidayName.trim() || undefined)
     setHolidayDate('')
     setHolidayName('')
-  }
-
-  function handleAddClient() {
-    if (!newClient.trim()) return
-    addClient(newClient.trim())
-    setNewClient('')
   }
 
   function changeLanguage(lang: 'pt' | 'en' | 'es') {
@@ -159,47 +148,6 @@ export default function SettingsPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </Section>
-
-      {/* Clients */}
-      <Section title="Base de clientes" description="Clientes disponíveis ao criar novos projetos.">
-        <div className="flex gap-2 mb-4">
-          <Input
-            value={newClient}
-            onChange={(e) => setNewClient(e.target.value)}
-            placeholder="Nome do cliente"
-            className="flex-1"
-            onKeyDown={(e) => e.key === 'Enter' && handleAddClient()}
-          />
-          <Button size="sm" onClick={handleAddClient} disabled={!newClient.trim()}>
-            + Cliente
-          </Button>
-        </div>
-        {allClients.length === 0 ? (
-          <p className="text-sm text-gray-400">Nenhum cliente cadastrado.</p>
-        ) : (
-          <div className="space-y-1.5">
-            {allClients.map((client) => {
-              const count = projects.filter((p) => p.client === client).length
-              const isExplicit = settings.clients.includes(client)
-              return (
-                <div key={client} className="flex items-center justify-between py-1.5 px-3 bg-gray-50 rounded-lg border border-gray-100">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-gray-800 font-medium">{client}</span>
-                    <span className="text-xs text-gray-400">{count} projeto{count !== 1 ? 's' : ''}</span>
-                  </div>
-                  {isExplicit && (
-                    <button onClick={() => removeClient(client)} className="text-gray-300 hover:text-red-500 transition-colors">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  )}
                 </div>
               )
             })}

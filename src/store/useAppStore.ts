@@ -6,6 +6,7 @@ import {
   Project, Phase, Entry, Risk, ActionTask, DelayLogEntry, TeamMember, Link, EntryComment,
   AppSettings, ProjectTemplate, AppLanguage, EntryStatus, RiskFlag, Workdays,
   OpenPoint, MeetingLog, MeetingItem, HistoryEntry, HistoryEventType, DiaryComment, FileAttachment,
+  Client, ClientContact, ClientCsAssignment,
 } from '@/types'
 import { applyDateChange } from '@/utils/dateEngine'
 import { applyIsCritical } from '@/utils/criticalPath'
@@ -21,6 +22,10 @@ import {
   storeEntryToDb,
   storeRiskToDb,
   storeDelayLogToDb,
+  dbClientToStore,
+  storeClientToDb,
+  storeClientContactToDb,
+  storeCsAssignmentToDb,
 } from '@/utils/dbConversions'
 import type { DbProjectFull, DbProfile } from '@/types/database'
 
@@ -112,18 +117,32 @@ interface AppStore {
   archivedProjectsLoaded: boolean
   settings: AppSettings
   teamDirectory: DbProfile[]
+  clients: Client[]
+  clientsLoading: boolean
 
   // Load / archive
   loadProjects: () => Promise<void>
   loadSettings: () => Promise<void>
   loadArchivedProjects: () => Promise<void>
   loadTeamDirectory: () => Promise<void>
+  loadClients: () => Promise<void>
+
+  // Clients (Carteira)
+  createClient: (data: { name: string; country?: string; ploomesLink?: string; notes?: string }) => string
+  updateClient: (id: string, patch: Partial<Client>) => void
+  deleteClient: (id: string) => void
+  addClientContact: (clientId: string, contact: Omit<ClientContact, 'id'>) => void
+  updateClientContact: (clientId: string, contactId: string, patch: Partial<ClientContact>) => void
+  removeClientContact: (clientId: string, contactId: string) => void
+  addCsAssignment: (clientId: string, assignment: Omit<ClientCsAssignment, 'id'>) => void
+  updateCsAssignment: (clientId: string, assignmentId: string, patch: Partial<ClientCsAssignment>) => void
+  removeCsAssignment: (clientId: string, assignmentId: string) => void
   archiveProject: (id: string) => Promise<void>
   unarchiveProject: (id: string) => Promise<void>
 
   // Projects
   createProject: (data: Omit<Project, 'id' | 'phases' | 'risks' | 'delayLog' | 'team' | 'links' | 'status'>) => string
-  duplicateProject: (source: Project, overrides: { name: string; client: string; pm: string; language: AppLanguage; devLead?: string; devType?: 'integration' | 'application'; devIntegration?: string }) => string
+  duplicateProject: (source: Project, overrides: { name: string; client: string; clientId?: string; pm: string; language: AppLanguage; devLead?: string; devType?: 'integration' | 'application'; devIntegration?: string }) => string
   updateProject: (id: string, patch: Partial<Project>) => void
   deleteProject: (id: string) => void
   importProject: (project: Project) => void
@@ -234,6 +253,10 @@ interface AppStore {
 
 function mutateProject(projects: Project[], id: string, fn: (p: Project) => Project): Project[] {
   return projects.map((p) => (p.id === id ? fn(p) : p))
+}
+
+function mutateClient(clients: Client[], id: string, fn: (c: Client) => Client): Client[] {
+  return clients.map((c) => (c.id === id ? fn(c) : c))
 }
 
 function findEntryDeep(phases: Phase[], entryId: string): Entry | undefined {
@@ -353,6 +376,8 @@ export const useAppStore = create<AppStore>()(
       archivedProjects: [],
       archivedProjectsLoaded: false,
       teamDirectory: [],
+      clients: [],
+      clientsLoading: false,
       settings: {
         holidays: [],
         holidayNames: {},
@@ -459,6 +484,30 @@ export const useAppStore = create<AppStore>()(
           set({ teamDirectory: data ?? [] })
         } catch {
           // silently fail — directory picker just won't offer any registered users
+        }
+      },
+
+      async loadClients() {
+        set({ clientsLoading: true })
+        try {
+          const { data: clientRows, error } = await supabase.from('clients').select('*').order('name')
+          if (error) throw new Error(error.message)
+          if (!clientRows?.length) {
+            set({ clients: [], clientsLoading: false })
+            return
+          }
+          const ids = clientRows.map((c) => c.id)
+          const [contactsRes, csHistoryRes] = await Promise.all([
+            supabase.from('client_contacts').select('*').in('client_id', ids),
+            supabase.from('client_cs_history').select('*').in('client_id', ids),
+          ])
+          const contacts = contactsRes.data ?? []
+          const csHistory = csHistoryRes.data ?? []
+          const clients = clientRows.map((row) => dbClientToStore(row, contacts, csHistory))
+          set({ clients, clientsLoading: false })
+        } catch (err) {
+          useToastStore.getState().addToast(err instanceof Error ? err.message : 'Erro ao carregar clientes')
+          set({ clientsLoading: false })
         }
       },
 
@@ -2088,6 +2137,136 @@ export const useAppStore = create<AppStore>()(
             return { ...p, meetings: (p.meetings ?? []).map((m) => m.id === parentId ? { ...m, attachments: m.attachments.filter((a) => a.id !== attachmentId) } : m) }
           }),
         }))
+      },
+
+      // ── Clients (Carteira) ────────────────────────────────────────────────
+
+      createClient(data) {
+        const id = uuid()
+        const now = new Date().toISOString()
+        const newClient: Client = {
+          id,
+          name: data.name,
+          country: data.country,
+          ploomesLink: data.ploomesLink,
+          notes: data.notes,
+          contacts: [],
+          csHistory: [],
+          createdAt: now,
+        }
+        set((s) => ({ clients: [...s.clients, newClient] }))
+        sync(async () => {
+          const userId = getUserId()
+          const { error } = await supabase.from('clients').insert(storeClientToDb(newClient, userId))
+          if (error) throw new Error(error.message)
+        }, () => set((s) => ({ clients: s.clients.filter((c) => c.id !== id) })))
+        return id
+      },
+
+      updateClient(id, patch) {
+        const prev = get().clients
+        set((s) => ({ clients: mutateClient(s.clients, id, (c) => ({ ...c, ...patch })) }))
+        sync(async () => {
+          const fields: Record<string, unknown> = {}
+          if (patch.name !== undefined) fields.name = patch.name
+          if (patch.country !== undefined) fields.country = patch.country
+          if (patch.ploomesLink !== undefined) fields.ploomes_link = patch.ploomesLink
+          if (patch.notes !== undefined) fields.notes = patch.notes
+          if (Object.keys(fields).length === 0) return
+          const { error } = await supabase.from('clients').update(fields).eq('id', id)
+          if (error) throw new Error(error.message)
+        }, () => set({ clients: prev }))
+      },
+
+      deleteClient(id) {
+        const prev = get().clients
+        set((s) => ({ clients: s.clients.filter((c) => c.id !== id) }))
+        sync(async () => {
+          const { error } = await supabase.from('clients').delete().eq('id', id)
+          if (error) throw new Error(error.message)
+        }, () => set({ clients: prev }))
+      },
+
+      addClientContact(clientId, contact) {
+        const newContact: ClientContact = { ...contact, id: uuid() }
+        set((s) => ({
+          clients: mutateClient(s.clients, clientId, (c) => ({ ...c, contacts: [...c.contacts, newContact] })),
+        }))
+        sync(async () => {
+          const { error } = await supabase.from('client_contacts').insert(storeClientContactToDb(newContact, clientId))
+          if (error) throw new Error(error.message)
+        })
+      },
+
+      updateClientContact(clientId, contactId, patch) {
+        set((s) => ({
+          clients: mutateClient(s.clients, clientId, (c) => ({
+            ...c,
+            contacts: c.contacts.map((ct) => ct.id === contactId ? { ...ct, ...patch } : ct),
+          })),
+        }))
+        sync(async () => {
+          const fields: Record<string, unknown> = {}
+          if (patch.name !== undefined) fields.name = patch.name
+          if (patch.role !== undefined) fields.role = patch.role
+          if (patch.email !== undefined) fields.email = patch.email
+          if (patch.phone !== undefined) fields.phone = patch.phone
+          if (Object.keys(fields).length === 0) return
+          const { error } = await supabase.from('client_contacts').update(fields).eq('id', contactId)
+          if (error) throw new Error(error.message)
+        })
+      },
+
+      removeClientContact(clientId, contactId) {
+        const prev = get().clients
+        set((s) => ({
+          clients: mutateClient(s.clients, clientId, (c) => ({ ...c, contacts: c.contacts.filter((ct) => ct.id !== contactId) })),
+        }))
+        sync(async () => {
+          const { error } = await supabase.from('client_contacts').delete().eq('id', contactId)
+          if (error) throw new Error(error.message)
+        }, () => set({ clients: prev }))
+      },
+
+      addCsAssignment(clientId, assignment) {
+        const newAssignment: ClientCsAssignment = { ...assignment, id: uuid() }
+        set((s) => ({
+          clients: mutateClient(s.clients, clientId, (c) => ({ ...c, csHistory: [...c.csHistory, newAssignment] })),
+        }))
+        sync(async () => {
+          const userId = getUserId()
+          const { error } = await supabase.from('client_cs_history').insert(storeCsAssignmentToDb(newAssignment, clientId, userId))
+          if (error) throw new Error(error.message)
+        })
+      },
+
+      updateCsAssignment(clientId, assignmentId, patch) {
+        set((s) => ({
+          clients: mutateClient(s.clients, clientId, (c) => ({
+            ...c,
+            csHistory: c.csHistory.map((a) => a.id === assignmentId ? { ...a, ...patch } : a),
+          })),
+        }))
+        sync(async () => {
+          const fields: Record<string, unknown> = {}
+          if (patch.owner !== undefined) fields.owner = patch.owner
+          if (patch.assignedAt !== undefined) fields.assigned_at = patch.assignedAt
+          if (patch.note !== undefined) fields.note = patch.note
+          if (Object.keys(fields).length === 0) return
+          const { error } = await supabase.from('client_cs_history').update(fields).eq('id', assignmentId)
+          if (error) throw new Error(error.message)
+        })
+      },
+
+      removeCsAssignment(clientId, assignmentId) {
+        const prev = get().clients
+        set((s) => ({
+          clients: mutateClient(s.clients, clientId, (c) => ({ ...c, csHistory: c.csHistory.filter((a) => a.id !== assignmentId) })),
+        }))
+        sync(async () => {
+          const { error } = await supabase.from('client_cs_history').delete().eq('id', assignmentId)
+          if (error) throw new Error(error.message)
+        }, () => set({ clients: prev }))
       },
     }),
     {

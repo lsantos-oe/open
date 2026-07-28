@@ -92,7 +92,8 @@ export interface DbProfile {
 export interface DbProject {
   id: string
   name: string
-  client: string | null
+  client: string | null       // deprecated free-text — see client_id
+  client_id: string | null
   type: ProjectType | null
   pm: string | null
   dev_lead: string | null
@@ -251,6 +252,36 @@ export interface DbHistory {
   author_id: string | null
   author_name: string | null
   author_avatar: string | null
+}
+
+export interface DbClient {
+  id: string
+  name: string
+  country: string | null
+  ploomes_link: string | null
+  notes: string | null
+  created_at: string | null
+  created_by: string | null
+}
+
+export interface DbClientContact {
+  id: string
+  client_id: string
+  name: string
+  role: string | null
+  email: string | null
+  phone: string | null
+  created_at: string | null
+}
+
+export interface DbClientCsAssignment {
+  id: string
+  client_id: string
+  owner: any            // JSONB — EntryOwner
+  assigned_at: string
+  note: string | null
+  created_at: string | null
+  created_by: string | null
 }
 
 export interface DbDiaryComment {

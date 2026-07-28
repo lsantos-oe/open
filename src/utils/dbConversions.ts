@@ -9,6 +9,7 @@ import type {
   RiskFlag, ProjectStatus, ProjectType, AppLanguage,
   DelayResponsibility, DelayType, OpenPoint, OpenPointStatus, OpenPointPriority,
   MeetingLog, MeetingItem, HistoryEntry, HistoryEventType, DiaryComment,
+  Client, ClientContact, ClientCsAssignment,
 } from '@/types'
 
 import type {
@@ -16,6 +17,7 @@ import type {
   DbCharter, DbLink, DbTeamMember, DbActionTask, DbSubtaskJson,
   DbCommentJson, DbProjectFull, DbProjectFlat, DbOpenPoint,
   DbMeetingLog, DbHistory, DbDiaryComment,
+  DbClient, DbClientContact, DbClientCsAssignment,
 } from '@/types/database'
 
 // ─── DB → Store ───────────────────────────────────────────────────────────────
@@ -272,6 +274,7 @@ export function dbProjectToStore(data: DbProjectFull): Project {
     id: project.id,
     name: project.name,
     client: project.client ?? '',
+    clientId: project.client_id ?? undefined,
     type: (project.type as ProjectType) ?? 'nova_conta',
     pm: project.pm ?? '',
     devLead: project.dev_lead ?? undefined,
@@ -473,6 +476,7 @@ export function storeProjectToDb(project: Project, userId: string): DbProjectFla
     id: project.id,
     name: project.name,
     client: project.client || null,
+    client_id: project.clientId ?? null,
     type: project.type,
     pm: project.pm || null,
     dev_lead: project.devLead ?? null,
@@ -511,3 +515,76 @@ export function storeProjectToDb(project: Project, userId: string): DbProjectFla
 }
 
 export { dbRiskToStore, dbDelayLogToStore, dbEntryToStore as dbEntryToStorePartial, storeRiskToDb, storeEntryToDb, storeDelayLogToDb }
+
+// ─── Clients (Carteira) ────────────────────────────────────────────────────
+
+function dbClientContactToStore(row: DbClientContact): ClientContact {
+  return {
+    id: row.id,
+    name: row.name,
+    role: row.role ?? undefined,
+    email: row.email ?? undefined,
+    phone: row.phone ?? undefined,
+  }
+}
+
+function dbCsAssignmentToStore(row: DbClientCsAssignment): ClientCsAssignment {
+  return {
+    id: row.id,
+    owner: row.owner as EntryOwner,
+    assignedAt: row.assigned_at,
+    note: row.note ?? undefined,
+  }
+}
+
+export function dbClientToStore(row: DbClient, contacts: DbClientContact[], csHistory: DbClientCsAssignment[]): Client {
+  return {
+    id: row.id,
+    name: row.name,
+    country: row.country ?? undefined,
+    ploomesLink: row.ploomes_link ?? undefined,
+    notes: row.notes ?? undefined,
+    contacts: contacts.filter(c => c.client_id === row.id).map(dbClientContactToStore),
+    csHistory: csHistory
+      .filter(h => h.client_id === row.id)
+      .map(dbCsAssignmentToStore)
+      .sort((a, b) => a.assignedAt.localeCompare(b.assignedAt)),
+    createdAt: row.created_at ?? new Date().toISOString(),
+  }
+}
+
+export function storeClientToDb(c: Client, userId: string): DbClient {
+  return {
+    id: c.id,
+    name: c.name,
+    country: c.country ?? null,
+    ploomes_link: c.ploomesLink ?? null,
+    notes: c.notes ?? null,
+    created_at: new Date().toISOString(),
+    created_by: userId,
+  }
+}
+
+export function storeClientContactToDb(contact: ClientContact, clientId: string): DbClientContact {
+  return {
+    id: contact.id,
+    client_id: clientId,
+    name: contact.name,
+    role: contact.role ?? null,
+    email: contact.email ?? null,
+    phone: contact.phone ?? null,
+    created_at: new Date().toISOString(),
+  }
+}
+
+export function storeCsAssignmentToDb(assignment: ClientCsAssignment, clientId: string, userId: string): DbClientCsAssignment {
+  return {
+    id: assignment.id,
+    client_id: clientId,
+    owner: assignment.owner,
+    assigned_at: assignment.assignedAt,
+    note: assignment.note ?? null,
+    created_at: new Date().toISOString(),
+    created_by: userId,
+  }
+}

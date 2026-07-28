@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { Input, Field } from '@/components/ui/Input'
-import { Project, ProjectStatus, ProjectType, ProjectTemplate } from '@/types'
+import { Project, ProjectStatus, ProjectType, ProjectTemplate, Client } from '@/types'
 import {
   projectDurationDays,
   projectEndVariance,
@@ -301,11 +301,11 @@ function EmptyFiltered() {
 interface NewProjectModalProps {
   open: boolean
   onClose: () => void
-  clients: string[]
+  clients: Client[]
   members: string[]
   templates: ProjectTemplate[]
   onCreate: (data: {
-    name: string; client: string; pm: string; type: ProjectType
+    name: string; client: string; clientId?: string; pm: string; type: ProjectType
     language: 'pt' | 'en' | 'es'; devLead?: string
     devType?: 'integration' | 'application'; devIntegration?: string
   }) => void
@@ -313,8 +313,9 @@ interface NewProjectModalProps {
 
 function NewProjectModal({ open, onClose, clients, members, templates, onCreate }: NewProjectModalProps) {
   const { t, i18n } = useTranslation()
+  const { createClient } = useAppStore()
   const [selectedType, setSelectedType] = useState<ProjectType>('nova_conta')
-  const [client, setClient] = useState('')
+  const [clientId, setClientId] = useState('')
   const [isNewClient, setIsNewClient] = useState(false)
   const [newClientName, setNewClientName] = useState('')
   const [name, setName] = useState('')
@@ -326,7 +327,8 @@ function NewProjectModal({ open, onClose, clients, members, templates, onCreate 
   const [devIntegration, setDevIntegration] = useState('')
   const [attempted, setAttempted] = useState(false)
 
-  const finalClient = isNewClient ? newClientName : client
+  const selectedClient = clients.find((c) => c.id === clientId)
+  const finalClient = isNewClient ? newClientName : (selectedClient?.name ?? '')
   const errors = {
     name: attempted && !name.trim() ? t('errors.nameRequired') : '',
     client: attempted && !finalClient.trim() ? t('errors.clientRequired') : '',
@@ -335,7 +337,7 @@ function NewProjectModal({ open, onClose, clients, members, templates, onCreate 
   const canCreate = name.trim() && finalClient.trim() && pm.trim()
 
   function reset() {
-    setSelectedType('nova_conta'); setClient(''); setIsNewClient(false); setNewClientName('')
+    setSelectedType('nova_conta'); setClientId(''); setIsNewClient(false); setNewClientName('')
     setName(''); setPm(''); setLanguage('pt'); setHasDev(false)
     setDevLead(''); setDevType('integration'); setDevIntegration('')
     setAttempted(false)
@@ -344,8 +346,9 @@ function NewProjectModal({ open, onClose, clients, members, templates, onCreate 
   function handleCreate() {
     setAttempted(true)
     if (!canCreate) return
+    const finalClientId = isNewClient ? createClient({ name: newClientName.trim() }) : (clientId || undefined)
     onCreate({
-      name: name.trim(), client: finalClient.trim(), pm: pm.trim(), type: selectedType,
+      name: name.trim(), client: finalClient.trim(), clientId: finalClientId, pm: pm.trim(), type: selectedType,
       language,
       ...(hasDev && { devLead: devLead || undefined, devType, devIntegration: devIntegration || undefined }),
     })
@@ -439,15 +442,15 @@ function NewProjectModal({ open, onClose, clients, members, templates, onCreate 
                 </div>
               ) : (
                 <select
-                  value={client}
+                  value={clientId}
                   onChange={(e) => {
-                    if (e.target.value === '__new__') { setIsNewClient(true); setClient('') }
-                    else setClient(e.target.value)
+                    if (e.target.value === '__new__') { setIsNewClient(true); setClientId('') }
+                    else setClientId(e.target.value)
                   }}
                   className={`block w-full rounded-md border px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] ${errors.client ? 'border-red-400' : 'border-[var(--border-default)]'}`}
                 >
                   <option value="">{t('project.selectClient')}</option>
-                  {clients.map((c) => <option key={c} value={c}>{c}</option>)}
+                  {[...clients].sort((a, b) => a.name.localeCompare(b.name)).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                   <option value="__new__">{t('project.newClient')}</option>
                 </select>
               )}
@@ -572,7 +575,7 @@ function NewProjectModal({ open, onClose, clients, members, templates, onCreate 
 export default function ProjectsPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { projects, projectsLoading, settings, createProject, archivedProjects, archivedProjectsLoaded, loadArchivedProjects } = useAppStore()
+  const { projects, projectsLoading, settings, createProject, archivedProjects, archivedProjectsLoaded, loadArchivedProjects, clients: storeClients } = useAppStore()
 
   const [view, setView] = useState<'list' | 'kanban'>(() =>
     (localStorage.getItem('pb-portfolio-view') as 'list' | 'kanban') ?? 'list',
@@ -584,9 +587,9 @@ export default function ProjectsPage() {
 
   useEffect(() => { localStorage.setItem('pb-portfolio-view', view) }, [view])
 
-  const clients = useMemo(
-    () => [...new Set([...settings.clients, ...uniqueClients(projects)])].sort(),
-    [projects, settings.clients],
+  const clientNames = useMemo(
+    () => [...new Set([...storeClients.map((c) => c.name), ...uniqueClients(projects)])].sort(),
+    [projects, storeClients],
   )
   const pms = useMemo(() => uniquePMs(projects), [projects])
   const members = useMemo(() => uniqueMembers(projects), [projects])
@@ -653,7 +656,7 @@ export default function ProjectsPage() {
       {/* Filters */}
       {!projectsLoading && projects.length > 0 && (
         <div className="mb-5">
-          <FilterBar filters={filters} setFilters={setFilters} clients={clients} pms={pms} />
+          <FilterBar filters={filters} setFilters={setFilters} clients={clientNames} pms={pms} />
         </div>
       )}
 
@@ -718,7 +721,7 @@ export default function ProjectsPage() {
       <NewProjectModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        clients={clients}
+        clients={storeClients}
         members={members}
         templates={settings.templates}
         onCreate={handleCreate}

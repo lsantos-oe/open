@@ -201,6 +201,32 @@ export interface HistoryEntry {
   createdBy?: string
 }
 
+export interface ClientContact {
+  id: string
+  name: string
+  role?: string
+  email?: string
+  phone?: string
+}
+
+export interface ClientCsAssignment {
+  id: string
+  owner: EntryOwner
+  assignedAt: string
+  note?: string
+}
+
+export interface Client {
+  id: string
+  name: string
+  country?: string
+  ploomesLink?: string
+  notes?: string
+  contacts: ClientContact[]
+  csHistory: ClientCsAssignment[]
+  createdAt: string
+}
+
 export interface ProjectCharter {
   sponsor: string
   objectives: string
@@ -215,7 +241,8 @@ export interface ProjectCharter {
 export interface Project {
   id: string
   name: string
-  client: string
+  client: string          // deprecated free-text — being replaced by clientId (Carteira)
+  clientId?: string
   type: ProjectType
   pm: string
   color?: string

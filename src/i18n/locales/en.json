@@ -5,6 +5,10 @@
     "tasks": "Tasks",
     "settings": "Settings",
     "portfolio": "Portfolio",
+    "wallet": "Wallet",
+    "walletTooltip": "Clients",
+    "support": "Support",
+    "supportTooltip": "Fixes and incidents",
     "collapse": "Collapse menu",
     "expand": "Expand menu"
   },

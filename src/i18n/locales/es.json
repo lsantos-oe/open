@@ -5,6 +5,10 @@
     "tasks": "Tareas",
     "settings": "Configuración",
     "portfolio": "Portafolio",
+    "wallet": "Cartera",
+    "walletTooltip": "Clientes",
+    "support": "Soporte",
+    "supportTooltip": "Ajustes e incidentes",
     "collapse": "Colapsar menú",
     "expand": "Expandir menú"
   },
