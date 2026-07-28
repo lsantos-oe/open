@@ -40,7 +40,7 @@ export default function CountrySelect({ value, onChange }: Props) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between rounded-md border px-3 py-2 text-sm text-left"
+        className="w-full flex items-center justify-between rounded-[var(--radius-md)] border px-3 py-2 text-sm text-left"
         style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: selected ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
       >
         {selected ? selected.name : 'Selecione o país...'}
@@ -49,7 +49,7 @@ export default function CountrySelect({ value, onChange }: Props) {
 
       {open && (
         <div
-          className="absolute left-0 right-0 z-50 rounded-lg shadow-lg mt-1"
+          className="absolute left-0 right-0 z-50 rounded-[var(--radius-lg)] shadow-lg mt-1"
           style={{ background: 'var(--surface-card)', border: '1px solid var(--border-default)', maxHeight: 320, display: 'flex', flexDirection: 'column' }}
         >
           <div className="p-2 border-b" style={{ borderColor: 'var(--border-default)' }}>

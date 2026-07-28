@@ -64,7 +64,7 @@ export default function ClientsPage() {
           {clients.length === 0 && <Button size="sm" className="mt-3" onClick={openAdd}>+ Criar primeiro cliente</Button>}
         </div>
       ) : (
-        <div className="rounded-xl border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
+        <div className="rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
           <table className="w-full text-sm">
             <thead>
               <tr style={{ background: 'var(--surface-subtle)' }}>

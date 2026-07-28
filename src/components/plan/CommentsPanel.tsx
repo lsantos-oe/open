@@ -63,7 +63,7 @@ function CommentAvatar({ author, currentAuthorName, avatarUrl }: AvatarProps) {
     )
   }
   return (
-    <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold text-white ${hashColor(author)}`}>
+    <div className={`w-8 h-8 rounded-[var(--radius-pill)] shrink-0 flex items-center justify-center text-xs font-bold text-white ${hashColor(author)}`}>
       {getInitials(author)}
     </div>
   )
@@ -117,7 +117,7 @@ export default function CommentsPanel({ projectId, entry, onClose }: Props) {
         </div>
         <button
           onClick={onClose}
-          className="ml-3 shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] transition-colors"
+          className="ml-3 shrink-0 w-7 h-7 flex items-center justify-center rounded-[var(--radius-md)] text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] transition-colors"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -149,7 +149,7 @@ export default function CommentsPanel({ projectId, entry, onClose }: Props) {
             </div>
             <button
               onClick={() => removeComment(projectId, entry.id, c.id)}
-              className="opacity-0 group-hover:opacity-100 text-[var(--text-disabled)] hover:text-red-500 transition-opacity shrink-0 mt-1"
+              className="opacity-0 group-hover:opacity-100 text-[var(--text-disabled)] hover:text-[var(--color-danger-text)] transition-opacity shrink-0 mt-1"
               title="Excluir"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

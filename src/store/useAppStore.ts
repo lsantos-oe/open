@@ -30,7 +30,7 @@ import {
   dbIncidentToStore,
   storeIncidentToDb,
 } from '@/utils/dbConversions'
-import type { DbProjectFull, DbProfile } from '@/types/database'
+import type { DbProjectFull, DbProfile, DbInvitedUser, UserRole } from '@/types/database'
 import type { DbIncidentFull } from '@/utils/dbConversions'
 
 export type DiaryScope = { type: 'project'; id: string } | { type: 'incident'; id: string }
@@ -123,6 +123,7 @@ interface AppStore {
   archivedProjectsLoaded: boolean
   settings: AppSettings
   teamDirectory: DbProfile[]
+  invitedUsers: DbInvitedUser[]
   clients: Client[]
   clientsLoading: boolean
   incidents: Incident[]
@@ -133,8 +134,15 @@ interface AppStore {
   loadSettings: () => Promise<void>
   loadArchivedProjects: () => Promise<void>
   loadTeamDirectory: () => Promise<void>
+  loadInvitedUsers: () => Promise<void>
   loadClients: () => Promise<void>
   loadIncidents: () => Promise<void>
+
+  // Users (Base de usuários)
+  inviteUser: (data: { email: string; name?: string; role: UserRole }) => Promise<void>
+  deleteInvite: (id: string) => Promise<void>
+  updateProfileRole: (id: string, role: UserRole) => Promise<void>
+  setProfileActive: (id: string, active: boolean) => Promise<void>
 
   // Clients (Carteira)
   createClient: (data: { name: string; country?: string; ploomesLink?: string; notes?: string }) => string
@@ -438,6 +446,7 @@ export const useAppStore = create<AppStore>()(
       archivedProjects: [],
       archivedProjectsLoaded: false,
       teamDirectory: [],
+      invitedUsers: [],
       clients: [],
       clientsLoading: false,
       incidents: [],
@@ -546,6 +555,59 @@ export const useAppStore = create<AppStore>()(
           set({ teamDirectory: data ?? [] })
         } catch {
           // silently fail — directory picker just won't offer any registered users
+        }
+      },
+
+      async loadInvitedUsers() {
+        try {
+          const { data } = await supabase.from('invited_users').select('*').order('invited_at', { ascending: false })
+          set({ invitedUsers: data ?? [] })
+        } catch {
+          // silently fail — non-admins get a permission error from RLS, that's expected
+        }
+      },
+
+      async inviteUser(data) {
+        const userId = getUserId()
+        const { data: row, error } = await supabase
+          .from('invited_users')
+          .insert({ email: data.email.trim().toLowerCase(), name: data.name?.trim() || null, role: data.role, invited_by: userId })
+          .select()
+          .single()
+        if (error) {
+          useToastStore.getState().addToast(error.message)
+          return
+        }
+        set((s) => ({ invitedUsers: [row as DbInvitedUser, ...s.invitedUsers] }))
+      },
+
+      async deleteInvite(id) {
+        const prev = get().invitedUsers
+        set((s) => ({ invitedUsers: s.invitedUsers.filter((i) => i.id !== id) }))
+        const { error } = await supabase.from('invited_users').delete().eq('id', id)
+        if (error) {
+          set({ invitedUsers: prev })
+          useToastStore.getState().addToast(error.message)
+        }
+      },
+
+      async updateProfileRole(id, role) {
+        const prev = get().teamDirectory
+        set((s) => ({ teamDirectory: s.teamDirectory.map((p) => p.id === id ? { ...p, role } : p) }))
+        const { error } = await supabase.from('profiles').update({ role }).eq('id', id)
+        if (error) {
+          set({ teamDirectory: prev })
+          useToastStore.getState().addToast(error.message)
+        }
+      },
+
+      async setProfileActive(id, active) {
+        const prev = get().teamDirectory
+        set((s) => ({ teamDirectory: s.teamDirectory.map((p) => p.id === id ? { ...p, active } : p) }))
+        const { error } = await supabase.from('profiles').update({ active }).eq('id', id)
+        if (error) {
+          set({ teamDirectory: prev })
+          useToastStore.getState().addToast(error.message)
         }
       },
 

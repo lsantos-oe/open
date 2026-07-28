@@ -190,14 +190,14 @@ export default function ClientDetailPage() {
                     onChange={(e) => setNotesDraft(e.target.value)}
                     onBlur={saveNotes}
                     rows={6}
-                    className="block w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1"
+                    className="block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:outline-none focus:ring-1"
                     style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)', resize: 'none' }}
                   />
                 </div>
               ) : (
                 <div
                   onClick={() => { setNotesDraft(client.notes ?? ''); setEditingNotes(true) }}
-                  className="p-3 rounded-lg text-sm whitespace-pre-wrap cursor-text min-h-[80px]"
+                  className="p-3 rounded-[var(--radius-lg)] text-sm whitespace-pre-wrap cursor-text min-h-[80px]"
                   style={{ background: 'var(--surface-subtle)', color: client.notes ? 'var(--text-secondary)' : 'var(--text-tertiary)' }}
                 >
                   {client.notes || 'Clique para adicionar notas...'}
@@ -231,7 +231,7 @@ export default function ClientDetailPage() {
             ) : (
               <div className="space-y-2">
                 {client.contacts.map((c) => (
-                  <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg group" style={{ background: 'var(--surface-subtle)' }}>
+                  <div key={c.id} className="flex items-center gap-3 p-3 rounded-[var(--radius-lg)] group" style={{ background: 'var(--surface-subtle)' }}>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{c.name} {c.role && <span className="font-normal" style={{ color: 'var(--text-tertiary)' }}>· {c.role}</span>}</p>
                       {(c.email || c.phone) && (
@@ -259,7 +259,7 @@ export default function ClientDetailPage() {
             ) : (
               <div className="space-y-2">
                 {sortedCsHistory.map((a, i) => (
-                  <div key={a.id} className="flex items-center gap-3 p-3 rounded-lg group" style={{ background: i === 0 ? 'var(--oe-primary-light)' : 'var(--surface-subtle)' }}>
+                  <div key={a.id} className="flex items-center gap-3 p-3 rounded-[var(--radius-lg)] group" style={{ background: i === 0 ? 'var(--oe-primary-light)' : 'var(--surface-subtle)' }}>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                         {a.owner.name} {i === 0 && <span className="text-xs font-normal" style={{ color: 'var(--oe-primary)' }}>· atual</span>}
@@ -284,10 +284,10 @@ export default function ClientDetailPage() {
                 <div className="space-y-3">
                   {timelineEvents.map((e) => (
                     <div key={e.id} className="relative">
-                      <div className="absolute -left-10 w-8 h-8 rounded-full flex items-center justify-center text-base" style={{ background: 'var(--surface-card)', border: '2px solid var(--border-default)' }}>
+                      <div className="absolute -left-10 w-8 h-8 rounded-[var(--radius-pill)] flex items-center justify-center text-base" style={{ background: 'var(--surface-card)', border: '2px solid var(--border-default)' }}>
                         {EVENT_ICONS[e.event] ?? '•'}
                       </div>
-                      <div className="p-3 rounded-lg" style={{ background: 'var(--surface-card)', border: '1px solid var(--border-default)' }}>
+                      <div className="p-3 rounded-[var(--radius-lg)]" style={{ background: 'var(--surface-card)', border: '1px solid var(--border-default)' }}>
                         <div className="flex items-baseline gap-2 flex-wrap">
                           <Link to={`/projects/${e.projectId}`} className="text-xs font-medium px-1.5 py-0.5 rounded" style={{ background: 'var(--surface-subtle)', color: 'var(--oe-primary)' }}>
                             {e.projectName}
@@ -355,14 +355,14 @@ export default function ClientDetailPage() {
             <button
               type="button"
               onClick={() => setCsMode('directory')}
-              className={`flex-1 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${csMode === 'directory' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300'}`}
+              className={`flex-1 text-xs font-medium px-3 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${csMode === 'directory' ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}
             >
               Usuário
             </button>
             <button
               type="button"
               onClick={() => setCsMode('text')}
-              className={`flex-1 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${csMode === 'text' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300'}`}
+              className={`flex-1 text-xs font-medium px-3 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${csMode === 'text' ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}
             >
               Texto livre
             </button>
@@ -372,7 +372,7 @@ export default function ClientDetailPage() {
               <select
                 value={csUserId}
                 onChange={(e) => setCsUserId(e.target.value)}
-                className="block w-full rounded-md border px-3 py-2 text-sm focus:outline-none"
+                className="block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:outline-none"
                 style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)' }}
               >
                 <option value="">Selecione...</option>

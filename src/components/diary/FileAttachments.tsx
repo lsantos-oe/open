@@ -109,7 +109,7 @@ export default function FileAttachments({ scopeId, parentId, attachments, onAdd,
           {attachments.map((att) => (
             <div
               key={att.id}
-              className="flex items-center gap-1.5 px-2 py-1 rounded-md group"
+              className="flex items-center gap-1.5 px-2 py-1 rounded-[var(--radius-md)] group"
               style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border-default)' }}
             >
               <span className="text-sm">{fileIcon(att.name)}</span>

@@ -452,7 +452,7 @@ export default function TasksPage() {
           + {t('tasks.newTask')}
         </button>
 
-        <div className="flex rounded-lg border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
+        <div className="flex rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
           <button
             onClick={() => setView('kanban')}
             className="px-3 py-1.5 text-xs font-medium transition-colors"
@@ -471,7 +471,7 @@ export default function TasksPage() {
 
         <button
           onClick={() => setOnlyMine((v) => !v)}
-          className="px-3 py-1.5 text-xs font-medium rounded-full border transition-colors"
+          className="px-3 py-1.5 text-xs font-medium rounded-[var(--radius-pill)] border transition-colors"
           style={{
             background: onlyMine ? 'var(--oe-primary)' : 'var(--surface-card)',
             color: onlyMine ? 'white' : 'var(--text-secondary)',
@@ -511,7 +511,7 @@ export default function TasksPage() {
         <EmptyState onNew={() => setNewTaskOpen(true)} />
       ) : view === 'table' ? (
         <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
-          <table className="w-full text-sm rounded-xl border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
+          <table className="w-full text-sm rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
             <thead>
               <tr style={{ background: 'var(--surface-subtle)' }}>
                 <th className="w-8 px-3 py-2" />
@@ -528,7 +528,7 @@ export default function TasksPage() {
                 return (
                   <tr key={card.id} className="border-t transition-colors" style={{ borderColor: 'var(--border-default)' }}>
                     <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
-                      <input type="checkbox" checked={selected.has(card.id)} onChange={() => toggleSelect(card.id)} />
+                      <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]" checked={selected.has(card.id)} onChange={() => toggleSelect(card.id)} />
                     </td>
                     <td className="px-3 py-2.5 cursor-pointer" onClick={() => setEditCard(card)}>
                       <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{card.name}</span>
@@ -605,7 +605,7 @@ export default function TasksPage() {
         <select
           onChange={(e) => { if (e.target.value) applyBulkStatus(e.target.value as EntryStatus) }}
           value=""
-          className="text-xs rounded-md px-2 py-1"
+          className="text-xs rounded-[var(--radius-md)] px-2 py-1"
           style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
         >
           <option value="" disabled>Alterar status...</option>
@@ -613,7 +613,7 @@ export default function TasksPage() {
         </select>
         <button
           onClick={() => { setBulkOwners([]); setBulkOwnersOpen(true) }}
-          className="text-xs px-2 py-1 rounded-md"
+          className="text-xs px-2 py-1 rounded-[var(--radius-md)]"
           style={{ background: 'rgba(255,255,255,0.15)' }}
         >
           Alterar responsável
@@ -622,12 +622,12 @@ export default function TasksPage() {
 
       {bulkOwnersOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)' }} onClick={() => setBulkOwnersOpen(false)}>
-          <div className="rounded-xl p-5 w-full max-w-sm" style={{ background: 'var(--surface-card)' }} onClick={(e) => e.stopPropagation()}>
+          <div className="rounded-[var(--radius-lg)] p-5 w-full max-w-sm" style={{ background: 'var(--surface-card)' }} onClick={(e) => e.stopPropagation()}>
             <p className="text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>Alterar responsável de {selected.size} item(ns)</p>
             <OwnersField owners={bulkOwners} onChange={setBulkOwners} teamMembers={directoryAsTeam} />
             <div className="flex justify-end gap-2 mt-4">
-              <button onClick={() => setBulkOwnersOpen(false)} className="text-sm px-3 py-1.5 rounded-md" style={{ color: 'var(--text-secondary)' }}>Cancelar</button>
-              <button onClick={applyBulkOwners} className="text-sm px-3 py-1.5 rounded-md text-white" style={{ background: 'var(--oe-primary)' }}>Aplicar</button>
+              <button onClick={() => setBulkOwnersOpen(false)} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)]" style={{ color: 'var(--text-secondary)' }}>Cancelar</button>
+              <button onClick={applyBulkOwners} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)] text-white" style={{ background: 'var(--oe-primary)' }}>Aplicar</button>
             </div>
           </div>
         </div>

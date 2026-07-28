@@ -50,7 +50,7 @@ export default function DiaryTab({ project }: Props) {
             {tab.label}
             {tab.count !== undefined && (
               <span
-                className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full"
+                className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-[var(--radius-pill)]"
                 style={{ background: 'var(--surface-subtle)', color: 'var(--text-tertiary)' }}
               >
                 {tab.count}

@@ -175,7 +175,7 @@ export default function AddEntryModal({
                 key={type}
                 type="button"
                 onClick={() => set('type', type)}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 text-sm font-medium transition-colors ${
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[var(--radius-lg)] border-2 text-sm font-medium transition-colors ${
                   form.type === type
                     ? 'border-[var(--oe-primary)] bg-[var(--color-info-bg)] text-[var(--color-info-text)]'
                     : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[var(--oe-primary)]'
@@ -225,7 +225,7 @@ export default function AddEntryModal({
                   onChange={(e) => { set('plannedEnd', e.target.value); setEndDateError('') }}
                   className={endDateError ? 'border-red-500' : ''}
                 />
-                {endDateError && <p className="text-xs text-red-500 mt-1">{endDateError}</p>}
+                {endDateError && <p className="text-xs text-[var(--color-danger-text)] mt-1">{endDateError}</p>}
               </Field>
               <Field label={t('entry.duration')}>
                 <Input type="number" min={1} value={form.durationDays} onChange={(e) => set('durationDays', Number(e.target.value))} />
@@ -279,7 +279,7 @@ export default function AddEntryModal({
         {availableDeps.length > 0 && (
           <div>
             <p className="text-sm font-medium text-[var(--text-secondary)] mb-2">{t('plan.dependencies')}</p>
-            <div className="border border-[var(--border-default)] rounded-lg max-h-36 overflow-y-auto p-2 space-y-1">
+            <div className="border border-[var(--border-default)] rounded-[var(--radius-lg)] max-h-36 overflow-y-auto p-2 space-y-1">
               {availableDeps.map((dep) => (
                 <label key={dep.id} className="flex items-center gap-2.5 p-1.5 rounded hover:bg-[var(--surface-subtle)] cursor-pointer">
                   <input

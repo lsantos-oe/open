@@ -55,6 +55,8 @@ export default function LoginPage() {
           }}>
             {error === 'unauthorized'
               ? 'Acesso não autorizado. Use um e-mail corporativo.'
+              : error === 'revoked'
+              ? 'Seu acesso foi revogado. Fale com um administrador.'
               : 'Erro ao autenticar. Tente novamente.'}
           </div>
         )}

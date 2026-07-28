@@ -51,7 +51,7 @@ function wouldCreateCycle(from: string, target: string, graph: Map<string, strin
 
 function DragHandle(props: React.HTMLAttributes<SVGSVGElement>) {
   return (
-    <svg {...props} viewBox="0 0 16 16" fill="currentColor" className={`w-4 h-4 text-gray-300 cursor-grab active:cursor-grabbing shrink-0 ${(props as any).className ?? ''}`}>
+    <svg {...props} viewBox="0 0 16 16" fill="currentColor" className={`w-4 h-4 text-[var(--text-tertiary)] cursor-grab active:cursor-grabbing shrink-0 ${(props as any).className ?? ''}`}>
       <circle cx="5" cy="4" r="1.5" /><circle cx="11" cy="4" r="1.5" />
       <circle cx="5" cy="8" r="1.5" /><circle cx="11" cy="8" r="1.5" />
       <circle cx="5" cy="12" r="1.5" /><circle cx="11" cy="12" r="1.5" />
@@ -128,10 +128,10 @@ function EntryModal({ entry, allDeps, depGraph, onSave, onClose }: EntryModalPro
               key={t}
               type="button"
               onClick={() => setForm((f) => ({ ...f, type: t }))}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border-2 text-sm font-medium transition-colors ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[var(--radius-lg)] border-2 text-sm font-medium transition-colors ${
                 form.type === t
-                  ? 'border-blue-600 bg-blue-50 text-blue-700'
-                  : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                  ? 'border-[var(--oe-primary)] bg-[var(--oe-primary-light)] text-[var(--oe-primary)]'
+                  : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[var(--border-strong)]'
               }`}
             >
               <span>{TYPE_ICON[t]}</span>{TYPE_LABEL[t]}
@@ -177,22 +177,22 @@ function EntryModal({ entry, allDeps, depGraph, onSave, onClose }: EntryModalPro
 
         {allDeps.length > 0 && (
           <div>
-            <p className="text-sm font-medium text-gray-700 mb-2">Depende de</p>
-            <div className="border border-gray-200 rounded-lg max-h-40 overflow-y-auto p-2 space-y-1">
+            <p className="text-sm font-medium text-[var(--text-secondary)] mb-2">Depende de</p>
+            <div className="border border-[var(--border-default)] rounded-[var(--radius-lg)] max-h-40 overflow-y-auto p-2 space-y-1">
               {allDeps.map((dep) => (
-                <label key={dep.id} className="flex items-center gap-2.5 p-1 rounded hover:bg-gray-50 cursor-pointer">
+                <label key={dep.id} className="flex items-center gap-2.5 p-1 rounded hover:bg-[var(--surface-subtle)] cursor-pointer">
                   <input
                     type="checkbox"
                     checked={form.dependsOn.includes(dep.id)}
                     onChange={() => toggleDep(dep.id)}
-                    className="rounded border-gray-300 text-blue-600"
+                    className="rounded border-[var(--border-strong)] accent-[var(--oe-primary)]"
                   />
-                  <span className="text-xs text-gray-400 shrink-0">{dep.phaseName}</span>
-                  <span className="text-sm text-gray-700">{dep.name}</span>
+                  <span className="text-xs text-[var(--text-tertiary)] shrink-0">{dep.phaseName}</span>
+                  <span className="text-sm text-[var(--text-secondary)]">{dep.name}</span>
                 </label>
               ))}
             </div>
-            {circularError && <p className="text-xs text-red-500 mt-1">{circularError}</p>}
+            {circularError && <p className="text-xs text-[var(--color-danger-text)] mt-1">{circularError}</p>}
           </div>
         )}
       </div>
@@ -223,15 +223,15 @@ function SortableEntryRow({ entry, allDeps, onEdit, onDelete }: SortableEntryPro
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-gray-100 hover:border-gray-200 group"
+      className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-card)] rounded-[var(--radius-lg)] border border-[var(--border-default)] hover:border-[var(--border-strong)] group"
     >
       <span {...attributes} {...listeners}>
         <DragHandle />
       </span>
       <span className="text-base">{TYPE_ICON[entry.type]}</span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-800 truncate">{entry.name}</p>
-        <div className="flex gap-2 text-xs text-gray-400">
+        <p className="text-sm font-medium text-[var(--text-primary)] truncate">{entry.name}</p>
+        <div className="flex gap-2 text-xs text-[var(--text-tertiary)]">
           {entry.responsible && <span>{entry.responsible}</span>}
           {entry.durationDays != null && <span>{entry.durationDays}d</span>}
           {entry.durationHours != null && <span>{entry.durationHours}h</span>}
@@ -241,13 +241,13 @@ function SortableEntryRow({ entry, allDeps, onEdit, onDelete }: SortableEntryPro
       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           onClick={() => onEdit(entry)}
-          className="text-xs text-gray-400 hover:text-blue-600 px-1.5 py-1 rounded hover:bg-blue-50 transition-colors"
+          className="text-xs text-[var(--text-tertiary)] hover:text-[var(--oe-primary)] px-1.5 py-1 rounded hover:bg-[var(--oe-primary-light)] transition-colors"
         >
           Editar
         </button>
         <button
           onClick={() => onDelete(entry.id)}
-          className="text-gray-300 hover:text-red-500 px-1.5 py-1 rounded hover:bg-red-50 transition-colors"
+          className="text-[var(--text-tertiary)] hover:text-[var(--color-danger-text)] px-1.5 py-1 rounded hover:bg-red-50 transition-colors"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -303,9 +303,9 @@ function SortablePhase({
   }
 
   return (
-    <div ref={setNodeRef} style={style} className="bg-gray-50 rounded-xl border border-gray-200">
+    <div ref={setNodeRef} style={style} className="bg-[var(--surface-subtle)] rounded-[var(--radius-lg)] border border-[var(--border-default)]">
       {/* Phase header */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border-default)]">
         <span {...attributes} {...listeners}>
           <DragHandle />
         </span>
@@ -317,27 +317,27 @@ function SortablePhase({
             onChange={(e) => setName(e.target.value)}
             onBlur={commitRename}
             onKeyDown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') { setName(phase.name); setEditing(false) } }}
-            className="flex-1 text-sm font-semibold text-gray-800 bg-transparent border-b border-blue-400 focus:outline-none"
+            className="flex-1 text-sm font-semibold text-[var(--text-primary)] bg-transparent border-b border-[var(--oe-primary-mid)] focus:outline-none"
           />
         ) : (
           <button
             onDoubleClick={() => setEditing(true)}
-            className="flex-1 text-sm font-semibold text-gray-800 text-left hover:text-blue-600 transition-colors"
+            className="flex-1 text-sm font-semibold text-[var(--text-primary)] text-left hover:text-[var(--oe-primary)] transition-colors"
             title="Duplo clique para renomear"
           >
             {phase.name}
           </button>
         )}
-        <span className="text-xs text-gray-400">{phase.entries.length} entr.</span>
+        <span className="text-xs text-[var(--text-tertiary)]">{phase.entries.length} entr.</span>
         <button
           onClick={() => onAddEntry(phase.id)}
-          className="text-xs text-blue-600 hover:text-blue-700 font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+          className="text-xs text-[var(--oe-primary)] hover:text-[var(--oe-primary-hover)] font-medium px-2 py-1 rounded hover:bg-[var(--oe-primary-light)] transition-colors"
         >
           + Entrada
         </button>
         <button
           onClick={() => onDelete(phase.id)}
-          className="text-gray-300 hover:text-red-500 transition-colors"
+          className="text-[var(--text-tertiary)] hover:text-[var(--color-danger-text)] transition-colors"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -348,7 +348,7 @@ function SortablePhase({
       {/* Entries */}
       <div className="p-3 space-y-1.5">
         {phase.entries.length === 0 ? (
-          <p className="text-xs text-gray-400 text-center py-3">Nenhuma entrada. Clique em "+ Entrada" para adicionar.</p>
+          <p className="text-xs text-[var(--text-tertiary)] text-center py-3">Nenhuma entrada. Clique em "+ Entrada" para adicionar.</p>
         ) : (
           <DndContext sensors={sensors} onDragEnd={handleEntryDragEnd}>
             <SortableContext items={phase.entries.map((e) => e.id)} strategy={verticalListSortingStrategy}>
@@ -385,7 +385,7 @@ export default function TemplateEditorPage() {
 
   if (!template) {
     return (
-      <div className="p-8 text-center text-gray-400">
+      <div className="p-8 text-center text-[var(--text-tertiary)]">
         <p>Template não encontrado.</p>
         <Button className="mt-4" variant="secondary" onClick={() => navigate('/settings')}>← Voltar</Button>
       </div>
@@ -465,7 +465,7 @@ export default function TemplateEditorPage() {
       <div className="flex items-center gap-4 mb-8">
         <button
           onClick={() => navigate('/settings')}
-          className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 transition-colors"
+          className="text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] flex items-center gap-1 transition-colors"
         >
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -477,14 +477,14 @@ export default function TemplateEditorPage() {
           value={templateName}
           onChange={(e) => setTemplateName(e.target.value)}
           onBlur={() => save(phases, templateName.trim() || template.name)}
-          className="text-2xl font-bold text-gray-900 bg-transparent border-b-2 border-transparent hover:border-gray-200 focus:border-blue-500 focus:outline-none transition-colors"
+          className="text-2xl font-bold text-[var(--text-primary)] bg-transparent border-b-2 border-transparent hover:border-[var(--border-default)] focus:border-[var(--oe-primary)] focus:outline-none transition-colors"
         />
       </div>
 
       {/* Template meta */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Configurações do template</p>
-        <div className="flex items-center gap-6 text-sm text-gray-600">
+      <div className="bg-[var(--surface-card)] rounded-[var(--radius-lg)] border border-[var(--border-default)] p-4 mb-6">
+        <p className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wide mb-2">Configurações do template</p>
+        <div className="flex items-center gap-6 text-sm text-[var(--text-secondary)]">
           <span>Tipo: <strong>{template.type === 'nova_conta' ? 'Nova Conta' : 'Novo Projeto'}</strong></span>
           <span>{phases.length} fases</span>
           <span>{phases.reduce((n, p) => n + p.entries.length, 0)} entradas</span>
@@ -513,7 +513,7 @@ export default function TemplateEditorPage() {
 
         <button
           onClick={handleAddPhase}
-          className="w-full py-3 rounded-xl border-2 border-dashed border-gray-300 text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
+          className="w-full py-3 rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--border-strong)] text-sm text-[var(--text-tertiary)] hover:border-[var(--oe-primary-mid)] hover:text-[var(--oe-primary)] transition-colors"
         >
           + Fase
         </button>

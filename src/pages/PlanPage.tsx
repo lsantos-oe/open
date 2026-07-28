@@ -101,7 +101,7 @@ function InlineEditCell({ value, onSave, placeholder = '—', className = '' }: 
           if (e.key === 'Enter') { onSave(draft); setEditing(false) }
           if (e.key === 'Escape') { setDraft(value); setEditing(false) }
         }}
-        className={`w-full bg-transparent border-b-2 border-blue-400 outline-none text-sm py-0.5 ${className}`}
+        className={`w-full bg-transparent border-b-2 border-[var(--oe-primary-mid)] outline-none text-sm py-0.5 ${className}`}
       />
     )
   }
@@ -110,7 +110,7 @@ function InlineEditCell({ value, onSave, placeholder = '—', className = '' }: 
     <span
       onClick={() => { setDraft(value); setEditing(true) }}
       title="Clique para editar"
-      className={`cursor-text hover:bg-blue-50 rounded px-0.5 -mx-0.5 ${value ? '' : 'text-gray-300'} ${className}`}
+      className={`cursor-text hover:bg-[var(--oe-primary-light)] rounded-[var(--radius-sm)] px-0.5 -mx-0.5 ${value ? '' : 'text-[var(--text-disabled)]'} ${className}`}
     >
       {value || placeholder}
     </span>
@@ -729,7 +729,7 @@ function DelayModal({ pending, holidays, onConfirm, onSkip }: {
     >
       <div className="space-y-4">
         {d !== 0 && (
-          <div className={`rounded-lg px-4 py-3 text-sm font-semibold ${d > 0 ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
+          <div className={`rounded-[var(--radius-lg)] px-4 py-3 text-sm font-semibold ${d > 0 ? 'bg-[var(--color-danger-bg)] text-[var(--color-danger-text)]' : 'bg-[var(--color-success-bg)] text-[var(--color-success-text)]'}`}>
             {d > 0 ? '+' : ''}{d}d
           </div>
         )}

@@ -41,7 +41,7 @@ export default function DiaryComments({ scope, parentType, parentId, comments }:
         {comments.map((c) => (
           <div key={c.id} className="flex gap-2 group">
             <div
-              className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5"
+              className="w-6 h-6 rounded-[var(--radius-pill)] flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5"
               style={{ background: 'var(--surface-subtle)', color: 'var(--text-tertiary)' }}
             >
               {c.author.slice(0, 1).toUpperCase()}
@@ -80,7 +80,7 @@ export default function DiaryComments({ scope, parentType, parentId, comments }:
               value={text}
               onChange={(e) => setText(e.target.value)}
               rows={2}
-              className="block w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1"
+              className="block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:outline-none focus:ring-1"
               style={{
                 borderColor: 'var(--border-default)',
                 background: 'var(--surface-input)',

@@ -65,17 +65,17 @@ export default function TeamTab({ project }: Props) {
 
   return (
     <div className="p-6 max-w-3xl">
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-[var(--surface-card)] rounded-[var(--radius-lg)] border border-[var(--border-default)] p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-sm font-semibold text-gray-800">{t('team.title')}</h2>
-            <p className="text-xs text-gray-400 mt-0.5">{project.team.length} membro{project.team.length !== 1 ? 's' : ''}</p>
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">{t('team.title')}</h2>
+            <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{project.team.length} membro{project.team.length !== 1 ? 's' : ''}</p>
           </div>
           <Button size="sm" onClick={openAdd}>+ {t('team.add')}</Button>
         </div>
 
         {project.team.length === 0 ? (
-          <div className="text-center py-10 text-gray-400">
+          <div className="text-center py-10 text-[var(--text-tertiary)]">
             <div className="text-3xl mb-2">👥</div>
             <p className="text-sm">{t('team.noMembers')}</p>
             <Button size="sm" className="mt-3" variant="secondary" onClick={openAdd}>{t('team.add')}</Button>
@@ -85,23 +85,23 @@ export default function TeamTab({ project }: Props) {
             {project.team.map((member) => (
               <div
                 key={member.id}
-                className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 group transition-colors"
+                className="flex items-center gap-4 p-3 rounded-[var(--radius-lg)] hover:bg-[var(--surface-subtle)] group transition-colors"
               >
-                <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-sm font-semibold text-slate-600 shrink-0">
+                <div className="w-9 h-9 rounded-[var(--radius-pill)] bg-[var(--surface-subtle)] flex items-center justify-center text-sm font-semibold text-[var(--text-secondary)] shrink-0">
                   {initials(member.name)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800">{member.name}</p>
+                  <p className="text-sm font-medium text-[var(--text-primary)]">{member.name}</p>
                   {member.email && (
-                    <p className="text-xs text-gray-400 truncate">{member.email}</p>
+                    <p className="text-xs text-[var(--text-tertiary)] truncate">{member.email}</p>
                   )}
                 </div>
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${roleColors[member.role] ?? 'bg-gray-100 text-gray-600'}`}>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-[var(--radius-pill)] ${roleColors[member.role] ?? 'bg-[var(--surface-subtle)] text-[var(--text-secondary)]'}`}>
                   {member.role}
                 </span>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => openEdit(member)} className="text-gray-400 hover:text-blue-600 text-xs px-1">✎</button>
-                  <button onClick={() => removeTeamMember(project.id, member.id)} className="text-gray-400 hover:text-red-500 text-xs px-1">✕</button>
+                  <button onClick={() => openEdit(member)} className="text-[var(--text-tertiary)] hover:text-[var(--oe-primary)] text-xs px-1">✎</button>
+                  <button onClick={() => removeTeamMember(project.id, member.id)} className="text-[var(--text-tertiary)] hover:text-[var(--color-danger-text)] text-xs px-1">✕</button>
                 </div>
               </div>
             ))}
@@ -126,8 +126,8 @@ export default function TeamTab({ project }: Props) {
             <button
               type="button"
               onClick={() => setMode('directory')}
-              className={`flex-1 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
-                mode === 'directory' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300'
+              className={`flex-1 text-xs font-medium px-3 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${
+                mode === 'directory' ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-strong)]'
               }`}
             >
               {t('entry.fromUser')}
@@ -135,8 +135,8 @@ export default function TeamTab({ project }: Props) {
             <button
               type="button"
               onClick={() => setMode('text')}
-              className={`flex-1 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
-                mode === 'text' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300'
+              className={`flex-1 text-xs font-medium px-3 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${
+                mode === 'text' ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-strong)]'
               }`}
             >
               {t('entry.freeText')}
@@ -148,7 +148,7 @@ export default function TeamTab({ project }: Props) {
               <select
                 value={form.userId ?? ''}
                 onChange={(e) => pickFromDirectory(e.target.value)}
-                className="block w-full rounded-md border px-3 py-2 text-sm focus:outline-none"
+                className="block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:outline-none"
                 style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)' }}
               >
                 <option value="">Selecione um usuário cadastrado...</option>
@@ -174,10 +174,10 @@ export default function TeamTab({ project }: Props) {
                   key={r}
                   type="button"
                   onClick={() => setForm((f) => ({ ...f, role: r }))}
-                  className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                  className={`text-xs px-3 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${
                     form.role === r
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                      ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]'
+                      : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-strong)] hover:border-[var(--oe-primary-mid)]'
                   }`}
                 >
                   {r}

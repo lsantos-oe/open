@@ -116,7 +116,7 @@ export default function ImportJsonModal({ initialTab, projectId, onClose }: Prop
         {/* Target project info (update tab) */}
         {tab === 'update' && targetProject && (
           <div
-            className="px-3 py-2 rounded-lg text-[12px]"
+            className="px-3 py-2 rounded-[var(--radius-lg)] text-[12px]"
             style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border-default)' }}
           >
             <span style={{ color: 'var(--text-tertiary)' }}>{t('import.targetProject')}: </span>
@@ -175,7 +175,7 @@ export default function ImportJsonModal({ initialTab, projectId, onClose }: Prop
         {/* Validation errors */}
         {result && !result.valid && result.errors.length > 0 && (
           <div
-            className="rounded-lg p-3 space-y-1"
+            className="rounded-[var(--radius-lg)] p-3 space-y-1"
             style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-text)' }}
           >
             <p className="text-[11px] font-[600] uppercase tracking-wide mb-1" style={{ color: 'var(--color-danger-text)' }}>
@@ -190,7 +190,7 @@ export default function ImportJsonModal({ initialTab, projectId, onClose }: Prop
         {/* Preview */}
         {result?.valid && result.preview && (
           <div
-            className="rounded-lg p-3 space-y-2"
+            className="rounded-[var(--radius-lg)] p-3 space-y-2"
             style={{ background: 'var(--color-success-bg)', border: '1px solid var(--color-success-text)' }}
           >
             <p className="text-[11px] font-[600] uppercase tracking-wide" style={{ color: 'var(--color-success-text)' }}>
@@ -268,7 +268,7 @@ export default function ImportJsonModal({ initialTab, projectId, onClose }: Prop
         {/* Import error */}
         {importError && (
           <div
-            className="rounded-lg p-3"
+            className="rounded-[var(--radius-lg)] p-3"
             style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-text)' }}
           >
             <p className="text-[12px]" style={{ color: 'var(--color-danger-text)' }}>

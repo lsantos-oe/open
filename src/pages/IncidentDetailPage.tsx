@@ -129,11 +129,11 @@ export default function IncidentDetailPage() {
         {tab === 'overview' && (
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 rounded-lg" style={{ background: 'var(--surface-subtle)' }}>
+              <div className="p-3 rounded-[var(--radius-lg)]" style={{ background: 'var(--surface-subtle)' }}>
                 <p className="text-[10px] uppercase font-semibold tracking-wide mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('incident.daysOpen')}</p>
                 <p className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{daysOpen}</p>
               </div>
-              <div className="p-3 rounded-lg" style={{ background: 'var(--surface-subtle)' }}>
+              <div className="p-3 rounded-[var(--radius-lg)]" style={{ background: 'var(--surface-subtle)' }}>
                 <p className="text-[10px] uppercase font-semibold tracking-wide mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('incident.daysInStatus')}</p>
                 <p className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{daysInStatus}</p>
               </div>
@@ -171,7 +171,7 @@ export default function IncidentDetailPage() {
                 value={incident.description ?? ''}
                 onChange={(e) => updateIncident(incident.id, { description: e.target.value || undefined })}
                 rows={4}
-                className="block w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1"
+                className="block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:outline-none focus:ring-1"
                 style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)', resize: 'none' }}
               />
             </Field>
@@ -179,24 +179,24 @@ export default function IncidentDetailPage() {
             <Field label={t('incident.clients')}>
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {linkedClients.map((c) => (
-                  <span key={c.id} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: 'var(--oe-primary-light)', color: 'var(--oe-primary)' }}>
+                  <span key={c.id} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[var(--radius-pill)] text-xs font-medium" style={{ background: 'var(--oe-primary-light)', color: 'var(--oe-primary)' }}>
                     <Link to={`/wallet/${c.id}`}>{c.name}</Link>
                     <button onClick={() => unlinkIncidentClient(incident.id, c.id)}>×</button>
                   </span>
                 ))}
-                <button onClick={() => setShowLinkClient(true)} className="text-xs px-2 py-0.5 rounded-full border" style={{ borderColor: 'var(--border-default)', color: 'var(--text-tertiary)', borderStyle: 'dashed' }}>+ {t('incident.clients')}</button>
+                <button onClick={() => setShowLinkClient(true)} className="text-xs px-2 py-0.5 rounded-[var(--radius-pill)] border" style={{ borderColor: 'var(--border-default)', color: 'var(--text-tertiary)', borderStyle: 'dashed' }}>+ {t('incident.clients')}</button>
               </div>
             </Field>
 
             <Field label={t('incident.projects')}>
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {linkedProjects.map((p) => (
-                  <span key={p.id} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: 'var(--oe-primary-light)', color: 'var(--oe-primary)' }}>
+                  <span key={p.id} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[var(--radius-pill)] text-xs font-medium" style={{ background: 'var(--oe-primary-light)', color: 'var(--oe-primary)' }}>
                     <Link to={`/projects/${p.id}`}>{p.name}</Link>
                     <button onClick={() => unlinkIncidentProject(incident.id, p.id)}>×</button>
                   </span>
                 ))}
-                <button onClick={() => setShowLinkProject(true)} className="text-xs px-2 py-0.5 rounded-full border" style={{ borderColor: 'var(--border-default)', color: 'var(--text-tertiary)', borderStyle: 'dashed' }}>+ {t('incident.projects')}</button>
+                <button onClick={() => setShowLinkProject(true)} className="text-xs px-2 py-0.5 rounded-[var(--radius-pill)] border" style={{ borderColor: 'var(--border-default)', color: 'var(--text-tertiary)', borderStyle: 'dashed' }}>+ {t('incident.projects')}</button>
               </div>
             </Field>
 
@@ -206,7 +206,7 @@ export default function IncidentDetailPage() {
               ) : (
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {incident.stakeholders.map((o) => (
-                    <span key={o.id} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: 'var(--surface-subtle)', color: 'var(--text-secondary)' }}>
+                    <span key={o.id} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[var(--radius-pill)] text-xs font-medium" style={{ background: 'var(--surface-subtle)', color: 'var(--text-secondary)' }}>
                       {o.name}{o.role ? ` · ${o.role}` : ''}
                       <button onClick={() => removeIncidentStakeholder(incident.id, o.id)}>×</button>
                     </span>
@@ -300,9 +300,9 @@ export default function IncidentDetailPage() {
       >
         <div className="space-y-3">
           <div className="flex gap-2">
-            <button type="button" onClick={() => setStakeholderMode('member')} className={`flex-1 text-xs font-medium px-2 py-1.5 rounded-full border transition-colors ${stakeholderMode === 'member' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300'}`}>{t('entry.fromUser')}</button>
-            <button type="button" onClick={() => setStakeholderMode('contact')} className={`flex-1 text-xs font-medium px-2 py-1.5 rounded-full border transition-colors ${stakeholderMode === 'contact' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300'}`}>{t('incident.fromContact')}</button>
-            <button type="button" onClick={() => setStakeholderMode('text')} className={`flex-1 text-xs font-medium px-2 py-1.5 rounded-full border transition-colors ${stakeholderMode === 'text' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300'}`}>{t('entry.freeText')}</button>
+            <button type="button" onClick={() => setStakeholderMode('member')} className={`flex-1 text-xs font-medium px-2 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${stakeholderMode === 'member' ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}>{t('entry.fromUser')}</button>
+            <button type="button" onClick={() => setStakeholderMode('contact')} className={`flex-1 text-xs font-medium px-2 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${stakeholderMode === 'contact' ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}>{t('incident.fromContact')}</button>
+            <button type="button" onClick={() => setStakeholderMode('text')} className={`flex-1 text-xs font-medium px-2 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${stakeholderMode === 'text' ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}>{t('entry.freeText')}</button>
           </div>
           {stakeholderMode === 'member' && (
             <Field label={t('entry.fromUser')}>

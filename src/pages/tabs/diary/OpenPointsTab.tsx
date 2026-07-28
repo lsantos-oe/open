@@ -57,7 +57,7 @@ function OpFormFields({ form, set, allEntries }: OpFormFieldsProps) {
           value={form.description}
           onChange={(e) => set('description', e.target.value)}
           rows={3}
-          className="block w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1"
+          className="block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:outline-none focus:ring-1"
           style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)', resize: 'none' }}
         />
       </Field>
@@ -180,7 +180,7 @@ export default function OpenPointsTab({ scope, openPoints, phases }: Props) {
     <div>
       {/* Toolbar */}
       <div className="flex items-center gap-3 mb-4">
-        <div className="flex rounded-md overflow-hidden border" style={{ borderColor: 'var(--border-default)' }}>
+        <div className="flex rounded-[var(--radius-md)] overflow-hidden border" style={{ borderColor: 'var(--border-default)' }}>
           {(['all', 'open', 'resolved'] as const).map((f) => (
             <button
               key={f}
@@ -205,7 +205,7 @@ export default function OpenPointsTab({ scope, openPoints, phases }: Props) {
       {filtered.length === 0 ? (
         <p className="text-sm text-center py-12" style={{ color: 'var(--text-tertiary)' }}>{t('diary.noOpenPoints')}</p>
       ) : (
-        <div className="border rounded-lg overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
+        <div className="border rounded-[var(--radius-lg)] overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
           <table className="w-full text-sm">
             <thead>
               <tr style={{ background: 'var(--surface-subtle)', borderBottom: '1px solid var(--border-default)' }}>
@@ -343,7 +343,7 @@ export default function OpenPointsTab({ scope, openPoints, phases }: Props) {
             value={resolution}
             onChange={(e) => setResolution(e.target.value)}
             rows={3}
-            className="block w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1"
+            className="block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:outline-none focus:ring-1"
             style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)', resize: 'none' }}
           />
         </Field>
@@ -389,7 +389,7 @@ export default function OpenPointsTab({ scope, openPoints, phases }: Props) {
                 <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{t('diary.opDueDate')}: <span style={{ color: 'var(--text-secondary)' }}>{drawerItem.dueDate}</span></p>
               )}
               {drawerItem.status === 'resolved' && drawerItem.resolution && (
-                <div className="p-3 rounded-lg" style={{ background: 'var(--color-success-bg, #f0fdf4)' }}>
+                <div className="p-3 rounded-[var(--radius-lg)]" style={{ background: 'var(--color-success-bg, #f0fdf4)' }}>
                   <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-success-text, #16a34a)' }}>{t('diary.opResolution')}</p>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{drawerItem.resolution}</p>
                   {drawerItem.resolvedBy && (

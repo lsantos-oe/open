@@ -106,7 +106,7 @@ function DelayModal({ projectId, allEntries, initial, onClose }: DelayModalProps
     >
       <div className="space-y-4">
         {isCascade && (
-          <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800">
+          <div className="flex items-center gap-2 rounded-[var(--radius-lg)] border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800">
             <svg className="w-3.5 h-3.5 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
             </svg>
@@ -224,7 +224,7 @@ export default function DelayLogPage({ projectId }: DelayLogPageProps) {
 
       {/* No-baseline warning */}
       {!hasBaseline && (
-        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="flex items-center gap-2 rounded-[var(--radius-lg)] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <svg className="w-4 h-4 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
           </svg>
@@ -235,14 +235,14 @@ export default function DelayLogPage({ projectId }: DelayLogPageProps) {
       {/* Summary cards */}
       {log.length > 0 && (
         <div className="grid grid-cols-5 gap-3">
-          <div className={`rounded-xl border p-4 ${totalDays > 0 ? 'border-red-200 bg-red-50' : totalDays < 0 ? 'border-green-200 bg-green-50' : 'border-[var(--border-default)] bg-[var(--surface-card)]'}`}>
+          <div className={`rounded-[var(--radius-lg)] border p-4 ${totalDays > 0 ? 'border-red-200 bg-red-50' : totalDays < 0 ? 'border-green-200 bg-green-50' : 'border-[var(--border-default)] bg-[var(--surface-card)]'}`}>
             <p className="text-xs text-[var(--text-tertiary)] mb-1">{t('delay.total')}</p>
             <p className={`text-2xl font-bold ${totalDays > 0 ? 'text-red-600' : totalDays < 0 ? 'text-green-600' : 'text-[var(--text-tertiary)]'}`}>
               {totalDays > 0 ? '+' : ''}{totalDays}d
             </p>
           </div>
           {RESPONSIBILITY_KEYS.map((k) => (
-            <div key={k} className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4">
+            <div key={k} className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-card)] p-4">
               <p className="text-xs text-[var(--text-tertiary)] mb-1 leading-tight">{t(`delay.${k}` as any)}</p>
               <p className={`text-2xl font-bold ${byResponsibility[k] > 0 ? 'text-[var(--text-secondary)]' : 'text-[var(--text-disabled)]'}`}>{byResponsibility[k]}d</p>
             </div>
@@ -254,7 +254,7 @@ export default function DelayLogPage({ projectId }: DelayLogPageProps) {
       {totalPositiveDays > 0 && (
         <div>
           <p className="text-xs text-[var(--text-tertiary)] mb-2 font-medium uppercase tracking-wide">{t('delay.distribution')}</p>
-          <div className="flex h-3 rounded-full overflow-hidden gap-px bg-[var(--surface-subtle)]">
+          <div className="flex h-3 rounded-[var(--radius-pill)] overflow-hidden gap-px bg-[var(--surface-subtle)]">
             {RESPONSIBILITY_KEYS
               .filter((k) => byResponsibility[k] > 0)
               .map((k) => (
@@ -271,7 +271,7 @@ export default function DelayLogPage({ projectId }: DelayLogPageProps) {
               .filter((k) => byResponsibility[k] > 0)
               .map((k) => (
                 <div key={k} className="flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${RESPONSIBILITY_BAR_COLOR[k]}`} />
+                  <span className={`w-2 h-2 rounded-[var(--radius-pill)] shrink-0 ${RESPONSIBILITY_BAR_COLOR[k]}`} />
                   <span className="text-xs text-[var(--text-tertiary)]">
                     {t(`delay.${k}` as any)} ({Math.round((byResponsibility[k] / totalPositiveDays) * 100)}%)
                   </span>
@@ -288,7 +288,7 @@ export default function DelayLogPage({ projectId }: DelayLogPageProps) {
           <p>{t('delay.noEntries')}</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-[var(--border-default)] shadow-sm bg-[var(--surface-card)]">
+        <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--border-default)] shadow-[var(--shadow-sm)] bg-[var(--surface-card)]">
           <table className="w-full text-sm">
             <thead className="bg-[var(--surface-subtle)] border-b border-[var(--border-default)]">
               <tr>
@@ -349,7 +349,7 @@ export default function DelayLogPage({ projectId }: DelayLogPageProps) {
                             deleteDelayLogEntry(projectId, entry.id)
                           }
                         }}
-                        className="text-[var(--text-disabled)] hover:text-red-500 p-1 rounded hover:bg-[var(--color-danger-bg)] transition-colors"
+                        className="text-[var(--text-disabled)] hover:text-[var(--color-danger-text)] p-1 rounded hover:bg-[var(--color-danger-bg)] transition-colors"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

@@ -270,7 +270,7 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
               onChange={(e) => setName(e.target.value)}
               className={errors.name ? 'border-red-400' : ''}
             />
-            {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
+            {errors.name && <p className="text-xs text-[var(--color-danger-text)] mt-1">{errors.name}</p>}
           </Field>
 
           {/* Client */}
@@ -296,14 +296,14 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
                   if (e.target.value === '__new__') { setIsNewClient(true); setClientId('') }
                   else setClientId(e.target.value)
                 }}
-                className={`block w-full rounded-md border px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] ${errors.client ? 'border-red-400' : 'border-[var(--border-default)]'}`}
+                className={`block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] ${errors.client ? 'border-red-400' : 'border-[var(--border-default)]'}`}
               >
                 <option value="">{t('project.selectClient')}</option>
                 {[...storeClients].sort((a, b) => a.name.localeCompare(b.name)).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 <option value="__new__">{t('project.newClient')}</option>
               </select>
             )}
-            {errors.client && <p className="text-xs text-red-500 mt-1">{errors.client}</p>}
+            {errors.client && <p className="text-xs text-[var(--color-danger-text)] mt-1">{errors.client}</p>}
           </Field>
 
           {/* PM */}
@@ -313,12 +313,12 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
               value={pm}
               onChange={(e) => setPm(e.target.value)}
               placeholder={t('project.pmPlaceholder')}
-              className={`block w-full rounded-md border px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] ${errors.pm ? 'border-red-400' : 'border-[var(--border-default)]'}`}
+              className={`block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] ${errors.pm ? 'border-red-400' : 'border-[var(--border-default)]'}`}
             />
             <datalist id="dup-pm-options">
               {allMembers.map((m) => <option key={m} value={m} />)}
             </datalist>
-            {errors.pm && <p className="text-xs text-red-500 mt-1">{errors.pm}</p>}
+            {errors.pm && <p className="text-xs text-[var(--color-danger-text)] mt-1">{errors.pm}</p>}
           </Field>
 
           {/* Language */}
@@ -329,7 +329,7 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
                   key={l}
                   type="button"
                   onClick={() => setLanguage(l)}
-                  className={`flex-1 py-2 text-xs font-medium rounded-md border transition-colors ${
+                  className={`flex-1 py-2 text-xs font-medium rounded-[var(--radius-md)] border transition-colors ${
                     language === l ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--oe-primary)]'
                   }`}
                 >
@@ -341,7 +341,7 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
         </div>
 
         {/* Dev toggle */}
-        <div className="border border-[var(--border-default)] rounded-xl p-4">
+        <div className="border border-[var(--border-default)] rounded-[var(--radius-lg)] p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-[var(--text-secondary)]">{t('project.hasDev')}</p>
@@ -350,9 +350,9 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
             <button
               type="button"
               onClick={() => setHasDev((v) => !v)}
-              className={`relative w-11 h-6 rounded-full transition-colors ${hasDev ? 'bg-[var(--oe-primary)]' : 'bg-[var(--border-default)]'}`}
+              className={`relative w-11 h-6 rounded-[var(--radius-pill)] transition-colors ${hasDev ? 'bg-[var(--oe-primary)]' : 'bg-[var(--border-default)]'}`}
             >
-              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${hasDev ? 'translate-x-5' : ''}`} />
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-[var(--radius-pill)] shadow transition-transform ${hasDev ? 'translate-x-5' : ''}`} />
             </button>
           </div>
 
@@ -365,7 +365,7 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
                       key={v}
                       type="button"
                       onClick={() => setDevType(v)}
-                      className={`flex-1 py-1.5 text-xs font-medium rounded-md border transition-colors ${
+                      className={`flex-1 py-1.5 text-xs font-medium rounded-[var(--radius-md)] border transition-colors ${
                         devType === v ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--oe-primary)]'
                       }`}
                     >
@@ -381,7 +381,7 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
                   value={devLead}
                   onChange={(e) => setDevLead(e.target.value)}
                   placeholder={t('project.devLeadPlaceholder')}
-                  className="block w-full rounded-md border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)]"
+                  className="block w-full rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)]"
                 />
                 <datalist id="dup-dev-options">
                   {allMembers.map((m) => <option key={m} value={m} />)}
@@ -575,16 +575,16 @@ export default function ProjectDetailPage() {
             >
               {t(`tabs.${tid}`)}
               {tid === 'risks' && project.risks.length > 0 && (
-                <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'var(--surface-subtle)', color: 'var(--text-tertiary)' }}>{project.risks.length}</span>
+                <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-[var(--radius-pill)]" style={{ background: 'var(--surface-subtle)', color: 'var(--text-tertiary)' }}>{project.risks.length}</span>
               )}
               {tid === 'delayLog' && project.delayLog.length > 0 && (
-                <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'var(--color-danger-bg)', color: 'var(--color-danger-text)' }}>{project.delayLog.length}</span>
+                <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-[var(--radius-pill)]" style={{ background: 'var(--color-danger-bg)', color: 'var(--color-danger-text)' }}>{project.delayLog.length}</span>
               )}
               {tid === 'team' && project.team.length > 0 && (
-                <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'var(--surface-subtle)', color: 'var(--text-tertiary)' }}>{project.team.length}</span>
+                <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-[var(--radius-pill)]" style={{ background: 'var(--surface-subtle)', color: 'var(--text-tertiary)' }}>{project.team.length}</span>
               )}
               {tid === 'diary' && (project.openPoints?.filter((op) => op.status === 'open').length ?? 0) > 0 && (
-                <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'var(--color-warning-bg, #fffbeb)', color: 'var(--color-warning-text, #d97706)' }}>
+                <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-[var(--radius-pill)]" style={{ background: 'var(--color-warning-bg, #fffbeb)', color: 'var(--color-warning-text, #d97706)' }}>
                   {project.openPoints!.filter((op) => op.status === 'open').length}
                 </span>
               )}

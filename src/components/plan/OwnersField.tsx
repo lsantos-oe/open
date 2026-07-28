@@ -69,7 +69,7 @@ export default function OwnersField({ owners, onChange, teamMembers }: Props) {
         {owners.map((owner) => (
           <span
             key={owner.id}
-            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium"
+            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[var(--radius-pill)] text-xs font-medium"
             style={{ background: 'var(--oe-primary-light)', color: 'var(--oe-primary)', border: '1px solid var(--oe-primary)' }}
           >
             <span
@@ -91,7 +91,7 @@ export default function OwnersField({ owners, onChange, teamMembers }: Props) {
         ))}
         <button
           onClick={() => setOpen((v) => !v)}
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs transition-colors"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[var(--radius-pill)] text-xs transition-colors"
           style={{ border: '1px dashed var(--border-default)', color: 'var(--text-tertiary)' }}
           onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--oe-primary)')}
           onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border-default)')}
@@ -103,7 +103,7 @@ export default function OwnersField({ owners, onChange, teamMembers }: Props) {
       {/* Popover */}
       {open && (
         <div
-          className="absolute left-0 z-50 rounded-lg shadow-lg"
+          className="absolute left-0 z-50 rounded-[var(--radius-lg)] shadow-lg"
           style={{
             top: 'calc(100% + 4px)',
             minWidth: 240,

@@ -34,8 +34,8 @@ const KANBAN_STATUSES: ProjectStatus[] = ['planning', 'in_progress', 'delayed', 
 const KANBAN_BG: Record<ProjectStatus, string> = {
   planning: 'bg-[var(--surface-subtle)] border-[var(--border-default)]',
   in_progress: 'bg-[var(--color-info-bg)] border-[var(--border-default)]',
-  delayed: 'bg-red-50 border-red-200',
-  done: 'bg-green-50 border-green-200',
+  delayed: 'bg-[var(--color-danger-bg)] border-[var(--border-default)]',
+  done: 'bg-[var(--color-success-bg)] border-[var(--border-default)]',
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -48,7 +48,7 @@ function fmtVariance(v: number | undefined): string {
 
 function varianceClass(v: number | undefined): string {
   if (v === undefined || v === 0) return 'text-[var(--text-tertiary)]'
-  return v > 0 ? 'text-red-600 font-semibold' : 'text-green-600 font-semibold'
+  return v > 0 ? 'text-[var(--color-danger-text)] font-semibold' : 'text-[var(--color-success-text)] font-semibold'
 }
 
 // ─── filters ──────────────────────────────────────────────────────────────────
@@ -90,7 +90,7 @@ function FilterBar({ filters, setFilters, clients, pms }: FilterBarProps) {
       <select
         value={filters.client}
         onChange={(e) => setFilters({ ...filters, client: e.target.value })}
-        className="text-sm border border-[var(--border-default)] rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] bg-[var(--surface-card)]"
+        className="text-sm border border-[var(--border-default)] rounded-[var(--radius-lg)] px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] bg-[var(--surface-card)]"
       >
         <option value="">{t('project.allClients')}</option>
         {clients.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -100,14 +100,14 @@ function FilterBar({ filters, setFilters, clients, pms }: FilterBarProps) {
       <select
         value={filters.pm}
         onChange={(e) => setFilters({ ...filters, pm: e.target.value })}
-        className="text-sm border border-[var(--border-default)] rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] bg-[var(--surface-card)]"
+        className="text-sm border border-[var(--border-default)] rounded-[var(--radius-lg)] px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] bg-[var(--surface-card)]"
       >
         <option value="">{t('project.allPMs')}</option>
         {pms.map((p) => <option key={p} value={p}>{p}</option>)}
       </select>
 
       {/* type */}
-      <div className="flex rounded-lg border border-[var(--border-default)] overflow-hidden">
+      <div className="flex rounded-[var(--radius-lg)] border border-[var(--border-default)] overflow-hidden">
         {([['', t('project.filterAll')], ['nova_conta', t('project.nova_conta')], ['novo_projeto', t('project.novo_projeto')]] as [string, string][]).map(([v, l]) => (
           <button
             key={v}
@@ -122,7 +122,7 @@ function FilterBar({ filters, setFilters, clients, pms }: FilterBarProps) {
       </div>
 
       {/* dev */}
-      <div className="flex rounded-lg border border-[var(--border-default)] overflow-hidden">
+      <div className="flex rounded-[var(--radius-lg)] border border-[var(--border-default)] overflow-hidden">
         {([['', t('project.filterAll')], ['with', t('project.filterWithDev')], ['without', t('project.filterWithoutDev')]] as [string, string][]).map(([v, l]) => (
           <button
             key={v}
@@ -173,7 +173,7 @@ function ListView({ projects, holidays, onOpen, selected, onToggle }: ListViewPr
   ]
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-[var(--border-default)] shadow-sm bg-[var(--surface-card)]">
+    <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--border-default)] shadow-sm bg-[var(--surface-card)]">
       <table className="w-full text-sm">
         <thead className="bg-[var(--surface-subtle)] border-b border-[var(--border-default)]">
           <tr>
@@ -196,13 +196,13 @@ function ListView({ projects, holidays, onOpen, selected, onToggle }: ListViewPr
                 className={`transition-colors ${isArchived ? 'opacity-60 cursor-default' : 'hover:bg-[var(--surface-subtle)] cursor-pointer'}`}
               >
                 <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                  <input type="checkbox" checked={selected.has(p.id)} onChange={() => onToggle(p.id)} />
+                  <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]" checked={selected.has(p.id)} onChange={() => onToggle(p.id)} />
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-[var(--text-primary)]">{p.name}</p>
                     {isArchived && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: 'var(--surface-subtle)', color: 'var(--text-tertiary)', border: '0.5px solid var(--border-default)' }}>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-[var(--radius-pill)] font-medium" style={{ background: 'var(--surface-subtle)', color: 'var(--text-tertiary)', border: '0.5px solid var(--border-default)' }}>
                         {t('project.archived')}
                       </span>
                     )}
@@ -255,10 +255,10 @@ function KanbanView({ projects, holidays, onOpen, selected, onToggle }: KanbanVi
       {KANBAN_STATUSES.map((status) => {
         const cards = projects.filter((p) => p.status === status)
         return (
-          <div key={status} className={`border ${KANBAN_BG[status]} rounded-xl p-3 min-h-[300px]`}>
+          <div key={status} className={`border ${KANBAN_BG[status]} rounded-[var(--radius-lg)] p-3 min-h-[300px]`}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">{t(`project.${status}`)}</span>
-              <span className="bg-[var(--surface-card)] text-[var(--text-secondary)] rounded-full text-xs px-2 py-0.5 font-medium border border-[var(--border-default)]">
+              <span className="bg-[var(--surface-card)] text-[var(--text-secondary)] rounded-[var(--radius-pill)] text-xs px-2 py-0.5 font-medium border border-[var(--border-default)]">
                 {cards.length}
               </span>
             </div>
@@ -271,14 +271,14 @@ function KanbanView({ projects, holidays, onOpen, selected, onToggle }: KanbanVi
                     key={p.id}
                     onClick={() => onOpen(p.id)}
                     role="button"
-                    className="relative w-full text-left bg-[var(--surface-card)] rounded-lg p-3 shadow-sm border border-[var(--border-default)] hover:border-[var(--oe-primary)] hover:shadow transition-all cursor-pointer"
+                    className="relative w-full text-left bg-[var(--surface-card)] rounded-[var(--radius-lg)] p-3 shadow-sm border border-[var(--border-default)] hover:border-[var(--oe-primary)] hover:shadow transition-all cursor-pointer"
                   >
                     <input
                       type="checkbox"
                       checked={selected.has(p.id)}
                       onClick={(e) => e.stopPropagation()}
                       onChange={() => onToggle(p.id)}
-                      className="absolute top-2 right-2"
+                      className="absolute top-2 right-2 rounded border-[var(--border-default)] accent-[var(--oe-primary)]"
                     />
                     <p className="font-medium text-[var(--text-primary)] text-sm mb-1 line-clamp-2 pr-5">{p.name}</p>
                     <p className="text-xs text-[var(--text-tertiary)] mb-2">{p.client}</p>
@@ -404,14 +404,14 @@ function NewProjectModal({ open, onClose, clients, members, templates, onCreate 
                   key={tpl.id}
                   type="button"
                   onClick={() => setSelectedType(tpl.type)}
-                  className={`text-left p-4 rounded-xl border-2 transition-all ${
+                  className={`text-left p-4 rounded-[var(--radius-lg)] border-2 transition-all ${
                     isActive
                       ? 'border-[var(--oe-primary)] bg-[var(--color-info-bg)]'
                       : 'border-[var(--border-default)] hover:border-[var(--oe-primary)] bg-[var(--surface-card)]'
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0 ${isActive ? 'bg-[var(--oe-primary)] text-white' : 'bg-[var(--surface-subtle)] text-[var(--text-tertiary)]'}`}>
+                    <div className={`w-8 h-8 rounded-[var(--radius-lg)] flex items-center justify-center text-sm shrink-0 ${isActive ? 'bg-[var(--oe-primary)] text-white' : 'bg-[var(--surface-subtle)] text-[var(--text-tertiary)]'}`}>
                       {tpl.type === 'nova_conta' ? '🏢' : '🔧'}
                     </div>
                     <div>
@@ -426,7 +426,7 @@ function NewProjectModal({ open, onClose, clients, members, templates, onCreate 
                   {isActive && (
                     <div className="mt-3 flex flex-wrap gap-1">
                       {tpl.phases.map((ph) => (
-                        <span key={ph.id} className="text-[10px] bg-[var(--color-info-bg)] text-[var(--color-info-text)] px-2 py-0.5 rounded-full">
+                        <span key={ph.id} className="text-[10px] bg-[var(--color-info-bg)] text-[var(--color-info-text)] px-2 py-0.5 rounded-[var(--radius-pill)]">
                           {ph.nameKey ? i18n.t(ph.nameKey) : ph.name}
                         </span>
                       ))}
@@ -468,14 +468,14 @@ function NewProjectModal({ open, onClose, clients, members, templates, onCreate 
                     if (e.target.value === '__new__') { setIsNewClient(true); setClientId('') }
                     else setClientId(e.target.value)
                   }}
-                  className={`block w-full rounded-md border px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] ${errors.client ? 'border-red-400' : 'border-[var(--border-default)]'}`}
+                  className={`block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] ${errors.client ? 'border-red-400' : 'border-[var(--border-default)]'}`}
                 >
                   <option value="">{t('project.selectClient')}</option>
                   {[...clients].sort((a, b) => a.name.localeCompare(b.name)).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                   <option value="__new__">{t('project.newClient')}</option>
                 </select>
               )}
-              {errors.client && <p className="text-xs text-red-500 mt-1">{errors.client}</p>}
+              {errors.client && <p className="text-xs text-[var(--color-danger-text)] mt-1">{errors.client}</p>}
             </Field>
 
             {/* Name */}
@@ -486,7 +486,7 @@ function NewProjectModal({ open, onClose, clients, members, templates, onCreate 
                 placeholder={selectedType === 'nova_conta' ? 'Implementação ' + (finalClient || 'Cliente') : 'Projeto ' + (finalClient || 'Cliente')}
                 className={errors.name ? 'border-red-400' : ''}
               />
-              {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
+              {errors.name && <p className="text-xs text-[var(--color-danger-text)] mt-1">{errors.name}</p>}
             </Field>
 
             {/* PM */}
@@ -496,12 +496,12 @@ function NewProjectModal({ open, onClose, clients, members, templates, onCreate 
                 value={pm}
                 onChange={(e) => setPm(e.target.value)}
                 placeholder={t('project.pmPlaceholder')}
-                className={`block w-full rounded-md border px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] ${errors.pm ? 'border-red-400' : 'border-[var(--border-default)]'}`}
+                className={`block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] ${errors.pm ? 'border-red-400' : 'border-[var(--border-default)]'}`}
               />
               <datalist id="pm-options">
                 {members.map((m) => <option key={m} value={m} />)}
               </datalist>
-              {errors.pm && <p className="text-xs text-red-500 mt-1">{errors.pm}</p>}
+              {errors.pm && <p className="text-xs text-[var(--color-danger-text)] mt-1">{errors.pm}</p>}
             </Field>
 
             {/* Language */}
@@ -512,7 +512,7 @@ function NewProjectModal({ open, onClose, clients, members, templates, onCreate 
                     key={l}
                     type="button"
                     onClick={() => setLanguage(l)}
-                    className={`flex-1 py-2 text-xs font-medium rounded-md border transition-colors ${
+                    className={`flex-1 py-2 text-xs font-medium rounded-[var(--radius-md)] border transition-colors ${
                       language === l ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--oe-primary)]'
                     }`}
                   >
@@ -525,7 +525,7 @@ function NewProjectModal({ open, onClose, clients, members, templates, onCreate 
         </div>
 
         {/* Dev toggle */}
-        <div className="border border-[var(--border-default)] rounded-xl p-4">
+        <div className="border border-[var(--border-default)] rounded-[var(--radius-lg)] p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-[var(--text-secondary)]">{t('project.hasDev')}</p>
@@ -534,9 +534,9 @@ function NewProjectModal({ open, onClose, clients, members, templates, onCreate 
             <button
               type="button"
               onClick={() => setHasDev((v) => !v)}
-              className={`relative w-11 h-6 rounded-full transition-colors ${hasDev ? 'bg-[var(--oe-primary)]' : 'bg-[var(--border-default)]'}`}
+              className={`relative w-11 h-6 rounded-[var(--radius-pill)] transition-colors ${hasDev ? 'bg-[var(--oe-primary)]' : 'bg-[var(--border-default)]'}`}
             >
-              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${hasDev ? 'translate-x-5' : ''}`} />
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-[var(--radius-pill)] shadow transition-transform ${hasDev ? 'translate-x-5' : ''}`} />
             </button>
           </div>
 
@@ -550,7 +550,7 @@ function NewProjectModal({ open, onClose, clients, members, templates, onCreate 
                       key={v}
                       type="button"
                       onClick={() => setDevType(v)}
-                      className={`flex-1 py-1.5 text-xs font-medium rounded-md border transition-colors ${
+                      className={`flex-1 py-1.5 text-xs font-medium rounded-[var(--radius-md)] border transition-colors ${
                         devType === v ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--oe-primary)]'
                       }`}
                     >
@@ -567,7 +567,7 @@ function NewProjectModal({ open, onClose, clients, members, templates, onCreate 
                   value={devLead}
                   onChange={(e) => setDevLead(e.target.value)}
                   placeholder={t('project.devLeadPlaceholder')}
-                  className="block w-full rounded-md border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)]"
+                  className="block w-full rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)]"
                 />
                 <datalist id="dev-options">
                   {members.map((m) => <option key={m} value={m} />)}
@@ -692,7 +692,7 @@ export default function ProjectsPage() {
         </div>
         <div className="flex items-center gap-3">
           {/* View toggle */}
-          <div className="flex rounded-lg border border-[var(--border-default)] overflow-hidden">
+          <div className="flex rounded-[var(--radius-lg)] border border-[var(--border-default)] overflow-hidden">
             <button
               onClick={() => setView('list')}
               className={`px-3 py-2 text-sm transition-colors ${view === 'list' ? 'bg-[var(--text-primary)] text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'}`}
@@ -710,7 +710,7 @@ export default function ProjectsPage() {
           </div>
           <button
             onClick={() => setOnlyMine((v) => !v)}
-            className="px-3 py-1.5 text-xs font-medium rounded-full border transition-colors"
+            className="px-3 py-1.5 text-xs font-medium rounded-[var(--radius-pill)] border transition-colors"
             style={{
               background: onlyMine ? 'var(--oe-primary)' : 'var(--surface-card)',
               color: onlyMine ? 'white' : 'var(--text-secondary)',
@@ -738,7 +738,7 @@ export default function ProjectsPage() {
 
       {/* Loading skeleton */}
       {projectsLoading ? (
-        <div className="overflow-x-auto rounded-xl border border-[var(--border-default)] shadow-sm bg-[var(--surface-card)]">
+        <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--border-default)] shadow-sm bg-[var(--surface-card)]">
           <table className="w-full text-sm">
             <thead className="bg-[var(--surface-subtle)] border-b border-[var(--border-default)]">
               <tr>
@@ -830,7 +830,7 @@ export default function ProjectsPage() {
       <SelectionBar count={selected.size} onClear={() => setSelected(new Set())}>
         <button
           onClick={applyBulkArchive}
-          className="text-xs px-2 py-1 rounded-md"
+          className="text-xs px-2 py-1 rounded-[var(--radius-md)]"
           style={{ background: 'rgba(255,255,255,0.15)' }}
         >
           Arquivar
@@ -838,7 +838,7 @@ export default function ProjectsPage() {
         <select
           onChange={(e) => { if (e.target.value) applyBulkStatus(e.target.value as ProjectStatus) }}
           value=""
-          className="text-xs rounded-md px-2 py-1"
+          className="text-xs rounded-[var(--radius-md)] px-2 py-1"
           style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
         >
           <option value="" disabled>Alterar status...</option>
@@ -846,14 +846,14 @@ export default function ProjectsPage() {
         </select>
         <button
           onClick={() => { setBulkPm(''); setBulkPmOpen(true) }}
-          className="text-xs px-2 py-1 rounded-md"
+          className="text-xs px-2 py-1 rounded-[var(--radius-md)]"
           style={{ background: 'rgba(255,255,255,0.15)' }}
         >
           Alterar PM
         </button>
         <button
           onClick={() => { setBulkClientId(''); setBulkClientOpen(true) }}
-          className="text-xs px-2 py-1 rounded-md"
+          className="text-xs px-2 py-1 rounded-[var(--radius-md)]"
           style={{ background: 'rgba(255,255,255,0.15)' }}
         >
           Alterar cliente

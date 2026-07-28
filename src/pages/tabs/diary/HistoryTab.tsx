@@ -102,14 +102,14 @@ export default function HistoryTab({ scope, history }: Props) {
               <div key={entry.id} className="relative">
                 {/* Icon */}
                 <div
-                  className="absolute -left-10 w-8 h-8 rounded-full flex items-center justify-center text-base"
+                  className="absolute -left-10 w-8 h-8 rounded-[var(--radius-pill)] flex items-center justify-center text-base"
                   style={{ background: 'var(--surface-card)', border: '2px solid var(--border-default)' }}
                 >
                   {EVENT_ICONS[entry.event]}
                 </div>
 
                 <div
-                  className="p-3 rounded-lg"
+                  className="p-3 rounded-[var(--radius-lg)]"
                   style={{ background: 'var(--surface-card)', border: '1px solid var(--border-default)' }}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -197,7 +197,7 @@ export default function HistoryTab({ scope, history }: Props) {
               value={noteDetail}
               onChange={(e) => setNoteDetail(e.target.value)}
               rows={3}
-              className="block w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1"
+              className="block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:outline-none focus:ring-1"
               style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)', resize: 'none' }}
             />
           </Field>
@@ -226,7 +226,7 @@ export default function HistoryTab({ scope, history }: Props) {
               value={noteDetail}
               onChange={(e) => setNoteDetail(e.target.value)}
               rows={3}
-              className="block w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1"
+              className="block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:outline-none focus:ring-1"
               style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)', resize: 'none' }}
             />
           </Field>

@@ -122,7 +122,7 @@ export default function MeetingsTab({ projectId, meetings, phases, teamMembers }
               value={form.notes}
               onChange={(e) => set('notes', e.target.value)}
               rows={4}
-              className="block w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1"
+              className="block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:outline-none focus:ring-1"
               style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)', resize: 'none' }}
             />
           </Field>
@@ -148,7 +148,7 @@ export default function MeetingsTab({ projectId, meetings, phases, teamMembers }
             return (
               <div
                 key={m.id}
-                className="border rounded-lg overflow-hidden"
+                className="border rounded-[var(--radius-lg)] overflow-hidden"
                 style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}
               >
                 {/* Header */}
@@ -160,7 +160,7 @@ export default function MeetingsTab({ projectId, meetings, phases, teamMembers }
                   <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{m.date}</span>
                   <span className="font-medium text-sm flex-1" style={{ color: 'var(--text-primary)' }}>{m.title}</span>
                   {m.items.length > 0 && (
-                    <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--surface-card)', color: 'var(--text-tertiary)' }}>
+                    <span className="text-xs px-2 py-0.5 rounded-[var(--radius-pill)]" style={{ background: 'var(--surface-card)', color: 'var(--text-tertiary)' }}>
                       {doneCount}/{m.items.length}
                     </span>
                   )}
@@ -199,7 +199,7 @@ export default function MeetingsTab({ projectId, meetings, phases, teamMembers }
                         {m.participants.map((p) => (
                           <span
                             key={p.id}
-                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                            className="inline-flex items-center px-2 py-0.5 rounded-[var(--radius-pill)] text-xs font-medium"
                             style={{ background: 'var(--oe-primary-light)', color: 'var(--oe-primary)' }}
                           >
                             {p.name}
@@ -208,7 +208,7 @@ export default function MeetingsTab({ projectId, meetings, phases, teamMembers }
                       </div>
                     )}
                     {m.notes && (
-                      <div className="p-3 rounded-lg text-sm whitespace-pre-wrap" style={{ background: 'var(--surface-subtle)', color: 'var(--text-secondary)' }}>
+                      <div className="p-3 rounded-[var(--radius-lg)] text-sm whitespace-pre-wrap" style={{ background: 'var(--surface-subtle)', color: 'var(--text-secondary)' }}>
                         {m.notes}
                       </div>
                     )}

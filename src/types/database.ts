@@ -81,12 +81,25 @@ export interface DbSubtaskJson {
 
 // ─── Table row types ──────────────────────────────────────────────────────────
 
+export type UserRole = 'admin' | 'member'
+
 export interface DbProfile {
   id: string
   email: string | null
   name: string | null
   avatar_url: string | null
+  role: UserRole
+  active: boolean
   created_at: string | null
+}
+
+export interface DbInvitedUser {
+  id: string
+  email: string
+  name: string | null
+  role: UserRole
+  invited_at: string
+  invited_by: string | null
 }
 
 export interface DbProject {

@@ -31,6 +31,8 @@ export default function IncidentsPage() {
   const [onlyMine, setOnlyMine] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [title, setTitle] = useState('')
+  const [newClientId, setNewClientId] = useState('')
+  const [newOwners, setNewOwners] = useState<EntryOwner[]>([])
   const [priority, setPriority] = useState<Probability>('medium')
   const [impact, setImpact] = useState<Probability>('medium')
   const [deadline, setDeadline] = useState('')
@@ -60,13 +62,20 @@ export default function IncidentsPage() {
   }
 
   function openAdd() {
-    setTitle(''); setPriority('medium'); setImpact('medium'); setDeadline('')
+    setTitle(''); setNewClientId(''); setNewOwners([]); setPriority('medium'); setImpact('medium'); setDeadline('')
     setShowAdd(true)
   }
 
   function handleCreate() {
-    if (!title.trim()) return
-    const id = createIncident({ title: title.trim(), priority, impact, deadline: deadline || undefined })
+    if (!title.trim() || !newClientId || !newOwners[0]) return
+    const id = createIncident({
+      title: title.trim(),
+      priority,
+      impact,
+      deadline: deadline || undefined,
+      clientIds: [newClientId],
+      owner: newOwners[0],
+    })
     setShowAdd(false)
     navigate(`/support/${id}`)
   }
@@ -118,7 +127,7 @@ export default function IncidentsPage() {
         <div className="flex items-center gap-3 mb-5 flex-wrap">
           <button
             onClick={() => setOnlyMine((v) => !v)}
-            className="text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
+            className="text-xs font-medium px-3 py-1.5 rounded-[var(--radius-pill)] transition-colors"
             style={onlyMine
               ? { background: 'var(--oe-primary)', color: 'white' }
               : { border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}
@@ -147,7 +156,7 @@ export default function IncidentsPage() {
           <Button onClick={openAdd}>{t('incident.createFirst')}</Button>
         </div>
       ) : (
-        <div className="rounded-xl border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
+        <div className="rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
           <table className="w-full text-sm">
             <thead>
               <tr style={{ background: 'var(--surface-subtle)' }}>
@@ -170,7 +179,7 @@ export default function IncidentsPage() {
                   onMouseLeave={e => (e.currentTarget.style.background = '')}
                 >
                   <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                    <input type="checkbox" checked={selected.has(i.id)} onChange={() => toggleSelect(i.id)} />
+                    <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]" checked={selected.has(i.id)} onChange={() => toggleSelect(i.id)} />
                   </td>
                   <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-primary)' }}>{i.title}</td>
                   <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{clientNames(i.clientIds)}</td>
@@ -192,13 +201,22 @@ export default function IncidentsPage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowAdd(false)}>{t('actions.cancel')}</Button>
-            <Button onClick={handleCreate} disabled={!title.trim()}>{t('actions.confirm')}</Button>
+            <Button onClick={handleCreate} disabled={!title.trim() || !newClientId || !newOwners[0]}>{t('actions.confirm')}</Button>
           </>
         }
       >
         <div className="space-y-4">
           <Field label={t('incident.colTitle')} required>
             <Input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} />
+          </Field>
+          <Field label={t('incident.colClients')} required>
+            <Select value={newClientId} onChange={(e) => setNewClientId(e.target.value)}>
+              <option value="">Selecione um cliente</option>
+              {[...clients].sort((a, b) => a.name.localeCompare(b.name)).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </Select>
+          </Field>
+          <Field label="Responsável" required>
+            <OwnersField owners={newOwners.slice(0, 1)} onChange={(owners) => setNewOwners(owners.slice(-1))} teamMembers={directoryAsTeam} />
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label={t('incident.priority')}>
@@ -226,7 +244,7 @@ export default function IncidentsPage() {
         <select
           onChange={(e) => { if (e.target.value) applyBulkStatus(e.target.value as IncidentStatus) }}
           value=""
-          className="text-xs rounded-md px-2 py-1"
+          className="text-xs rounded-[var(--radius-md)] px-2 py-1"
           style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
         >
           <option value="" disabled>Alterar status...</option>
@@ -237,7 +255,7 @@ export default function IncidentsPage() {
         <select
           onChange={(e) => { if (e.target.value) applyBulkPriority(e.target.value as Probability) }}
           value=""
-          className="text-xs rounded-md px-2 py-1"
+          className="text-xs rounded-[var(--radius-md)] px-2 py-1"
           style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
         >
           <option value="" disabled>Alterar prioridade...</option>
@@ -247,14 +265,14 @@ export default function IncidentsPage() {
         </select>
         <button
           onClick={() => { setBulkOwners([]); setBulkOwnersOpen(true) }}
-          className="text-xs px-2 py-1 rounded-md"
+          className="text-xs px-2 py-1 rounded-[var(--radius-md)]"
           style={{ background: 'rgba(255,255,255,0.15)' }}
         >
           Alterar responsável
         </button>
         <button
           onClick={() => { setBulkClientId(''); setBulkClientOpen(true) }}
-          className="text-xs px-2 py-1 rounded-md"
+          className="text-xs px-2 py-1 rounded-[var(--radius-md)]"
           style={{ background: 'rgba(255,255,255,0.15)' }}
         >
           Vincular cliente

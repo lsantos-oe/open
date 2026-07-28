@@ -14,6 +14,8 @@ import ClientsPage from '@/pages/ClientsPage'
 import ClientDetailPage from '@/pages/ClientDetailPage'
 import IncidentsPage from '@/pages/IncidentsPage'
 import IncidentDetailPage from '@/pages/IncidentDetailPage'
+import UsersPage from '@/pages/UsersPage'
+import GuidePage from '@/pages/GuidePage'
 import LoginPage from '@/pages/LoginPage'
 import AuthCallback from '@/pages/AuthCallback'
 
@@ -26,6 +28,7 @@ export default function App() {
         useAppStore.getState().loadProjects()
         useAppStore.getState().loadSettings()
         useAppStore.getState().loadTeamDirectory()
+        useAppStore.getState().loadInvitedUsers()
         useAppStore.getState().loadClients()
         useAppStore.getState().loadIncidents()
       }
@@ -41,6 +44,7 @@ export default function App() {
           useAppStore.getState().loadProjects()
           useAppStore.getState().loadSettings()
           useAppStore.getState().loadTeamDirectory()
+        useAppStore.getState().loadInvitedUsers()
         })
       } else {
         useAuthStore.setState({ user: null, profile: null, loading: false })
@@ -65,6 +69,8 @@ export default function App() {
           <Route path="/tasks" element={<TasksPage />} />
           <Route path="/projects/:id" element={<ProjectDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/users" element={<UsersPage />} />
+          <Route path="/guide" element={<GuidePage />} />
           <Route path="/settings/templates/:templateId" element={<TemplateEditorPage />} />
         </Route>
       </Route>

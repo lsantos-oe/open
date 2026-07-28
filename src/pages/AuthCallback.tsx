@@ -22,7 +22,20 @@ export default function AuthCallback() {
         return
       }
 
-      navigate('/', { replace: true })
+      supabase
+        .from('profiles')
+        .select('active')
+        .eq('id', session.user.id)
+        .single()
+        .then(({ data: profile }) => {
+          if (profile && profile.active === false) {
+            supabase.auth.signOut().then(() =>
+              navigate('/login?error=revoked', { replace: true }),
+            )
+            return
+          }
+          navigate('/', { replace: true })
+        })
     })
   }, [navigate])
 

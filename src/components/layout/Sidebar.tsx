@@ -107,6 +107,16 @@ export function Sidebar() {
           <span className="shrink-0 w-4 h-4 flex items-center justify-center"><GearIcon /></span>
           {!collapsed && <span>{t('nav.settings')}</span>}
         </NavLink>
+        <NavLink to="/guide" className={navLinkCls} title={collapsed ? 'Guia' : undefined}>
+          <span className="shrink-0 w-4 h-4 flex items-center justify-center"><GuideIcon /></span>
+          {!collapsed && <span>Guia</span>}
+        </NavLink>
+        {profile?.role === 'admin' && (
+          <NavLink to="/users" className={navLinkCls} title={collapsed ? 'Usuários' : undefined}>
+            <span className="shrink-0 w-4 h-4 flex items-center justify-center"><UsersIcon /></span>
+            {!collapsed && <span>Usuários</span>}
+          </NavLink>
+        )}
       </nav>
 
       {/* Divider */}
@@ -260,6 +270,22 @@ function TasksIcon() {
   return (
     <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+    </svg>
+  )
+}
+
+function GuideIcon() {
+  return (
+    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+    </svg>
+  )
+}
+
+function UsersIcon() {
+  return (
+    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m5-4.13a4 4 0 100-8 4 4 0 000 8zm6 4a4 4 0 00-8 0v.13" />
     </svg>
   )
 }
