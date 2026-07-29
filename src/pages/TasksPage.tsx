@@ -13,7 +13,20 @@ import EntryModal from '@/components/plan/EntryModal'
 import IncidentEntryModal from '@/components/plan/IncidentEntryModal'
 import OwnersField from '@/components/plan/OwnersField'
 import { SelectionBar } from '@/components/ui/SelectionBar'
+import { StatusDot } from '@/components/ui/StatusDot'
+import { AvatarStack } from '@/components/ui/AvatarStack'
+import { FilterMenu } from '@/components/ui/FilterMenu'
+import { EmptyState as SharedEmptyState } from '@/components/ui/EmptyState'
+import { Field } from '@/components/ui/Input'
 import { isEntryMine } from '@/utils/involvement'
+
+const ENTRY_STATUS_COLOR: Record<EntryStatus, string> = {
+  pending: 'var(--text-tertiary)',
+  in_progress: 'var(--color-info-text)',
+  done: 'var(--color-success-text)',
+  blocked: 'var(--color-danger-text)',
+  overdue: 'var(--color-warning-text)',
+}
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -52,13 +65,6 @@ function projectColor(project: Project, index: number): string {
 function fmtDate(iso: string): string {
   const [y, m, d] = iso.split('-')
   return `${d}/${m}/${y}`
-}
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/)
-  return parts.length >= 2
-    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-    : name.slice(0, 2).toUpperCase()
 }
 
 function entryOwners(entry: Entry): EntryOwner[] {
@@ -100,41 +106,6 @@ function buildCards(projects: Project[], incidents: Incident[]): GlobalCard[] {
     }
   }
   return cards
-}
-
-// ─── OwnerAvatars ─────────────────────────────────────────────────────────────
-
-function OwnerAvatars({ entry }: { entry: Entry }) {
-  const owners = entryOwners(entry)
-  if (owners.length === 0) return null
-  const MAX = 3
-  const visible = owners.slice(0, MAX)
-  const overflow = owners.length - MAX
-  const tooltip = owners.map(o => o.name).join(', ')
-
-  return (
-    <div style={{ display: 'flex', alignItems: 'center' }} title={tooltip}>
-      {visible.map((owner, i) => (
-        <span
-          key={owner.id}
-          style={{
-            width: 22, height: 22, borderRadius: '50%',
-            background: 'var(--oe-primary)', color: 'white',
-            fontSize: 9, fontWeight: 600, display: 'flex',
-            alignItems: 'center', justifyContent: 'center',
-            marginLeft: i > 0 ? -7 : 0,
-            border: '1.5px solid var(--surface-card)',
-            zIndex: MAX - i, position: 'relative', flexShrink: 0,
-          }}
-        >
-          {initials(owner.name)}
-        </span>
-      ))}
-      {overflow > 0 && (
-        <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--text-tertiary)' }}>+{overflow}</span>
-      )}
-    </div>
-  )
 }
 
 // ─── TaskCard ─────────────────────────────────────────────────────────────────
@@ -194,7 +165,7 @@ function TaskCard({ card, onClick, ghost = false }: {
       {/* Footer: owner avatars + hidden badge + date */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <OwnerAvatars entry={card} />
+          <AvatarStack people={entryOwners(card)} size={22} />
           {card.hiddenFromPlan && (
             <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 'var(--radius-pill)', background: 'var(--surface-subtle)', color: 'var(--text-disabled)', border: '0.5px solid var(--border-default)', whiteSpace: 'nowrap' }}>
               {t('entry.hiddenBadge')}
@@ -267,34 +238,6 @@ function KanbanColumn({ status, labelKey, cards, onEdit }: {
   )
 }
 
-// ─── EmptyState ───────────────────────────────────────────────────────────────
-
-function EmptyState({ onNew }: { onNew: () => void }) {
-  const { t } = useTranslation()
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, padding: '80px 0' }}>
-      <svg width={48} height={48} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.25} style={{ color: 'var(--border-strong)', marginBottom: 16 }}>
-        <rect x="3" y="3" width="18" height="18" rx="2" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />
-      </svg>
-      <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>
-        {t('tasks.emptyTitle')}
-      </p>
-      <p style={{ fontSize: 13, color: 'var(--text-tertiary)', textAlign: 'center', maxWidth: 320 }}>
-        {t('tasks.emptySubtitle')}
-      </p>
-      <button
-        onClick={onNew}
-        style={{ marginTop: 24, padding: '8px 16px', borderRadius: 'var(--radius-lg)', fontSize: 13, fontWeight: 500, background: 'var(--oe-primary)', color: 'white', border: 'none', cursor: 'pointer' }}
-        onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
-        onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-      >
-        {t('tasks.newTask')}
-      </button>
-    </div>
-  )
-}
-
 // ─── FilterSelect ─────────────────────────────────────────────────────────────
 
 function FilterSelect({ value, onChange, children }: {
@@ -306,7 +249,7 @@ function FilterSelect({ value, onChange, children }: {
     <select
       value={value}
       onChange={e => onChange(e.target.value)}
-      style={{ fontSize: 12, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '4px 8px', background: 'var(--surface-card)', color: 'var(--text-secondary)', outline: 'none' }}
+      style={{ width: '100%', fontSize: 12, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '5px 8px', background: 'var(--surface-card)', color: 'var(--text-secondary)', outline: 'none' }}
     >
       {children}
     </select>
@@ -483,36 +426,52 @@ export default function TasksPage() {
 
         <div style={{ flex: 1 }} />
 
-        <FilterSelect value={filterScope} onChange={setFilterScope}>
-          <option value="">{t('tasks.filterProject')}</option>
-          {projects.filter(p => !p.archived).map(p => (
-            <option key={p.id} value={p.id}>{p.name}</option>
-          ))}
-          {incidents.map(i => (
-            <option key={i.id} value={i.id}>🛠️ {i.title}</option>
-          ))}
-        </FilterSelect>
+        <FilterMenu
+          activeCount={[filterScope, filterMember, filterStatus].filter(Boolean).length}
+          onClear={() => { setFilterScope(''); setFilterMember(''); setFilterStatus('') }}
+        >
+          <Field label={t('tasks.filterProject')}>
+            <FilterSelect value={filterScope} onChange={setFilterScope}>
+              <option value="">{t('tasks.filterProject')}</option>
+              {projects.filter(p => !p.archived).map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+              {incidents.map(i => (
+                <option key={i.id} value={i.id}>🛠️ {i.title}</option>
+              ))}
+            </FilterSelect>
+          </Field>
 
-        <FilterSelect value={filterMember} onChange={setFilterMember}>
-          <option value="">{t('tasks.filterMember')}</option>
-          {allMembers.map(m => <option key={m} value={m}>{m}</option>)}
-        </FilterSelect>
+          <Field label={t('tasks.filterMember')}>
+            <FilterSelect value={filterMember} onChange={setFilterMember}>
+              <option value="">{t('tasks.filterMember')}</option>
+              {allMembers.map(m => <option key={m} value={m}>{m}</option>)}
+            </FilterSelect>
+          </Field>
 
-        <FilterSelect value={filterStatus} onChange={setFilterStatus}>
-          <option value="">{t('tasks.filterStatus')}</option>
-          {KANBAN_COLS.map(col => (
-            <option key={col.status} value={col.status}>{t(col.labelKey as any)}</option>
-          ))}
-        </FilterSelect>
+          <Field label={t('tasks.filterStatus')}>
+            <FilterSelect value={filterStatus} onChange={setFilterStatus}>
+              <option value="">{t('tasks.filterStatus')}</option>
+              {KANBAN_COLS.map(col => (
+                <option key={col.status} value={col.status}>{t(col.labelKey as any)}</option>
+              ))}
+            </FilterSelect>
+          </Field>
+        </FilterMenu>
       </div>
 
       {/* Content */}
       {allCards.length === 0 ? (
-        <EmptyState onNew={() => setNewTaskOpen(true)} />
+        <SharedEmptyState
+          icon="✅"
+          title={t('tasks.emptyTitle')}
+          description={t('tasks.emptySubtitle')}
+          action={{ label: t('tasks.newTask'), onClick: () => setNewTaskOpen(true) }}
+        />
       ) : view === 'table' ? (
         <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
           <table className="w-full text-sm rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
-            <thead>
+            <thead className="sticky top-0 z-10">
               <tr style={{ background: 'var(--surface-subtle)' }}>
                 <th className="w-8 px-3 py-2" />
                 <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Nome</th>
@@ -522,11 +481,11 @@ export default function TasksPage() {
                 <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Data</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
               {filteredCards.map((card) => {
                 const endDate = card.type === 'task' ? card.plannedEnd : card.plannedDate
                 return (
-                  <tr key={card.id} className="border-t transition-colors" style={{ borderColor: 'var(--border-default)' }}>
+                  <tr key={card.id} className="transition-colors">
                     <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                       <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]" checked={selected.has(card.id)} onChange={() => toggleSelect(card.id)} />
                     </td>
@@ -536,10 +495,10 @@ export default function TasksPage() {
                     <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)' }}>
                       {card._scopeType === 'incident' ? `🛠️ ${card._scopeName}` : card._scopeName}
                     </td>
-                    <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)' }}>
-                      {entryOwners(card).map((o) => o.name).join(', ') || '—'}
+                    <td className="px-3 py-2.5">
+                      <AvatarStack people={entryOwners(card)} size={20} />
                     </td>
-                    <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)' }}>{t(`entry.${card.status}` as any)}</td>
+                    <td className="px-3 py-2.5"><StatusDot color={ENTRY_STATUS_COLOR[card.status]} label={t(`entry.${card.status}` as any)} /></td>
                     <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)' }}>{endDate ? fmtDate(endDate) : '—'}</td>
                   </tr>
                 )

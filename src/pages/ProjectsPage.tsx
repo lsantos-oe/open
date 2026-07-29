@@ -10,6 +10,11 @@ import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { Input, Field, Select } from '@/components/ui/Input'
 import { SelectionBar } from '@/components/ui/SelectionBar'
+import { StatusDot } from '@/components/ui/StatusDot'
+import { AvatarStack } from '@/components/ui/AvatarStack'
+import { FilterMenu } from '@/components/ui/FilterMenu'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { TableSkeleton } from '@/components/ui/TableSkeleton'
 import { isProjectMine } from '@/utils/involvement'
 import { Project, ProjectStatus, ProjectType, ProjectTemplate, Client } from '@/types'
 import {
@@ -22,11 +27,11 @@ import {
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
-const STATUS_VARIANT: Record<ProjectStatus, 'primary' | 'green' | 'red' | 'gray'> = {
-  planning: 'gray',
-  in_progress: 'primary',
-  delayed: 'red',
-  done: 'green',
+const STATUS_COLOR: Record<ProjectStatus, string> = {
+  planning: 'var(--text-tertiary)',
+  in_progress: 'var(--color-info-text)',
+  delayed: 'var(--color-danger-text)',
+  done: 'var(--color-success-text)',
 }
 
 const KANBAN_STATUSES: ProjectStatus[] = ['planning', 'in_progress', 'delayed', 'done']
@@ -82,69 +87,64 @@ interface FilterBarProps {
 
 function FilterBar({ filters, setFilters, clients, pms }: FilterBarProps) {
   const { t } = useTranslation()
-  const hasActive = Object.values(filters).some(Boolean)
+  const activeCount = Object.values(filters).filter(Boolean).length
 
   return (
-    <div className="flex items-center gap-3 flex-wrap">
-      {/* client */}
-      <select
-        value={filters.client}
-        onChange={(e) => setFilters({ ...filters, client: e.target.value })}
-        className="text-sm border border-[var(--border-default)] rounded-[var(--radius-lg)] px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] bg-[var(--surface-card)]"
-      >
-        <option value="">{t('project.allClients')}</option>
-        {clients.map((c) => <option key={c} value={c}>{c}</option>)}
-      </select>
-
-      {/* pm */}
-      <select
-        value={filters.pm}
-        onChange={(e) => setFilters({ ...filters, pm: e.target.value })}
-        className="text-sm border border-[var(--border-default)] rounded-[var(--radius-lg)] px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] bg-[var(--surface-card)]"
-      >
-        <option value="">{t('project.allPMs')}</option>
-        {pms.map((p) => <option key={p} value={p}>{p}</option>)}
-      </select>
-
-      {/* type */}
-      <div className="flex rounded-[var(--radius-lg)] border border-[var(--border-default)] overflow-hidden">
-        {([['', t('project.filterAll')], ['nova_conta', t('project.nova_conta')], ['novo_projeto', t('project.novo_projeto')]] as [string, string][]).map(([v, l]) => (
-          <button
-            key={v}
-            onClick={() => setFilters({ ...filters, type: v })}
-            className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-              filters.type === v ? 'bg-[var(--oe-primary)] text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'
-            }`}
-          >
-            {l}
-          </button>
-        ))}
-      </div>
-
-      {/* dev */}
-      <div className="flex rounded-[var(--radius-lg)] border border-[var(--border-default)] overflow-hidden">
-        {([['', t('project.filterAll')], ['with', t('project.filterWithDev')], ['without', t('project.filterWithoutDev')]] as [string, string][]).map(([v, l]) => (
-          <button
-            key={v}
-            onClick={() => setFilters({ ...filters, dev: v })}
-            className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-              filters.dev === v ? 'bg-[var(--oe-primary)] text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'
-            }`}
-          >
-            {l}
-          </button>
-        ))}
-      </div>
-
-      {hasActive && (
-        <button
-          onClick={() => setFilters({ client: '', pm: '', type: '', dev: '' })}
-          className="text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] underline"
+    <FilterMenu activeCount={activeCount} onClear={() => setFilters({ client: '', pm: '', type: '', dev: '' })}>
+      <Field label={t('portfolio.colClient')}>
+        <select
+          value={filters.client}
+          onChange={(e) => setFilters({ ...filters, client: e.target.value })}
+          className="block w-full text-sm border border-[var(--border-default)] rounded-[var(--radius-md)] px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] bg-[var(--surface-card)]"
         >
-          {t('project.clearFilters')}
-        </button>
-      )}
-    </div>
+          <option value="">{t('project.allClients')}</option>
+          {clients.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </Field>
+
+      <Field label={t('project.pm')}>
+        <select
+          value={filters.pm}
+          onChange={(e) => setFilters({ ...filters, pm: e.target.value })}
+          className="block w-full text-sm border border-[var(--border-default)] rounded-[var(--radius-md)] px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] bg-[var(--surface-card)]"
+        >
+          <option value="">{t('project.allPMs')}</option>
+          {pms.map((p) => <option key={p} value={p}>{p}</option>)}
+        </select>
+      </Field>
+
+      <Field label={t('portfolio.colType')}>
+        <div className="flex rounded-[var(--radius-md)] border border-[var(--border-default)] overflow-hidden">
+          {([['', t('project.filterAll')], ['nova_conta', t('project.nova_conta')], ['novo_projeto', t('project.novo_projeto')]] as [string, string][]).map(([v, l]) => (
+            <button
+              key={v}
+              onClick={() => setFilters({ ...filters, type: v })}
+              className={`flex-1 px-2 py-1.5 text-xs font-medium transition-colors ${
+                filters.type === v ? 'bg-[var(--oe-primary)] text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'
+              }`}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+      </Field>
+
+      <Field label={t('portfolio.colDev')}>
+        <div className="flex rounded-[var(--radius-md)] border border-[var(--border-default)] overflow-hidden">
+          {([['', t('project.filterAll')], ['with', t('project.filterWithDev')], ['without', t('project.filterWithoutDev')]] as [string, string][]).map(([v, l]) => (
+            <button
+              key={v}
+              onClick={() => setFilters({ ...filters, dev: v })}
+              className={`flex-1 px-2 py-1.5 text-xs font-medium transition-colors ${
+                filters.dev === v ? 'bg-[var(--oe-primary)] text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'
+              }`}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+      </Field>
+    </FilterMenu>
   )
 }
 
@@ -175,7 +175,7 @@ function ListView({ projects, holidays, onOpen, selected, onToggle }: ListViewPr
   return (
     <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--border-default)] shadow-sm bg-[var(--surface-card)]">
       <table className="w-full text-sm">
-        <thead className="bg-[var(--surface-subtle)] border-b border-[var(--border-default)]">
+        <thead className="sticky top-0 z-10 bg-[var(--surface-subtle)] border-b border-[var(--border-default)]">
           <tr>
             {COLS.map((h) => (
               <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wide whitespace-nowrap">
@@ -209,7 +209,12 @@ function ListView({ projects, holidays, onOpen, selected, onToggle }: ListViewPr
                   </div>
                 </td>
                 <td className="px-4 py-3 text-[var(--text-secondary)]">{p.client}</td>
-                <td className="px-4 py-3 text-[var(--text-secondary)]">{p.pm}</td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <AvatarStack people={[{ name: p.pm }]} size={20} />
+                    <span className="text-[var(--text-secondary)]">{p.pm}</span>
+                  </div>
+                </td>
                 <td className="px-4 py-3">
                   <Badge variant={p.type === 'nova_conta' ? 'blue' : 'purple'}>
                     {t(`project.${p.type}`)}
@@ -224,7 +229,7 @@ function ListView({ projects, holidays, onOpen, selected, onToggle }: ListViewPr
                   {dur !== undefined ? `${dur}${t('project.workingDays')}` : '—'}
                 </td>
                 <td className="px-4 py-3">
-                  <Badge variant={STATUS_VARIANT[p.status]}>{t(`project.${p.status}`)}</Badge>
+                  <StatusDot color={STATUS_COLOR[p.status]} label={t(`project.${p.status}`)} />
                 </td>
                 <td className={`px-4 py-3 whitespace-nowrap ${varianceClass(variance)}`}>
                   {fmtVariance(variance)}
@@ -293,7 +298,10 @@ function KanbanView({ projects, holidays, onOpen, selected, onToggle }: KanbanVi
                         )}
                       </div>
                     </div>
-                    <p className="text-xs text-[var(--text-tertiary)] mt-1.5">PM: {p.pm}</p>
+                    <div className="flex items-center gap-1.5 mt-1.5">
+                      <AvatarStack people={[{ name: p.pm }]} size={16} />
+                      <span className="text-xs text-[var(--text-tertiary)]">{p.pm}</span>
+                    </div>
                   </div>
                 )
               })}
@@ -309,12 +317,7 @@ function KanbanView({ projects, holidays, onOpen, selected, onToggle }: KanbanVi
 
 function EmptyFiltered() {
   const { t } = useTranslation()
-  return (
-    <div className="text-center py-20 text-[var(--text-tertiary)]">
-      <div className="text-5xl mb-3">📋</div>
-      <p className="text-sm">{t('project.filterNoResults')}</p>
-    </div>
-  )
+  return <EmptyState icon="📋" title={t('project.filterNoResults')} />
 }
 
 // ─── NewProjectModal ──────────────────────────────────────────────────────────
@@ -738,37 +741,14 @@ export default function ProjectsPage() {
 
       {/* Loading skeleton */}
       {projectsLoading ? (
-        <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--border-default)] shadow-sm bg-[var(--surface-card)]">
-          <table className="w-full text-sm">
-            <thead className="bg-[var(--surface-subtle)] border-b border-[var(--border-default)]">
-              <tr>
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <th key={i} className="px-4 py-3">
-                    <div className="h-3 rounded bg-[var(--border-default)] animate-pulse" style={{ width: i === 0 ? '120px' : '60px' }} />
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border-default)]">
-              {Array.from({ length: 5 }).map((_, row) => (
-                <tr key={row}>
-                  {Array.from({ length: 8 }).map((_, col) => (
-                    <td key={col} className="px-4 py-3">
-                      <div className="h-4 rounded bg-[var(--surface-subtle)] animate-pulse" style={{ width: col === 0 ? '140px' : col === 6 ? '70px' : '80px' }} />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <TableSkeleton columns={8} rows={5} />
       ) : projects.length === 0 ? (
-        <div className="text-center py-24 text-[var(--text-tertiary)]">
-          <div className="text-6xl mb-4">🗂️</div>
-          <h2 className="text-lg font-semibold text-[var(--text-secondary)] mb-1">{t('project.noProjectsTitle')}</h2>
-          <p className="text-sm mb-6">{t('project.noProjectsDesc')}</p>
-          <Button onClick={() => setModalOpen(true)}>{t('project.createFirst')}</Button>
-        </div>
+        <EmptyState
+          icon="🗂️"
+          title={t('project.noProjectsTitle')}
+          description={t('project.noProjectsDesc')}
+          action={{ label: t('project.createFirst'), onClick: () => setModalOpen(true) }}
+        />
       ) : view === 'list' ? (
         <>
           <ListView

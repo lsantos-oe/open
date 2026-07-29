@@ -4,10 +4,13 @@ import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { Input, Select, Field } from '@/components/ui/Input'
 import { SelectionBar } from '@/components/ui/SelectionBar'
+import { StatusDot } from '@/components/ui/StatusDot'
+import { AvatarStack } from '@/components/ui/AvatarStack'
+import { FilterMenu } from '@/components/ui/FilterMenu'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { isIncidentMine } from '@/utils/involvement'
 import OwnersField from '@/components/plan/OwnersField'
 import { IncidentStatus, Probability, EntryOwner, TeamMember } from '@/types'
@@ -20,12 +23,18 @@ function suggestDeadline(priority: Probability): string {
   return d.toISOString().slice(0, 10)
 }
 
-const STATUS_VARIANT: Record<IncidentStatus, 'gray' | 'primary' | 'orange' | 'green' | 'red'> = {
-  open: 'gray',
-  in_progress: 'primary',
-  waiting_on_client: 'orange',
-  resolved: 'green',
-  closed: 'red',
+const STATUS_COLOR: Record<IncidentStatus, string> = {
+  open: 'var(--text-tertiary)',
+  in_progress: 'var(--color-info-text)',
+  waiting_on_client: 'var(--color-warning-text)',
+  resolved: 'var(--color-success-text)',
+  closed: 'var(--text-disabled)',
+}
+
+const PRIORITY_COLOR: Record<Probability, string> = {
+  low: 'var(--text-tertiary)',
+  medium: 'var(--color-warning-text)',
+  high: 'var(--color-danger-text)',
 }
 
 export default function IncidentsPage() {
@@ -169,47 +178,54 @@ export default function IncidentsPage() {
           >
             Meus
           </button>
-          <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-auto">
-            <option value="">{t('incident.filterAllStatus')}</option>
-            {(['open', 'in_progress', 'waiting_on_client', 'resolved', 'closed'] as IncidentStatus[]).map((s) => (
-              <option key={s} value={s}>{t(`incident.status_${s}`)}</option>
-            ))}
-          </Select>
-          <Select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} className="w-auto">
-            <option value="">{t('incident.filterAllPriority')}</option>
-            <option value="low">{t('risk.low')}</option>
-            <option value="medium">{t('risk.medium')}</option>
-            <option value="high">{t('risk.high')}</option>
-          </Select>
+          <FilterMenu
+            activeCount={[statusFilter, priorityFilter].filter(Boolean).length}
+            onClear={() => { setStatusFilter(''); setPriorityFilter('') }}
+          >
+            <Field label={t('incident.colStatus')}>
+              <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <option value="">{t('incident.filterAllStatus')}</option>
+                {(['open', 'in_progress', 'waiting_on_client', 'resolved', 'closed'] as IncidentStatus[]).map((s) => (
+                  <option key={s} value={s}>{t(`incident.status_${s}`)}</option>
+                ))}
+              </Select>
+            </Field>
+            <Field label={t('incident.colPriority')}>
+              <Select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
+                <option value="">{t('incident.filterAllPriority')}</option>
+                <option value="low">{t('risk.low')}</option>
+                <option value="medium">{t('risk.medium')}</option>
+                <option value="high">{t('risk.high')}</option>
+              </Select>
+            </Field>
+          </FilterMenu>
         </div>
       )}
 
       {incidents.length === 0 ? (
-        <div className="text-center py-24" style={{ color: 'var(--text-tertiary)' }}>
-          <div className="text-6xl mb-4">🛠️</div>
-          <p className="text-sm mb-6">{t('incident.noIncidents')}</p>
-          <Button onClick={openAdd}>{t('incident.createFirst')}</Button>
-        </div>
+        <EmptyState icon="🛠️" title={t('incident.noIncidents')} action={{ label: t('incident.createFirst'), onClick: openAdd }} />
+      ) : filtered.length === 0 ? (
+        <EmptyState icon="🛠️" title="Nenhum incidente encontrado com esses filtros." />
       ) : (
         <div className="rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
           <table className="w-full text-sm">
-            <thead>
+            <thead className="sticky top-0 z-10">
               <tr style={{ background: 'var(--surface-subtle)' }}>
                 <th className="px-4 py-2" style={{ width: 32 }} />
                 <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('incident.colTitle')}</th>
                 <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('incident.colClients')}</th>
+                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>Responsável</th>
                 <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('incident.colStatus')}</th>
                 <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('incident.colPriority')}</th>
                 <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('incident.colDeadline')}</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
               {filtered.map((i) => (
                 <tr
                   key={i.id}
                   onClick={() => navigate(`/support/${i.id}`)}
-                  className="cursor-pointer transition-colors border-t"
-                  style={{ borderColor: 'var(--border-default)' }}
+                  className="cursor-pointer transition-colors"
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
                   onMouseLeave={e => (e.currentTarget.style.background = '')}
                 >
@@ -218,8 +234,11 @@ export default function IncidentsPage() {
                   </td>
                   <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-primary)' }}>{i.title}</td>
                   <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{clientNames(i.clientIds)}</td>
-                  <td className="px-4 py-3"><Badge variant={STATUS_VARIANT[i.status]}>{t(`incident.status_${i.status}`)}</Badge></td>
-                  <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{t(`risk.${i.priority}`)}</td>
+                  <td className="px-4 py-3">
+                    <AvatarStack people={i.owner ? [{ name: i.owner.name }] : []} size={20} />
+                  </td>
+                  <td className="px-4 py-3"><StatusDot color={STATUS_COLOR[i.status]} label={t(`incident.status_${i.status}`)} /></td>
+                  <td className="px-4 py-3"><StatusDot color={PRIORITY_COLOR[i.priority]} label={t(`risk.${i.priority}`)} /></td>
                   <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{i.deadline ?? '—'}</td>
                 </tr>
               ))}

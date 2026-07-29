@@ -52,6 +52,8 @@ const HOMEPAGE_OPTIONS: { value: string; label: string }[] = [
   { value: 'diary', label: 'Diário' },
 ]
 
+type SettingsTab = 'general' | 'holidays' | 'templates' | 'archived'
+
 export default function SettingsPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
@@ -63,6 +65,7 @@ export default function SettingsPage() {
 
   useEffect(() => { loadArchivedProjects() }, [])
 
+  const [tab, setTab] = useState<SettingsTab>('general')
   const [holidayDate, setHolidayDate] = useState('')
   const [holidayName, setHolidayName] = useState('')
   const [homepageTab, setHomepageTab] = useState(() => localStorage.getItem(HOMEPAGE_KEY) ?? 'overview')
@@ -118,186 +121,214 @@ export default function SettingsPage() {
     setShowIncidentTemplate(false)
   }
 
+  const TABS: { id: SettingsTab; label: string }[] = [
+    { id: 'general', label: 'Geral' },
+    { id: 'holidays', label: 'Feriados' },
+    { id: 'templates', label: 'Templates' },
+    { id: 'archived', label: `Arquivados${archivedProjectsLoaded && archivedProjects.length ? ` (${archivedProjects.length})` : ''}` },
+  ]
+
   return (
     <div className="p-8 max-w-3xl">
-      <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-8">{t('nav.settings')}</h1>
+      <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-6">{t('nav.settings')}</h1>
 
-      {/* Language */}
-      <Section title="Idioma da interface">
-        <ToggleGroup
-          value={settings.defaultLanguage}
-          onChange={changeLanguage}
-          options={[
-            { value: 'pt', label: '🇧🇷 Português' },
-            { value: 'en', label: '🇺🇸 English' },
-            { value: 'es', label: '🇪🇸 Español' },
-          ]}
-        />
-      </Section>
+      <div className="flex gap-0 border-b mb-6" style={{ borderColor: 'var(--border-default)' }}>
+        {TABS.map((tb) => (
+          <button
+            key={tb.id}
+            onClick={() => setTab(tb.id)}
+            className="px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap"
+            style={{
+              borderBottomColor: tab === tb.id ? 'var(--oe-primary)' : 'transparent',
+              color: tab === tb.id ? 'var(--text-primary)' : 'var(--text-tertiary)',
+              marginBottom: -1,
+            }}
+          >
+            {tb.label}
+          </button>
+        ))}
+      </div>
 
-      {/* Personal preferences */}
-      <Section title="Preferências pessoais" description="Salvas apenas neste navegador.">
-        <p className="text-xs text-[var(--text-secondary)] mb-2">Página inicial ao abrir um projeto</p>
-        <ToggleGroup
-          value={homepageTab}
-          onChange={changeHomepageTab}
-          options={HOMEPAGE_OPTIONS}
-        />
-      </Section>
+      {tab === 'general' && (
+        <>
+          <Section title="Idioma da interface">
+            <ToggleGroup
+              value={settings.defaultLanguage}
+              onChange={changeLanguage}
+              options={[
+                { value: 'pt', label: '🇧🇷 Português' },
+                { value: 'en', label: '🇺🇸 English' },
+                { value: 'es', label: '🇪🇸 Español' },
+              ]}
+            />
+          </Section>
 
-      {/* Date format */}
-      <Section title="Formato de data">
-        <ToggleGroup<DateFormat>
-          value={settings.dateFormat}
-          onChange={(v) => updateSettings({ dateFormat: v })}
-          options={[
-            { value: 'DD/MM/YYYY', label: 'DD/MM/AAAA (ex: 22/04/2026)' },
-            { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY (ex: 04/22/2026)' },
-          ]}
-        />
-      </Section>
+          <Section title="Preferências pessoais" description="Salvas apenas neste navegador.">
+            <p className="text-xs text-[var(--text-secondary)] mb-2">Página inicial ao abrir um projeto</p>
+            <ToggleGroup
+              value={homepageTab}
+              onChange={changeHomepageTab}
+              options={HOMEPAGE_OPTIONS}
+            />
+          </Section>
 
-      {/* Workdays */}
-      <Section title="Dias úteis" description="Define quais dias são considerados dias úteis nos cálculos de prazo.">
-        <ToggleGroup<Workdays>
-          value={settings.workdays}
-          onChange={(v) => updateSettings({ workdays: v })}
-          options={[
-            { value: 'mon-fri', label: 'Seg – Sex' },
-            { value: 'mon-sat', label: 'Seg – Sáb' },
-          ]}
-        />
-      </Section>
+          <Section title="Formato de data">
+            <ToggleGroup<DateFormat>
+              value={settings.dateFormat}
+              onChange={(v) => updateSettings({ dateFormat: v })}
+              options={[
+                { value: 'DD/MM/YYYY', label: 'DD/MM/AAAA (ex: 22/04/2026)' },
+                { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY (ex: 04/22/2026)' },
+              ]}
+            />
+          </Section>
 
-      {/* Holidays */}
-      <Section title="Feriados" description="Datas excluídas do cálculo de dias úteis.">
-        <div className="flex gap-2 mb-4 flex-wrap">
-          <Input
-            type="date"
-            value={holidayDate}
-            onChange={(e) => setHolidayDate(e.target.value)}
-            className="w-44"
-          />
-          <Input
-            value={holidayName}
-            onChange={(e) => setHolidayName(e.target.value)}
-            placeholder="Nome (ex: Carnaval)"
-            className="flex-1 min-w-[160px]"
-            onKeyDown={(e) => e.key === 'Enter' && handleAddHoliday()}
-          />
-          <Button size="sm" onClick={handleAddHoliday} disabled={!holidayDate}>
-            Adicionar
-          </Button>
-        </div>
-        {settings.holidays.length === 0 ? (
-          <p className="text-sm text-[var(--text-tertiary)]">Nenhum feriado cadastrado.</p>
-        ) : (
-          <div className="space-y-1.5">
-            {settings.holidays.map((date) => {
-              const name = settings.holidayNames[date]
-              return (
-                <div key={date} className="flex items-center justify-between py-1.5 px-3 bg-[var(--surface-subtle)] rounded-[var(--radius-lg)] border border-[var(--border-default)]">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-mono text-[var(--text-secondary)]">
-                      {date.split('-').reverse().join('/')}
-                    </span>
-                    {name && <span className="text-sm text-[var(--text-secondary)]">{name}</span>}
-                  </div>
-                  <button onClick={() => removeHoliday(date)} className="text-[var(--text-tertiary)] hover:text-[var(--color-danger-text)] transition-colors">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              )
-            })}
+          <Section title="Dias úteis" description="Define quais dias são considerados dias úteis nos cálculos de prazo.">
+            <ToggleGroup<Workdays>
+              value={settings.workdays}
+              onChange={(v) => updateSettings({ workdays: v })}
+              options={[
+                { value: 'mon-fri', label: 'Seg – Sex' },
+                { value: 'mon-sat', label: 'Seg – Sáb' },
+              ]}
+            />
+          </Section>
+        </>
+      )}
+
+      {tab === 'holidays' && (
+        <Section title="Feriados" description="Datas excluídas do cálculo de dias úteis.">
+          <div className="flex gap-2 mb-4 flex-wrap">
+            <Input
+              type="date"
+              value={holidayDate}
+              onChange={(e) => setHolidayDate(e.target.value)}
+              className="w-44"
+            />
+            <Input
+              value={holidayName}
+              onChange={(e) => setHolidayName(e.target.value)}
+              placeholder="Nome (ex: Carnaval)"
+              className="flex-1 min-w-[160px]"
+              onKeyDown={(e) => e.key === 'Enter' && handleAddHoliday()}
+            />
+            <Button size="sm" onClick={handleAddHoliday} disabled={!holidayDate}>
+              Adicionar
+            </Button>
           </div>
-        )}
-      </Section>
-
-      {/* Templates */}
-      <Section title="Templates de projeto" description="Estrutura de fases e entradas usada ao criar novos projetos.">
-        <div className="space-y-3">
-          {settings.templates.map((tpl) => (
-            <div key={tpl.id} className="flex items-center justify-between p-3 bg-[var(--surface-subtle)] rounded-[var(--radius-lg)] border border-[var(--border-default)]">
-              <div>
-                <p className="text-sm font-medium text-[var(--text-primary)]">{tpl.name}</p>
-                <p className="text-xs text-[var(--text-tertiary)]">
-                  {tpl.phases.length} fases · {tpl.phases.reduce((n, p) => n + p.entries.length, 0)} entradas
-                </p>
-              </div>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => navigate(`/settings/templates/${tpl.id}`)}
-              >
-                Editar template
-              </Button>
-            </div>
-          ))}
-        </div>
-      </Section>
-
-      {/* Incident Templates */}
-      <Section title="Templates de incidente" description="Prioridade/impacto padrão e tarefas que já nascem junto ao criar um incidente desse tipo.">
-        <div className="space-y-3">
-          {settings.incidentTemplates.length === 0 ? (
-            <p className="text-sm text-[var(--text-tertiary)]">Nenhum template de incidente ainda.</p>
+          {settings.holidays.length === 0 ? (
+            <p className="text-sm text-[var(--text-tertiary)]">Nenhum feriado cadastrado.</p>
           ) : (
-            settings.incidentTemplates.map((tpl) => (
-              <div key={tpl.id} className="flex items-center justify-between p-3 bg-[var(--surface-subtle)] rounded-[var(--radius-lg)] border border-[var(--border-default)]">
-                <div>
-                  <p className="text-sm font-medium text-[var(--text-primary)]">{tpl.name}</p>
-                  <p className="text-xs text-[var(--text-tertiary)]">
-                    {tpl.taskTitles.length} tarefa{tpl.taskTitles.length !== 1 ? 's' : ''} padrão
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="secondary" onClick={() => openEditIncidentTemplate(tpl)}>Editar</Button>
-                  <Button size="sm" variant="secondary" onClick={() => deleteIncidentTemplate(tpl.id)}>Excluir</Button>
-                </div>
-              </div>
-            ))
+            <div className="space-y-1.5">
+              {settings.holidays.map((date) => {
+                const name = settings.holidayNames[date]
+                return (
+                  <div key={date} className="flex items-center justify-between py-1.5 px-3 bg-[var(--surface-subtle)] rounded-[var(--radius-lg)] border border-[var(--border-default)]">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-mono text-[var(--text-secondary)]">
+                        {date.split('-').reverse().join('/')}
+                      </span>
+                      {name && <span className="text-sm text-[var(--text-secondary)]">{name}</span>}
+                    </div>
+                    <button onClick={() => removeHoliday(date)} className="text-[var(--text-tertiary)] hover:text-[var(--color-danger-text)] transition-colors">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
           )}
-          <Button size="sm" onClick={openAddIncidentTemplate}>+ Template de incidente</Button>
-        </div>
-      </Section>
+        </Section>
+      )}
 
-      {/* Archived projects */}
-      <Section title="Projetos arquivados" description="Projetos ocultos do portfólio. Clique em Desarquivar para restaurá-los.">
-        {!archivedProjectsLoaded ? (
-          <p className="text-sm text-[var(--text-tertiary)]">Carregando...</p>
-        ) : archivedProjects.length === 0 ? (
-          <p className="text-sm text-[var(--text-tertiary)]">Nenhum projeto arquivado.</p>
-        ) : (
-          <div className="space-y-1.5">
-            {archivedProjects.map((p) => (
-              <div key={p.id} className="flex items-center justify-between py-2 px-3 bg-[var(--surface-subtle)] rounded-[var(--radius-lg)] border border-[var(--border-default)]">
-                <div>
-                  <p className="text-sm font-medium text-[var(--text-primary)]">{p.name}</p>
-                  <p className="text-xs text-[var(--text-tertiary)]">{p.client} · {p.pm}</p>
-                </div>
-                <div className="flex gap-2">
+      {tab === 'templates' && (
+        <>
+          <Section title="Templates de projeto" description="Estrutura de fases e entradas usada ao criar novos projetos.">
+            <div className="space-y-3">
+              {settings.templates.map((tpl) => (
+                <div key={tpl.id} className="flex items-center justify-between p-3 bg-[var(--surface-subtle)] rounded-[var(--radius-lg)] border border-[var(--border-default)]">
+                  <div>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{tpl.name}</p>
+                    <p className="text-xs text-[var(--text-tertiary)]">
+                      {tpl.phases.length} fases · {tpl.phases.reduce((n, p) => n + p.entries.length, 0)} entradas
+                    </p>
+                  </div>
                   <Button
                     size="sm"
                     variant="secondary"
-                    onClick={() => unarchiveProject(p.id)}
+                    onClick={() => navigate(`/settings/templates/${tpl.id}`)}
                   >
-                    Desarquivar
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => handleDeleteArchived(p.id, p.name)}
-                  >
-                    Excluir
+                    Editar template
                   </Button>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Section>
+              ))}
+            </div>
+          </Section>
+
+          <Section title="Templates de incidente" description="Prioridade/impacto padrão e tarefas que já nascem junto ao criar um incidente desse tipo.">
+            <div className="space-y-3">
+              {settings.incidentTemplates.length === 0 ? (
+                <p className="text-sm text-[var(--text-tertiary)]">Nenhum template de incidente ainda.</p>
+              ) : (
+                settings.incidentTemplates.map((tpl) => (
+                  <div key={tpl.id} className="flex items-center justify-between p-3 bg-[var(--surface-subtle)] rounded-[var(--radius-lg)] border border-[var(--border-default)]">
+                    <div>
+                      <p className="text-sm font-medium text-[var(--text-primary)]">{tpl.name}</p>
+                      <p className="text-xs text-[var(--text-tertiary)]">
+                        {tpl.taskTitles.length} tarefa{tpl.taskTitles.length !== 1 ? 's' : ''} padrão
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="secondary" onClick={() => openEditIncidentTemplate(tpl)}>Editar</Button>
+                      <Button size="sm" variant="secondary" onClick={() => deleteIncidentTemplate(tpl.id)}>Excluir</Button>
+                    </div>
+                  </div>
+                ))
+              )}
+              <Button size="sm" onClick={openAddIncidentTemplate}>+ Template de incidente</Button>
+            </div>
+          </Section>
+        </>
+      )}
+
+      {tab === 'archived' && (
+        <Section title="Projetos arquivados" description="Projetos ocultos do portfólio. Clique em Desarquivar para restaurá-los.">
+          {!archivedProjectsLoaded ? (
+            <p className="text-sm text-[var(--text-tertiary)]">Carregando...</p>
+          ) : archivedProjects.length === 0 ? (
+            <p className="text-sm text-[var(--text-tertiary)]">Nenhum projeto arquivado.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {archivedProjects.map((p) => (
+                <div key={p.id} className="flex items-center justify-between py-2 px-3 bg-[var(--surface-subtle)] rounded-[var(--radius-lg)] border border-[var(--border-default)]">
+                  <div>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{p.name}</p>
+                    <p className="text-xs text-[var(--text-tertiary)]">{p.client} · {p.pm}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => unarchiveProject(p.id)}
+                    >
+                      Desarquivar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => handleDeleteArchived(p.id, p.name)}
+                    >
+                      Excluir
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Section>
+      )}
 
       <Modal
         open={showIncidentTemplate}

@@ -6,6 +6,10 @@ import { Input, Field, Select } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import CountrySelect from '@/components/ui/CountrySelect'
 import OwnersField from '@/components/plan/OwnersField'
+import { StatusDot } from '@/components/ui/StatusDot'
+import { AvatarStack } from '@/components/ui/AvatarStack'
+import { FilterMenu } from '@/components/ui/FilterMenu'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { findCountry } from '@/data/countries'
 import { exportClientsCsv } from '@/utils/exportListsCsv'
 import { ClientStatus, EntryOwner, TeamMember } from '@/types'
@@ -14,6 +18,12 @@ const STATUS_LABEL: Record<ClientStatus, string> = {
   pre_venda: 'Pré-venda',
   implantacao: 'Implantação',
   sustentacao_novos_projetos: 'Sustentação / Novos projetos',
+}
+
+const STATUS_COLOR: Record<ClientStatus, string> = {
+  pre_venda: 'var(--color-info-text)',
+  implantacao: 'var(--color-warning-text)',
+  sustentacao_novos_projetos: 'var(--color-success-text)',
 }
 
 const STATUSES: ClientStatus[] = ['pre_venda', 'implantacao', 'sustentacao_novos_projetos']
@@ -116,27 +126,37 @@ export default function ClientsPage() {
           placeholder="Buscar cliente..."
           className="flex-1 min-w-[180px]"
         />
-        <Select value={countryFilter} onChange={(e) => setCountryFilter(e.target.value)} className="w-auto">
-          <option value="">Todos os países</option>
-          {countryOptions.sort((a, b) => (findCountry(a)?.name ?? a).localeCompare(findCountry(b)?.name ?? b)).map((code) => (
-            <option key={code} value={code}>{findCountry(code)?.name ?? code}</option>
-          ))}
-        </Select>
-        <Select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} className="w-auto">
-          <option value="">Todos os owners</option>
-          {directoryAsTeam.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-        </Select>
+        <FilterMenu
+          activeCount={[countryFilter, ownerFilter].filter(Boolean).length}
+          onClear={() => { setCountryFilter(''); setOwnerFilter('') }}
+        >
+          <Field label="País">
+            <Select value={countryFilter} onChange={(e) => setCountryFilter(e.target.value)}>
+              <option value="">Todos os países</option>
+              {countryOptions.sort((a, b) => (findCountry(a)?.name ?? a).localeCompare(findCountry(b)?.name ?? b)).map((code) => (
+                <option key={code} value={code}>{findCountry(code)?.name ?? code}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Owner">
+            <Select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)}>
+              <option value="">Todos os owners</option>
+              {directoryAsTeam.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </Select>
+          </Field>
+        </FilterMenu>
       </div>
 
       {sorted.length === 0 ? (
-        <div className="text-center py-16" style={{ color: 'var(--text-tertiary)' }}>
-          <p className="text-sm">{clients.length === 0 ? 'Nenhum cliente cadastrado ainda.' : 'Nenhum cliente encontrado com esses filtros.'}</p>
-          {clients.length === 0 && <Button size="sm" className="mt-3" onClick={openAdd}>+ Criar primeiro cliente</Button>}
-        </div>
+        <EmptyState
+          icon="🗂️"
+          title={clients.length === 0 ? 'Nenhum cliente cadastrado ainda.' : 'Nenhum cliente encontrado com esses filtros.'}
+          action={clients.length === 0 ? { label: '+ Criar primeiro cliente', onClick: openAdd } : undefined}
+        />
       ) : view === 'list' ? (
         <div className="rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
           <table className="w-full text-sm">
-            <thead>
+            <thead className="sticky top-0 z-10">
               <tr style={{ background: 'var(--surface-subtle)' }}>
                 <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>Cliente</th>
                 <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>País</th>
@@ -146,24 +166,26 @@ export default function ClientsPage() {
                 <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>Projetos</th>
               </tr>
             </thead>
-            <tbody>
-              {sorted.map((c) => (
-                <tr
-                  key={c.id}
-                  onClick={() => navigate(`/wallet/${c.id}`)}
-                  className="cursor-pointer transition-colors border-t"
-                  style={{ borderColor: 'var(--border-default)' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = '')}
-                >
-                  <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-primary)' }}>{c.name}</td>
-                  <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{findCountry(c.country)?.name ?? '—'}</td>
-                  <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{STATUS_LABEL[c.status]}</td>
-                  <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{c.owners.map((o) => o.name).join(', ') || '—'}</td>
-                  <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{currentCs(c.id) ?? '—'}</td>
-                  <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{projectCount(c.id)}</td>
-                </tr>
-              ))}
+            <tbody className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
+              {sorted.map((c) => {
+                const cs = currentCs(c.id)
+                return (
+                  <tr
+                    key={c.id}
+                    onClick={() => navigate(`/wallet/${c.id}`)}
+                    className="cursor-pointer transition-colors"
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = '')}
+                  >
+                    <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-primary)' }}>{c.name}</td>
+                    <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{findCountry(c.country)?.name ?? '—'}</td>
+                    <td className="px-4 py-3"><StatusDot color={STATUS_COLOR[c.status]} label={STATUS_LABEL[c.status]} /></td>
+                    <td className="px-4 py-3"><AvatarStack people={c.owners} size={20} /></td>
+                    <td className="px-4 py-3"><AvatarStack people={cs ? [{ name: cs }] : []} size={20} /></td>
+                    <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{projectCount(c.id)}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
@@ -188,10 +210,8 @@ export default function ClientsPage() {
                       style={{ background: 'var(--surface-card)', borderColor: 'var(--border-default)' }}
                     >
                       <p className="font-medium text-sm mb-1" style={{ color: 'var(--text-primary)' }}>{c.name}</p>
-                      <p className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>{findCountry(c.country)?.name ?? '—'}</p>
-                      <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                        {c.owners.length > 0 ? c.owners.map((o) => o.name).join(', ') : 'Sem owner'}
-                      </p>
+                      <p className="text-xs mb-2" style={{ color: 'var(--text-tertiary)' }}>{findCountry(c.country)?.name ?? '—'}</p>
+                      <AvatarStack people={c.owners} size={18} />
                     </button>
                   ))}
                 </div>

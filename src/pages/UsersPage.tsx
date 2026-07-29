@@ -5,11 +5,9 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { Input, Select, Field } from '@/components/ui/Input'
+import { StatusDot } from '@/components/ui/StatusDot'
+import { AvatarStack } from '@/components/ui/AvatarStack'
 import type { UserRole } from '@/types/database'
-
-function getInitials(name: string): string {
-  return name.split(' ').map((w) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'U'
-}
 
 export default function UsersPage() {
   const { teamDirectory, invitedUsers, inviteUser, deleteInvite, updateProfileRole, setProfileActive } = useAppStore()
@@ -58,7 +56,7 @@ export default function UsersPage() {
       {/* Active users */}
       <div className="rounded-[var(--radius-lg)] border overflow-hidden mb-6" style={{ borderColor: 'var(--border-default)' }}>
         <table className="w-full text-sm">
-          <thead>
+          <thead className="sticky top-0 z-10">
             <tr style={{ background: 'var(--surface-subtle)' }}>
               <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>Nome</th>
               <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>E-mail</th>
@@ -67,23 +65,14 @@ export default function UsersPage() {
               <th className="px-4 py-2" />
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
             {teamDirectory.map((p) => {
               const isSelf = p.id === user?.id
               return (
-                <tr key={p.id} className="border-t" style={{ borderColor: 'var(--border-default)' }}>
+                <tr key={p.id}>
                   <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-primary)' }}>
                     <div className="flex items-center gap-2">
-                      {p.avatar_url ? (
-                        <img src={p.avatar_url} alt={p.name ?? ''} className="w-6 h-6 rounded-[var(--radius-pill)] object-cover shrink-0" />
-                      ) : (
-                        <span
-                          className="w-6 h-6 rounded-[var(--radius-pill)] flex items-center justify-center text-white text-[10px] font-semibold shrink-0"
-                          style={{ background: 'var(--oe-primary)' }}
-                        >
-                          {getInitials(p.name ?? p.email ?? '')}
-                        </span>
-                      )}
+                      <AvatarStack people={[{ name: p.name ?? p.email ?? '', avatarUrl: p.avatar_url ?? undefined }]} size={24} />
                       {p.name ?? '—'}
                       {isSelf && <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>(você)</span>}
                     </div>
@@ -101,7 +90,7 @@ export default function UsersPage() {
                     </Select>
                   </td>
                   <td className="px-4 py-3">
-                    <Badge variant={p.active ? 'green' : 'red'}>{p.active ? 'Ativo' : 'Revogado'}</Badge>
+                    <StatusDot color={p.active ? 'var(--color-success-text)' : 'var(--color-danger-text)'} label={p.active ? 'Ativo' : 'Revogado'} />
                   </td>
                   <td className="px-4 py-3 text-right">
                     <button
@@ -127,9 +116,9 @@ export default function UsersPage() {
             <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Convites pendentes</span>
           </div>
           <table className="w-full text-sm">
-            <tbody>
+            <tbody className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
               {invitedUsers.map((inv) => (
-                <tr key={inv.id} className="border-t" style={{ borderColor: 'var(--border-default)' }}>
+                <tr key={inv.id}>
                   <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-primary)' }}>{inv.name || '—'}</td>
                   <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{inv.email}</td>
                   <td className="px-4 py-3">
