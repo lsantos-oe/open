@@ -23,14 +23,14 @@ export function AnchorNav({ items, onNavigate }: Props) {
 
   return (
     <div
-      className="flex gap-5 sticky z-[2]"
+      className="flex gap-6 sticky z-[2]"
       style={{ borderBottom: '1px solid var(--border-default)', top: 0, background: 'var(--surface-page)' }}
     >
       {items.map((item) => (
         <button
           key={item.id}
           onClick={() => handleClick(item.id)}
-          className="pb-2.5 text-[13px] font-medium transition-colors"
+          className="pb-3 text-[13px] font-medium transition-colors"
           style={{
             color: active === item.id ? 'var(--text-primary)' : 'var(--text-tertiary)',
             borderBottom: active === item.id ? '2px solid var(--oe-primary)' : '2px solid transparent',

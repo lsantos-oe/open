@@ -15,10 +15,10 @@ interface Props {
  *  view) never renders alongside the others. */
 export function CollapsibleSection({ id, title, count, open, onToggle, children, actions }: Props) {
   return (
-    <div id={id} className="mb-1" style={{ scrollMarginTop: 12, borderTop: '1px solid var(--border-default)' }}>
+    <div id={id} className="mb-2" style={{ scrollMarginTop: 12, borderTop: '1px solid var(--border-default)' }}>
       <div
         onClick={onToggle}
-        className="flex items-center justify-between py-2.5 cursor-pointer"
+        className="flex items-center justify-between py-3.5 cursor-pointer"
       >
         <span className="flex items-center gap-2 text-[14px] font-semibold" style={{ color: 'var(--text-primary)' }}>
           <ChevronIcon open={open} />
@@ -31,7 +31,7 @@ export function CollapsibleSection({ id, title, count, open, onToggle, children,
           {actions}
         </div>
       </div>
-      {open && <div className="pb-2">{children}</div>}
+      {open && <div className="pb-3">{children}</div>}
     </div>
   )
 }

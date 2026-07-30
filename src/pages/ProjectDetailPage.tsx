@@ -67,15 +67,15 @@ function findCurrentPhase(project: Project): string | undefined {
 
 function InfoChip({ label, value }: { label: string; value: string }) {
   return (
-    <span className="flex items-center gap-1">
-      <span style={{ color: 'var(--text-tertiary)', fontSize: 11 }}>{label}</span>
-      <span style={{ color: 'var(--text-secondary)', fontSize: 11, fontWeight: 500 }}>{value}</span>
+    <span className="flex items-center gap-1.5">
+      <span style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>{label}</span>
+      <span style={{ color: 'var(--text-secondary)', fontSize: 12, fontWeight: 500 }}>{value}</span>
     </span>
   )
 }
 
 function ChipSep() {
-  return <span style={{ color: 'var(--border-strong)', padding: '0 6px', fontSize: 11 }}>·</span>
+  return <span style={{ color: 'var(--border-strong)', padding: '0 10px', fontSize: 12 }}>·</span>
 }
 
 // ─── GhostBtn ─────────────────────────────────────────────────────────────────
@@ -564,7 +564,7 @@ export default function ProjectDetailPage() {
       {/* ── Subheader chips ── */}
       <div
         className="flex items-center flex-wrap px-5 shrink-0"
-        style={{ minHeight: 34, background: 'var(--surface-subtle)', borderBottom: '0.5px solid var(--border-default)', padding: '5px 20px' }}
+        style={{ background: 'var(--surface-subtle)', borderBottom: '0.5px solid var(--border-default)', padding: '12px 20px' }}
       >
         {chips.map((chip, i) => (
           <span key={chip.label} className="flex items-center">
@@ -575,7 +575,7 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* ── Anchor nav ── */}
-      <div className="px-5 shrink-0" style={{ background: 'var(--surface-card)' }}>
+      <div className="px-5 pt-3 shrink-0" style={{ background: 'var(--surface-card)' }}>
         <AnchorNav
           items={TAB_IDS.map((tid) => ({
             id: tid,
@@ -593,7 +593,7 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* ── Sections ── */}
-      <div className="flex-1 overflow-auto px-5 py-4" style={{ background: 'var(--surface-page)' }}>
+      <div className="flex-1 overflow-auto px-5 pt-5 pb-8" style={{ background: 'var(--surface-page)' }}>
         <CollapsibleSection id="overview" title={t('tabs.overview')} open={openSections.has('overview')} onToggle={() => toggleSection('overview')}>
           <OverviewTab project={project} />
         </CollapsibleSection>
