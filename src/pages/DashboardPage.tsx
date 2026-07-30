@@ -95,12 +95,29 @@ export default function DashboardPage() {
     return da.localeCompare(db)
   })
 
+  const activeProjectsCount = projects.filter((p) => !p.archived && p.status !== 'done').length
+
   return (
     <div className="p-8 max-w-5xl mx-auto">
       <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
         Olá, {profile?.name?.split(' ')[0] ?? 'tudo bem'}
       </h1>
       <p className="text-sm mb-6" style={{ color: 'var(--text-tertiary)' }}>Sua visão do que precisa de atenção.</p>
+
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
+          <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{myIncidents.length}</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>Incidentes meus, em aberto</p>
+        </div>
+        <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
+          <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{sortedTasks.length}</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>Tarefas minhas, pendentes</p>
+        </div>
+        <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
+          <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{activeProjectsCount}</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>Projetos ativos</p>
+        </div>
+      </div>
 
       {dueSoon.length > 0 && (
         <div className="rounded-[var(--radius-lg)] border p-4 mb-6" style={{ borderColor: 'var(--color-warning-text)', background: 'var(--color-warning-bg)' }}>
