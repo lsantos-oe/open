@@ -78,8 +78,13 @@ export function Modal({ open, title, onClose, children, footer, size = 'md', noP
 
         {/* Body — minHeight:0 is required here: without it a flex child never
             shrinks below its content's natural height, so tall content pushes
-            the footer past the panel's overflow:hidden edge instead of scrolling. */}
-        <div style={{ padding: noPadding ? 0 : 20, overflowY: noPadding ? 'hidden' : 'auto', flex: 1, minHeight: 0, overflow: noPadding ? 'hidden' : undefined }}>
+            the footer past the panel's overflow:hidden edge instead of scrolling.
+            overflowY stays 'auto' even with noPadding: callers like EntryModal
+            manage their own internal scroll regions (height:100% children), which
+            never trigger this scrollbar, but simpler noPadding callers with no
+            such internal region (e.g. IncidentEntryModal) rely on this to scroll
+            at all — forcing 'hidden' here previously clipped their content instead. */}
+        <div style={{ padding: noPadding ? 0 : 20, overflowY: 'auto', flex: 1, minHeight: 0 }}>
           {children}
         </div>
 
