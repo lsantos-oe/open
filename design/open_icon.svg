@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <style>
+      .icon-action { fill: #F57C00; } /* Laranja Vibrante */
+    </style>
+  </defs>
+
+  <!-- O Ícone Baseado no 'O' customizado do logo -->
+  <g transform="translate(14, 14)">
+    <!-- Forma principal do 'O' robusto -->
+    <path class="icon-action" d="M 50 100 A 50 50 0 1 0 50 0 A 50 50 0 1 0 50 100 Z M 50 82 A 32 32 0 1 1 50 18 A 32 32 0 1 1 50 82 Z"/>
+    
+    <!-- O "Corte de Abertura" sutil e estratégico (no mesmo ângulo do logo principal) -->
+    <!-- Para o favicon ser limpo, o corte "remove" essa parte da forma -->
+    <path d="M 45 -5 L 105 55 L 105 70 L 30 15 Z" fill="#FFFFFF" /> <!-- Ajustado para fundo branco -->
+  </g>
+</svg>

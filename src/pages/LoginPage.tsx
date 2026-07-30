@@ -38,7 +38,7 @@ export default function LoginPage() {
 
         {/* Subtitle */}
         <p style={{ fontSize: 13, color: 'var(--text-tertiary)', textAlign: 'center', marginBottom: 32 }}>
-          Gestão de projetos de implementação Ploomes
+          Portal de gestão de Operações Enterprise | Ploomes
         </p>
 
         {/* Error message */}

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <!-- Estilo e Cores -->
+  <defs>
+    <style>
+      .oe-icon {
+        fill: #E65100; /* Laranja da operação */
+        fill-rule: evenodd;
+      }
+    </style>
+  </defs>
+
+  <!-- Forma Integrada: O 'O' Aberto que forma o 'e' (OE) -->
+  <path class="oe-icon" d="
+    M 50 0 
+    C 77.61 0 100 22.39 100 50 
+    C 100 77.61 77.61 100 50 100 
+    C 22.39 100 0 77.61 0 50 
+    C 0 22.39 22.39 0 50 0 Z 
+    
+    M 50 20 
+    C 33.43 20 20 33.43 20 50 
+    C 20 66.57 33.43 80 50 80 
+    C 64.5 80 76.5 69.7 79.3 56 
+    L 40 56 
+    C 38 56 36 54 36 52 
+    L 36 44 
+    C 36 42 38 40 40 40 
+    L 79.3 40 
+    C 76.5 28.3 64.5 20 50 20 Z 
+    
+    M 40 40 
+    L 40 40 Z
+  "/>
+
+  <!-- Abertura/Portal Superior que define o 'e' e abre o 'O' -->
+  <!-- Se usado sobre fundo escuro/transparente, este corte abre o topo direito -->
+  <path fill="#FFFFFF" d="M 50 20 C 60 20 68 25 73 32 L 88 23 C 79 11 65 2 50 2 Z"/>
+</svg>
