@@ -15,7 +15,7 @@ interface Props {
  *  view) never renders alongside the others. */
 export function CollapsibleSection({ id, title, count, open, onToggle, children, actions }: Props) {
   return (
-    <div id={id} className="mb-3.5" style={{ scrollMarginTop: 12 }}>
+    <div id={id} className="mb-1" style={{ scrollMarginTop: 12, borderTop: '1px solid var(--border-default)' }}>
       <div
         onClick={onToggle}
         className="flex items-center justify-between py-2.5 cursor-pointer"

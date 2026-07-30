@@ -1,6 +1,8 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { EntryOwner, TeamMember } from '@/types'
+import { useSmartPosition } from '@/hooks/useSmartPosition'
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/)
@@ -26,14 +28,15 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind }
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<'member' | 'text'>('member')
   const [freeText, setFreeText] = useState('')
-  const containerRef = useRef<HTMLDivElement>(null)
+  const { triggerRef, popoverRef, position } = useSmartPosition(open)
 
   useEffect(() => {
     if (!open) return
     function handler(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
+      if (
+        popoverRef.current && !popoverRef.current.contains(e.target as Node) &&
+        triggerRef.current && !triggerRef.current.contains(e.target as Node)
+      ) setOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -73,7 +76,7 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind }
   }
 
   return (
-    <div ref={containerRef} className="relative">
+    <div className="relative">
       {/* Owner chips */}
       <div className="flex flex-wrap gap-1.5 min-h-[32px] mb-1">
         {owners.map((owner) => (
@@ -100,6 +103,7 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind }
           </span>
         ))}
         <button
+          ref={triggerRef as any}
           onClick={() => setOpen((v) => !v)}
           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[var(--radius-pill)] text-xs transition-colors"
           style={{ border: '1px dashed var(--border-default)', color: 'var(--text-tertiary)' }}
@@ -110,12 +114,15 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind }
         </button>
       </div>
 
-      {/* Popover */}
-      {open && (
+      {/* Popover — portaled so it's never clipped by a modal's overflow */}
+      {open && createPortal(
         <div
-          className="absolute left-0 z-50 rounded-[var(--radius-lg)] shadow-lg"
+          ref={popoverRef as any}
+          className="rounded-[var(--radius-lg)] shadow-lg"
           style={{
-            top: 'calc(100% + 4px)',
+            position: 'fixed',
+            ...position,
+            zIndex: 1000,
             minWidth: 240,
             background: 'var(--surface-card)',
             border: '1px solid var(--border-default)',
@@ -211,7 +218,8 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind }
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )

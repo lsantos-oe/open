@@ -76,8 +76,10 @@ export function Modal({ open, title, onClose, children, footer, size = 'md', noP
           >×</button>
         </div>
 
-        {/* Body */}
-        <div style={{ padding: noPadding ? 0 : 20, overflowY: noPadding ? 'hidden' : 'auto', flex: 1, overflow: noPadding ? 'hidden' : undefined }}>
+        {/* Body — minHeight:0 is required here: without it a flex child never
+            shrinks below its content's natural height, so tall content pushes
+            the footer past the panel's overflow:hidden edge instead of scrolling. */}
+        <div style={{ padding: noPadding ? 0 : 20, overflowY: noPadding ? 'hidden' : 'auto', flex: 1, minHeight: 0, overflow: noPadding ? 'hidden' : undefined }}>
           {children}
         </div>
 
