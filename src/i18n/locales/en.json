@@ -187,6 +187,7 @@
     "addOwner": "Add owner",
     "fromTeam": "From team",
     "fromUser": "User",
+    "fromContact": "Contact",
     "freeText": "Free text",
     "showInPlan": "Show in Project Plan",
     "showInPlanToast": "Task is now visible in Project Plan",

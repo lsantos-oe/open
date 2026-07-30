@@ -13,6 +13,7 @@ import EntryBoard, { BoardCard } from '@/components/plan/EntryBoard'
 import IncidentEntryModal from '@/components/plan/IncidentEntryModal'
 import { AnchorNav } from '@/components/ui/AnchorNav'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
+import { contactsForClients } from '@/utils/contacts'
 import { differenceInCalendarDays } from 'date-fns'
 
 type Tab = 'overview' | 'tasks' | 'openPoints' | 'history'
@@ -27,10 +28,10 @@ export default function IncidentDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const {
-    incidents, clients, projects, teamDirectory,
+    incidents, clients, projects, teamDirectory, contacts,
     updateIncident, deleteIncident, updateIncidentStatus,
     linkIncidentClient, unlinkIncidentClient, linkIncidentProject, unlinkIncidentProject,
-    addIncidentStakeholder, removeIncidentStakeholder, updateIncidentEntryStatus, addClientContact,
+    addIncidentStakeholder, removeIncidentStakeholder, updateIncidentEntryStatus, createContact,
   } = useAppStore()
 
   const [openSections, setOpenSections] = useState<Set<Tab>>(new Set(['overview', 'tasks']))
@@ -62,7 +63,10 @@ export default function IncidentDetailPage() {
   const linkedProjects = projects.filter((p) => incident.projectIds.includes(p.id))
   const availableClients = clients.filter((c) => !incident.clientIds.includes(c.id))
   const availableProjects = projects.filter((p) => !incident.projectIds.includes(p.id))
-  const allContacts = linkedClients.flatMap((c) => c.contacts.map((ct) => ({ ...ct, clientName: c.name })))
+  const allContacts = contactsForClients(contacts, linkedClients.map((c) => c.id)).map((ct) => ({
+    ...ct,
+    clientName: linkedClients.find((c) => ct.clientIds.includes(c.id))?.name ?? '',
+  }))
 
   const today = new Date()
   const daysOpen = incident.status === 'resolved' || incident.status === 'closed'
@@ -85,11 +89,12 @@ export default function IncidentDetailPage() {
     } else if (stakeholderMode === 'contact') {
       if (contactCreateMode) {
         if (!newContactForm.name.trim() || !newContactClientId) return
-        const contactId = addClientContact(newContactClientId, {
+        const contactId = createContact({
           name: newContactForm.name.trim(),
           role: newContactForm.role.trim() || undefined,
           email: newContactForm.email.trim() || undefined,
           phone: newContactForm.phone.trim() || undefined,
+          clientIds: [newContactClientId],
         })
         owner = { id: crypto.randomUUID(), type: 'contact', contactId, name: newContactForm.name.trim(), role: newContactForm.role.trim() || undefined }
       } else {

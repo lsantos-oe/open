@@ -212,6 +212,10 @@ export interface ClientContact {
   role?: string
   email?: string
   phone?: string
+  /** Contacts are a shared base — the same person can be linked to more than
+   *  one client, and is also pickable as an EntryOwner{type:'contact'}. */
+  clientIds: string[]
+  createdAt?: string
 }
 
 export interface ClientCsAssignment {
@@ -231,7 +235,6 @@ export interface Client {
   notes?: string
   status: ClientStatus
   owners: EntryOwner[]
-  contacts: ClientContact[]
   csHistory: ClientCsAssignment[]
   createdAt: string
   archived?: boolean

@@ -300,12 +300,16 @@ export interface DbClient {
 
 export interface DbClientContact {
   id: string
-  client_id: string
   name: string
   role: string | null
   email: string | null
   phone: string | null
   created_at: string | null
+}
+
+export interface DbContactClientLink {
+  contact_id: string
+  client_id: string
 }
 
 export interface DbClientCsAssignment {

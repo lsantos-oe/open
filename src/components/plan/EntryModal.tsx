@@ -4,6 +4,7 @@ import { useAppStore } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useToastStore } from '@/stores/useToastStore'
 import { Entry, EntryOwner, EntryType, EntryStatus, RiskFlag, Link } from '@/types'
+import { contactsForClient } from '@/utils/contacts'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import OwnersField from '@/components/plan/OwnersField'
@@ -176,7 +177,7 @@ export default function EntryModal({
 }: EntryModalProps) {
   const { t } = useTranslation()
   const {
-    projects,
+    projects, contacts,
     addEntry, addSubtask, updateEntry, deleteEntry, moveEntryToPhase,
     addComment, removeComment,
   } = useAppStore()
@@ -252,6 +253,10 @@ export default function EntryModal({
   )
   const selectedPhases = selectedProject?.phases ?? []
   const selectedTeam = selectedProject?.team ?? []
+  const selectedContacts = useMemo(
+    () => selectedProject?.clientId ? contactsForClient(contacts, selectedProject.clientId) : [],
+    [contacts, selectedProject?.clientId],
+  )
 
   const origProject = useMemo(
     () => projects.find((p) => p.id === origProjectId),
@@ -577,6 +582,7 @@ export default function EntryModal({
                 owners={form.owners.filter((o) => o.kind === 'executor')}
                 onChange={(next) => set('owners', [...next, ...form.owners.filter((o) => o.kind !== 'executor')])}
                 teamMembers={selectedTeam}
+                contacts={selectedContacts}
                 max={1}
                 kind="executor"
               />
@@ -587,6 +593,7 @@ export default function EntryModal({
                 owners={form.owners.filter((o) => o.kind === 'validator')}
                 onChange={(next) => set('owners', [...form.owners.filter((o) => o.kind !== 'validator'), ...next])}
                 teamMembers={selectedTeam}
+                contacts={selectedContacts}
                 max={1}
                 kind="validator"
               />

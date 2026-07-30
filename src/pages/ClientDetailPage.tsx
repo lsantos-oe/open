@@ -9,6 +9,7 @@ import CountrySelect from '@/components/ui/CountrySelect'
 import OwnersField from '@/components/plan/OwnersField'
 import { AnchorNav } from '@/components/ui/AnchorNav'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
+import { contactsForClient } from '@/utils/contacts'
 import { findCountry } from '@/data/countries'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -31,7 +32,7 @@ const EVENT_ICONS: Record<string, string> = {
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { clients, projects, teamDirectory, updateClient, deleteClient, addClientContact, updateClientContact, removeClientContact, addCsAssignment, removeCsAssignment } = useAppStore()
+  const { clients, projects, teamDirectory, contacts, updateClient, deleteClient, createContact, updateContact, linkContactToClient, unlinkContactFromClient, addCsAssignment, removeCsAssignment } = useAppStore()
   const [openSections, setOpenSections] = useState<Set<Tab>>(new Set(['overview', 'contacts']))
 
   const client = clients.find((c) => c.id === id)
@@ -46,7 +47,9 @@ export default function ClientDetailPage() {
   // ── Contact modal state ──
   const [showContactModal, setShowContactModal] = useState(false)
   const [editContact, setEditContact] = useState<ClientContact | null>(null)
-  const [contactForm, setContactForm] = useState<Omit<ClientContact, 'id'>>({ name: '', role: '', email: '', phone: '' })
+  const [contactMode, setContactMode] = useState<'new' | 'existing'>('new')
+  const [existingContactId, setExistingContactId] = useState('')
+  const [contactForm, setContactForm] = useState({ name: '', role: '', email: '', phone: '' })
 
   // ── CS assignment modal state ──
   const [showCsModal, setShowCsModal] = useState(false)
@@ -70,6 +73,8 @@ export default function ClientDetailPage() {
     )
   }
 
+  const clientContacts = contactsForClient(contacts, client.id)
+  const otherContacts = contacts.filter((c) => !c.clientIds.includes(client.id))
   const clientProjects = projects.filter((p) => p.clientId === client.id)
   const sortedCsHistory = [...client.csHistory].sort((a, b) => b.assignedAt.localeCompare(a.assignedAt))
   const currentCs = sortedCsHistory[0]
@@ -90,28 +95,40 @@ export default function ClientDetailPage() {
 
   function openAddContact() {
     setEditContact(null)
+    setContactMode('new')
+    setExistingContactId('')
     setContactForm({ name: '', role: '', email: '', phone: '' })
     setShowContactModal(true)
   }
 
   function openEditContact(c: ClientContact) {
     setEditContact(c)
+    setContactMode('new')
     setContactForm({ name: c.name, role: c.role ?? '', email: c.email ?? '', phone: c.phone ?? '' })
     setShowContactModal(true)
   }
 
   function saveContact() {
-    if (!contactForm.name.trim()) return
-    const payload = {
-      name: contactForm.name.trim(),
-      role: contactForm.role || undefined,
-      email: contactForm.email || undefined,
-      phone: contactForm.phone || undefined,
-    }
     if (editContact) {
-      updateClientContact(client!.id, editContact.id, payload)
+      if (!contactForm.name.trim()) return
+      updateContact(editContact.id, {
+        name: contactForm.name.trim(),
+        role: contactForm.role || undefined,
+        email: contactForm.email || undefined,
+        phone: contactForm.phone || undefined,
+      })
+    } else if (contactMode === 'existing') {
+      if (!existingContactId) return
+      linkContactToClient(existingContactId, client!.id)
     } else {
-      addClientContact(client!.id, payload)
+      if (!contactForm.name.trim()) return
+      createContact({
+        name: contactForm.name.trim(),
+        role: contactForm.role || undefined,
+        email: contactForm.email || undefined,
+        phone: contactForm.phone || undefined,
+        clientIds: [client!.id],
+      })
     }
     setShowContactModal(false)
   }
@@ -149,7 +166,7 @@ export default function ClientDetailPage() {
 
   const TABS: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
-    { id: 'contacts', label: `Contatos${client.contacts.length ? ` (${client.contacts.length})` : ''}` },
+    { id: 'contacts', label: `Contatos${clientContacts.length ? ` (${clientContacts.length})` : ''}` },
     { id: 'csHistory', label: 'Histórico de CS' },
     { id: 'timeline', label: 'Timeline' },
   ]
@@ -246,29 +263,41 @@ export default function ClientDetailPage() {
           </div>
         </CollapsibleSection>
 
-        <CollapsibleSection id="contacts" title="Contatos" count={client.contacts.length} open={openSections.has('contacts')} onToggle={() => toggleSection('contacts')}>
+        <CollapsibleSection id="contacts" title="Contatos" count={clientContacts.length} open={openSections.has('contacts')} onToggle={() => toggleSection('contacts')}>
           <div>
-            <div className="flex justify-end mb-3">
+            <div className="flex items-center justify-between mb-3">
+              <Link to="/contacts" className="text-xs" style={{ color: 'var(--oe-primary)' }}>Ver todos os contatos →</Link>
               <Button size="sm" onClick={openAddContact}>+ Contato</Button>
             </div>
-            {client.contacts.length === 0 ? (
-              <p className="text-sm text-center py-10" style={{ color: 'var(--text-tertiary)' }}>Nenhum contato cadastrado.</p>
+            {clientContacts.length === 0 ? (
+              <p className="text-sm text-center py-10" style={{ color: 'var(--text-tertiary)' }}>Nenhum contato vinculado ainda.</p>
             ) : (
-              <div className="space-y-2">
-                {client.contacts.map((c) => (
-                  <div key={c.id} className="flex items-center gap-3 p-3 rounded-[var(--radius-lg)] group" style={{ background: 'var(--surface-subtle)' }}>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{c.name} {c.role && <span className="font-normal" style={{ color: 'var(--text-tertiary)' }}>· {c.role}</span>}</p>
-                      {(c.email || c.phone) && (
-                        <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{[c.email, c.phone].filter(Boolean).join(' · ')}</p>
-                      )}
-                    </div>
-                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openEditContact(c)} className="text-xs" style={{ color: 'var(--text-tertiary)' }}>editar</button>
-                      <button onClick={() => removeClientContact(client.id, c.id)} className="text-xs" style={{ color: 'var(--color-danger-text)' }}>remover</button>
-                    </div>
-                  </div>
-                ))}
+              <div className="rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
+                <table className="w-full text-sm">
+                  <tbody className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
+                    {clientContacts.map((c) => (
+                      <tr key={c.id} className="group">
+                        <td className="px-4 py-2.5">
+                          <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{c.name} {c.role && <span className="font-normal text-xs" style={{ color: 'var(--text-tertiary)' }}>· {c.role}</span>}</p>
+                          {(c.email || c.phone) && (
+                            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{[c.email, c.phone].filter(Boolean).join(' · ')}</p>
+                          )}
+                        </td>
+                        <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                          {c.clientIds.length > 1 && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-[var(--radius-pill)] mr-2" style={{ background: 'var(--surface-subtle)', color: 'var(--text-tertiary)' }}>
+                              {c.clientIds.length} clientes
+                            </span>
+                          )}
+                          <span className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => openEditContact(c)} className="text-xs mr-2" style={{ color: 'var(--text-tertiary)' }}>editar</button>
+                            <button onClick={() => unlinkContactFromClient(c.id, client.id)} className="text-xs" style={{ color: 'var(--color-danger-text)' }}>desvincular</button>
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
@@ -342,23 +371,61 @@ export default function ClientDetailPage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowContactModal(false)}>Cancelar</Button>
-            <Button onClick={saveContact} disabled={!contactForm.name.trim()}>Salvar</Button>
+            <Button
+              onClick={saveContact}
+              disabled={contactMode === 'existing' && !editContact ? !existingContactId : !contactForm.name.trim()}
+            >
+              Salvar
+            </Button>
           </>
         }
       >
         <div className="space-y-3">
-          <Field label="Nome" required>
-            <Input autoFocus value={contactForm.name} onChange={(e) => setContactForm((f) => ({ ...f, name: e.target.value }))} />
-          </Field>
-          <Field label="Cargo">
-            <Input value={contactForm.role ?? ''} onChange={(e) => setContactForm((f) => ({ ...f, role: e.target.value }))} />
-          </Field>
-          <Field label="E-mail">
-            <Input type="email" value={contactForm.email ?? ''} onChange={(e) => setContactForm((f) => ({ ...f, email: e.target.value }))} />
-          </Field>
-          <Field label="Telefone">
-            <Input value={contactForm.phone ?? ''} onChange={(e) => setContactForm((f) => ({ ...f, phone: e.target.value }))} />
-          </Field>
+          {!editContact && (
+            <div className="flex gap-1 p-1 rounded-[var(--radius-md)] mb-1" style={{ background: 'var(--surface-subtle)' }}>
+              <button
+                type="button"
+                onClick={() => setContactMode('new')}
+                className="flex-1 text-xs font-medium py-1.5 rounded-[var(--radius-sm)] transition-colors"
+                style={contactMode === 'new' ? { background: 'var(--surface-page)', color: 'var(--text-primary)' } : { color: 'var(--text-tertiary)' }}
+              >
+                Novo contato
+              </button>
+              <button
+                type="button"
+                onClick={() => setContactMode('existing')}
+                className="flex-1 text-xs font-medium py-1.5 rounded-[var(--radius-sm)] transition-colors"
+                style={contactMode === 'existing' ? { background: 'var(--surface-page)', color: 'var(--text-primary)' } : { color: 'var(--text-tertiary)' }}
+              >
+                Vincular existente
+              </button>
+            </div>
+          )}
+          {!editContact && contactMode === 'existing' ? (
+            <Field label="Contato">
+              <Select value={existingContactId} onChange={(e) => setExistingContactId(e.target.value)}>
+                <option value="">Selecione...</option>
+                {otherContacts.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}{c.role ? ` · ${c.role}` : ''}</option>
+                ))}
+              </Select>
+            </Field>
+          ) : (
+            <>
+              <Field label="Nome" required>
+                <Input autoFocus value={contactForm.name} onChange={(e) => setContactForm((f) => ({ ...f, name: e.target.value }))} />
+              </Field>
+              <Field label="Cargo">
+                <Input value={contactForm.role ?? ''} onChange={(e) => setContactForm((f) => ({ ...f, role: e.target.value }))} />
+              </Field>
+              <Field label="E-mail">
+                <Input type="email" value={contactForm.email ?? ''} onChange={(e) => setContactForm((f) => ({ ...f, email: e.target.value }))} />
+              </Field>
+              <Field label="Telefone">
+                <Input value={contactForm.phone ?? ''} onChange={(e) => setContactForm((f) => ({ ...f, phone: e.target.value }))} />
+              </Field>
+            </>
+          )}
         </div>
       </Modal>
 

@@ -26,6 +26,7 @@ import {
   dbClientToStore,
   storeClientToDb,
   storeClientContactToDb,
+  dbClientContactToStore,
   storeCsAssignmentToDb,
   dbIncidentToStore,
   storeIncidentToDb,
@@ -129,6 +130,8 @@ interface AppStore {
   clientsLoading: boolean
   archivedClients: Client[]
   archivedClientsLoaded: boolean
+  contacts: ClientContact[]
+  contactsLoading: boolean
   incidents: Incident[]
   incidentsLoading: boolean
 
@@ -140,6 +143,7 @@ interface AppStore {
   loadInvitedUsers: () => Promise<void>
   loadClients: () => Promise<void>
   loadArchivedClients: () => Promise<void>
+  loadContacts: () => Promise<void>
   archiveClient: (id: string) => Promise<void>
   unarchiveClient: (id: string) => Promise<void>
   loadIncidents: () => Promise<void>
@@ -159,9 +163,12 @@ interface AppStore {
   createClient: (data: { name: string; country?: string; ploomesLink?: string; notes?: string; status?: ClientStatus; owners?: EntryOwner[] }) => string
   updateClient: (id: string, patch: Partial<Client>) => void
   deleteClient: (id: string) => void
-  addClientContact: (clientId: string, contact: Omit<ClientContact, 'id'>) => string
-  updateClientContact: (clientId: string, contactId: string, patch: Partial<ClientContact>) => void
-  removeClientContact: (clientId: string, contactId: string) => void
+  // Contacts (shared base — Fase 8.7)
+  createContact: (data: { name: string; role?: string; email?: string; phone?: string; clientIds?: string[] }) => string
+  updateContact: (id: string, patch: Partial<Omit<ClientContact, 'id' | 'clientIds'>>) => void
+  deleteContact: (id: string) => void
+  linkContactToClient: (contactId: string, clientId: string) => void
+  unlinkContactFromClient: (contactId: string, clientId: string) => void
   addCsAssignment: (clientId: string, assignment: Omit<ClientCsAssignment, 'id'>) => void
   updateCsAssignment: (clientId: string, assignmentId: string, patch: Partial<ClientCsAssignment>) => void
   removeCsAssignment: (clientId: string, assignmentId: string) => void
@@ -486,6 +493,8 @@ export const useAppStore = create<AppStore>()(
       clientsLoading: false,
       archivedClients: [],
       archivedClientsLoaded: false,
+      contacts: [],
+      contactsLoading: false,
       incidents: [],
       incidentsLoading: false,
       settings: {
@@ -691,17 +700,31 @@ export const useAppStore = create<AppStore>()(
             return
           }
           const ids = clientRows.map((c) => c.id)
-          const [contactsRes, csHistoryRes] = await Promise.all([
-            supabase.from('client_contacts').select('*').in('client_id', ids),
-            supabase.from('client_cs_history').select('*').in('client_id', ids),
-          ])
-          const contacts = contactsRes.data ?? []
-          const csHistory = csHistoryRes.data ?? []
-          const clients = clientRows.map((row) => dbClientToStore(row, contacts, csHistory))
+          const { data: csHistoryRows, error: csError } = await supabase.from('client_cs_history').select('*').in('client_id', ids)
+          if (csError) throw new Error(csError.message)
+          const clients = clientRows.map((row) => dbClientToStore(row, csHistoryRows ?? []))
           set({ clients, clientsLoading: false })
         } catch (err) {
           useToastStore.getState().addToast(err instanceof Error ? err.message : 'Erro ao carregar clientes')
           set({ clientsLoading: false })
+        }
+      },
+
+      async loadContacts() {
+        set({ contactsLoading: true })
+        try {
+          const [contactsRes, linksRes] = await Promise.all([
+            supabase.from('contacts').select('*').order('name'),
+            supabase.from('contact_clients').select('*'),
+          ])
+          if (contactsRes.error) throw new Error(contactsRes.error.message)
+          if (linksRes.error) throw new Error(linksRes.error.message)
+          const links = linksRes.data ?? []
+          const contacts = (contactsRes.data ?? []).map((row) => dbClientContactToStore(row, links))
+          set({ contacts, contactsLoading: false })
+        } catch (err) {
+          useToastStore.getState().addToast(err instanceof Error ? err.message : 'Erro ao carregar contatos')
+          set({ contactsLoading: false })
         }
       },
 
@@ -710,7 +733,7 @@ export const useAppStore = create<AppStore>()(
         try {
           const { data, error } = await supabase.from('clients').select('*').eq('archived', true).order('name')
           if (error) throw new Error(error.message)
-          const archivedClients = (data ?? []).map((row) => dbClientToStore(row, [], []))
+          const archivedClients = (data ?? []).map((row) => dbClientToStore(row, []))
           set({ archivedClients, archivedClientsLoaded: true })
         } catch (err) {
           useToastStore.getState().addToast(err instanceof Error ? err.message : 'Erro ao carregar clientes arquivados')
@@ -2488,7 +2511,6 @@ export const useAppStore = create<AppStore>()(
           notes: data.notes,
           status: data.status ?? 'sustentacao_novos_projetos',
           owners: data.owners ?? [],
-          contacts: [],
           csHistory: [],
           createdAt: now,
         }
@@ -2527,25 +2549,32 @@ export const useAppStore = create<AppStore>()(
         }, () => set({ clients: prev }))
       },
 
-      addClientContact(clientId, contact) {
-        const newContact: ClientContact = { ...contact, id: uuid() }
-        set((s) => ({
-          clients: mutateClient(s.clients, clientId, (c) => ({ ...c, contacts: [...c.contacts, newContact] })),
-        }))
+      createContact(data) {
+        const newContact: ClientContact = {
+          id: uuid(),
+          name: data.name,
+          role: data.role,
+          email: data.email,
+          phone: data.phone,
+          clientIds: data.clientIds ?? [],
+          createdAt: new Date().toISOString(),
+        }
+        set((s) => ({ contacts: [...s.contacts, newContact] }))
         sync(async () => {
-          const { error } = await supabase.from('client_contacts').insert(storeClientContactToDb(newContact, clientId))
+          const { error } = await supabase.from('contacts').insert(storeClientContactToDb(newContact))
           if (error) throw new Error(error.message)
-        })
+          if (newContact.clientIds.length > 0) {
+            const links = newContact.clientIds.map((clientId) => ({ contact_id: newContact.id, client_id: clientId }))
+            const { error: linkError } = await supabase.from('contact_clients').insert(links)
+            if (linkError) throw new Error(linkError.message)
+          }
+        }, () => set((s) => ({ contacts: s.contacts.filter((c) => c.id !== newContact.id) })))
         return newContact.id
       },
 
-      updateClientContact(clientId, contactId, patch) {
-        set((s) => ({
-          clients: mutateClient(s.clients, clientId, (c) => ({
-            ...c,
-            contacts: c.contacts.map((ct) => ct.id === contactId ? { ...ct, ...patch } : ct),
-          })),
-        }))
+      updateContact(id, patch) {
+        const prev = get().contacts
+        set((s) => ({ contacts: s.contacts.map((c) => c.id === id ? { ...c, ...patch } : c) }))
         sync(async () => {
           const fields: Record<string, unknown> = {}
           if (patch.name !== undefined) fields.name = patch.name
@@ -2553,20 +2582,44 @@ export const useAppStore = create<AppStore>()(
           if (patch.email !== undefined) fields.email = patch.email
           if (patch.phone !== undefined) fields.phone = patch.phone
           if (Object.keys(fields).length === 0) return
-          const { error } = await supabase.from('client_contacts').update(fields).eq('id', contactId)
+          const { error } = await supabase.from('contacts').update(fields).eq('id', id)
           if (error) throw new Error(error.message)
-        })
+        }, () => set({ contacts: prev }))
       },
 
-      removeClientContact(clientId, contactId) {
-        const prev = get().clients
+      deleteContact(id) {
+        const prev = get().contacts
+        set((s) => ({ contacts: s.contacts.filter((c) => c.id !== id) }))
+        sync(async () => {
+          const { error } = await supabase.from('contacts').delete().eq('id', id)
+          if (error) throw new Error(error.message)
+        }, () => set({ contacts: prev }))
+      },
+
+      linkContactToClient(contactId, clientId) {
+        const prev = get().contacts
         set((s) => ({
-          clients: mutateClient(s.clients, clientId, (c) => ({ ...c, contacts: c.contacts.filter((ct) => ct.id !== contactId) })),
+          contacts: s.contacts.map((c) => c.id === contactId && !c.clientIds.includes(clientId)
+            ? { ...c, clientIds: [...c.clientIds, clientId] }
+            : c),
         }))
         sync(async () => {
-          const { error } = await supabase.from('client_contacts').delete().eq('id', contactId)
+          const { error } = await supabase.from('contact_clients').insert({ contact_id: contactId, client_id: clientId })
           if (error) throw new Error(error.message)
-        }, () => set({ clients: prev }))
+        }, () => set({ contacts: prev }))
+      },
+
+      unlinkContactFromClient(contactId, clientId) {
+        const prev = get().contacts
+        set((s) => ({
+          contacts: s.contacts.map((c) => c.id === contactId
+            ? { ...c, clientIds: c.clientIds.filter((id) => id !== clientId) }
+            : c),
+        }))
+        sync(async () => {
+          const { error } = await supabase.from('contact_clients').delete().eq('contact_id', contactId).eq('client_id', clientId)
+          if (error) throw new Error(error.message)
+        }, () => set({ contacts: prev }))
       },
 
       addCsAssignment(clientId, assignment) {

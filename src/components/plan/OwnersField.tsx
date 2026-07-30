@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
-import { EntryOwner, TeamMember } from '@/types'
+import { ClientContact, EntryOwner, TeamMember } from '@/types'
 import { useSmartPosition } from '@/hooks/useSmartPosition'
 
 function initials(name: string): string {
@@ -21,12 +21,15 @@ interface Props {
   /** Tags every owner added through this field instance (e.g. 'executor'/'validator'),
    *  so a single Entry can carry multiple OwnersField instances for different roles. */
   kind?: EntryOwner['kind']
+  /** Contacts pickable as owners — e.g. client stakeholders scoped to an incident/project's
+   *  linked clients. Omit to hide the "Contato" tab entirely. */
+  contacts?: ClientContact[]
 }
 
-export default function OwnersField({ owners, onChange, teamMembers, max, kind }: Props) {
+export default function OwnersField({ owners, onChange, teamMembers, max, kind, contacts }: Props) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
-  const [tab, setTab] = useState<'member' | 'text'>('member')
+  const [tab, setTab] = useState<'member' | 'contact' | 'text'>('member')
   const [freeText, setFreeText] = useState('')
   const { triggerRef, popoverRef, position } = useSmartPosition(open)
 
@@ -62,6 +65,18 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind }
       member.userId
         ? { id: crypto.randomUUID(), type: 'member', memberId: member.userId, name: member.name, role: member.role, kind }
         : { id: crypto.randomUUID(), type: 'text', name: member.name, role: member.role, kind },
+    ]))
+  }
+
+  function contactAlreadyAdded(contact: ClientContact): boolean {
+    return owners.some((o) => o.type === 'contact' && o.contactId === contact.id)
+  }
+
+  function addContact(contact: ClientContact) {
+    if (contactAlreadyAdded(contact)) return
+    onChange(withMax([
+      ...owners,
+      { id: crypto.randomUUID(), type: 'contact', contactId: contact.id, name: contact.name, role: contact.role, kind },
     ]))
   }
 
@@ -131,7 +146,7 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind }
         >
           {/* Tabs */}
           <div className="flex border-b" style={{ borderColor: 'var(--border-default)' }}>
-            {(['member', 'text'] as const).map((t_) => (
+            {(contacts ? (['member', 'contact', 'text'] as const) : (['member', 'text'] as const)).map((t_) => (
               <button
                 key={t_}
                 onClick={() => setTab(t_)}
@@ -141,7 +156,7 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind }
                   borderBottom: tab === t_ ? '2px solid var(--oe-primary)' : '2px solid transparent',
                 }}
               >
-                {t_ === 'member' ? t('entry.fromTeam') : t('entry.freeText')}
+                {t_ === 'member' ? t('entry.fromTeam') : t_ === 'contact' ? t('entry.fromContact') : t('entry.freeText')}
               </button>
             ))}
           </div>
@@ -177,6 +192,43 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind }
                         {member.role && (
                           <span className="text-[10px] shrink-0" style={{ color: 'var(--text-tertiary)' }}>
                             {member.role}
+                          </span>
+                        )}
+                        {already && <span style={{ fontSize: 10, color: 'var(--oe-primary)' }}>✓</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              )
+            ) : tab === 'contact' ? (
+              !contacts || contacts.length === 0 ? (
+                <p className="text-xs py-2 px-1" style={{ color: 'var(--text-tertiary)' }}>
+                  Nenhum contato vinculado.
+                </p>
+              ) : (
+                <div className="max-h-48 overflow-y-auto space-y-0.5">
+                  {contacts.map((contact) => {
+                    const already = contactAlreadyAdded(contact)
+                    return (
+                      <button
+                        key={contact.id}
+                        onClick={() => { addContact(contact); setOpen(false) }}
+                        disabled={already}
+                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-left transition-colors disabled:opacity-40"
+                        style={{ fontSize: 12, color: 'var(--text-secondary)' }}
+                        onMouseEnter={e => { if (!already) (e.currentTarget.style.background = 'var(--surface-subtle)') }}
+                        onMouseLeave={e => (e.currentTarget.style.background = '')}
+                      >
+                        <span
+                          className="flex items-center justify-center shrink-0"
+                          style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--oe-primary)', color: 'white', fontSize: 9, fontWeight: 600 }}
+                        >
+                          {initials(contact.name)}
+                        </span>
+                        <span className="flex-1 truncate">{contact.name}</span>
+                        {contact.role && (
+                          <span className="text-[10px] shrink-0" style={{ color: 'var(--text-tertiary)' }}>
+                            {contact.role}
                           </span>
                         )}
                         {already && <span style={{ fontSize: 10, color: 'var(--oe-primary)' }}>✓</span>}

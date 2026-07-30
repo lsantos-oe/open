@@ -18,7 +18,7 @@ import type {
   DbCharter, DbLink, DbTeamMember, DbActionTask, DbSubtaskJson,
   DbCommentJson, DbProjectFull, DbProjectFlat, DbOpenPoint,
   DbMeetingLog, DbHistory, DbDiaryComment,
-  DbClient, DbClientContact, DbClientCsAssignment,
+  DbClient, DbClientContact, DbContactClientLink, DbClientCsAssignment,
   DbIncident, DbIncidentClient, DbIncidentProject, DbIncidentStakeholder,
 } from '@/types/database'
 
@@ -538,13 +538,15 @@ export { dbRiskToStore, dbDelayLogToStore, dbEntryToStore as dbEntryToStoreParti
 
 // ─── Clients (Carteira) ────────────────────────────────────────────────────
 
-function dbClientContactToStore(row: DbClientContact): ClientContact {
+export function dbClientContactToStore(row: DbClientContact, links: DbContactClientLink[]): ClientContact {
   return {
     id: row.id,
     name: row.name,
     role: row.role ?? undefined,
     email: row.email ?? undefined,
     phone: row.phone ?? undefined,
+    clientIds: links.filter((l) => l.contact_id === row.id).map((l) => l.client_id),
+    createdAt: row.created_at ?? undefined,
   }
 }
 
@@ -557,7 +559,7 @@ function dbCsAssignmentToStore(row: DbClientCsAssignment): ClientCsAssignment {
   }
 }
 
-export function dbClientToStore(row: DbClient, contacts: DbClientContact[], csHistory: DbClientCsAssignment[]): Client {
+export function dbClientToStore(row: DbClient, csHistory: DbClientCsAssignment[]): Client {
   return {
     id: row.id,
     name: row.name,
@@ -566,7 +568,6 @@ export function dbClientToStore(row: DbClient, contacts: DbClientContact[], csHi
     notes: row.notes ?? undefined,
     status: (row.status as ClientStatus) ?? 'sustentacao_novos_projetos',
     owners: (row.owners as EntryOwner[] | null) ?? [],
-    contacts: contacts.filter(c => c.client_id === row.id).map(dbClientContactToStore),
     csHistory: csHistory
       .filter(h => h.client_id === row.id)
       .map(dbCsAssignmentToStore)
@@ -591,15 +592,14 @@ export function storeClientToDb(c: Client, userId: string): DbClient {
   }
 }
 
-export function storeClientContactToDb(contact: ClientContact, clientId: string): DbClientContact {
+export function storeClientContactToDb(contact: ClientContact): DbClientContact {
   return {
     id: contact.id,
-    client_id: clientId,
     name: contact.name,
     role: contact.role ?? null,
     email: contact.email ?? null,
     phone: contact.phone ?? null,
-    created_at: new Date().toISOString(),
+    created_at: contact.createdAt ?? new Date().toISOString(),
   }
 }
 

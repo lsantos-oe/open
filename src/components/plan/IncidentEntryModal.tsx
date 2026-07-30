@@ -5,6 +5,7 @@ import { Entry, EntryOwner, EntryType, EntryStatus, RiskFlag, Link, TeamMember }
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import OwnersField from '@/components/plan/OwnersField'
+import { contactsForClients } from '@/utils/contacts'
 
 interface Props {
   open: boolean
@@ -84,7 +85,7 @@ function entryToForm(entry: Entry): Form {
 
 export default function IncidentEntryModal({ open, mode, incidentId, entry, onClose }: Props) {
   const { t } = useTranslation()
-  const { incidents, teamDirectory, addIncidentEntry, updateIncidentEntry, deleteIncidentEntry, changeIncidentEntryDate } = useAppStore()
+  const { incidents, teamDirectory, contacts, addIncidentEntry, updateIncidentEntry, deleteIncidentEntry, changeIncidentEntryDate } = useAppStore()
   const incident = incidents.find((i) => i.id === incidentId)
 
   // OwnersField expects TeamMember[] — map the global registered-user directory into that shape
@@ -92,6 +93,11 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, onCl
   const directoryAsTeam: TeamMember[] = useMemo(
     () => teamDirectory.filter((p) => p.active).map((p) => ({ id: p.id, name: p.name ?? p.email ?? '', role: '', email: p.email ?? undefined, userId: p.id })),
     [teamDirectory],
+  )
+
+  const incidentContacts = useMemo(
+    () => incident ? contactsForClients(contacts, incident.clientIds) : [],
+    [contacts, incident],
   )
 
   const [form, setForm] = useState<Form>(entry ? entryToForm(entry) : emptyForm())
@@ -261,6 +267,7 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, onCl
               owners={form.owners.filter((o) => o.kind === 'executor')}
               onChange={(next) => set('owners', [...next, ...form.owners.filter((o) => o.kind !== 'executor')])}
               teamMembers={directoryAsTeam}
+              contacts={incidentContacts}
               max={1}
               kind="executor"
             />
@@ -271,6 +278,7 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, onCl
               owners={form.owners.filter((o) => o.kind === 'validator')}
               onChange={(next) => set('owners', [...form.owners.filter((o) => o.kind !== 'validator'), ...next])}
               teamMembers={directoryAsTeam}
+              contacts={incidentContacts}
               max={1}
               kind="validator"
             />

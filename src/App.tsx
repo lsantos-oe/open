@@ -13,6 +13,7 @@ import TemplateEditorPage from '@/pages/TemplateEditorPage'
 import TasksPage from '@/pages/TasksPage'
 import ClientsPage from '@/pages/ClientsPage'
 import ClientDetailPage from '@/pages/ClientDetailPage'
+import ContactsPage from '@/pages/ContactsPage'
 import IncidentsPage from '@/pages/IncidentsPage'
 import IncidentDetailPage from '@/pages/IncidentDetailPage'
 import UsersPage from '@/pages/UsersPage'
@@ -33,6 +34,7 @@ export default function App() {
         useAppStore.getState().loadNotifications()
         useAppStore.getState().loadClients()
         useAppStore.getState().loadIncidents()
+        useAppStore.getState().loadContacts()
       }
     })
 
@@ -68,6 +70,7 @@ export default function App() {
           <Route path="/portfolio" element={<ProjectsPage />} />
           <Route path="/wallet" element={<ClientsPage />} />
           <Route path="/wallet/:id" element={<ClientDetailPage />} />
+          <Route path="/contacts" element={<ContactsPage />} />
           <Route path="/support" element={<IncidentsPage />} />
           <Route path="/support/:id" element={<IncidentDetailPage />} />
           <Route path="/tasks" element={<TasksPage />} />
