@@ -6,11 +6,7 @@ import { useSmartPosition } from '@/hooks/useSmartPosition'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
-interface Props {
-  collapsed: boolean
-}
-
-export function NotificationBell({ collapsed }: Props) {
+export function NotificationBell() {
   const { notifications, markNotificationRead, markAllNotificationsRead } = useAppStore()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
@@ -41,22 +37,23 @@ export function NotificationBell({ collapsed }: Props) {
       <button
         ref={triggerRef as any}
         onClick={() => setOpen((v) => !v)}
-        className="relative flex items-center gap-2 rounded-[var(--radius-md)] text-[13px] transition-colors mb-0.5 text-[var(--sidebar-text)] hover:bg-white/5 hover:text-white/80 w-full"
-        style={{ padding: collapsed ? '8px 0' : '6px 8px', justifyContent: collapsed ? 'center' : 'flex-start' }}
-        title={collapsed ? 'Notificações' : undefined}
+        className="relative flex items-center justify-center rounded-[var(--radius-md)] transition-colors"
+        style={{ width: 32, height: 32, color: 'var(--text-tertiary)', background: 'transparent' }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-subtle)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-tertiary)' }}
+        title="Notificações"
       >
-        <span className="shrink-0 w-4 h-4 flex items-center justify-center relative">
+        <span className="shrink-0 w-[17px] h-[17px] flex items-center justify-center relative">
           <BellIcon />
           {unreadCount > 0 && (
             <span
               className="absolute -top-1 -right-1 rounded-[var(--radius-pill)] flex items-center justify-center text-white"
-              style={{ width: 13, height: 13, fontSize: 8, fontWeight: 700, background: 'var(--oe-primary)' }}
+              style={{ width: 13, height: 13, fontSize: 8, fontWeight: 700, background: 'var(--oe-primary)', border: '1.5px solid var(--surface-card)' }}
             >
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
         </span>
-        {!collapsed && <span className="flex-1 text-left">Notificações</span>}
       </button>
 
       {open && createPortal(

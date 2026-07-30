@@ -12,6 +12,7 @@ interface AuthState {
   signOut: () => Promise<void>
   initialize: () => Promise<void>
   loadProfile: () => Promise<void>
+  updateOwnProfile: (patch: { name?: string; avatar_url?: string }) => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -52,6 +53,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch {
       set({ user: null, profile: null, loading: false })
     }
+  },
+
+  updateOwnProfile: async (patch) => {
+    const user = get().user
+    if (!user) return
+    const { data } = await supabase
+      .from('profiles')
+      .update(patch)
+      .eq('id', user.id)
+      .select('*')
+      .single()
+    if (data) set({ profile: data as DbProfile })
   },
 
   // Full profile load (used after sign-in events)

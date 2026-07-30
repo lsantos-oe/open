@@ -1,11 +1,15 @@
-import { useState, useEffect, useRef } from 'react'
-import { NavLink, useNavigate, useMatch } from 'react-router-dom'
+import { NavLink, useNavigate, useMatch, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
-import { useAuthStore } from '@/stores/useAuthStore'
-import { useCommandPaletteStore } from '@/stores/useCommandPaletteStore'
-import { NotificationBell } from './NotificationBell'
-import { Project } from '@/types'
+import { Project, Incident } from '@/types'
+
+const INCIDENT_STATUS_COLOR: Record<Incident['status'], string> = {
+  open: 'var(--text-tertiary)',
+  in_progress: 'var(--color-info-text)',
+  waiting_on_client: 'var(--color-warning-text)',
+  resolved: 'var(--color-success-text)',
+  closed: 'var(--text-tertiary)',
+}
 
 const PALETTE = ['#F59E0B','#10B981','#3B82F6','#8B5CF6','#EC4899','#EF4444','#06B6D4','#84CC16']
 
@@ -14,38 +18,18 @@ function projectColor(project: Project, index: number): string {
   return PALETTE[index % PALETTE.length]
 }
 
-function getInitials(name: string): string {
-  return name.split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'U'
-}
-
 export function Sidebar() {
   const { t } = useTranslation()
-  const { settings, updateSettings, projects } = useAppStore()
-  const { user, profile, signOut } = useAuthStore()
-  const toggleCommandPalette = useCommandPaletteStore((s) => s.toggle)
+  const { settings, updateSettings, projects, incidents } = useAppStore()
   const navigate = useNavigate()
+  const location = useLocation()
   const projectMatch = useMatch('/projects/:id')
   const activeProjectId = projectMatch?.params.id
+  const incidentMatch = useMatch('/support/:id')
+  const activeIncidentId = incidentMatch?.params.id
   const collapsed = settings.sidebarCollapsed ?? false
-  const [showUserMenu, setShowUserMenu] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
 
   function toggle() { updateSettings({ sidebarCollapsed: !collapsed }) }
-
-  const displayName = profile?.name ?? user?.email ?? 'Usuário'
-  const avatarUrl = profile?.avatar_url ?? null
-  const initials = getInitials(displayName)
-
-  useEffect(() => {
-    if (!showUserMenu) return
-    function handler(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setShowUserMenu(false)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [showUserMenu])
 
   const sidebarW = collapsed ? 48 : 220
 
@@ -55,6 +39,17 @@ export function Sidebar() {
       ? 'bg-[var(--sidebar-active-bg)] text-white '
       : 'text-[var(--sidebar-text)] hover:bg-white/5 hover:text-white/80 ') +
     (collapsed ? 'justify-center px-0 py-2 w-full' : 'px-2 py-1.5')
+
+  // Shortcuts section is contextual: projects on Portfólio/project-detail routes,
+  // recent incidents on Sustentação/incident-detail routes, hidden elsewhere.
+  const shortcutKind: 'projects' | 'incidents' | null =
+    location.pathname.startsWith('/portfolio') || location.pathname.startsWith('/projects/')
+      ? 'projects'
+      : location.pathname.startsWith('/support')
+        ? 'incidents'
+        : null
+
+  const recentIncidents = incidents.slice(0, 8)
 
   return (
     <aside
@@ -93,16 +88,6 @@ export function Sidebar() {
 
       {/* Main nav */}
       <nav style={{ padding: collapsed ? '8px 6px' : '8px 8px' }}>
-        <button
-          onClick={toggleCommandPalette}
-          className={navLinkCls({ isActive: false }) + ' w-full'}
-          title={collapsed ? 'Buscar (⌘K)' : undefined}
-        >
-          <span className="shrink-0 w-4 h-4 flex items-center justify-center"><SearchIcon /></span>
-          {!collapsed && <span className="flex-1 text-left">Buscar</span>}
-          {!collapsed && <span className="text-[10px] shrink-0" style={{ color: 'var(--sidebar-text-muted)' }}>⌘K</span>}
-        </button>
-        <NotificationBell collapsed={collapsed} />
         <NavLink to="/" end className={navLinkCls} title={collapsed ? 'Início' : undefined}>
           <span className="shrink-0 w-4 h-4 flex items-center justify-center"><HomeIcon /></span>
           {!collapsed && <span>Início</span>}
@@ -123,6 +108,7 @@ export function Sidebar() {
           <span className="shrink-0 w-4 h-4 flex items-center justify-center"><TasksIcon /></span>
           {!collapsed && <span>{t('nav.tasks')}</span>}
         </NavLink>
+        <div style={{ height: '0.5px', background: 'var(--sidebar-border)', margin: '6px 4px' }} />
         <NavLink to="/settings" className={navLinkCls} title={collapsed ? t('nav.settings') : undefined}>
           <span className="shrink-0 w-4 h-4 flex items-center justify-center"><GearIcon /></span>
           {!collapsed && <span>{t('nav.settings')}</span>}
@@ -131,140 +117,65 @@ export function Sidebar() {
           <span className="shrink-0 w-4 h-4 flex items-center justify-center"><GuideIcon /></span>
           {!collapsed && <span>Guia</span>}
         </NavLink>
-        {profile?.role === 'admin' && (
-          <NavLink to="/users" className={navLinkCls} title={collapsed ? 'Usuários' : undefined}>
-            <span className="shrink-0 w-4 h-4 flex items-center justify-center"><UsersIcon /></span>
-            {!collapsed && <span>Usuários</span>}
-          </NavLink>
-        )}
       </nav>
 
       {/* Divider */}
-      {projects.length > 0 && (
+      {shortcutKind && (
         <div style={{ height: '0.5px', background: 'var(--sidebar-border)', margin: '0 8px' }} />
       )}
 
-      {/* Projects section */}
-      <div className="flex-1 overflow-y-auto" style={{ padding: collapsed ? '8px 6px' : '8px 8px' }}>
-        {projects.length > 0 && !collapsed && (
-          <p style={{
-            color: 'var(--sidebar-text-muted)',
-            fontSize: 10,
-            fontWeight: 500,
-            letterSpacing: '0.05em',
-            textTransform: 'uppercase',
-            padding: '4px 8px 6px',
-          }}>
-            {t('nav.projects')}
-          </p>
-        )}
-        {projects.map((project, i) => {
-          const color = projectColor(project, i)
-          const isActive = project.id === activeProjectId
-          return (
-            <button
-              key={project.id}
-              onClick={() => navigate(`/projects/${project.id}`)}
-              title={collapsed ? project.name : undefined}
-              className={`w-full flex items-center rounded-[var(--radius-md)] transition-colors mb-0.5 hover:bg-white/5 ${isActive ? 'bg-[var(--sidebar-active-bg)]' : ''} ${collapsed ? 'justify-center px-0 py-2' : 'gap-2 px-2 py-1.5'}`}
-              style={{ color: isActive ? 'white' : 'var(--sidebar-text)' }}
-            >
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
-              {!collapsed && <span className="truncate text-[12px] text-left">{project.name}</span>}
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Footer — user avatar + sign out */}
-      <div
-        ref={menuRef}
-        style={{ borderTop: '0.5px solid var(--sidebar-border)', position: 'relative' }}
-      >
-        {/* Sign out popover */}
-        {showUserMenu && (
-          <div style={{
-            position: 'absolute',
-            bottom: '100%',
-            left: collapsed ? 4 : 8,
-            right: collapsed ? 4 : 8,
-            marginBottom: 4,
-            background: 'var(--surface-card)',
-            border: '0.5px solid var(--border-default)',
-            borderRadius: 'var(--radius-md)',
-            overflow: 'hidden',
-            zIndex: 100,
-          }}>
-            {!collapsed && (
-              <div style={{ padding: '8px 12px 6px', borderBottom: '0.5px solid var(--border-default)' }}>
-                <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)', truncate: true } as any}>{displayName}</p>
-                <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 1 }}>{user?.email}</p>
-              </div>
-            )}
-            <button
-              onClick={() => { setShowUserMenu(false); signOut() }}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                textAlign: 'left',
-                fontSize: 13,
-                color: 'var(--color-danger-text)',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
-              onMouseLeave={e => (e.currentTarget.style.background = '')}
-            >
-              Sair
-            </button>
-          </div>
-        )}
-
-        <button
-          onClick={() => setShowUserMenu(v => !v)}
-          className="flex items-center gap-2.5 w-full shrink-0 px-3 py-3"
-          style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-          title={collapsed ? displayName : undefined}
-        >
-          {/* Avatar */}
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={displayName}
-              style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, objectFit: 'cover' }}
-            />
-          ) : (
-            <span style={{
-              background: 'var(--oe-primary)',
-              borderRadius: '50%',
-              color: 'white',
-              fontSize: 10,
-              fontWeight: 600,
-              width: 26,
-              height: 26,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}>{initials}</span>
-          )}
+      {/* Contextual shortcuts: Projetos (Portfólio) or Incidentes recentes (Sustentação) */}
+      {shortcutKind && (
+        <div className="flex-1 overflow-y-auto" style={{ padding: collapsed ? '8px 6px' : '8px 8px' }}>
           {!collapsed && (
-            <span className="truncate text-[12px]" style={{ color: 'var(--sidebar-text)' }}>
-              {displayName}
-            </span>
+            <p style={{
+              color: 'var(--sidebar-text-muted)',
+              fontSize: 10,
+              fontWeight: 500,
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+              padding: '4px 8px 6px',
+            }}>
+              {shortcutKind === 'projects' ? t('nav.projects') : 'Incidentes'}
+            </p>
           )}
-        </button>
-      </div>
-    </aside>
-  )
-}
+          {shortcutKind === 'projects'
+            ? projects.map((project, i) => {
+                const color = projectColor(project, i)
+                const isActive = project.id === activeProjectId
+                return (
+                  <button
+                    key={project.id}
+                    onClick={() => navigate(`/projects/${project.id}`)}
+                    title={collapsed ? project.name : undefined}
+                    className={`w-full flex items-center rounded-[var(--radius-md)] transition-colors mb-0.5 hover:bg-white/5 ${isActive ? 'bg-[var(--sidebar-active-bg)]' : ''} ${collapsed ? 'justify-center px-0 py-2' : 'gap-2 px-2 py-1.5'}`}
+                    style={{ color: isActive ? 'white' : 'var(--sidebar-text)' }}
+                  >
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                    {!collapsed && <span className="truncate text-[12px] text-left">{project.name}</span>}
+                  </button>
+                )
+              })
+            : recentIncidents.map((incident) => {
+                const isActive = incident.id === activeIncidentId
+                return (
+                  <button
+                    key={incident.id}
+                    onClick={() => navigate(`/support/${incident.id}`)}
+                    title={collapsed ? incident.title : undefined}
+                    className={`w-full flex items-center rounded-[var(--radius-md)] transition-colors mb-0.5 hover:bg-white/5 ${isActive ? 'bg-[var(--sidebar-active-bg)]' : ''} ${collapsed ? 'justify-center px-0 py-2' : 'gap-2 px-2 py-1.5'}`}
+                    style={{ color: isActive ? 'white' : 'var(--sidebar-text)' }}
+                  >
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: INCIDENT_STATUS_COLOR[incident.status], flexShrink: 0 }} />
+                    {!collapsed && <span className="truncate text-[12px] text-left">{incident.title}</span>}
+                  </button>
+                )
+              })}
+        </div>
+      )}
 
-function SearchIcon() {
-  return (
-    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-    </svg>
+      {!shortcutKind && <div className="flex-1" />}
+    </aside>
   )
 }
 
@@ -314,14 +225,6 @@ function GuideIcon() {
   return (
     <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-    </svg>
-  )
-}
-
-function UsersIcon() {
-  return (
-    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m5-4.13a4 4 0 100-8 4 4 0 000 8zm6 4a4 4 0 00-8 0v.13" />
     </svg>
   )
 }
