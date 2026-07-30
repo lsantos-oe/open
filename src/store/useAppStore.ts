@@ -361,6 +361,27 @@ function notifyValidatorOnValidationEntry(
   if (validator?.memberId) notifyUser(validator.memberId, `Tarefa "${entryName}" está pronta para validação`, link)
 }
 
+/** Notifies a client's current CS (latest csHistory assignment) and its Owners —
+ *  used when a project linked to that client gets a phase created/renamed. */
+function notifyClientCsAndOwners(clients: Client[], clientId: string | undefined, message: string, link: string): void {
+  if (!clientId) return
+  const client = clients.find((c) => c.id === clientId)
+  if (!client) return
+  const notified = new Set<string>()
+  for (const owner of client.owners) {
+    if (owner.memberId && !notified.has(owner.memberId)) {
+      notified.add(owner.memberId)
+      notifyUser(owner.memberId, message, link)
+    }
+  }
+  if (client.csHistory.length > 0) {
+    const currentCs = [...client.csHistory].sort((a, b) => b.assignedAt.localeCompare(a.assignedAt))[0]
+    if (currentCs.owner.memberId && !notified.has(currentCs.owner.memberId)) {
+      notifyUser(currentCs.owner.memberId, message, link)
+    }
+  }
+}
+
 /** Notifies newly-added `type: 'member'` owners that weren't in the previous owner list. */
 function notifyNewOwners(prevOwners: EntryOwner[] | undefined, nextOwners: EntryOwner[] | undefined, message: string, link: string): void {
   if (!nextOwners) return
@@ -1231,6 +1252,10 @@ export const useAppStore = create<AppStore>()(
             ],
           })),
         }))
+        const project = get().projects.find((p) => p.id === projectId)
+        if (project) {
+          notifyClientCsAndOwners(get().clients, project.clientId, `Nova fase "${name}" criada em "${project.name}"`, `/projects/${projectId}`)
+        }
         sync(async () => {
           const { error } = await supabase.from('phases').insert({
             id: phaseId,
@@ -1245,12 +1270,19 @@ export const useAppStore = create<AppStore>()(
 
       updatePhase(projectId, phaseId, patch) {
         const prev = get().projects
+        const prevPhase = prev.find((p) => p.id === projectId)?.phases.find((ph) => ph.id === phaseId)
         set((s) => ({
           projects: mutateProject(s.projects, projectId, (p) => ({
             ...p,
             phases: p.phases.map((ph) => (ph.id === phaseId ? { ...ph, ...patch } : ph)),
           })),
         }))
+        if (patch.name && patch.name !== prevPhase?.name) {
+          const project = get().projects.find((p) => p.id === projectId)
+          if (project) {
+            notifyClientCsAndOwners(get().clients, project.clientId, `Fase "${prevPhase?.name ?? ''}" renomeada para "${patch.name}" em "${project.name}"`, `/projects/${projectId}`)
+          }
+        }
         sync(async () => {
           const phase = get().projects.find((p) => p.id === projectId)?.phases.find((ph) => ph.id === phaseId)
           if (!phase) return
