@@ -3,95 +3,98 @@
 @tailwind utilities;
 
 :root {
-  /* Primary — amber */
-  --oe-primary: #E8590C;
-  --oe-primary-hover: #C84B08;
-  --oe-primary-light: #FEF0E8;
-  --oe-primary-mid: #F5885A;
+  /* Primary — deepened accent (reforma Linear/Notion-inspired) */
+  --oe-primary: #D9530E;
+  --oe-primary-hover: #B8440A;
+  --oe-primary-light: #FBEAE0;
+  --oe-primary-mid: #E8905F;
 
-  /* Surfaces */
-  --surface-page: #F5F4F2;
+  /* Surfaces — warm neutrals instead of pure gray */
+  --surface-page: #FBFAF8;
   --surface-card: #FFFFFF;
   --surface-raised: #FFFFFF;
-  --surface-subtle: #F5F4F2;
+  --surface-subtle: #F5F2EE;
   --surface-input: #FFFFFF;
 
-  /* Text */
-  --text-primary: #1C1917;
-  --text-secondary: #57534E;
-  --text-tertiary: #A8A29E;
-  --text-disabled: #D6D3D1;
+  /* Text — warm ink instead of cool gray */
+  --text-primary: #1C1815;
+  --text-secondary: #5A5347;
+  --text-tertiary: #8A8177;
+  --text-disabled: #D8D1C6;
 
   /* Borders */
-  --border-default: #E7E5E4;
-  --border-strong: #D6D3D1;
+  --border-default: #E8E3DC;
+  --border-strong: #D8D1C6;
 
   /* Sidebar (always dark, independent of theme) */
-  --sidebar-bg: #1C1917;
-  --sidebar-active-bg: rgba(255,255,255,0.08);
-  --sidebar-text: rgba(255,255,255,0.55);
+  --sidebar-bg: #18140F;
+  --sidebar-active-bg: rgba(255,255,255,0.09);
+  --sidebar-text: rgba(255,255,255,0.6);
   --sidebar-text-active: #FFFFFF;
-  --sidebar-text-muted: rgba(255,255,255,0.28);
-  --sidebar-border: rgba(255,255,255,0.07);
+  --sidebar-text-muted: rgba(255,255,255,0.32);
+  --sidebar-border: rgba(255,255,255,0.08);
 
-  /* Semantic */
-  --color-success-bg: #F0FDF4;
-  --color-success-text: #166534;
-  --color-danger-bg: #FEF2F2;
-  --color-danger-text: #991B1B;
-  --color-warning-bg: #FFFBEB;
-  --color-warning-text: #78350F;
-  --color-info-bg: #EFF6FF;
-  --color-info-text: #1E3A8A;
+  /* Semantic — deliberately different hues from the accent to avoid collision */
+  --color-success-bg: #E8F5EE;
+  --color-success-text: #1A8850;
+  --color-danger-bg: #FBEAEA;
+  --color-danger-text: #D14343;
+  --color-warning-bg: #FBF1DC;
+  --color-warning-text: #A8790A;
+  --color-info-bg: #EAF0FC;
+  --color-info-text: #3568C4;
 
   /* Radii */
-  --radius-sm: 5px;
-  --radius-md: 7px;
-  --radius-lg: 11px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
   --radius-pill: 999px;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.06);
-  --shadow-md: 0 2px 10px rgba(28, 25, 23, 0.10);
-  --shadow-lg: 0 10px 28px rgba(28, 25, 23, 0.16);
+  /* Shadows — warm-tinted */
+  --shadow-sm: 0 1px 2px rgba(28, 24, 21, 0.06);
+  --shadow-md: 0 4px 16px rgba(28, 24, 21, 0.08);
+  --shadow-lg: 0 16px 40px rgba(28, 24, 21, 0.14);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Primary stays the same hue — orange reads fine on dark backgrounds */
-    --oe-primary-light: rgba(232, 89, 12, 0.16);
+    /* Primary — brightened for dark backgrounds */
+    --oe-primary: #E8642A;
+    --oe-primary-hover: #F27A44;
+    --oe-primary-light: rgba(217, 83, 14, 0.18);
+    --oe-primary-mid: #C96A3E;
 
-    /* Surfaces — each one step lighter, for real elevation instead of duplicate values */
-    --surface-page: #141110;
-    --surface-subtle: #1B1817;
-    --surface-card: #201C1A;
-    --surface-raised: #272220;
-    --surface-input: #1B1817;
+    /* Surfaces — each one step lighter, warm-tinted */
+    --surface-page: #131110;
+    --surface-subtle: #1B1815;
+    --surface-card: #211D19;
+    --surface-raised: #29241F;
+    --surface-input: #1B1815;
 
     /* Text */
-    --text-primary: #F5F4F2;
-    --text-secondary: #C4BFBB;
-    --text-tertiary: #8A8481;
-    --text-disabled: #524C49;
+    --text-primary: #F2EEE8;
+    --text-secondary: #C7BFB2;
+    --text-tertiary: #93897B;
+    --text-disabled: #4E4740;
 
     /* Borders */
-    --border-default: #332E2B;
-    --border-strong: #453F3B;
+    --border-default: #322C24;
+    --border-strong: #443C31;
 
     /* Semantic — translucent tints instead of pale solid backgrounds */
-    --color-success-bg: rgba(34, 197, 94, 0.14);
-    --color-success-text: #4ADE80;
-    --color-danger-bg: rgba(239, 68, 68, 0.14);
-    --color-danger-text: #F87171;
-    --color-warning-bg: rgba(245, 158, 11, 0.14);
-    --color-warning-text: #FBBF24;
-    --color-info-bg: rgba(59, 130, 246, 0.14);
-    --color-info-text: #60A5FA;
+    --color-success-bg: rgba(26, 136, 80, 0.18);
+    --color-success-text: #3FBE80;
+    --color-danger-bg: rgba(209, 67, 67, 0.18);
+    --color-danger-text: #E5716A;
+    --color-warning-bg: rgba(168, 121, 10, 0.2);
+    --color-warning-text: #D6A93B;
+    --color-info-bg: rgba(53, 104, 196, 0.2);
+    --color-info-text: #6C97DE;
 
     /* Shadows — darker backgrounds need stronger shadows to read */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
-    --shadow-md: 0 2px 10px rgba(0, 0, 0, 0.35);
-    --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.45);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
   }
 }
 

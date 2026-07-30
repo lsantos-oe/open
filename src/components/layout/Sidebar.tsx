@@ -75,7 +75,10 @@ export function Sidebar() {
       >
         {!collapsed && (
           <span className="flex-1 flex items-center gap-1.5 min-w-0">
-            <span className="text-white text-[13px] font-[500] truncate">OpEn</span>
+            <span className="truncate" style={{ fontWeight: 800, fontSize: 17, letterSpacing: '-0.01em' }}>
+              <span style={{ color: 'var(--sidebar-text-active)' }}>op</span>
+              <span style={{ color: 'var(--oe-primary)' }}>en</span>
+            </span>
           </span>
         )}
         <button
