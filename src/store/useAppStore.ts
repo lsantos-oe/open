@@ -361,6 +361,30 @@ function notifyNewOwners(prevOwners: EntryOwner[] | undefined, nextOwners: Entry
   }
 }
 
+/** Raw `history` table insert — split out of addHistoryEntry() so callers that need the
+ *  parent row (e.g. a just-created project) to exist first can await it in sequence instead
+ *  of racing it, which previously could trip `history_project_id_fkey` if the parent insert
+ *  hadn't committed yet. */
+async function insertHistoryRow(scope: DiaryScope, entry: HistoryEntry): Promise<void> {
+  const authUser = useAuthStore.getState().user
+  const { error } = await supabase.from('history').insert({
+    id: entry.id,
+    project_id: scope.type === 'project' ? scope.id : null,
+    incident_id: scope.type === 'incident' ? scope.id : null,
+    type: entry.isManualNote ? 'manual' : 'auto',
+    event: entry.event,
+    title: entry.title,
+    detail: entry.detail ?? null,
+    linked_id: entry.linkedId ?? null,
+    linked_type: entry.linkedType ?? null,
+    author_id: authUser?.id ?? null,
+    author_name: authUser?.user_metadata?.full_name ?? authUser?.email ?? null,
+    author_avatar: authUser?.user_metadata?.avatar_url ?? null,
+    date: entry.createdAt,
+  })
+  if (error) throw new Error(error.message)
+}
+
 /**
  * Fire-and-forget async DB call.
  * On error: optionally reverts local state, then shows toast.
@@ -986,8 +1010,13 @@ export const useAppStore = create<AppStore>()(
         }
 
         const prevProjects = get().projects
-        set((s) => ({ projects: [...s.projects, project], projectSaving: true }))
-        get().addHistoryEntry({ type: 'project', id }, { event: 'project_created', title: data.name })
+        const historyEntry: HistoryEntry = {
+          id: uuid(), event: 'project_created', title: data.name, comments: [], createdAt: new Date().toISOString(),
+        }
+        set((s) => ({
+          projects: [...s.projects, { ...project, history: [historyEntry] }],
+          projectSaving: true,
+        }))
 
         ;(async () => {
           try {
@@ -1008,9 +1037,17 @@ export const useAppStore = create<AppStore>()(
             useToastStore.getState().addToast(
               err instanceof Error ? err.message : 'Erro ao criar projeto'
             )
+            return
           } finally {
             set({ projectSaving: false })
           }
+
+          // Only insert the "project_created" history row once the project row itself
+          // is confirmed in the DB — doing this earlier/concurrently could violate
+          // history_project_id_fkey if the project insert above failed or was still in flight.
+          insertHistoryRow({ type: 'project', id }, historyEntry).catch((err) => {
+            useToastStore.getState().addToast(err instanceof Error ? err.message : 'Erro ao salvar histórico')
+          })
         })()
 
         return id
@@ -2335,25 +2372,7 @@ export const useAppStore = create<AppStore>()(
         } else {
           set((s) => ({ incidents: mutateIncident(s.incidents, scope.id, (i) => ({ ...i, history: [...i.history, newEntry] })) }))
         }
-        sync(async () => {
-          const authUser = useAuthStore.getState().user
-          const { error } = await supabase.from('history').insert({
-            id,
-            project_id: scope.type === 'project' ? scope.id : null,
-            incident_id: scope.type === 'incident' ? scope.id : null,
-            type: newEntry.isManualNote ? 'manual' : 'auto',
-            event: newEntry.event,
-            title: newEntry.title,
-            detail: newEntry.detail ?? null,
-            linked_id: newEntry.linkedId ?? null,
-            linked_type: newEntry.linkedType ?? null,
-            author_id: authUser?.id ?? null,
-            author_name: authUser?.user_metadata?.full_name ?? authUser?.email ?? null,
-            author_avatar: authUser?.user_metadata?.avatar_url ?? null,
-            date: now,
-          })
-          if (error) throw new Error(error.message)
-        })
+        sync(() => insertHistoryRow(scope, newEntry))
       },
 
       updateHistoryEntry(scope, entryId, patch) {
