@@ -16,6 +16,7 @@ interface Props {
 
 type Form = {
   name: string
+  description: string
   type: EntryType
   owners: EntryOwner[]
   status: EntryStatus
@@ -51,7 +52,7 @@ function FieldBox({ label, children }: { label: string; children: React.ReactNod
 
 function emptyForm(): Form {
   return {
-    name: '', type: 'task', owners: [], status: 'pending', riskFlag: 'none',
+    name: '', description: '', type: 'task', owners: [], status: 'pending', riskFlag: 'none',
     plannedStart: '', plannedEnd: '', plannedDate: '', durationDays: 1, durationHours: 1,
     dependsOn: [], links: [],
   }
@@ -66,6 +67,7 @@ function entryToForm(entry: Entry): Form {
   }
   return {
     name: entry.name,
+    description: entry.description ?? '',
     type: entry.type,
     owners,
     status: entry.status,
@@ -131,6 +133,7 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, onCl
     const executor = form.owners.find((o) => o.kind === 'executor')
     return {
       name: form.name.trim(),
+      description: form.description.trim() || undefined,
       type: form.type,
       owners: form.owners,
       responsible: executor?.name ?? '',
@@ -163,7 +166,7 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, onCl
     }
     const executor = form.owners.find((o) => o.kind === 'executor')
     updateIncidentEntry(incidentId, entry.id, {
-      name: form.name.trim(), owners: form.owners, responsible: executor?.name ?? '',
+      name: form.name.trim(), description: form.description.trim() || undefined, owners: form.owners, responsible: executor?.name ?? '',
       status: form.status, riskFlag: form.riskFlag, dependsOn: form.dependsOn,
       durationDays: form.type === 'task' ? form.durationDays : undefined,
       durationHours: form.type === 'meeting' ? form.durationHours : undefined,
@@ -256,7 +259,7 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, onCl
             <FieldLabel>{t('entry.executor')}</FieldLabel>
             <OwnersField
               owners={form.owners.filter((o) => o.kind === 'executor')}
-              onChange={(next) => set('owners', [...form.owners.filter((o) => o.kind !== 'executor'), ...next])}
+              onChange={(next) => set('owners', [...next, ...form.owners.filter((o) => o.kind !== 'executor')])}
               teamMembers={directoryAsTeam}
               max={1}
               kind="executor"
@@ -272,6 +275,17 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, onCl
               kind="validator"
             />
           </div>
+        </div>
+
+        <div>
+          <FieldLabel>{t('entry.description')}</FieldLabel>
+          <textarea
+            value={form.description}
+            onChange={(e) => set('description', e.target.value)}
+            placeholder={t('entry.descriptionPlaceholder')}
+            rows={4}
+            style={{ ...inputStyle, resize: 'vertical', minHeight: 90 }}
+          />
         </div>
 
         {form.type === 'task' && (

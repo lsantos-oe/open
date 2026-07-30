@@ -40,6 +40,7 @@ export interface Entry {
   id: string
   type: EntryType
   name: string
+  description?: string
   responsible: string
   dependsOn: string[]
   isCritical: boolean

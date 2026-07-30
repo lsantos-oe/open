@@ -109,6 +109,7 @@ function dbEntryToStore(row: DbEntry, comments: DbComment[]): Entry {
     id: row.id,
     type: row.type,
     name: row.name,
+    description: row.description ?? undefined,
     responsible: row.responsible ?? '',
     dependsOn: (row.depends_on as string[]) ?? [],
     isCritical: row.is_critical ?? false,
@@ -372,6 +373,11 @@ function storeSubtaskToDb(e: Entry): DbSubtaskJson {
 
 function storeEntryToDb(entry: Entry, phaseId: string | null, projectId: string | null, userId: string, incidentId?: string): DbEntry {
   const now = new Date().toISOString()
+  // Prefer the owner tagged as executor (Fase 7.6) — falls back to owners[0] for
+  // legacy rows saved before Executor/Validador existed, where order is arbitrary.
+  const primaryOwner = entry.owners && entry.owners.length > 0
+    ? (entry.owners.find(o => o.kind === 'executor') ?? entry.owners[0])
+    : undefined
   return {
     id: entry.id,
     project_id: projectId,
@@ -379,8 +385,9 @@ function storeEntryToDb(entry: Entry, phaseId: string | null, projectId: string 
     incident_id: incidentId ?? null,
     type: entry.type,
     name: entry.name,
-    responsible: (entry.owners && entry.owners.length > 0 ? entry.owners[0].name : entry.responsible) || null,
-    responsible_member_id: (entry.owners && entry.owners.length > 0 ? entry.owners.find(o => o.type === 'member')?.memberId : entry.responsibleMemberId) ?? null,
+    description: entry.description ?? null,
+    responsible: (primaryOwner ? primaryOwner.name : entry.responsible) || null,
+    responsible_member_id: (primaryOwner ? (primaryOwner.type === 'member' ? primaryOwner.memberId : undefined) : entry.responsibleMemberId) ?? null,
     depends_on: entry.dependsOn.length > 0 ? entry.dependsOn : null,
     is_critical: entry.isCritical,
     planned_start: entry.plannedStart ?? null,

@@ -155,6 +155,7 @@ export interface DbEntry {
   incident_id: string | null
   type: EntryType
   name: string
+  description: string | null
   responsible: string | null
   responsible_member_id: string | null
   depends_on: string[] | null         // JSONB stored as string[]

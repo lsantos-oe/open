@@ -182,6 +182,8 @@
     "owners": "Responsables",
     "executor": "Ejecutor",
     "validator": "Validador (opcional)",
+    "description": "Descripción",
+    "descriptionPlaceholder": "Detalles de la tarea...",
     "addOwner": "Agregar responsable",
     "fromTeam": "Del equipo",
     "fromUser": "Usuario",

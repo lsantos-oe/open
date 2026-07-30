@@ -32,6 +32,7 @@ interface EntryModalProps {
 
 type Form = {
   name: string
+  description: string
   type: EntryType
   projectId: string
   phaseId: string
@@ -70,6 +71,7 @@ function emptyForm(
 ): Form {
   return {
     name: '',
+    description: '',
     type,
     projectId,
     phaseId,
@@ -110,6 +112,7 @@ function entryToForm(entry: Entry, projectId: string, phaseId: string): Form {
 
   return {
     name: entry.name,
+    description: entry.description ?? '',
     type: entry.type,
     projectId,
     phaseId,
@@ -375,6 +378,7 @@ export default function EntryModal({
   function buildEntryBase() {
     return {
       name: form.name.trim(),
+      description: form.description.trim() || undefined,
       type: form.type,
       ...buildOwnerPatch(),
       status: form.status,
@@ -426,6 +430,7 @@ export default function EntryModal({
       if (phaseChanged) moveEntryToPhase(origProjectId, origPhaseId, form.phaseId, entry.id)
       updateEntry(origProjectId, entry.id, {
         name: form.name.trim(),
+        description: form.description.trim() || undefined,
         ...buildOwnerPatch(),
         status: form.status,
         riskFlag: form.riskFlag,
@@ -570,7 +575,7 @@ export default function EntryModal({
               <FieldLabel>{t('entry.executor')}</FieldLabel>
               <OwnersField
                 owners={form.owners.filter((o) => o.kind === 'executor')}
-                onChange={(next) => set('owners', [...form.owners.filter((o) => o.kind !== 'executor'), ...next])}
+                onChange={(next) => set('owners', [...next, ...form.owners.filter((o) => o.kind !== 'executor')])}
                 teamMembers={selectedTeam}
                 max={1}
                 kind="executor"
@@ -586,6 +591,18 @@ export default function EntryModal({
                 kind="validator"
               />
             </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <FieldLabel>{t('entry.description')}</FieldLabel>
+            <textarea
+              value={form.description}
+              onChange={(e) => set('description', e.target.value)}
+              placeholder={t('entry.descriptionPlaceholder')}
+              rows={4}
+              style={{ ...inputStyle, resize: 'vertical', minHeight: 90 }}
+            />
           </div>
 
           {/* Date fields — task */}
