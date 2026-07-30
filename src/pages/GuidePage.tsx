@@ -111,7 +111,7 @@ export default function GuidePage() {
 
   return (
     <div className="p-8 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Guia do OpEn</h1>
+      <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Guia do open</h1>
       <p className="text-sm mb-4" style={{ color: 'var(--text-tertiary)' }}>
         Um resumo rápido de cada área do sistema e como usá-la.
       </p>

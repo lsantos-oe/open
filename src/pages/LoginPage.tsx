@@ -30,8 +30,9 @@ export default function LoginPage() {
       }}>
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>
-            OpEn
+          <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.01em' }}>
+            <span style={{ color: 'var(--text-primary)' }}>op</span>
+            <span style={{ color: 'var(--oe-primary)' }}>en</span>
           </span>
         </div>
 

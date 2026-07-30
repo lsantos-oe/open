@@ -1,10 +1,10 @@
-# OpEn
+# open
 
 > Internal project-management tool for Ploomes' Onboarding/Expansion (OE) team — tracks project plans, baselines, risks, delays, and a project diary for client onboarding and implementation engagements.
 
 ## Overview
 
-OpEn is a single-page React application used internally to plan, track, and report on client-facing implementation projects (e.g. "Nova Conta" onboarding and "Novo Projeto" custom-development engagements). Each project has a phased task plan with dependency-aware date scheduling, a baseline-vs-actual variance model, a risk register, a delay log with root-cause tagging, and a "project diary" (open points, meeting logs, and an audit history timeline). The app also provides a cross-project Kanban/task board, CSV/JSON export, JSON import (create or merge), and a branded HTML status report generator.
+open is a single-page React application used internally to plan, track, and report on client-facing implementation projects (e.g. "Nova Conta" onboarding and "Novo Projeto" custom-development engagements). Each project has a phased task plan with dependency-aware date scheduling, a baseline-vs-actual variance model, a risk register, a delay log with root-cause tagging, and a "project diary" (open points, meeting logs, and an audit history timeline). The app also provides a cross-project Kanban/task board, CSV/JSON export, JSON import (create or merge), and a branded HTML status report generator.
 
 It is built for project managers and dev leads inside Ploomes who need a lightweight, opinionated alternative to spreadsheets for running onboarding/implementation projects — with automatic critical-path highlighting, business-day-aware scheduling (respecting configurable holidays and work week), and delay accountability (who/what caused a slip).
 

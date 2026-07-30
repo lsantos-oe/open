@@ -1,5 +1,5 @@
 {
-  "appName": "OpEn",
+  "appName": "open",
   "nav": {
     "projects": "Projetos",
     "tasks": "Tarefas",
@@ -432,7 +432,7 @@
     "byResponsibility": "Por Responsabilidade",
     "byType": "Por Tipo",
     "openRisks": "Riscos Abertos",
-    "footer": "Gerado por OpEn",
+    "footer": "Gerado por open",
     "noBaseline": "sem baseline",
     "workingDays": "d úteis",
     "days": "d",

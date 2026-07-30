@@ -865,7 +865,7 @@ function buildStandardHeader(project: Project, fmt: string): string {
   return `
     <div class="report-header">
       <div>
-        <div class="report-logo">OpEn</div>
+        <div class="report-logo">op<span>en</span></div>
         <div class="report-title">${esc(project.name)}</div>
         <div class="report-meta">
           ${meta.map((m) => `<span>${m}</span>`).join('')}
@@ -942,7 +942,7 @@ function buildPloomesHeader(project: Project, settings: AppSettings): string {
       </div>
       <div class="ploomes-cover-footer">
         <span>${t('report.generatedOn')} ${todayFormatted(fmt)}</span>
-        <span class="brand">OpEn</span>
+        <span class="brand">open</span>
       </div>
     </div>
   `
