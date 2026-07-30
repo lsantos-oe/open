@@ -16,13 +16,12 @@ import { FilterMenu } from '@/components/ui/FilterMenu'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { TableSkeleton } from '@/components/ui/TableSkeleton'
 import { isProjectMine } from '@/utils/involvement'
-import { Project, ProjectStatus, ProjectType, ProjectTemplate, Client } from '@/types'
+import { Project, ProjectStatus, ProjectType, ProjectTemplate, Client, TeamMember } from '@/types'
 import {
   projectDurationDays,
   projectEndVariance,
   uniqueClients,
   uniquePMs,
-  uniqueMembers,
 } from '@/utils/projectStats'
 
 // ─── constants ────────────────────────────────────────────────────────────────
@@ -326,16 +325,16 @@ interface NewProjectModalProps {
   open: boolean
   onClose: () => void
   clients: Client[]
-  members: string[]
+  teamMembers: TeamMember[]
   templates: ProjectTemplate[]
   onCreate: (data: {
-    name: string; client: string; clientId?: string; pm: string; type: ProjectType
-    language: 'pt' | 'en' | 'es'; devLead?: string
+    name: string; client: string; clientId?: string; pm: string; pmMemberId?: string; type: ProjectType
+    language: 'pt' | 'en' | 'es'; devLead?: string; devLeadMemberId?: string
     devType?: 'integration' | 'application'; devIntegration?: string
   }) => void
 }
 
-function NewProjectModal({ open, onClose, clients, members, templates, onCreate }: NewProjectModalProps) {
+function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCreate }: NewProjectModalProps) {
   const { t, i18n } = useTranslation()
   const { createClient } = useAppStore()
   const [selectedType, setSelectedType] = useState<ProjectType>('nova_conta')
@@ -343,10 +342,10 @@ function NewProjectModal({ open, onClose, clients, members, templates, onCreate 
   const [isNewClient, setIsNewClient] = useState(false)
   const [newClientName, setNewClientName] = useState('')
   const [name, setName] = useState('')
-  const [pm, setPm] = useState('')
+  const [pmMemberId, setPmMemberId] = useState('')
   const [language, setLanguage] = useState<'pt' | 'en' | 'es'>('pt')
   const [hasDev, setHasDev] = useState(false)
-  const [devLead, setDevLead] = useState('')
+  const [devLeadMemberId, setDevLeadMemberId] = useState('')
   const [devType, setDevType] = useState<'integration' | 'application'>('integration')
   const [devIntegration, setDevIntegration] = useState('')
   const [attempted, setAttempted] = useState(false)
@@ -356,14 +355,14 @@ function NewProjectModal({ open, onClose, clients, members, templates, onCreate 
   const errors = {
     name: attempted && !name.trim() ? t('errors.nameRequired') : '',
     client: attempted && !finalClient.trim() ? t('errors.clientRequired') : '',
-    pm: attempted && !pm.trim() ? t('errors.pmRequired') : '',
+    pm: attempted && !pmMemberId ? t('errors.pmRequired') : '',
   }
-  const canCreate = name.trim() && finalClient.trim() && pm.trim()
+  const canCreate = name.trim() && finalClient.trim() && pmMemberId
 
   function reset() {
     setSelectedType('nova_conta'); setClientId(''); setIsNewClient(false); setNewClientName('')
-    setName(''); setPm(''); setLanguage('pt'); setHasDev(false)
-    setDevLead(''); setDevType('integration'); setDevIntegration('')
+    setName(''); setPmMemberId(''); setLanguage('pt'); setHasDev(false)
+    setDevLeadMemberId(''); setDevType('integration'); setDevIntegration('')
     setAttempted(false)
   }
 
@@ -371,10 +370,16 @@ function NewProjectModal({ open, onClose, clients, members, templates, onCreate 
     setAttempted(true)
     if (!canCreate) return
     const finalClientId = isNewClient ? createClient({ name: newClientName.trim() }) : (clientId || undefined)
+    const pmMember = teamMembers.find((m) => m.userId === pmMemberId)
+    const devLeadMember = teamMembers.find((m) => m.userId === devLeadMemberId)
     onCreate({
-      name: name.trim(), client: finalClient.trim(), clientId: finalClientId, pm: pm.trim(), type: selectedType,
+      name: name.trim(), client: finalClient.trim(), clientId: finalClientId,
+      pm: pmMember?.name ?? '', pmMemberId: pmMemberId || undefined, type: selectedType,
       language,
-      ...(hasDev && { devLead: devLead || undefined, devType, devIntegration: devIntegration || undefined }),
+      ...(hasDev && {
+        devLead: devLeadMember?.name, devLeadMemberId: devLeadMemberId || undefined,
+        devType, devIntegration: devIntegration || undefined,
+      }),
     })
     reset()
   }
@@ -492,18 +497,16 @@ function NewProjectModal({ open, onClose, clients, members, templates, onCreate 
               {errors.name && <p className="text-xs text-[var(--color-danger-text)] mt-1">{errors.name}</p>}
             </Field>
 
-            {/* PM */}
+            {/* Líder */}
             <Field label={t('project.pm')} required>
-              <input
-                list="pm-options"
-                value={pm}
-                onChange={(e) => setPm(e.target.value)}
-                placeholder={t('project.pmPlaceholder')}
+              <select
+                value={pmMemberId}
+                onChange={(e) => setPmMemberId(e.target.value)}
                 className={`block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] ${errors.pm ? 'border-red-400' : 'border-[var(--border-default)]'}`}
-              />
-              <datalist id="pm-options">
-                {members.map((m) => <option key={m} value={m} />)}
-              </datalist>
+              >
+                <option value="">{t('project.pmPlaceholder')}</option>
+                {teamMembers.map((m) => <option key={m.id} value={m.userId ?? ''}>{m.name}</option>)}
+              </select>
               {errors.pm && <p className="text-xs text-[var(--color-danger-text)] mt-1">{errors.pm}</p>}
             </Field>
 
@@ -565,16 +568,14 @@ function NewProjectModal({ open, onClose, clients, members, templates, onCreate 
 
               {/* Dev lead */}
               <Field label={t('project.devLead')}>
-                <input
-                  list="dev-options"
-                  value={devLead}
-                  onChange={(e) => setDevLead(e.target.value)}
-                  placeholder={t('project.devLeadPlaceholder')}
+                <select
+                  value={devLeadMemberId}
+                  onChange={(e) => setDevLeadMemberId(e.target.value)}
                   className="block w-full rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)]"
-                />
-                <datalist id="dev-options">
-                  {members.map((m) => <option key={m} value={m} />)}
-                </datalist>
+                >
+                  <option value="">{t('project.devLeadPlaceholder')}</option>
+                  {teamMembers.map((m) => <option key={m.id} value={m.userId ?? ''}>{m.name}</option>)}
+                </select>
               </Field>
 
               {devType === 'integration' && (
@@ -599,7 +600,7 @@ function NewProjectModal({ open, onClose, clients, members, templates, onCreate 
 export default function ProjectsPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { projects, projectsLoading, settings, createProject, updateProject, archiveProject, archivedProjects, archivedProjectsLoaded, loadArchivedProjects, clients: storeClients } = useAppStore()
+  const { projects, projectsLoading, settings, createProject, updateProject, archiveProject, archivedProjects, archivedProjectsLoaded, loadArchivedProjects, clients: storeClients, teamDirectory } = useAppStore()
   const { user } = useAuthStore()
 
   const [view, setView] = useState<'list' | 'kanban'>(() =>
@@ -625,7 +626,10 @@ export default function ProjectsPage() {
     [projects, storeClients],
   )
   const pms = useMemo(() => uniquePMs(projects), [projects])
-  const members = useMemo(() => uniqueMembers(projects), [projects])
+  const teamMembers: TeamMember[] = useMemo(
+    () => teamDirectory.filter((p) => p.active).map((p) => ({ id: p.id, name: p.name ?? p.email ?? '', role: '', email: p.email ?? undefined, userId: p.id })),
+    [teamDirectory],
+  )
   const filtered = useMemo(() => {
     const base = onlyMine ? projects.filter((p) => isProjectMine(p, user?.id)) : projects
     const bySearch = search.trim()
@@ -795,7 +799,7 @@ export default function ProjectsPage() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         clients={storeClients}
-        members={members}
+        teamMembers={teamMembers}
         templates={settings.templates}
         onCreate={handleCreate}
       />

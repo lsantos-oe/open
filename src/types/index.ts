@@ -277,10 +277,12 @@ export interface Project {
   clientId?: string
   type: ProjectType
   pm: string
+  pmMemberId?: string
   color?: string
   archived?: boolean
   hidden?: boolean
   devLead?: string
+  devLeadMemberId?: string
   devType?: 'integration' | 'application'
   devIntegration?: string
   language: AppLanguage

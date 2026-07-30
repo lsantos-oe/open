@@ -190,7 +190,7 @@ interface AppStore {
 
   // Projects
   createProject: (data: Omit<Project, 'id' | 'phases' | 'risks' | 'delayLog' | 'team' | 'links' | 'status'>) => string
-  duplicateProject: (source: Project, overrides: { name: string; client: string; clientId?: string; pm: string; language: AppLanguage; devLead?: string; devType?: 'integration' | 'application'; devIntegration?: string }) => string
+  duplicateProject: (source: Project, overrides: { name: string; client: string; clientId?: string; pm: string; pmMemberId?: string; language: AppLanguage; devLead?: string; devLeadMemberId?: string; devType?: 'integration' | 'application'; devIntegration?: string }) => string
   updateProject: (id: string, patch: Partial<Project>) => void
   deleteProject: (id: string) => void
   importProject: (project: Project) => void

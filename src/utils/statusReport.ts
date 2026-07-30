@@ -858,7 +858,7 @@ function buildRisksSection(project: Project): string {
 // ─── standard layout ──────────────────────────────────────────────────────────
 
 function buildStandardHeader(project: Project, fmt: string): string {
-  const meta = [esc(project.client), `PM: ${esc(project.pm)}`]
+  const meta = [esc(project.client), `Líder: ${esc(project.pm)}`]
   if (project.devType) meta.push(`Dev: ${esc(t(`project.${project.devType}`))}${project.devIntegration ? ` (${esc(project.devIntegration)})` : ''}`)
 
   return `
@@ -881,7 +881,7 @@ function buildStandardHeader(project: Project, fmt: string): string {
 function buildStandardFooter(project: Project): string {
   return `
     <div class="report-footer">
-      <span>${t('report.footer')} &nbsp;·&nbsp; PM: ${esc(project.pm)}</span>
+      <span>${t('report.footer')} &nbsp;·&nbsp; Líder: ${esc(project.pm)}</span>
       <span>${nowFormatted()}</span>
     </div>
   `
@@ -917,7 +917,7 @@ function buildPloomesHeader(project: Project, settings: AppSettings): string {
   const range   = projectDateRange(project)
   const totalDelay = project.delayLog.reduce((s, e) => s + Math.max(0, e.days), 0)
   const status  = project.status
-  const meta    = [esc(project.client), `PM: ${esc(project.pm)}`]
+  const meta    = [esc(project.client), `Líder: ${esc(project.pm)}`]
   if (project.devType) meta.push(`Dev: ${esc(t(`project.${project.devType}`))}`)
 
   const DIAMOND_SVG = `<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 2L16 9L9 16L2 9Z" fill="#7443F6"/></svg>`
@@ -950,7 +950,7 @@ function buildPloomesHeader(project: Project, settings: AppSettings): string {
 function buildPloomesFooter(project: Project): string {
   return `
     <div class="ploomes-footer">
-      <span>${t('report.footer')} &nbsp;·&nbsp; PM: ${esc(project.pm)}</span>
+      <span>${t('report.footer')} &nbsp;·&nbsp; Líder: ${esc(project.pm)}</span>
       <span>${nowFormatted()}</span>
     </div>
   `

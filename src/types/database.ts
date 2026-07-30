@@ -118,7 +118,9 @@ export interface DbProject {
   client_id: string | null
   type: ProjectType | null
   pm: string | null
+  pm_member_id: string | null
   dev_lead: string | null
+  dev_lead_member_id: string | null
   dev_type: 'integration' | 'application' | null
   dev_integration: string | null
   language: AppLanguage | null

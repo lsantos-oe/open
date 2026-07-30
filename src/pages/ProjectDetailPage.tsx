@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Input, Field } from '@/components/ui/Input'
 import StatusBadge from '@/components/StatusBadge'
-import { ProjectStatus, Project, Entry, AppLanguage } from '@/types'
+import { ProjectStatus, Project, Entry, AppLanguage, TeamMember } from '@/types'
 import { generateStatusReport, ReportConfig } from '@/utils/statusReport'
 import { useSmartPosition } from '@/hooks/useSmartPosition'
 import ReportConfigModal from '@/components/report/ReportConfigModal'
@@ -187,17 +187,17 @@ function MoreMenu({ onImportUpdate, onExportJson, onDuplicate, onArchive }: { on
 function DuplicateModal({ open, project, onClose }: { open: boolean; project: Project; onClose: () => void }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { projects, duplicateProject, clients: storeClients, createClient } = useAppStore()
+  const { duplicateProject, clients: storeClients, createClient, teamDirectory } = useAppStore()
   const { addToast } = useToastStore()
 
   const [name, setName] = useState('')
   const [clientId, setClientId] = useState('')
   const [isNewClient, setIsNewClient] = useState(false)
   const [newClientName, setNewClientName] = useState('')
-  const [pm, setPm] = useState('')
+  const [pmMemberId, setPmMemberId] = useState('')
   const [language, setLanguage] = useState<AppLanguage>('pt')
   const [hasDev, setHasDev] = useState(false)
-  const [devLead, setDevLead] = useState('')
+  const [devLeadMemberId, setDevLeadMemberId] = useState('')
   const [devType, setDevType] = useState<'integration' | 'application'>('integration')
   const [devIntegration, setDevIntegration] = useState('')
   const [attempted, setAttempted] = useState(false)
@@ -209,19 +209,19 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
     setClientId(project.clientId ?? '')
     setIsNewClient(false)
     setNewClientName('')
-    setPm(project.pm ?? '')
+    setPmMemberId(project.pmMemberId ?? '')
     setLanguage(project.language ?? 'pt')
     const hasDev = !!project.devType
     setHasDev(hasDev)
-    setDevLead(project.devLead ?? '')
+    setDevLeadMemberId(project.devLeadMemberId ?? '')
     setDevType(project.devType ?? 'integration')
     setDevIntegration(project.devIntegration ?? '')
     setAttempted(false)
   }, [open, project])
 
-  const allMembers = useMemo(
-    () => [...new Set(projects.flatMap((p) => [p.pm, p.devLead].filter(Boolean) as string[]))].sort(),
-    [projects],
+  const teamMembers: TeamMember[] = useMemo(
+    () => teamDirectory.filter((p) => p.active).map((p) => ({ id: p.id, name: p.name ?? p.email ?? '', role: '', email: p.email ?? undefined, userId: p.id })),
+    [teamDirectory],
   )
 
   const selectedClient = storeClients.find((c) => c.id === clientId)
@@ -229,20 +229,26 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
   const errors = {
     name: attempted && !name.trim() ? t('errors.nameRequired') : '',
     client: attempted && !finalClient.trim() ? t('errors.clientRequired') : '',
-    pm: attempted && !pm.trim() ? t('errors.pmRequired') : '',
+    pm: attempted && !pmMemberId ? t('errors.pmRequired') : '',
   }
 
   function handleDuplicate() {
     setAttempted(true)
-    if (!name.trim() || !finalClient.trim() || !pm.trim()) return
+    if (!name.trim() || !finalClient.trim() || !pmMemberId) return
     const finalClientId = isNewClient ? createClient({ name: newClientName.trim() }) : (clientId || undefined)
+    const pmMember = teamMembers.find((m) => m.userId === pmMemberId)
+    const devLeadMember = teamMembers.find((m) => m.userId === devLeadMemberId)
     const newId = duplicateProject(project, {
       name: name.trim(),
       client: finalClient.trim(),
       clientId: finalClientId,
-      pm: pm.trim(),
+      pm: pmMember?.name ?? '',
+      pmMemberId: pmMemberId || undefined,
       language,
-      ...(hasDev && devType ? { devLead: devLead || undefined, devType, devIntegration: devIntegration || undefined } : {}),
+      ...(hasDev && devType ? {
+        devLead: devLeadMember?.name, devLeadMemberId: devLeadMemberId || undefined,
+        devType, devIntegration: devIntegration || undefined,
+      } : {}),
     })
     onClose()
     navigate(`/projects/${newId}`)
@@ -308,18 +314,16 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
             {errors.client && <p className="text-xs text-[var(--color-danger-text)] mt-1">{errors.client}</p>}
           </Field>
 
-          {/* PM */}
+          {/* Líder */}
           <Field label={t('project.pm')} required>
-            <input
-              list="dup-pm-options"
-              value={pm}
-              onChange={(e) => setPm(e.target.value)}
-              placeholder={t('project.pmPlaceholder')}
+            <select
+              value={pmMemberId}
+              onChange={(e) => setPmMemberId(e.target.value)}
               className={`block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] ${errors.pm ? 'border-red-400' : 'border-[var(--border-default)]'}`}
-            />
-            <datalist id="dup-pm-options">
-              {allMembers.map((m) => <option key={m} value={m} />)}
-            </datalist>
+            >
+              <option value="">{t('project.pmPlaceholder')}</option>
+              {teamMembers.map((m) => <option key={m.id} value={m.userId ?? ''}>{m.name}</option>)}
+            </select>
             {errors.pm && <p className="text-xs text-[var(--color-danger-text)] mt-1">{errors.pm}</p>}
           </Field>
 
@@ -378,16 +382,14 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
               </Field>
 
               <Field label={t('project.devLead')}>
-                <input
-                  list="dup-dev-options"
-                  value={devLead}
-                  onChange={(e) => setDevLead(e.target.value)}
-                  placeholder={t('project.devLeadPlaceholder')}
+                <select
+                  value={devLeadMemberId}
+                  onChange={(e) => setDevLeadMemberId(e.target.value)}
                   className="block w-full rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)]"
-                />
-                <datalist id="dup-dev-options">
-                  {allMembers.map((m) => <option key={m} value={m} />)}
-                </datalist>
+                >
+                  <option value="">{t('project.devLeadPlaceholder')}</option>
+                  {teamMembers.map((m) => <option key={m.id} value={m.userId ?? ''}>{m.name}</option>)}
+                </select>
               </Field>
 
               {devType === 'integration' && (
