@@ -40,11 +40,13 @@ export default function CountrySelect({ value, onChange }: Props) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between rounded-[var(--radius-md)] border px-3 py-2 text-sm text-left"
+        className="w-full flex items-center justify-between rounded-[var(--radius-md)] border px-3 py-2 text-[13px] text-left"
         style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: selected ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
       >
-        {selected ? selected.name : 'Selecione o país...'}
-        <span style={{ color: 'var(--text-tertiary)' }}>▾</span>
+        <span className="truncate">{selected ? selected.name : 'Selecione o país...'}</span>
+        <svg className="w-3.5 h-3.5 shrink-0 ml-2" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+        </svg>
       </button>
 
       {open && (

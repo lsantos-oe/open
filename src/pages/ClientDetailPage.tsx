@@ -222,8 +222,8 @@ export default function ClientDetailPage() {
               ) : (
                 <div
                   onClick={() => { setNotesDraft(client.notes ?? ''); setEditingNotes(true) }}
-                  className="p-3 rounded-[var(--radius-lg)] text-sm whitespace-pre-wrap cursor-text min-h-[80px]"
-                  style={{ background: 'var(--surface-subtle)', color: client.notes ? 'var(--text-secondary)' : 'var(--text-tertiary)' }}
+                  className="p-3 rounded-[var(--radius-lg)] border text-sm whitespace-pre-wrap cursor-text min-h-[80px]"
+                  style={{ background: 'var(--surface-subtle)', borderColor: 'var(--border-default)', color: client.notes ? 'var(--text-secondary)' : 'var(--text-tertiary)' }}
                 >
                   {client.notes || 'Clique para adicionar notas...'}
                 </div>
@@ -284,7 +284,7 @@ export default function ClientDetailPage() {
             ) : (
               <div className="space-y-2">
                 {sortedCsHistory.map((a, i) => (
-                  <div key={a.id} className="flex items-center gap-3 p-3 rounded-[var(--radius-lg)] group" style={{ background: i === 0 ? 'var(--oe-primary-light)' : 'var(--surface-subtle)' }}>
+                  <div key={a.id} className="flex items-center gap-3 p-3 rounded-[var(--radius-lg)] border group" style={{ background: i === 0 ? 'var(--oe-primary-light)' : 'var(--surface-subtle)', borderColor: i === 0 ? 'var(--oe-primary-mid)' : 'var(--border-default)' }}>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                         {a.owner.name} {i === 0 && <span className="text-xs font-normal" style={{ color: 'var(--oe-primary)' }}>· atual</span>}
