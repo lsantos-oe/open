@@ -95,7 +95,7 @@ export default function DashboardPage() {
     return da.localeCompare(db)
   })
 
-  const activeProjectsCount = projects.filter((p) => !p.archived && p.status !== 'done').length
+  const activeProjectsCount = projects.filter((p) => !p.archived && p.status !== 'done' && p.status !== 'backlog').length
 
   return (
     <div className="p-8 max-w-5xl mx-auto">

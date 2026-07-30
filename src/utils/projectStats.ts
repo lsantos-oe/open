@@ -43,6 +43,15 @@ export function projectEndVariance(project: Project, holidays: string[]): number
   return workdaysBetween(maxBlEnd, maxEnd, hdates)
 }
 
+/** A project is "Atrasado" when it's in progress and running behind its own
+ *  baseline — this is a computed badge, not a Kanban stage: a project can be
+ *  delayed while still sitting in the "Em andamento" column. */
+export function isProjectDelayed(project: Project, holidays: string[]): boolean {
+  if (project.status !== 'in_progress') return false
+  const variance = projectEndVariance(project, holidays)
+  return variance !== undefined && variance > 0
+}
+
 export function projectDateRange(project: Project): { start?: string; end?: string } {
   const { starts, ends } = allEntryDates(project)
   if (starts.length === 0) return {}

@@ -1,7 +1,7 @@
 export type EntryType = 'task' | 'milestone' | 'meeting'
 export type RiskFlag = 'none' | 'warning' | 'critical'
 export type EntryStatus = 'pending' | 'in_progress' | 'done' | 'blocked' | 'overdue'
-export type ProjectStatus = 'planning' | 'in_progress' | 'delayed' | 'done'
+export type ProjectStatus = 'backlog' | 'planning' | 'in_progress' | 'done'
 export type ProjectType = 'nova_conta' | 'novo_projeto'
 export type AppLanguage = 'pt' | 'en' | 'es'
 export type DateFormat = 'DD/MM/YYYY' | 'MM/DD/YYYY'

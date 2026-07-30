@@ -20,6 +20,7 @@ import { Project, ProjectStatus, ProjectType, ProjectTemplate, Client, TeamMembe
 import {
   projectDurationDays,
   projectEndVariance,
+  isProjectDelayed,
   uniqueClients,
   uniquePMs,
 } from '@/utils/projectStats'
@@ -27,18 +28,18 @@ import {
 // ─── constants ────────────────────────────────────────────────────────────────
 
 const STATUS_COLOR: Record<ProjectStatus, string> = {
+  backlog: 'var(--text-disabled)',
   planning: 'var(--text-tertiary)',
   in_progress: 'var(--color-info-text)',
-  delayed: 'var(--color-danger-text)',
   done: 'var(--color-success-text)',
 }
 
-const KANBAN_STATUSES: ProjectStatus[] = ['planning', 'in_progress', 'delayed', 'done']
+const KANBAN_STATUSES: ProjectStatus[] = ['backlog', 'planning', 'in_progress', 'done']
 
 const KANBAN_BG: Record<ProjectStatus, string> = {
+  backlog: 'bg-[var(--surface-page)] border-dashed border-[var(--border-default)]',
   planning: 'bg-[var(--surface-subtle)] border-[var(--border-default)]',
   in_progress: 'bg-[var(--color-info-bg)] border-[var(--border-default)]',
-  delayed: 'bg-[var(--color-danger-bg)] border-[var(--border-default)]',
   done: 'bg-[var(--color-success-bg)] border-[var(--border-default)]',
 }
 
@@ -228,7 +229,10 @@ function ListView({ projects, holidays, onOpen, selected, onToggle }: ListViewPr
                   {dur !== undefined ? `${dur}${t('project.workingDays')}` : '—'}
                 </td>
                 <td className="px-4 py-3">
-                  <StatusDot color={STATUS_COLOR[p.status]} label={t(`project.${p.status}`)} />
+                  <div className="flex items-center gap-1.5">
+                    <StatusDot color={STATUS_COLOR[p.status]} label={t(`project.${p.status}`)} />
+                    {isProjectDelayed(p, holidays) && <Badge variant="red">{t('project.delayed')}</Badge>}
+                  </div>
                 </td>
                 <td className={`px-4 py-3 whitespace-nowrap ${varianceClass(variance)}`}>
                   {fmtVariance(variance)}
@@ -287,9 +291,14 @@ function KanbanView({ projects, holidays, onOpen, selected, onToggle }: KanbanVi
                     <p className="font-medium text-[var(--text-primary)] text-sm mb-1 line-clamp-2 pr-5">{p.name}</p>
                     <p className="text-xs text-[var(--text-tertiary)] mb-2">{p.client}</p>
                     <div className="flex items-center justify-between">
-                      <Badge variant={p.type === 'nova_conta' ? 'blue' : 'purple'} className="text-[10px]">
-                        {p.type === 'nova_conta' ? 'NC' : 'NP'}
-                      </Badge>
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant={p.type === 'nova_conta' ? 'blue' : 'purple'} className="text-[10px]">
+                          {p.type === 'nova_conta' ? 'NC' : 'NP'}
+                        </Badge>
+                        {isProjectDelayed(p, holidays) && (
+                          <Badge variant="red" className="text-[10px]">{t('project.delayed')}</Badge>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2 text-xs text-[var(--text-tertiary)]">
                         {dur !== undefined && <span>{dur}d</span>}
                         {variance !== undefined && (
@@ -609,6 +618,7 @@ export default function ProjectsPage() {
   const [search, setSearch] = useState('')
   const [filters, setFilters] = useState<Filters>({ client: '', pm: '', type: '', dev: '' })
   const [onlyMine, setOnlyMine] = useState(false)
+  const [onlyDelayed, setOnlyDelayed] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
@@ -632,11 +642,12 @@ export default function ProjectsPage() {
   )
   const filtered = useMemo(() => {
     const base = onlyMine ? projects.filter((p) => isProjectMine(p, user?.id)) : projects
+    const byDelayed = onlyDelayed ? base.filter((p) => isProjectDelayed(p, settings.holidays)) : base
     const bySearch = search.trim()
-      ? base.filter((p) => (p.name + ' ' + p.client).toLowerCase().includes(search.trim().toLowerCase()))
-      : base
+      ? byDelayed.filter((p) => (p.name + ' ' + p.client).toLowerCase().includes(search.trim().toLowerCase()))
+      : byDelayed
     return applyFilters(bySearch, filters)
-  }, [projects, filters, onlyMine, user, search])
+  }, [projects, filters, onlyMine, onlyDelayed, settings.holidays, user, search])
 
   function toggleSelect(id: string) {
     setSelected((prev) => {
@@ -729,6 +740,17 @@ export default function ProjectsPage() {
             }}
           >
             Meus
+          </button>
+          <button
+            onClick={() => setOnlyDelayed((v) => !v)}
+            className="px-3 py-1.5 text-xs font-medium rounded-[var(--radius-pill)] border transition-colors"
+            style={{
+              background: onlyDelayed ? 'var(--color-danger-text)' : 'var(--surface-card)',
+              color: onlyDelayed ? 'white' : 'var(--text-secondary)',
+              borderColor: onlyDelayed ? 'var(--color-danger-text)' : 'var(--border-default)',
+            }}
+          >
+            {t('project.delayed')}
           </button>
           <Button variant="secondary" onClick={() => setShowImportModal(true)}>
             {t('import.title')}

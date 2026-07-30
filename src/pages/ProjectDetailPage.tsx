@@ -15,7 +15,8 @@ import ReportConfigModal from '@/components/report/ReportConfigModal'
 import ImportJsonModal from '@/components/import/ImportJsonModal'
 import { exportProjectCsv } from '@/utils/exportCsv'
 import { exportProjectToJson } from '@/utils/exportJson'
-import { projectDurationDays } from '@/utils/projectStats'
+import { projectDurationDays, isProjectDelayed } from '@/utils/projectStats'
+import { Badge } from '@/components/ui/Badge'
 import PlanPage from './PlanPage'
 import KanbanPage from './KanbanPage'
 import RisksPage from './RisksPage'
@@ -438,6 +439,10 @@ export default function ProjectDetailPage() {
     () => (project ? projectDurationDays(project, settings.holidays) : undefined),
     [project, settings.holidays],
   )
+  const delayed = useMemo(
+    () => (project ? isProjectDelayed(project, settings.holidays) : false),
+    [project, settings.holidays],
+  )
   const goLiveDate = useMemo(() => (project ? findGoLive(project) : undefined), [project])
   const currentPhase = useMemo(() => (project ? findCurrentPhase(project) : undefined), [project])
 
@@ -515,14 +520,17 @@ export default function ProjectDetailPage() {
         {/* Spacer */}
         <div className="flex-1" />
 
+        {/* Delayed badge — computed from baseline variance, not a status the user picks */}
+        {delayed && <Badge variant="red">{t('project.delayed')}</Badge>}
+
         {/* Status badge (clickable dropdown) */}
         <StatusBadge
           value={project.status}
           onChange={(s) => updateProject(project.id, { status: s as ProjectStatus })}
           options={[
+            { value: 'backlog', label: t('status.backlog') },
             { value: 'planning', label: t('status.planning') },
             { value: 'in_progress', label: t('status.in_progress') },
-            { value: 'delayed', label: t('status.delayed') },
             { value: 'done', label: t('status.done') },
           ]}
         />

@@ -1,6 +1,6 @@
 import i18n from '@/i18n'
 import { Project, AppSettings, Entry, ProjectCharter } from '@/types'
-import { projectDurationDays, projectDateRange } from './projectStats'
+import { projectDurationDays, projectDateRange, isProjectDelayed } from './projectStats'
 import { computeVariance } from './dateEngine'
 
 // ─── types ────────────────────────────────────────────────────────────────────
@@ -453,10 +453,11 @@ function buildSummarySection(project: Project, settings: AppSettings): string {
   const dur      = projectDurationDays(project, settings.holidays)
   const range    = projectDateRange(project)
   const status   = project.status
-  const statusLabel = t(`project.${status}`)
+  const delayed  = isProjectDelayed(project, settings.holidays)
+  const statusLabel = delayed ? `${t(`project.${status}`)} · ${t('project.delayed')}` : t(`project.${status}`)
 
-  const statusClass = status === 'in_progress' ? 'status-prog'
-    : status === 'delayed' ? 'status-late'
+  const statusClass = delayed ? 'status-late'
+    : status === 'in_progress' ? 'status-prog'
     : status === 'done'    ? 'status-done'
     : ''
 
