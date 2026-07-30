@@ -13,6 +13,7 @@ import { Entry, EntryOwner, EntryStatus } from '@/types'
 const KANBAN_COLS: { status: EntryStatus; labelKey: string }[] = [
   { status: 'pending',     labelKey: 'entry.pending' },
   { status: 'in_progress', labelKey: 'entry.in_progress' },
+  { status: 'validation',  labelKey: 'entry.validation' },
   { status: 'done',        labelKey: 'entry.done' },
   { status: 'blocked',     labelKey: 'entry.blocked' },
 ]
@@ -20,6 +21,7 @@ const KANBAN_COLS: { status: EntryStatus; labelKey: string }[] = [
 const COL_STYLE: Record<string, { header: string; bg: string }> = {
   pending:     { header: 'var(--text-secondary)',     bg: 'var(--surface-subtle)' },
   in_progress: { header: 'var(--oe-primary)',         bg: 'var(--oe-primary-light)' },
+  validation:  { header: 'var(--color-warning-text)', bg: 'var(--color-warning-bg)' },
   done:        { header: 'var(--color-success-text)', bg: 'var(--color-success-bg)' },
   blocked:     { header: 'var(--color-danger-text)',  bg: 'var(--color-danger-bg)' },
 }
@@ -256,7 +258,7 @@ function InternalTasksSection({ cards, onEdit }: {
       </button>
 
       {open && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginTop: 12 }}>
           {KANBAN_COLS.map(col => {
             const colCards = cards.filter(c => c.status === col.status)
             if (colCards.length === 0) return (
@@ -332,7 +334,7 @@ export default function EntryBoard({ cards, onStatusChange, onCardClick, showInt
       onDragCancel={() => setActiveId(null)}
     >
       <div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
           {KANBAN_COLS.map(col => (
             <BoardColumn
               key={col.status}

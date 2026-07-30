@@ -23,6 +23,7 @@ import { isEntryMine } from '@/utils/involvement'
 const ENTRY_STATUS_COLOR: Record<EntryStatus, string> = {
   pending: 'var(--text-tertiary)',
   in_progress: 'var(--color-info-text)',
+  validation: 'var(--color-warning-text)',
   done: 'var(--color-success-text)',
   blocked: 'var(--color-danger-text)',
   overdue: 'var(--color-warning-text)',
@@ -35,6 +36,7 @@ const PALETTE = ['#E8590C', '#7443F6', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444
 const KANBAN_COLS: { status: EntryStatus; labelKey: string }[] = [
   { status: 'pending',     labelKey: 'entry.pending' },
   { status: 'in_progress', labelKey: 'entry.in_progress' },
+  { status: 'validation',  labelKey: 'entry.validation' },
   { status: 'done',        labelKey: 'entry.done' },
   { status: 'blocked',     labelKey: 'entry.blocked' },
 ]
@@ -42,6 +44,7 @@ const KANBAN_COLS: { status: EntryStatus; labelKey: string }[] = [
 const COL_STYLE: Record<string, { header: string; bg: string }> = {
   pending:     { header: 'var(--text-secondary)',     bg: 'var(--surface-subtle)' },
   in_progress: { header: 'var(--oe-primary)',         bg: 'var(--oe-primary-light)' },
+  validation:  { header: 'var(--color-warning-text)', bg: 'var(--color-warning-bg)' },
   done:        { header: 'var(--color-success-text)', bg: 'var(--color-success-bg)' },
   blocked:     { header: 'var(--color-danger-text)',  bg: 'var(--color-danger-bg)' },
 }
@@ -531,7 +534,7 @@ export default function TasksPage() {
             onDragEnd={handleDragEnd}
             onDragCancel={() => setActiveId(null)}
           >
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
               {KANBAN_COLS.map(col => (
                 <KanbanColumn
                   key={col.status}

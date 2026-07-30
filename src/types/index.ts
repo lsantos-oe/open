@@ -1,6 +1,6 @@
 export type EntryType = 'task' | 'milestone' | 'meeting'
 export type RiskFlag = 'none' | 'warning' | 'critical'
-export type EntryStatus = 'pending' | 'in_progress' | 'done' | 'blocked' | 'overdue'
+export type EntryStatus = 'pending' | 'in_progress' | 'validation' | 'done' | 'blocked' | 'overdue'
 export type ProjectStatus = 'backlog' | 'planning' | 'in_progress' | 'done'
 export type ProjectType = 'nova_conta' | 'novo_projeto'
 export type AppLanguage = 'pt' | 'en' | 'es'

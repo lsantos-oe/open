@@ -146,6 +146,7 @@
     "meeting": "Reunião",
     "pending": "Pendente",
     "in_progress": "Em andamento",
+    "validation": "Validação/Teste",
     "done": "Concluído",
     "blocked": "Bloqueado",
     "none": "OK",
@@ -306,6 +307,7 @@
   "status": {
     "pending": "Pendente",
     "in_progress": "Em andamento",
+    "validation": "Validação/Teste",
     "done": "Concluído",
     "blocked": "Bloqueado",
     "overdue": "Atrasado",

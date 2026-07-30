@@ -350,6 +350,17 @@ function notifyUser(userId: string, message: string, link?: string): void {
   })
 }
 
+/** Notifies the entry's Validador the moment a task enters the "Validação/Teste" stage —
+ *  only fires on the transition into it, not on every subsequent save while it sits there. */
+function notifyValidatorOnValidationEntry(
+  prevStatus: EntryStatus | undefined, nextStatus: EntryStatus | undefined,
+  owners: EntryOwner[] | undefined, entryName: string, link: string,
+): void {
+  if (nextStatus !== 'validation' || prevStatus === 'validation') return
+  const validator = owners?.find((o) => o.kind === 'validator' && o.memberId)
+  if (validator?.memberId) notifyUser(validator.memberId, `Tarefa "${entryName}" está pronta para validação`, link)
+}
+
 /** Notifies newly-added `type: 'member'` owners that weren't in the previous owner list. */
 function notifyNewOwners(prevOwners: EntryOwner[] | undefined, nextOwners: EntryOwner[] | undefined, message: string, link: string): void {
   if (!nextOwners) return
@@ -1400,6 +1411,10 @@ export const useAppStore = create<AppStore>()(
           const entryName = patch.name ?? prevEntry?.name ?? 'uma tarefa'
           notifyNewOwners(prevEntry?.owners, patch.owners, `Você foi adicionado como responsável em "${entryName}"`, `/projects/${projectId}`)
         }
+        if (patch.status) {
+          const entryName = patch.name ?? prevEntry?.name ?? 'uma tarefa'
+          notifyValidatorOnValidationEntry(prevEntry?.status, patch.status, patch.owners ?? prevEntry?.owners, entryName, `/projects/${projectId}`)
+        }
       },
 
       deleteEntry(projectId, phaseId, entryId) {
@@ -1474,6 +1489,7 @@ export const useAppStore = create<AppStore>()(
       updateEntryStatus(projectId, entryId, status) {
         const now = new Date().toISOString().split('T')[0]
         const prev = get().projects
+        const prevEntry = findEntryDeep(prev.find((p) => p.id === projectId)?.phases ?? [], entryId)
         set((s) => ({
           projects: mutateProject(s.projects, projectId, (p) => ({
             ...p,
@@ -1495,6 +1511,7 @@ export const useAppStore = create<AppStore>()(
         // auto-history: status changed
         const entry = findEntryDeep(get().projects.find((p) => p.id === projectId)?.phases ?? [], entryId)
         if (entry) get().addHistoryEntry({ type: 'project', id: projectId }, { event: 'status_changed', title: entry.name, detail: status, linkedId: entryId, linkedType: 'entry' })
+        if (entry) notifyValidatorOnValidationEntry(prevEntry?.status, status, entry.owners, entry.name, `/projects/${projectId}`)
 
         sync(async () => {
           const project = get().projects.find((p) => p.id === projectId)
@@ -2890,6 +2907,10 @@ export const useAppStore = create<AppStore>()(
           const entryName = patch.name ?? prevEntry?.name ?? 'uma tarefa'
           notifyNewOwners(prevEntry?.owners, patch.owners, `Você foi adicionado como responsável em "${entryName}"`, `/support/${incidentId}`)
         }
+        if (patch.status) {
+          const entryName = patch.name ?? prevEntry?.name ?? 'uma tarefa'
+          notifyValidatorOnValidationEntry(prevEntry?.status, patch.status, patch.owners ?? prevEntry?.owners, entryName, `/support/${incidentId}`)
+        }
       },
 
       deleteIncidentEntry(incidentId, entryId) {
@@ -2908,6 +2929,7 @@ export const useAppStore = create<AppStore>()(
       updateIncidentEntryStatus(incidentId, entryId, status) {
         const now = new Date().toISOString().split('T')[0]
         const prev = get().incidents
+        const prevEntry = prev.find((i) => i.id === incidentId)?.entries.find((e) => e.id === entryId)
         set((s) => ({
           incidents: mutateIncident(s.incidents, incidentId, (i) => ({
             ...i,
@@ -2920,6 +2942,7 @@ export const useAppStore = create<AppStore>()(
             }),
           })),
         }))
+        if (prevEntry) notifyValidatorOnValidationEntry(prevEntry.status, status, prevEntry.owners, prevEntry.name, `/support/${incidentId}`)
         sync(async () => {
           const incident = get().incidents.find((i) => i.id === incidentId)
           if (!incident) return

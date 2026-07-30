@@ -1125,6 +1125,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
               options={[
                 { value: 'pending', label: t('status.pending') },
                 { value: 'in_progress', label: t('status.in_progress') },
+                { value: 'validation', label: t('status.validation') },
                 { value: 'done', label: t('status.done') },
                 { value: 'blocked', label: t('status.blocked') },
                 ...(e.status === 'overdue' ? [{ value: 'overdue', label: t('status.overdue') }] : []),
