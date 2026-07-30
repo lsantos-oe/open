@@ -11,6 +11,8 @@ import OpenPointsTab from '@/pages/tabs/diary/OpenPointsTab'
 import HistoryTab from '@/pages/tabs/diary/HistoryTab'
 import EntryBoard, { BoardCard } from '@/components/plan/EntryBoard'
 import IncidentEntryModal from '@/components/plan/IncidentEntryModal'
+import { AnchorNav } from '@/components/ui/AnchorNav'
+import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { differenceInCalendarDays } from 'date-fns'
 
 type Tab = 'overview' | 'tasks' | 'openPoints' | 'history'
@@ -31,7 +33,7 @@ export default function IncidentDetailPage() {
     addIncidentStakeholder, removeIncidentStakeholder, updateIncidentEntryStatus, addClientContact,
   } = useAppStore()
 
-  const [tab, setTab] = useState<Tab>('overview')
+  const [openSections, setOpenSections] = useState<Set<Tab>>(new Set(['overview', 'tasks']))
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showLinkClient, setShowLinkClient] = useState(false)
   const [showLinkProject, setShowLinkProject] = useState(false)
@@ -103,6 +105,18 @@ export default function IncidentDetailPage() {
     setShowStakeholder(false)
   }
 
+  function toggleSection(id: Tab) {
+    setOpenSections((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  function openAndScroll(id: string) {
+    setOpenSections((prev) => new Set(prev).add(id as Tab))
+  }
+
   const TABS: { id: Tab; label: string }[] = [
     { id: 'overview', label: t('incident.tabOverview') },
     { id: 'tasks', label: `${t('incident.tabTasks')}${incident.entries.length ? ` (${incident.entries.length})` : ''}` },
@@ -123,25 +137,12 @@ export default function IncidentDetailPage() {
         <Button variant="secondary" size="sm" onClick={() => setShowDeleteConfirm(true)}>{t('incident.delete')}</Button>
       </div>
 
-      <div className="flex gap-0 px-6 border-b" style={{ borderColor: 'var(--border-default)' }}>
-        {TABS.map((tb) => (
-          <button
-            key={tb.id}
-            onClick={() => setTab(tb.id)}
-            className="px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap"
-            style={{
-              borderBottomColor: tab === tb.id ? 'var(--oe-primary)' : 'transparent',
-              color: tab === tb.id ? 'var(--text-primary)' : 'var(--text-tertiary)',
-              marginBottom: -1,
-            }}
-          >
-            {tb.label}
-          </button>
-        ))}
+      <div className="px-6">
+        <AnchorNav items={TABS} onNavigate={openAndScroll} />
       </div>
 
-      <div className={tab === 'tasks' ? 'p-6' : 'p-6 max-w-3xl'}>
-        {tab === 'overview' && (
+      <div className="p-6 max-w-4xl">
+        <CollapsibleSection id="overview" title={t('incident.tabOverview')} open={openSections.has('overview')} onToggle={() => toggleSection('overview')}>
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <div className="p-3 rounded-[var(--radius-lg)]" style={{ background: 'var(--surface-subtle)' }}>
@@ -231,9 +232,9 @@ export default function IncidentDetailPage() {
               <Button size="sm" variant="secondary" onClick={openAddStakeholder}>{t('incident.addStakeholder')}</Button>
             </Field>
           </div>
-        )}
+        </CollapsibleSection>
 
-        {tab === 'tasks' && (
+        <CollapsibleSection id="tasks" title={t('incident.tabTasks')} count={incident.entries.length} open={openSections.has('tasks')} onToggle={() => toggleSection('tasks')}>
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Button size="sm" onClick={() => setTaskModal({ mode: 'create' })}>{t('plan.addTask')}</Button>
@@ -249,15 +250,15 @@ export default function IncidentDetailPage() {
               />
             )}
           </div>
-        )}
+        </CollapsibleSection>
 
-        {tab === 'openPoints' && (
+        <CollapsibleSection id="openPoints" title={t('incident.tabOpenPoints')} count={incident.openPoints.length} open={openSections.has('openPoints')} onToggle={() => toggleSection('openPoints')}>
           <OpenPointsTab scope={{ type: 'incident', id: incident.id }} openPoints={incident.openPoints} phases={[]} />
-        )}
+        </CollapsibleSection>
 
-        {tab === 'history' && (
+        <CollapsibleSection id="history" title={t('incident.tabHistory')} open={openSections.has('history')} onToggle={() => toggleSection('history')}>
           <HistoryTab scope={{ type: 'incident', id: incident.id }} history={incident.history} />
-        )}
+        </CollapsibleSection>
       </div>
 
       {/* Link client modal */}

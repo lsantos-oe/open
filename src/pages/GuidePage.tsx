@@ -1,4 +1,6 @@
 import { useState, ReactNode } from 'react'
+import { AnchorNav } from '@/components/ui/AnchorNav'
+import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 
 interface Section {
   id: string
@@ -93,50 +95,43 @@ const SECTIONS: Section[] = [
 ]
 
 export default function GuidePage() {
-  const [open, setOpen] = useState<string | null>(SECTIONS[0].id)
+  const [openIds, setOpenIds] = useState<Set<string>>(new Set([SECTIONS[0].id]))
+
+  function toggle(id: string) {
+    setOpenIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  function openAndScroll(id: string) {
+    setOpenIds((prev) => new Set(prev).add(id))
+  }
 
   return (
     <div className="p-8 max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Guia do OpEn</h1>
-      <p className="text-sm mb-6" style={{ color: 'var(--text-tertiary)' }}>
+      <p className="text-sm mb-4" style={{ color: 'var(--text-tertiary)' }}>
         Um resumo rápido de cada área do sistema e como usá-la.
       </p>
 
-      <div className="space-y-2">
-        {SECTIONS.map((s) => {
-          const isOpen = open === s.id
-          return (
-            <div
-              key={s.id}
-              className="rounded-[var(--radius-lg)] border overflow-hidden"
-              style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}
-            >
-              <button
-                onClick={() => setOpen(isOpen ? null : s.id)}
-                className="w-full flex items-center justify-between px-4 py-3 text-left"
-              >
-                <span className="flex items-center gap-2.5 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                  <span>{s.icon}</span>
-                  {s.title}
-                </span>
-                <span
-                  className="text-xs transition-transform"
-                  style={{ color: 'var(--text-tertiary)', transform: isOpen ? 'rotate(180deg)' : 'none' }}
-                >
-                  ▾
-                </span>
-              </button>
-              {isOpen && (
-                <div
-                  className="px-4 pb-4 text-sm space-y-2 border-t pt-3"
-                  style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }}
-                >
-                  {s.content}
-                </div>
-              )}
+      <AnchorNav items={SECTIONS.map((s) => ({ id: s.id, label: `${s.icon} ${s.title}` }))} onNavigate={openAndScroll} />
+
+      <div className="mt-4">
+        {SECTIONS.map((s) => (
+          <CollapsibleSection
+            key={s.id}
+            id={s.id}
+            title={`${s.icon} ${s.title}`}
+            open={openIds.has(s.id)}
+            onToggle={() => toggle(s.id)}
+          >
+            <div className="text-sm space-y-2" style={{ color: 'var(--text-secondary)' }}>
+              {s.content}
             </div>
-          )
-        })}
+          </CollapsibleSection>
+        ))}
       </div>
     </div>
   )

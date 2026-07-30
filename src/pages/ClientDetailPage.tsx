@@ -7,6 +7,8 @@ import { Input, Field, Select } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import CountrySelect from '@/components/ui/CountrySelect'
 import OwnersField from '@/components/plan/OwnersField'
+import { AnchorNav } from '@/components/ui/AnchorNav'
+import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { findCountry } from '@/data/countries'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -30,7 +32,7 @@ export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { clients, projects, teamDirectory, updateClient, deleteClient, addClientContact, updateClientContact, removeClientContact, addCsAssignment, removeCsAssignment } = useAppStore()
-  const [tab, setTab] = useState<Tab>('overview')
+  const [openSections, setOpenSections] = useState<Set<Tab>>(new Set(['overview', 'contacts']))
 
   const client = clients.find((c) => c.id === id)
 
@@ -133,6 +135,18 @@ export default function ClientDetailPage() {
     setShowCsModal(false)
   }
 
+  function toggleSection(id: Tab) {
+    setOpenSections((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  function openAndScroll(id: string) {
+    setOpenSections((prev) => new Set(prev).add(id as Tab))
+  }
+
   const TABS: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'contacts', label: `Contatos${client.contacts.length ? ` (${client.contacts.length})` : ''}` },
@@ -151,26 +165,12 @@ export default function ClientDetailPage() {
         <Button variant="secondary" size="sm" onClick={() => setShowArchiveConfirm(true)}>Excluir cliente</Button>
       </div>
 
-      {/* Tab bar */}
-      <div className="flex gap-0 px-6 border-b" style={{ borderColor: 'var(--border-default)' }}>
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className="px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap"
-            style={{
-              borderBottomColor: tab === t.id ? 'var(--oe-primary)' : 'transparent',
-              color: tab === t.id ? 'var(--text-primary)' : 'var(--text-tertiary)',
-              marginBottom: -1,
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div className="px-6">
+        <AnchorNav items={TABS} onNavigate={openAndScroll} />
       </div>
 
       <div className="p-6 max-w-3xl">
-        {tab === 'overview' && (
+        <CollapsibleSection id="overview" title="Overview" open={openSections.has('overview')} onToggle={() => toggleSection('overview')}>
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <Field label="País">
@@ -244,9 +244,9 @@ export default function ClientDetailPage() {
               )}
             </Field>
           </div>
-        )}
+        </CollapsibleSection>
 
-        {tab === 'contacts' && (
+        <CollapsibleSection id="contacts" title="Contatos" count={client.contacts.length} open={openSections.has('contacts')} onToggle={() => toggleSection('contacts')}>
           <div>
             <div className="flex justify-end mb-3">
               <Button size="sm" onClick={openAddContact}>+ Contato</Button>
@@ -272,9 +272,9 @@ export default function ClientDetailPage() {
               </div>
             )}
           </div>
-        )}
+        </CollapsibleSection>
 
-        {tab === 'csHistory' && (
+        <CollapsibleSection id="csHistory" title="Histórico de CS" open={openSections.has('csHistory')} onToggle={() => toggleSection('csHistory')}>
           <div>
             <div className="flex justify-end mb-3">
               <Button size="sm" onClick={openAddCs}>+ Atribuir CS</Button>
@@ -297,9 +297,9 @@ export default function ClientDetailPage() {
               </div>
             )}
           </div>
-        )}
+        </CollapsibleSection>
 
-        {tab === 'timeline' && (
+        <CollapsibleSection id="timeline" title="Timeline" open={openSections.has('timeline')} onToggle={() => toggleSection('timeline')}>
           <div>
             {timelineEvents.length === 0 ? (
               <p className="text-sm text-center py-10" style={{ color: 'var(--text-tertiary)' }}>Nenhum evento ainda — a timeline agrega o histórico dos projetos vinculados.</p>
@@ -330,7 +330,7 @@ export default function ClientDetailPage() {
               </div>
             )}
           </div>
-        )}
+        </CollapsibleSection>
       </div>
 
       {/* Add/Edit Contact Modal */}
