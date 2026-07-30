@@ -292,6 +292,7 @@ export interface DbClient {
   owners: any            // JSONB — EntryOwner[]
   created_at: string | null
   created_by: string | null
+  archived: boolean | null
 }
 
 export interface DbClientContact {

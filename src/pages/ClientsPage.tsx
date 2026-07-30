@@ -33,7 +33,7 @@ const STATUSES: ClientStatus[] = ['pre_venda', 'implantacao', 'sustentacao_novos
 
 export default function ClientsPage() {
   const navigate = useNavigate()
-  const { clients, teamDirectory, createClient, updateClient } = useAppStore()
+  const { clients, teamDirectory, createClient, updateClient, archiveClient } = useAppStore()
   const { user } = useAuthStore()
   const projects = useAppStore((s) => s.projects)
 
@@ -90,6 +90,11 @@ export default function ClientsPage() {
     for (const id of selected) updateClient(id, { owners: bulkOwners })
     setSelected(new Set())
     setBulkOwnersOpen(false)
+  }
+
+  function applyBulkArchive() {
+    for (const id of selected) archiveClient(id)
+    setSelected(new Set())
   }
 
   const sorted = [...filtered].sort((a, b) => a.name.localeCompare(b.name))
@@ -321,6 +326,13 @@ export default function ClientsPage() {
           style={{ background: 'rgba(255,255,255,0.15)' }}
         >
           Alterar owner
+        </button>
+        <button
+          onClick={applyBulkArchive}
+          className="text-xs px-2 py-1 rounded-[var(--radius-md)]"
+          style={{ background: 'rgba(255,255,255,0.15)' }}
+        >
+          Arquivar
         </button>
       </SelectionBar>
 

@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
-import { DateFormat, Workdays, IncidentTemplate, Probability } from '@/types'
+import { useAuthStore } from '@/stores/useAuthStore'
+import { DateFormat, Workdays, IncidentTemplate, Probability, IncidentStatus } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Input, Field, Select, Textarea } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
+import { UsersManagementPanel } from '@/pages/UsersPage'
 
 function Section({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
@@ -52,20 +54,26 @@ const HOMEPAGE_OPTIONS: { value: string; label: string }[] = [
   { value: 'diary', label: 'Diário' },
 ]
 
-type SettingsTab = 'general' | 'holidays' | 'templates' | 'archived'
+type SettingsTab = 'general' | 'holidays' | 'templates' | 'users' | 'archived'
+type ArchivedFilter = 'all' | 'project' | 'client' | 'incident'
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
+  const { profile } = useAuthStore()
+  const isAdmin = profile?.role === 'admin'
   const {
     settings, updateSettings, addHoliday, removeHoliday,
     archivedProjects, archivedProjectsLoaded, loadArchivedProjects, unarchiveProject, hideProject,
+    archivedClients, archivedClientsLoaded, loadArchivedClients, unarchiveClient,
+    incidents, updateIncidentStatus,
     createIncidentTemplate, updateIncidentTemplate, deleteIncidentTemplate,
   } = useAppStore()
 
-  useEffect(() => { loadArchivedProjects() }, [])
+  useEffect(() => { loadArchivedProjects(); loadArchivedClients() }, [])
 
   const [tab, setTab] = useState<SettingsTab>('general')
+  const [archivedFilter, setArchivedFilter] = useState<ArchivedFilter>('all')
   const [holidayDate, setHolidayDate] = useState('')
   const [holidayName, setHolidayName] = useState('')
   const [homepageTab, setHomepageTab] = useState(() => localStorage.getItem(HOMEPAGE_KEY) ?? 'overview')
@@ -121,12 +129,22 @@ export default function SettingsPage() {
     setShowIncidentTemplate(false)
   }
 
+  const closedIncidents = incidents.filter((i) => i.status === 'closed')
+  const archivedCount = (archivedProjectsLoaded ? archivedProjects.length : 0)
+    + (archivedClientsLoaded ? archivedClients.length : 0)
+    + closedIncidents.length
+
   const TABS: { id: SettingsTab; label: string }[] = [
     { id: 'general', label: 'Geral' },
     { id: 'holidays', label: 'Feriados' },
     { id: 'templates', label: 'Templates' },
-    { id: 'archived', label: `Arquivados${archivedProjectsLoaded && archivedProjects.length ? ` (${archivedProjects.length})` : ''}` },
+    ...(isAdmin ? [{ id: 'users' as const, label: 'Usuários' }] : []),
+    { id: 'archived', label: `Arquivados${archivedCount ? ` (${archivedCount})` : ''}` },
   ]
+
+  function reopenIncident(id: string) {
+    updateIncidentStatus(id, 'open' as IncidentStatus)
+  }
 
   return (
     <div className="p-8 max-w-3xl">
@@ -293,38 +311,64 @@ export default function SettingsPage() {
         </>
       )}
 
+      {tab === 'users' && isAdmin && <UsersManagementPanel />}
+
       {tab === 'archived' && (
-        <Section title="Projetos arquivados" description="Projetos ocultos do portfólio. Clique em Desarquivar para restaurá-los.">
-          {!archivedProjectsLoaded ? (
+        <Section title="Arquivados" description="Projetos arquivados, clientes arquivados e incidentes fechados — restaure ou reabra a qualquer momento.">
+          <div className="flex gap-2 mb-4 flex-wrap">
+            {([['all', 'Todas'], ['project', 'Projetos'], ['client', 'Clientes'], ['incident', 'Incidentes']] as [ArchivedFilter, string][]).map(([v, l]) => (
+              <button
+                key={v}
+                onClick={() => setArchivedFilter(v)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-[var(--radius-pill)] border transition-colors ${
+                  archivedFilter === v ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'
+                }`}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+
+          {!archivedProjectsLoaded || !archivedClientsLoaded ? (
             <p className="text-sm text-[var(--text-tertiary)]">Carregando...</p>
-          ) : archivedProjects.length === 0 ? (
-            <p className="text-sm text-[var(--text-tertiary)]">Nenhum projeto arquivado.</p>
           ) : (
             <div className="space-y-1.5">
-              {archivedProjects.map((p) => (
-                <div key={p.id} className="flex items-center justify-between py-2 px-3 bg-[var(--surface-subtle)] rounded-[var(--radius-lg)] border border-[var(--border-default)]">
+              {archivedFilter !== 'client' && archivedFilter !== 'incident' && archivedProjects.map((p) => (
+                <div key={`project-${p.id}`} className="flex items-center justify-between py-2 px-3 bg-[var(--surface-subtle)] rounded-[var(--radius-lg)] border border-[var(--border-default)]">
                   <div>
                     <p className="text-sm font-medium text-[var(--text-primary)]">{p.name}</p>
-                    <p className="text-xs text-[var(--text-tertiary)]">{p.client} · {p.pm}</p>
+                    <p className="text-xs text-[var(--text-tertiary)]">Projeto · {p.client} · {p.pm}</p>
                   </div>
                   <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => unarchiveProject(p.id)}
-                    >
-                      Desarquivar
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => handleDeleteArchived(p.id, p.name)}
-                    >
-                      Excluir
-                    </Button>
+                    <Button size="sm" variant="secondary" onClick={() => unarchiveProject(p.id)}>Desarquivar</Button>
+                    <Button size="sm" variant="secondary" onClick={() => handleDeleteArchived(p.id, p.name)}>Excluir</Button>
                   </div>
                 </div>
               ))}
+
+              {archivedFilter !== 'project' && archivedFilter !== 'incident' && archivedClients.map((c) => (
+                <div key={`client-${c.id}`} className="flex items-center justify-between py-2 px-3 bg-[var(--surface-subtle)] rounded-[var(--radius-lg)] border border-[var(--border-default)]">
+                  <div>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{c.name}</p>
+                    <p className="text-xs text-[var(--text-tertiary)]">Cliente</p>
+                  </div>
+                  <Button size="sm" variant="secondary" onClick={() => unarchiveClient(c.id)}>Restaurar</Button>
+                </div>
+              ))}
+
+              {archivedFilter !== 'project' && archivedFilter !== 'client' && closedIncidents.map((i) => (
+                <div key={`incident-${i.id}`} className="flex items-center justify-between py-2 px-3 bg-[var(--surface-subtle)] rounded-[var(--radius-lg)] border border-[var(--border-default)]">
+                  <div>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{i.title}</p>
+                    <p className="text-xs text-[var(--text-tertiary)]">Incidente · Fechado</p>
+                  </div>
+                  <Button size="sm" variant="secondary" onClick={() => reopenIncident(i.id)}>Reabrir</Button>
+                </div>
+              ))}
+
+              {archivedProjects.length === 0 && archivedClients.length === 0 && closedIncidents.length === 0 && (
+                <p className="text-sm text-[var(--text-tertiary)]">Nada arquivado por aqui.</p>
+              )}
             </div>
           )}
         </Section>

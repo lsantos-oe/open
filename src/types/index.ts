@@ -230,6 +230,7 @@ export interface Client {
   contacts: ClientContact[]
   csHistory: ClientCsAssignment[]
   createdAt: string
+  archived?: boolean
 }
 
 export type IncidentStatus = 'open' | 'in_progress' | 'waiting_on_client' | 'resolved' | 'closed'

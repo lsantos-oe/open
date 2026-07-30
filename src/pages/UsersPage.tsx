@@ -9,16 +9,16 @@ import { StatusDot } from '@/components/ui/StatusDot'
 import { AvatarStack } from '@/components/ui/AvatarStack'
 import type { UserRole } from '@/types/database'
 
-export default function UsersPage() {
+/** Full users management UI (active users table + pending invites + invite modal),
+ *  reused as-is by the standalone /users route and by the "Usuários" tab in Configurações. */
+export function UsersManagementPanel() {
   const { teamDirectory, invitedUsers, inviteUser, deleteInvite, updateProfileRole, setProfileActive } = useAppStore()
-  const { user, profile } = useAuthStore()
+  const { user } = useAuthStore()
 
   const [showInvite, setShowInvite] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteName, setInviteName] = useState('')
   const [inviteRole, setInviteRole] = useState<UserRole>('member')
-
-  const isAdmin = profile?.role === 'admin'
 
   function openInvite() {
     setInviteEmail(''); setInviteName(''); setInviteRole('member')
@@ -31,18 +31,8 @@ export default function UsersPage() {
     setShowInvite(false)
   }
 
-  if (!isAdmin) {
-    return (
-      <div className="p-8 max-w-screen-xl mx-auto">
-        <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-          Apenas administradores podem ver esta página.
-        </p>
-      </div>
-    )
-  }
-
   return (
-    <div className="p-8 max-w-screen-xl mx-auto">
+    <div>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Usuários</h1>
@@ -166,6 +156,27 @@ export default function UsersPage() {
           </p>
         </div>
       </Modal>
+    </div>
+  )
+}
+
+export default function UsersPage() {
+  const { profile } = useAuthStore()
+  const isAdmin = profile?.role === 'admin'
+
+  if (!isAdmin) {
+    return (
+      <div className="p-8 max-w-screen-xl mx-auto">
+        <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+          Apenas administradores podem ver esta página.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-8 max-w-screen-xl mx-auto">
+      <UsersManagementPanel />
     </div>
   )
 }

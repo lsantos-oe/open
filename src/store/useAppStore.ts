@@ -127,6 +127,8 @@ interface AppStore {
   notifications: DbNotification[]
   clients: Client[]
   clientsLoading: boolean
+  archivedClients: Client[]
+  archivedClientsLoaded: boolean
   incidents: Incident[]
   incidentsLoading: boolean
 
@@ -137,6 +139,9 @@ interface AppStore {
   loadTeamDirectory: () => Promise<void>
   loadInvitedUsers: () => Promise<void>
   loadClients: () => Promise<void>
+  loadArchivedClients: () => Promise<void>
+  archiveClient: (id: string) => Promise<void>
+  unarchiveClient: (id: string) => Promise<void>
   loadIncidents: () => Promise<void>
 
   // Users (Base de usuários)
@@ -479,6 +484,8 @@ export const useAppStore = create<AppStore>()(
       notifications: [],
       clients: [],
       clientsLoading: false,
+      archivedClients: [],
+      archivedClientsLoaded: false,
       incidents: [],
       incidentsLoading: false,
       settings: {
@@ -677,7 +684,7 @@ export const useAppStore = create<AppStore>()(
       async loadClients() {
         set({ clientsLoading: true })
         try {
-          const { data: clientRows, error } = await supabase.from('clients').select('*').order('name')
+          const { data: clientRows, error } = await supabase.from('clients').select('*').eq('archived', false).order('name')
           if (error) throw new Error(error.message)
           if (!clientRows?.length) {
             set({ clients: [], clientsLoading: false })
@@ -695,6 +702,48 @@ export const useAppStore = create<AppStore>()(
         } catch (err) {
           useToastStore.getState().addToast(err instanceof Error ? err.message : 'Erro ao carregar clientes')
           set({ clientsLoading: false })
+        }
+      },
+
+      async loadArchivedClients() {
+        set({ archivedClientsLoaded: false })
+        try {
+          const { data, error } = await supabase.from('clients').select('*').eq('archived', true).order('name')
+          if (error) throw new Error(error.message)
+          const archivedClients = (data ?? []).map((row) => dbClientToStore(row, [], []))
+          set({ archivedClients, archivedClientsLoaded: true })
+        } catch (err) {
+          useToastStore.getState().addToast(err instanceof Error ? err.message : 'Erro ao carregar clientes arquivados')
+          set({ archivedClientsLoaded: true })
+        }
+      },
+
+      async archiveClient(id) {
+        const prev = get().clients
+        const client = prev.find((c) => c.id === id)
+        set((s) => ({
+          clients: s.clients.filter((c) => c.id !== id),
+          archivedClients: client ? [...s.archivedClients, { ...client, archived: true }] : s.archivedClients,
+        }))
+        const { error } = await supabase.from('clients').update({ archived: true }).eq('id', id)
+        if (error) {
+          set((s) => ({ clients: prev, archivedClients: s.archivedClients.filter((c) => c.id !== id) }))
+          useToastStore.getState().addToast(error.message)
+        }
+      },
+
+      async unarchiveClient(id) {
+        const client = get().archivedClients.find((c) => c.id === id)
+        if (!client) return
+        const prevArchived = get().archivedClients
+        set((s) => ({
+          archivedClients: s.archivedClients.filter((c) => c.id !== id),
+          clients: [...s.clients, { ...client, archived: false }],
+        }))
+        const { error } = await supabase.from('clients').update({ archived: false }).eq('id', id)
+        if (error) {
+          set((s) => ({ archivedClients: prevArchived, clients: s.clients.filter((c) => c.id !== id) }))
+          useToastStore.getState().addToast(error.message)
         }
       },
 

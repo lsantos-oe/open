@@ -561,6 +561,7 @@ export function dbClientToStore(row: DbClient, contacts: DbClientContact[], csHi
       .map(dbCsAssignmentToStore)
       .sort((a, b) => a.assignedAt.localeCompare(b.assignedAt)),
     createdAt: row.created_at ?? new Date().toISOString(),
+    archived: row.archived ?? false,
   }
 }
 
@@ -575,6 +576,7 @@ export function storeClientToDb(c: Client, userId: string): DbClient {
     owners: c.owners.length > 0 ? c.owners : null,
     created_at: new Date().toISOString(),
     created_by: userId,
+    archived: c.archived ?? false,
   }
 }
 
