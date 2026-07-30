@@ -1,0 +1,1206 @@
+<meta charset="UTF-8">
+<title>OpEn — Protótipo de revisão de design</title>
+<style>
+  :root {
+    --ink: #1C1815;
+    --paper: #FBFAF8;
+    --card: #FFFFFF;
+    --card-2: #F5F2EE;
+    --line: #E8E3DC;
+    --line-strong: #D8D1C6;
+    --muted: #8A8177;
+    --muted-2: #B5AC9F;
+    --accent: #D9530E;
+    --accent-hover: #B8440A;
+    --accent-soft: #FBEAE0;
+    --success: #1A8850;
+    --success-soft: #E8F5EE;
+    --danger: #D14343;
+    --danger-soft: #FBEAEA;
+    --warning: #A8790A;
+    --warning-soft: #FBF1DC;
+    --info: #3568C4;
+    --info-soft: #EAF0FC;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-pill: 999px;
+    --shadow-sm: 0 1px 2px rgba(28,24,21,0.06);
+    --shadow-md: 0 4px 16px rgba(28,24,21,0.08);
+    --shadow-lg: 0 16px 40px rgba(28,24,21,0.14);
+    --sidebar-bg: #18140F;
+    --sidebar-line: rgba(255,255,255,0.08);
+    --sidebar-text: rgba(255,255,255,0.6);
+    --sidebar-text-active: #FFFFFF;
+    --sidebar-active-bg: rgba(255,255,255,0.09);
+    --sidebar-muted: rgba(255,255,255,0.32);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #F2EEE8; --paper: #131110; --card: #1B1815; --card-2: #211D19;
+      --line: #322C24; --line-strong: #443C31; --muted: #93897B; --muted-2: #665D51;
+      --accent: #E8642A; --accent-hover: #F27A44; --accent-soft: rgba(217,83,14,0.18);
+      --success: #3FBE80; --success-soft: rgba(26,136,80,0.18);
+      --danger: #E5716A; --danger-soft: rgba(209,67,67,0.18);
+      --warning: #D6A93B; --warning-soft: rgba(168,121,10,0.2);
+      --info: #6C97DE; --info-soft: rgba(53,104,196,0.2);
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.3); --shadow-md: 0 4px 16px rgba(0,0,0,0.35); --shadow-lg: 0 16px 40px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #F2EEE8; --paper: #131110; --card: #1B1815; --card-2: #211D19;
+    --line: #322C24; --line-strong: #443C31; --muted: #93897B; --muted-2: #665D51;
+    --accent: #E8642A; --accent-hover: #F27A44; --accent-soft: rgba(217,83,14,0.18);
+    --success: #3FBE80; --success-soft: rgba(26,136,80,0.18);
+    --danger: #E5716A; --danger-soft: rgba(209,67,67,0.18);
+    --warning: #D6A93B; --warning-soft: rgba(168,121,10,0.2);
+    --info: #6C97DE; --info-soft: rgba(53,104,196,0.2);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3); --shadow-md: 0 4px 16px rgba(0,0,0,0.35); --shadow-lg: 0 16px 40px rgba(0,0,0,0.5);
+  }
+  :root[data-theme="light"] {
+    --ink: #1C1815; --paper: #FBFAF8; --card: #FFFFFF; --card-2: #F5F2EE;
+    --line: #E8E3DC; --line-strong: #D8D1C6; --muted: #8A8177; --muted-2: #B5AC9F;
+    --accent: #D9530E; --accent-hover: #B8440A; --accent-soft: #FBEAE0;
+    --success: #1A8850; --success-soft: #E8F5EE;
+    --danger: #D14343; --danger-soft: #FBEAEA;
+    --warning: #A8790A; --warning-soft: #FBF1DC;
+    --info: #3568C4; --info-soft: #EAF0FC;
+    --shadow-sm: 0 1px 2px rgba(28,24,21,0.06); --shadow-md: 0 4px 16px rgba(28,24,21,0.08); --shadow-lg: 0 16px 40px rgba(28,24,21,0.14);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--card-2); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", ui-sans-serif, sans-serif;
+    font-size: 13px; -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, p { margin: 0; text-wrap: balance; }
+  button, select, input { font-family: inherit; font-size: inherit; color: inherit; }
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  /* ── Reviewer strip (meta — not part of the app itself) ── */
+  .reviewer { background: var(--ink); color: var(--paper); padding: 14px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .reviewer .label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.55; white-space: nowrap; }
+  .reviewer .screens { display: flex; gap: 6px; flex-wrap: wrap; }
+  .reviewer .screens button { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); color: rgba(255,255,255,0.75); padding: 6px 12px; border-radius: var(--radius-pill); cursor: pointer; transition: all 0.15s; font-weight: 500; }
+  .reviewer .screens button:hover { background: rgba(255,255,255,0.14); color: #fff; }
+  .reviewer .screens button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .reviewer .note { font-size: 12px; opacity: 0.5; margin-left: auto; }
+  .reviewer .logopick { display: flex; align-items: center; gap: 6px; }
+  .reviewer .logopick .tag { font-size: 11px; opacity: 0.55; white-space: nowrap; }
+  .reviewer .logo-opt { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); border-radius: var(--radius-md); padding: 5px 10px; cursor: pointer; color: rgba(255,255,255,0.75); font-weight: 600; }
+  .reviewer .logo-opt:hover { background: rgba(255,255,255,0.12); }
+  .reviewer .logo-opt.active { border-color: var(--accent); background: rgba(217,83,14,0.2); color: #fff; }
+  .brand .wordmark { font-weight: 800; font-size: 17px; letter-spacing: -0.01em; }
+  .brand .wordmark .ac { color: var(--accent); }
+
+  /* ── App shell ── */
+  .app { display: flex; height: calc(100vh - 53px); min-height: 600px; background: var(--paper); }
+
+  .sidebar { width: 216px; flex-shrink: 0; background: var(--sidebar-bg); display: flex; flex-direction: column; }
+  .sidebar .brand { height: 48px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid var(--sidebar-line); flex-shrink: 0; }
+  .sidebar .brand span { color: #fff; font-weight: 600; font-size: 13px; letter-spacing: -0.01em; }
+  .sidebar nav { padding: 10px 8px; }
+  .navitem { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: var(--radius-sm); color: var(--sidebar-text); font-size: 13px; font-weight: 450; margin-bottom: 1px; cursor: pointer; transition: background 0.12s, color 0.12s; text-decoration: none; }
+  .navitem svg { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.85; }
+  .navitem:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.85); }
+  .navitem.active { background: var(--sidebar-active-bg); color: var(--sidebar-text-active); }
+  .sidebar .divider { height: 1px; background: var(--sidebar-line); margin: 8px 14px; }
+  .sidebar .projects-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sidebar-muted); padding: 10px 12px 6px; }
+  .sidebar .proj-row { display: flex; align-items: center; gap: 9px; padding: 6px 12px; color: var(--sidebar-text); font-size: 12px; border-radius: var(--radius-sm); cursor: pointer; }
+  .sidebar .proj-row:hover { background: rgba(255,255,255,0.05); }
+  .proj-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .sidebar .spacer { flex: 1; }
+
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+  .topbar { height: 48px; flex-shrink: 0; background: var(--card); border-bottom: 1px solid var(--line); display: flex; align-items: center; padding: 0 20px; gap: 10px; position: relative; z-index: 20; }
+  .search-trigger { display: flex; align-items: center; gap: 8px; background: var(--card-2); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 6px 10px; color: var(--muted); width: 260px; cursor: pointer; transition: border-color 0.15s; }
+  .search-trigger:hover { border-color: var(--line-strong); }
+  .search-trigger svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .search-trigger .kbd { margin-left: auto; font-size: 10.5px; background: var(--card); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; color: var(--muted-2); }
+  .topbar .spacer { flex: 1; }
+  .icon-btn { position: relative; width: 32px; height: 32px; border-radius: var(--radius-md); border: none; background: transparent; color: var(--muted); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s, color 0.15s; }
+  .icon-btn:hover { background: var(--card-2); color: var(--ink); }
+  .icon-btn svg { width: 17px; height: 17px; }
+  .dot-badge { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); border: 1.5px solid var(--card); }
+
+  .profile-btn { display: flex; align-items: center; gap: 6px; background: transparent; border: none; border-radius: var(--radius-pill); padding: 3px 8px 3px 3px; cursor: pointer; transition: background 0.15s; }
+  .profile-btn:hover { background: var(--card-2); }
+  .profile-btn .chev { width: 10px; height: 10px; color: var(--muted-2); }
+  .avatar-sm { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+  .profile-pop { position: absolute; top: 44px; right: 20px; width: 220px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 6px; z-index: 30; }
+  .profile-pop .who-block { padding: 8px 10px 10px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+  .profile-pop .who-block .name { font-weight: 600; font-size: 13px; }
+  .profile-pop .who-block .email { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+  .profile-pop button.item { width: 100%; text-align: left; background: none; border: none; padding: 8px 10px; border-radius: var(--radius-sm); font-size: 12.5px; font-weight: 500; color: var(--ink); cursor: pointer; display: flex; align-items: center; gap: 8px; }
+  .profile-pop button.item:hover { background: var(--card-2); }
+  .profile-pop button.item svg { width: 15px; height: 15px; color: var(--muted); }
+  .profile-pop button.item.danger { color: var(--danger); }
+  .profile-pop button.item.danger svg { color: var(--danger); }
+  .profile-pop .pop-divider { height: 1px; background: var(--line); margin: 4px 2px; }
+
+  .content { flex: 1; overflow-y: auto; padding: 28px 32px; }
+  .content-inner { max-width: 1180px; margin: 0 auto; }
+  .content-inner.narrow { max-width: 760px; }
+
+  /* ── Page header (identical shape everywhere) ── */
+  .page-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 20px; gap: 16px; flex-wrap: wrap; }
+  .page-header h1 { font-size: 19px; font-weight: 650; letter-spacing: -0.01em; }
+  .page-header .count { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .page-header .actions { display: flex; align-items: center; gap: 8px; }
+
+  .btn { display: inline-flex; align-items: center; gap: 6px; border-radius: var(--radius-md); padding: 7px 13px; font-weight: 550; font-size: 12.5px; border: 1px solid transparent; cursor: pointer; transition: all 0.13s; white-space: nowrap; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-secondary { background: var(--card); color: var(--ink); border-color: var(--line-strong); }
+  .btn-secondary:hover { background: var(--card-2); }
+  .btn svg { width: 14px; height: 14px; }
+
+  .segmented { display: flex; border: 1px solid var(--line-strong); border-radius: var(--radius-md); overflow: hidden; }
+  .segmented button { background: var(--card); border: none; padding: 7px 11px; color: var(--muted); cursor: pointer; display: flex; align-items: center; transition: all 0.13s; }
+  .segmented button + button { border-left: 1px solid var(--line-strong); }
+  .segmented button.active { background: var(--ink); color: var(--paper); }
+  .segmented button svg { width: 15px; height: 15px; }
+
+  /* ── Toolbar (identical shape everywhere) ── */
+  .toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .search-input { flex: 1; min-width: 200px; display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 7px 11px; color: var(--muted); }
+  .search-input svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .search-input span { color: var(--muted-2); }
+  .pill-toggle { border-radius: var(--radius-pill); padding: 6px 13px; font-size: 12px; font-weight: 550; border: 1px solid var(--line-strong); background: var(--card); color: var(--ink); cursor: pointer; transition: all 0.13s; white-space: nowrap; }
+  .pill-toggle.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .filter-btn { display: flex; align-items: center; gap: 6px; border: 1px solid var(--line-strong); background: var(--card); border-radius: var(--radius-md); padding: 6px 12px; font-size: 12.5px; font-weight: 550; color: var(--ink); cursor: pointer; white-space: nowrap; }
+  .filter-btn svg { width: 13px; height: 13px; }
+  .filter-count { background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; border-radius: 50%; width: 15px; height: 15px; display: flex; align-items: center; justify-content: center; }
+
+  /* ── Data table (identical shape everywhere) ── */
+  .table-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  thead th { text-align: left; padding: 10px 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); background: var(--card-2); border-bottom: 1px solid var(--line); }
+  tbody tr { border-bottom: 1px solid var(--line); transition: background 0.1s; cursor: pointer; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--card-2); }
+  td { padding: 11px 16px; vertical-align: middle; }
+  td.name { font-weight: 550; }
+  td.muted { color: var(--muted); }
+  input[type="checkbox"] { accent-color: var(--accent); width: 14px; height: 14px; }
+
+  .status-dot { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+  .status-dot .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .status-dot span.label { color: var(--ink); opacity: 0.82; }
+
+  .avatar-stack { display: flex; align-items: center; }
+  .avatar-stack .av { width: 21px; height: 21px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid var(--card); margin-left: -6px; }
+  .avatar-stack .av:first-child { margin-left: 0; }
+
+  .chip { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 600; }
+  .chip.blue { background: var(--info-soft); color: var(--info); }
+  .chip.purple { background: var(--accent-soft); color: var(--accent); }
+  .chip.green { background: var(--success-soft); color: var(--success); }
+
+  /* ── Kanban ── */
+  .board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .board.board-5 { grid-template-columns: repeat(5, 1fr); }
+  .board.board-3 { grid-template-columns: repeat(3, 1fr); }
+  .board-col { background: var(--card-2); border-radius: var(--radius-lg); padding: 12px; min-height: 380px; }
+  .board-col .col-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; padding: 0 2px; }
+  .board-col .col-head .label { font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+  .board-col .col-head .count { background: var(--card); border: 1px solid var(--line); color: var(--muted); font-size: 11px; font-weight: 600; border-radius: var(--radius-pill); padding: 1px 8px; }
+  .card-k { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 12px; margin-bottom: 8px; box-shadow: var(--shadow-sm); cursor: pointer; transition: border-color 0.13s, box-shadow 0.13s; }
+  .card-k:hover { border-color: var(--accent); box-shadow: var(--shadow-md); }
+  .card-k .title { font-weight: 600; font-size: 12.5px; margin-bottom: 5px; line-height: 1.4; }
+  .card-k .sub { color: var(--muted); font-size: 11.5px; margin-bottom: 10px; }
+  .card-k .foot { display: flex; align-items: center; justify-content: space-between; }
+
+  /* ── Detail page: header ── */
+  .breadcrumb { font-size: 12px; color: var(--muted); text-decoration: none; display: flex; align-items: center; gap: 4px; margin-bottom: 8px; }
+  .detail-header h1 { font-size: 18px; font-weight: 650; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  /* ── Detail page: anchor nav (sticky, jumps to sections on one page) ── */
+  .anchor-nav { display: flex; gap: 22px; border-bottom: 1px solid var(--line); margin: 14px 0 24px; position: sticky; top: -28px; background: var(--paper); padding-top: 6px; z-index: 3; }
+  .anchor-nav a { padding: 9px 0; font-size: 13px; font-weight: 550; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; text-decoration: none; }
+  .anchor-nav a.active { color: var(--ink); border-bottom-color: var(--accent); }
+
+  /* ── Detail page: collapsible modules ── */
+  .module { margin-bottom: 14px; scroll-margin-top: 46px; }
+  .module-head { display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 4px 0 10px; }
+  .module-head .htitle { font-size: 14px; font-weight: 650; display: flex; align-items: center; gap: 8px; }
+  .module-head .hcount { font-size: 11.5px; color: var(--muted); font-weight: 500; }
+  .module-head .chev { width: 16px; height: 16px; color: var(--muted); transition: transform 0.15s; }
+  .module.collapsed .module-head .chev { transform: rotate(-90deg); }
+  .module.collapsed .module-body { display: none; }
+  .module-body { padding-bottom: 6px; }
+
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 20px; }
+  .field-block label { display: flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+  .hint-icon { width: 13px; height: 13px; border-radius: 50%; background: var(--card-2); border: 1px solid var(--line-strong); color: var(--muted); font-size: 9px; display: inline-flex; align-items: center; justify-content: center; cursor: help; }
+  .field-block .val { font-size: 13.5px; font-weight: 550; }
+  .desc-block { background: var(--card-2); border-radius: var(--radius-lg); padding: 16px; font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .mini-table { width: 100%; border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; }
+  .mini-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid var(--line); font-size: 12.5px; }
+  .mini-row:last-child { border-bottom: none; }
+  .mini-row .t { flex: 1; }
+  .op-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .op-row:last-child { border-bottom: none; }
+  .hist-row { display: flex; gap: 10px; padding: 8px 0; font-size: 12.5px; }
+  .hist-row .hdot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted-2); margin-top: 5px; flex-shrink: 0; }
+  .hist-row .hwhen { color: var(--muted); font-size: 11.5px; margin-top: 1px; }
+
+  /* ── Selection bar: bulk actions, identical shape everywhere ── */
+  .selection-bar { position: fixed; left: calc(50% + 108px); bottom: 22px; transform: translateX(-50%); display: none; align-items: center; gap: 14px; background: var(--ink); color: var(--paper); border-radius: var(--radius-lg); padding: 9px 10px 9px 16px; box-shadow: var(--shadow-lg); z-index: 15; white-space: nowrap; }
+  .selection-bar.show { display: flex; }
+  .selection-bar .count { font-size: 12.5px; font-weight: 600; }
+  .selection-bar .sep { width: 1px; height: 18px; background: rgba(255,255,255,0.18); }
+  .selection-bar .actions { display: flex; align-items: center; gap: 4px; }
+  .selection-bar button.sb-action { background: transparent; border: none; color: rgba(255,255,255,0.82); font-size: 12px; font-weight: 550; padding: 7px 10px; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; gap: 5px; }
+  .selection-bar button.sb-action:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .selection-bar button.sb-action.danger { color: #F0A79E; }
+  .selection-bar button.sb-action svg { width: 13px; height: 13px; }
+  .selection-bar button.sb-close { background: rgba(255,255,255,0.1); border: none; color: rgba(255,255,255,0.7); width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .selection-bar button.sb-close svg { width: 12px; height: 12px; }
+
+  /* ── Home dashboard ── */
+  .greet h1 { font-size: 21px; font-weight: 650; letter-spacing: -0.01em; }
+  .greet p { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 22px 0 28px; }
+  .stat-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 16px; box-shadow: var(--shadow-sm); }
+  .stat-card .n { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .stat-card .l { font-size: 12px; color: var(--muted); margin-top: 4px; font-weight: 550; }
+  .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .home-panel h2 { font-size: 13px; font-weight: 650; margin-bottom: 10px; }
+
+  /* ── Entry modal ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(20,16,12,0.45); display: none; align-items: center; justify-content: center; z-index: 50; }
+  .modal-overlay.show { display: flex; }
+  .modal-panel { background: var(--card); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); width: 480px; max-width: calc(100vw - 40px); max-height: calc(100vh - 60px); overflow-y: auto; }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--card); }
+  .modal-head h2 { font-size: 15px; font-weight: 650; }
+  .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .modal-footer { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-top: 1px solid var(--line); position: sticky; bottom: 0; background: var(--card); }
+  .form-field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+  .text-input, .textarea, select.select-input { width: 100%; background: var(--card); border: 1px solid var(--line-strong); border-radius: var(--radius-md); padding: 8px 11px; font-size: 13px; color: var(--ink); font-family: inherit; }
+  .text-input:focus, .textarea:focus, select.select-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .textarea { min-height: 66px; resize: vertical; }
+  .form-row { display: flex; gap: 14px; }
+  .form-row .form-field { flex: 1; }
+  .status-pick { display: flex; gap: 6px; flex-wrap: wrap; }
+  .status-pick button { display: flex; align-items: center; gap: 6px; border: 1px solid var(--line-strong); background: var(--card); border-radius: var(--radius-pill); padding: 6px 12px; font-size: 12px; font-weight: 550; color: var(--ink); cursor: pointer; }
+  .status-pick button .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .status-pick button.active { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+  .chip-people, .person-slot { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; position: relative; min-height: 28px; }
+  .chip-person { display: flex; align-items: center; gap: 6px; background: var(--card-2); border-radius: var(--radius-pill); padding: 3px 9px 3px 3px; font-size: 12px; font-weight: 550; }
+  .chip-person .av { width: 19px; height: 19px; font-size: 9px; }
+  .chip-person .x { cursor: pointer; color: var(--muted-2); font-size: 13px; line-height: 1; }
+  .chip-person .x:hover { color: var(--danger); }
+  .add-person-btn { border: 1px dashed var(--line-strong); border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; color: var(--muted); background: transparent; cursor: pointer; font-size: 15px; line-height: 1; }
+  .add-person-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .person-menu { position: absolute; top: 32px; left: 0; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-md); padding: 4px; z-index: 5; min-width: 160px; display: none; }
+  .person-menu.show { display: block; }
+  .person-menu button { width: 100%; text-align: left; display: flex; align-items: center; gap: 8px; background: none; border: none; padding: 6px 8px; border-radius: var(--radius-sm); font-size: 12.5px; cursor: pointer; color: var(--ink); }
+  .person-menu button:hover { background: var(--card-2); }
+  .origin-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--card-2); border-radius: var(--radius-md); padding: 6px 10px; font-size: 12.5px; color: var(--muted); font-weight: 550; }
+</style>
+
+<div class="reviewer">
+  <span class="label">Protótipo · revisão de design</span>
+  <div class="screens">
+    <button class="active" data-screen="home">Início</button>
+    <button data-screen="s0">Carteira</button>
+    <button data-screen="s1">Portfólio · Lista</button>
+    <button data-screen="s2">Portfólio · Kanban</button>
+    <button data-screen="s6">Detalhe do projeto</button>
+    <button data-screen="s3">Sustentação · Lista</button>
+    <button data-screen="s3k">Sustentação · Kanban</button>
+    <button data-screen="s5">Detalhe do incidente</button>
+    <button data-screen="s4">Tarefas</button>
+    <button data-screen="guide">Guia</button>
+    <button data-screen="settings">Configurações</button>
+  </div>
+  <span class="note">Sidebar e topbar são as mesmas em todas as telas</span>
+</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><span class="wordmark">op<span class="ac">en</span></span></div>
+    <nav>
+      <a class="navitem active" id="nav-inicio">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"/></svg>
+        Início
+      </a>
+      <a class="navitem" id="nav-carteira">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h14a2 2 0 002-2v-5m-4 0a1 1 0 100 2 1 1 0 000-2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 8h18"/></svg>
+        Carteira
+      </a>
+      <a class="navitem" id="nav-portfolio">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
+        Portfólio
+      </a>
+      <a class="navitem" id="nav-sustentacao">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 15.75h.007v.008H12v-.008z"/></svg>
+        Sustentação
+      </a>
+      <a class="navitem" id="nav-tarefas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        Tarefas
+      </a>
+      <div class="divider"></div>
+      <a class="navitem" id="nav-config">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Configurações
+      </a>
+      <a class="navitem" id="nav-guide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
+        Guia
+      </a>
+    </nav>
+    <div class="divider" id="shortcuts-divider" style="display:none"></div>
+    <div id="shortcuts-projects" style="display:none">
+      <div class="projects-label">Projetos</div>
+      <div class="proj-row"><span class="proj-dot" style="background:#E8A93B"></span>Implementação CRM — Vetta</div>
+      <div class="proj-row"><span class="proj-dot" style="background:#5B9BD5"></span>Migração — Aliança</div>
+      <div class="proj-row"><span class="proj-dot" style="background:#6FBF8B"></span>Integração ERP — Nordeste</div>
+    </div>
+    <div id="shortcuts-incidents" style="display:none">
+      <div class="projects-label">Incidentes</div>
+      <div class="proj-row"><span class="proj-dot" style="background:var(--danger)"></span>Erro de sincronização</div>
+      <div class="proj-row"><span class="proj-dot" style="background:var(--warning)"></span>Contato duplicado</div>
+      <div class="proj-row"><span class="proj-dot" style="background:var(--muted-2)"></span>Campo customizado some</div>
+    </div>
+    <div class="spacer"></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="search-trigger">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.2-5.2m0 0a7.5 7.5 0 10-10.6-10.6 7.5 7.5 0 0010.6 10.6z"/></svg>
+        <span>Buscar…</span>
+        <span class="kbd">⌘K</span>
+      </div>
+      <div class="spacer"></div>
+      <button class="icon-btn" title="Notificações">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
+        <span class="dot-badge"></span>
+      </button>
+      <button class="profile-btn" id="profile-trigger">
+        <div class="avatar-sm">LS</div>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="profile-pop" id="profile-pop" style="display:none">
+        <div class="who-block">
+          <div class="name">Leonardo Santos</div>
+          <div class="email">leonardo.santos@ploomes.com</div>
+        </div>
+        <button class="item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+          Editar perfil
+        </button>
+        <div class="pop-divider"></div>
+        <button class="item danger">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>
+          Sair
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- SCREEN: Início -->
+      <div class="content-inner" id="home">
+        <div class="greet">
+          <h1>Bom dia, Leonardo</h1>
+          <p>Quinta-feira, 30 de julho</p>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="n">3</div><div class="l">Incidentes meus, em aberto</div></div>
+          <div class="stat-card"><div class="n">7</div><div class="l">Tarefas minhas, pendentes</div></div>
+          <div class="stat-card"><div class="n">5</div><div class="l">Projetos ativos na carteira</div></div>
+        </div>
+        <div class="home-grid">
+          <div class="home-panel">
+            <h2>Seus incidentes</h2>
+            <div class="mini-table">
+              <div class="mini-row"><span class="t">Erro de sincronização de propostas</span><span class="status-dot"><span class="dot" style="background:var(--info)"></span><span class="label">Em andamento</span></span></div>
+              <div class="mini-row"><span class="t">Contato duplicado ao importar</span><span class="status-dot"><span class="dot" style="background:var(--muted-2)"></span><span class="label">Aberto</span></span></div>
+            </div>
+          </div>
+          <div class="home-panel">
+            <h2>Suas tarefas</h2>
+            <div class="mini-table">
+              <div class="mini-row"><span class="t">Configurar campos customizados</span><span class="status-dot"><span class="dot" style="background:var(--info)"></span><span class="label">Em andamento</span></span></div>
+              <div class="mini-row"><span class="t">Ajustar automação de e-mail</span><span class="status-dot"><span class="dot" style="background:var(--danger)"></span><span class="label">Bloqueado</span></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 0: Carteira -->
+      <div class="content-inner" id="s0" style="display:none">
+        <div class="page-header">
+          <div><h1>Carteira</h1><p class="count">14 clientes</p></div>
+          <div class="actions">
+            <div class="segmented">
+              <button class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg></button>
+              <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"/></svg></button>
+            </div>
+            <button class="btn btn-primary">+ Cliente</button>
+          </div>
+        </div>
+        <div class="toolbar">
+          <div class="search-input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.2-5.2m0 0a7.5 7.5 0 10-10.6-10.6 7.5 7.5 0 0010.6 10.6z"/></svg><span>Buscar cliente...</span></div>
+          <button class="filter-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h18M6 12h12M10 19.5h4"/></svg>Filtros</button>
+        </div>
+        <div class="table-card">
+          <table>
+            <thead><tr><th style="width:32px"></th><th>Cliente</th><th>País</th><th>Status</th><th>Owner</th><th>CS atual</th><th>Projetos</th></tr></thead>
+            <tbody>
+              <tr><td><input type="checkbox"></td><td class="name">Grupo Vetta Alimentos</td><td class="muted">Brasil</td><td><span class="status-dot"><span class="dot" style="background:var(--warning)"></span><span class="label">Implantação</span></span></td><td><span class="avatar-stack"><span class="av">MC</span></span></td><td><span class="avatar-stack"><span class="av">MC</span></span></td><td class="muted tabular">1</td></tr>
+              <tr><td><input type="checkbox"></td><td class="name">Construtora Aliança</td><td class="muted">Brasil</td><td><span class="status-dot"><span class="dot" style="background:var(--info)"></span><span class="label">Pré-venda</span></span></td><td><span class="avatar-stack"><span class="av">RA</span></span></td><td>—</td><td class="muted tabular">0</td></tr>
+              <tr><td><input type="checkbox"></td><td class="name">Nordeste Log Transportes</td><td class="muted">Brasil</td><td><span class="status-dot"><span class="dot" style="background:var(--success)"></span><span class="label">Sustentação / Novos projetos</span></span></td><td><span class="avatar-stack"><span class="av">JP</span></span></td><td><span class="avatar-stack"><span class="av">JP</span></span></td><td class="muted tabular">1</td></tr>
+              <tr><td><input type="checkbox"></td><td class="name">Ferreira &amp; Dias Advocacia</td><td class="muted">Portugal</td><td><span class="status-dot"><span class="dot" style="background:var(--success)"></span><span class="label">Sustentação / Novos projetos</span></span></td><td><span class="avatar-stack"><span class="av">DN</span></span></td><td><span class="avatar-stack"><span class="av">DN</span></span></td><td class="muted tabular">1</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SCREEN 1: Portfólio · Lista -->
+      <div class="content-inner" id="s1" style="display:none">
+        <div class="page-header">
+          <div><h1>Portfólio</h1><p class="count">12 projetos</p></div>
+          <div class="actions">
+            <div class="segmented">
+              <button class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg></button>
+              <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"/></svg></button>
+            </div>
+            <button class="btn btn-primary">+ Novo projeto</button>
+          </div>
+        </div>
+        <div class="toolbar">
+          <div class="search-input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.2-5.2m0 0a7.5 7.5 0 10-10.6-10.6 7.5 7.5 0 0010.6 10.6z"/></svg><span>Buscar projeto...</span></div>
+          <button class="pill-toggle active">Meus</button>
+          <button class="filter-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h18M6 12h12M10 19.5h4"/></svg>Filtros</button>
+        </div>
+        <div class="table-card">
+          <table>
+            <thead><tr><th style="width:32px"></th><th>Projeto</th><th>Cliente</th><th>PM</th><th>Tipo</th><th>Status</th><th>Prazo</th></tr></thead>
+            <tbody>
+              <tr><td><input type="checkbox"></td><td class="name">Implementação CRM</td><td class="muted">Grupo Vetta Alimentos</td><td><div style="display:flex;align-items:center;gap:8px"><span class="avatar-stack"><span class="av">MC</span></span>Marina Costa</div></td><td><span class="chip purple">Nova conta</span></td><td><span class="status-dot"><span class="dot" style="background:var(--info)"></span><span class="label">Em andamento</span></span></td><td class="muted tabular">+2d</td></tr>
+              <tr><td><input type="checkbox"></td><td class="name">Migração Ploomes</td><td class="muted">Construtora Aliança</td><td><div style="display:flex;align-items:center;gap:8px"><span class="avatar-stack"><span class="av">RA</span></span>Rafael Andrade</div></td><td><span class="chip blue">Novo projeto</span></td><td><span class="status-dot"><span class="dot" style="background:var(--danger)"></span><span class="label">Atrasado</span></span></td><td class="muted tabular">-4d</td></tr>
+              <tr><td><input type="checkbox"></td><td class="name">Integração ERP</td><td class="muted">Nordeste Log Transportes</td><td><div style="display:flex;align-items:center;gap:8px"><span class="avatar-stack"><span class="av">JP</span></span>Juliana Prado</div></td><td><span class="chip purple">Nova conta</span></td><td><span class="status-dot"><span class="dot" style="background:var(--muted-2)"></span><span class="label">Planejamento</span></span></td><td class="muted tabular">—</td></tr>
+              <tr><td><input type="checkbox"></td><td class="name">Onboarding CS</td><td class="muted">Ferreira &amp; Dias Advocacia</td><td><div style="display:flex;align-items:center;gap:8px"><span class="avatar-stack"><span class="av">DN</span></span>Diego Nascimento</div></td><td><span class="chip blue">Novo projeto</span></td><td><span class="status-dot"><span class="dot" style="background:var(--success)"></span><span class="label">Concluído</span></span></td><td class="muted tabular">0d</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SCREEN 2: Portfólio · Kanban -->
+      <div class="content-inner" id="s2" style="display:none">
+        <div class="page-header">
+          <div><h1>Portfólio</h1><p class="count">12 projetos</p></div>
+          <div class="actions">
+            <div class="segmented">
+              <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg></button>
+              <button class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"/></svg></button>
+            </div>
+            <button class="btn btn-primary">+ Novo projeto</button>
+          </div>
+        </div>
+        <div class="toolbar">
+          <div class="search-input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.2-5.2m0 0a7.5 7.5 0 10-10.6-10.6 7.5 7.5 0 0010.6 10.6z"/></svg><span>Buscar projeto...</span></div>
+          <button class="pill-toggle">Meus</button>
+          <button class="filter-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h18M6 12h12M10 19.5h4"/></svg>Filtros</button>
+        </div>
+        <div class="board">
+          <div class="board-col">
+            <div class="col-head"><span class="label">Planejamento</span><span class="count">3</span></div>
+            <div class="card-k"><div class="title">Integração ERP</div><div class="sub">Nordeste Log Transportes</div><div class="foot"><span class="avatar-stack"><span class="av">JP</span></span><span class="chip purple">NC</span></div></div>
+            <div class="card-k"><div class="title">Formulário externo</div><div class="sub">Ferreira &amp; Dias</div><div class="foot"><span class="avatar-stack"><span class="av">DN</span></span><span class="chip blue">NP</span></div></div>
+          </div>
+          <div class="board-col">
+            <div class="col-head"><span class="label">Em andamento</span><span class="count">5</span></div>
+            <div class="card-k"><div class="title">Implementação CRM</div><div class="sub">Grupo Vetta Alimentos</div><div class="foot"><span class="avatar-stack"><span class="av">MC</span></span><span class="chip purple">NC</span></div></div>
+            <div class="card-k"><div class="title">Expansão CPQ</div><div class="sub">BioSaúde Diagnósticos</div><div class="foot"><span class="avatar-stack"><span class="av">MC</span></span><span class="chip purple">NC</span></div></div>
+          </div>
+          <div class="board-col">
+            <div class="col-head"><span class="label">Atrasado</span><span class="count">1</span></div>
+            <div class="card-k"><div class="title">Migração Ploomes</div><div class="sub">Construtora Aliança</div><div class="foot"><span class="avatar-stack"><span class="av">RA</span></span><span class="chip blue">NP</span></div></div>
+          </div>
+          <div class="board-col">
+            <div class="col-head"><span class="label">Concluído</span><span class="count">3</span></div>
+            <div class="card-k"><div class="title">Onboarding CS</div><div class="sub">Ferreira &amp; Dias Advocacia</div><div class="foot"><span class="avatar-stack"><span class="av">DN</span></span><span class="chip blue">NP</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 6: Detalhe do projeto -->
+      <div class="content-inner narrow" id="s6" style="display:none">
+        <a class="breadcrumb">← Portfólio</a>
+        <div class="detail-header">
+          <h1>Implementação CRM<span class="status-dot"><span class="dot" style="background:var(--info)"></span><span class="label" style="font-size:12px">Em andamento</span></span></h1>
+          <button class="btn btn-secondary">Arquivar</button>
+        </div>
+
+        <div class="anchor-nav">
+          <a data-target="pmod-overview" class="active">Overview</a>
+          <a data-target="pmod-tasks">Tarefas (6)</a>
+          <a data-target="pmod-team">Time</a>
+          <a data-target="pmod-history">Histórico</a>
+        </div>
+
+        <div class="module" id="pmod-overview">
+          <div class="module-head" data-toggle>
+            <span class="htitle"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>Overview</span>
+          </div>
+          <div class="module-body">
+            <div class="toolbar" style="margin-bottom:18px">
+              <button class="btn btn-secondary">↗ Proposta</button>
+              <button class="btn btn-secondary">↗ Negócio</button>
+            </div>
+            <div class="field-grid">
+              <div class="field-block"><label>Cliente</label><div class="val">Grupo Vetta Alimentos</div></div>
+              <div class="field-block"><label>Tipo</label><div class="val"><span class="chip purple">Nova conta</span></div></div>
+              <div class="field-block"><label>PM</label><div class="val" style="display:flex;align-items:center;gap:8px"><span class="avatar-stack"><span class="av">MC</span></span>Marina Costa</div></div>
+              <div class="field-block"><label>Dev Lead</label><div class="val" style="display:flex;align-items:center;gap:8px"><span class="avatar-stack"><span class="av">RA</span></span>Rafael Andrade</div></div>
+              <div class="field-block"><label>Baseline</label><div class="val tabular">60 dias</div></div>
+              <div class="field-block"><label>Prazo</label><div class="val tabular">+2 dias</div></div>
+            </div>
+            <div class="field-block" style="margin-bottom:8px"><label>Escopo</label></div>
+            <div class="desc-block">Implementação completa do CRM Ploomes para a operação comercial, incluindo funil de vendas, automações de propostas e integração com o ERP interno.</div>
+          </div>
+        </div>
+
+        <div class="module" id="pmod-tasks">
+          <div class="module-head" data-toggle>
+            <span class="htitle"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>Tarefas</span>
+            <span class="hcount">6</span>
+          </div>
+          <div class="module-body">
+            <div class="toolbar" style="margin-bottom:12px">
+              <button class="btn btn-secondary" data-open-entry data-origin="Projeto: Implementação CRM">+ Tarefa</button>
+              <div class="segmented" id="pmod-tasks-toggle">
+                <button class="active" data-view="table"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg></button>
+                <button data-view="kanban"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"/></svg></button>
+              </div>
+            </div>
+            <div id="pmod-tasks-table" class="mini-table">
+              <div class="mini-row entry-row"><span class="t">Configurar campos customizados</span><span class="avatar-stack"><span class="av">MC</span></span><span class="status-dot"><span class="dot" style="background:var(--info)"></span><span class="label">Em andamento</span></span></div>
+              <div class="mini-row entry-row"><span class="t">Mapear funil de vendas</span><span class="avatar-stack"><span class="av">RA</span></span><span class="status-dot"><span class="dot" style="background:var(--success)"></span><span class="label">Feito</span></span></div>
+              <div class="mini-row entry-row"><span class="t">Configurar automações de proposta</span><span class="avatar-stack"><span class="av">MC</span></span><span class="status-dot"><span class="dot" style="background:var(--muted-2)"></span><span class="label">Pendente</span></span></div>
+            </div>
+            <div id="pmod-tasks-kanban" class="board board-3" style="display:none">
+              <div class="board-col">
+                <div class="col-head"><span class="label">Pendente</span><span class="count">1</span></div>
+                <div class="card-k entry-row"><div class="title">Configurar automações de proposta</div><div class="sub">Vence em 5 dias</div><div class="foot"><span class="avatar-stack"><span class="av">MC</span></span></div></div>
+              </div>
+              <div class="board-col">
+                <div class="col-head"><span class="label">Em andamento</span><span class="count">1</span></div>
+                <div class="card-k entry-row"><div class="title">Configurar campos customizados</div><div class="sub">Vence hoje</div><div class="foot"><span class="avatar-stack"><span class="av">MC</span></span></div></div>
+              </div>
+              <div class="board-col">
+                <div class="col-head"><span class="label">Feito</span><span class="count">1</span></div>
+                <div class="card-k entry-row"><div class="title">Mapear funil de vendas</div><div class="sub">Concluída</div><div class="foot"><span class="avatar-stack"><span class="av">RA</span></span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="module collapsed" id="pmod-team">
+          <div class="module-head" data-toggle>
+            <span class="htitle"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>Time</span>
+            <span class="hcount">3</span>
+          </div>
+          <div class="module-body">
+            <div class="mini-table">
+              <div class="mini-row"><span class="avatar-stack"><span class="av">MC</span></span><span class="t">Marina Costa</span><span class="chip purple">PM</span></div>
+              <div class="mini-row"><span class="avatar-stack"><span class="av">RA</span></span><span class="t">Rafael Andrade</span><span class="chip blue">Dev Lead</span></div>
+              <div class="mini-row"><span class="avatar-stack"><span class="av">JP</span></span><span class="t">Juliana Prado</span><span class="chip">CS</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="module collapsed" id="pmod-history">
+          <div class="module-head" data-toggle>
+            <span class="htitle"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>Histórico</span>
+          </div>
+          <div class="module-body">
+            <div class="hist-row"><span class="hdot"></span><div><div>Status mudou para <b>Em andamento</b></div><div class="hwhen">22/07 às 10:02 · Marina Costa</div></div></div>
+            <div class="hist-row"><span class="hdot"></span><div><div>Projeto criado</div><div class="hwhen">15/07 às 14:20 · Marina Costa</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 3: Sustentação · Lista -->
+      <div class="content-inner" id="s3" style="display:none">
+        <div class="page-header">
+          <div><h1>Sustentação</h1><p class="count">8 incidentes</p></div>
+          <div class="actions">
+            <div class="segmented">
+              <button class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg></button>
+              <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"/></svg></button>
+            </div>
+            <button class="btn btn-primary">+ Novo incidente</button>
+          </div>
+        </div>
+        <div class="toolbar">
+          <div class="search-input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.2-5.2m0 0a7.5 7.5 0 10-10.6-10.6 7.5 7.5 0 0010.6 10.6z"/></svg><span>Buscar incidente...</span></div>
+          <button class="pill-toggle active">Meus</button>
+          <button class="filter-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h18M6 12h12M10 19.5h4"/></svg>Filtros<span class="filter-count">1</span></button>
+        </div>
+        <div class="table-card">
+          <table>
+            <thead><tr><th style="width:32px"></th><th>Título</th><th>Clientes</th><th>Responsável</th><th>Status</th><th>Prioridade</th><th>Prazo</th></tr></thead>
+            <tbody>
+              <tr><td><input type="checkbox"></td><td class="name">Erro de sincronização de propostas</td><td class="muted">Grupo Vetta</td><td><span class="avatar-stack"><span class="av">RA</span></span></td><td><span class="status-dot"><span class="dot" style="background:var(--info)"></span><span class="label">Em andamento</span></span></td><td><span class="status-dot"><span class="dot" style="background:var(--danger)"></span><span class="label">Alta</span></span></td><td class="muted tabular">Hoje</td></tr>
+              <tr><td><input type="checkbox"></td><td class="name">Contato duplicado ao importar</td><td class="muted">Construtora Aliança</td><td><span class="avatar-stack"><span class="av">JP</span></span></td><td><span class="status-dot"><span class="dot" style="background:var(--muted-2)"></span><span class="label">Aberto</span></span></td><td><span class="status-dot"><span class="dot" style="background:var(--warning)"></span><span class="label">Média</span></span></td><td class="muted tabular">+3d</td></tr>
+              <tr><td><input type="checkbox"></td><td class="name">Falha no webhook de negócio ganho</td><td class="muted">Nordeste Log</td><td><span class="avatar-stack"><span class="av">MC</span></span></td><td><span class="status-dot"><span class="dot" style="background:var(--success)"></span><span class="label">Resolvido</span></span></td><td><span class="status-dot"><span class="dot" style="background:var(--danger)"></span><span class="label">Alta</span></span></td><td class="muted tabular">Ontem</td></tr>
+              <tr><td><input type="checkbox"></td><td class="name">Campo customizado some do formulário</td><td class="muted">BioSaúde</td><td><span class="avatar-stack"><span class="av">DN</span></span></td><td><span class="status-dot"><span class="dot" style="background:var(--warning)"></span><span class="label">Aguardando cliente</span></span></td><td><span class="status-dot"><span class="dot" style="background:var(--muted-2)"></span><span class="label">Baixa</span></span></td><td class="muted tabular">+10d</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SCREEN 3k: Sustentação · Kanban -->
+      <div class="content-inner" id="s3k" style="display:none">
+        <div class="page-header">
+          <div><h1>Sustentação</h1><p class="count">8 incidentes</p></div>
+          <div class="actions">
+            <div class="segmented">
+              <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg></button>
+              <button class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"/></svg></button>
+            </div>
+            <button class="btn btn-primary">+ Novo incidente</button>
+          </div>
+        </div>
+        <div class="toolbar">
+          <div class="search-input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.2-5.2m0 0a7.5 7.5 0 10-10.6-10.6 7.5 7.5 0 0010.6 10.6z"/></svg><span>Buscar incidente...</span></div>
+          <button class="pill-toggle">Meus</button>
+          <button class="filter-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h18M6 12h12M10 19.5h4"/></svg>Filtros</button>
+        </div>
+        <div class="board board-5">
+          <div class="board-col">
+            <div class="col-head"><span class="label">Aberto</span><span class="count">2</span></div>
+            <div class="card-k"><div class="title">Contato duplicado ao importar</div><div class="sub">Construtora Aliança</div><div class="foot"><span class="avatar-stack"><span class="av">JP</span></span><span class="status-dot"><span class="dot" style="background:var(--warning)"></span></span></div></div>
+          </div>
+          <div class="board-col">
+            <div class="col-head"><span class="label">Em andamento</span><span class="count">3</span></div>
+            <div class="card-k"><div class="title">Erro de sincronização de propostas</div><div class="sub">Grupo Vetta</div><div class="foot"><span class="avatar-stack"><span class="av">RA</span></span><span class="status-dot"><span class="dot" style="background:var(--danger)"></span></span></div></div>
+          </div>
+          <div class="board-col">
+            <div class="col-head"><span class="label">Aguardando cliente</span><span class="count">1</span></div>
+            <div class="card-k"><div class="title">Campo customizado some do formulário</div><div class="sub">BioSaúde</div><div class="foot"><span class="avatar-stack"><span class="av">DN</span></span><span class="status-dot"><span class="dot" style="background:var(--muted-2)"></span></span></div></div>
+          </div>
+          <div class="board-col">
+            <div class="col-head"><span class="label">Resolvido</span><span class="count">1</span></div>
+            <div class="card-k"><div class="title">Falha no webhook de negócio ganho</div><div class="sub">Nordeste Log</div><div class="foot"><span class="avatar-stack"><span class="av">MC</span></span><span class="status-dot"><span class="dot" style="background:var(--danger)"></span></span></div></div>
+          </div>
+          <div class="board-col">
+            <div class="col-head"><span class="label">Fechado</span><span class="count">1</span></div>
+            <div class="card-k"><div class="title">Lentidão ao carregar funil</div><div class="sub">Ferreira &amp; Dias</div><div class="foot"><span class="avatar-stack"><span class="av">DN</span></span><span class="status-dot"><span class="dot" style="background:var(--muted-2)"></span></span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 4: Tarefas -->
+      <div class="content-inner" id="s4" style="display:none">
+        <div class="page-header">
+          <div><h1>Tarefas</h1><p class="count">23 tarefas em aberto</p></div>
+          <div class="actions">
+            <div class="segmented">
+              <button class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"/></svg></button>
+              <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg></button>
+            </div>
+            <button class="btn btn-primary" data-open-entry data-origin="Novo · sem vínculo">+ Nova tarefa</button>
+          </div>
+        </div>
+        <div class="toolbar">
+          <div class="search-input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.2-5.2m0 0a7.5 7.5 0 10-10.6-10.6 7.5 7.5 0 0010.6 10.6z"/></svg><span>Buscar tarefa...</span></div>
+          <button class="pill-toggle">Meus</button>
+          <button class="filter-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h18M6 12h12M10 19.5h4"/></svg>Filtros</button>
+        </div>
+        <div class="table-card">
+          <table>
+            <thead><tr><th style="width:32px"></th><th>Nome</th><th>Origem</th><th>Responsáveis</th><th>Status</th><th>Data</th></tr></thead>
+            <tbody>
+              <tr class="entry-row"><td><input type="checkbox"></td><td class="name">Configurar campos customizados</td><td class="muted">Implementação CRM — Vetta</td><td><span class="avatar-stack"><span class="av">MC</span></span></td><td><span class="status-dot"><span class="dot" style="background:var(--info)"></span><span class="label">Em andamento</span></span></td><td class="muted tabular">18/08</td></tr>
+              <tr class="entry-row"><td><input type="checkbox"></td><td class="name">🛠️ Validar integração com ERP</td><td class="muted">Falha no webhook</td><td><span class="avatar-stack"><span class="av">RA</span></span></td><td><span class="status-dot"><span class="dot" style="background:var(--muted-2)"></span><span class="label">Pendente</span></span></td><td class="muted tabular">20/08</td></tr>
+              <tr class="entry-row"><td><input type="checkbox"></td><td class="name">Treinamento equipe comercial</td><td class="muted">Onboarding CS</td><td><span class="avatar-stack"><span class="av">DN</span><span class="av" style="background:var(--info)">JP</span></span></td><td><span class="status-dot"><span class="dot" style="background:var(--success)"></span><span class="label">Feito</span></span></td><td class="muted tabular">12/08</td></tr>
+              <tr class="entry-row"><td><input type="checkbox"></td><td class="name">Ajustar automação de e-mail</td><td class="muted">Migração — Aliança</td><td><span class="avatar-stack"><span class="av">RA</span></span></td><td><span class="status-dot"><span class="dot" style="background:var(--danger)"></span><span class="label">Bloqueado</span></span></td><td class="muted tabular">15/08</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SCREEN 5: Detail page — one page, anchors + collapsible modules -->
+      <div class="content-inner narrow" id="s5" style="display:none">
+        <a class="breadcrumb">← Sustentação</a>
+        <div class="detail-header">
+          <h1>Erro de sincronização de propostas<span class="status-dot"><span class="dot" style="background:var(--info)"></span><span class="label" style="font-size:12px">Em andamento</span></span></h1>
+          <button class="btn btn-secondary">Excluir</button>
+        </div>
+
+        <div class="anchor-nav" id="anchor-nav">
+          <a data-target="mod-overview" class="active">Overview</a>
+          <a data-target="mod-tasks">Tarefas (3)</a>
+          <a data-target="mod-openpoints">Pontos em aberto</a>
+          <a data-target="mod-history">Histórico</a>
+        </div>
+
+        <div class="module" id="mod-overview">
+          <div class="module-head" data-toggle>
+            <span class="htitle"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>Overview</span>
+          </div>
+          <div class="module-body">
+            <div class="field-grid">
+              <div class="field-block"><label>Clientes vinculados</label><div class="val"><span class="chip blue">Grupo Vetta Alimentos</span></div></div>
+              <div class="field-block"><label>Responsável</label><div class="val" style="display:flex;align-items:center;gap:8px"><span class="avatar-stack"><span class="av">RA</span></span>Rafael Andrade</div></div>
+              <div class="field-block"><label>Prioridade <span class="hint-icon">?</span></label><div class="val"><span class="status-dot"><span class="dot" style="background:var(--danger)"></span><span class="label">Alta</span></span></div></div>
+              <div class="field-block"><label>Impacto <span class="hint-icon">?</span></label><div class="val"><span class="status-dot"><span class="dot" style="background:var(--warning)"></span><span class="label">Média</span></span></div></div>
+              <div class="field-block"><label>Prazo</label><div class="val tabular">29/07/2026</div></div>
+              <div class="field-block"><label>Aberto há</label><div class="val tabular">4 dias</div></div>
+            </div>
+            <div class="field-block" style="margin-bottom:8px"><label>Descrição</label></div>
+            <div class="desc-block">Propostas criadas no Ploomes não estão sendo refletidas no painel de acompanhamento do cliente — investigar o webhook de "proposta aprovada" e o job de sincronização noturno.</div>
+          </div>
+        </div>
+
+        <div class="module" id="mod-tasks">
+          <div class="module-head" data-toggle>
+            <span class="htitle"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>Tarefas</span>
+            <span class="hcount">3</span>
+          </div>
+          <div class="module-body">
+            <div class="toolbar" style="margin-bottom:10px">
+              <button class="btn btn-secondary" data-open-entry data-origin="Incidente: Erro de sincronização de propostas">+ Tarefa</button>
+            </div>
+            <div class="mini-table" id="mod-tasks-table">
+              <div class="mini-row entry-row"><span class="t">Investigar causa raiz</span><span class="avatar-stack"><span class="av">RA</span></span><span class="status-dot"><span class="dot" style="background:var(--success)"></span><span class="label">Feito</span></span></div>
+              <div class="mini-row entry-row"><span class="t">Aplicar correção no webhook</span><span class="avatar-stack"><span class="av">RA</span></span><span class="status-dot"><span class="dot" style="background:var(--info)"></span><span class="label">Em andamento</span></span></div>
+              <div class="mini-row entry-row"><span class="t">Validar com o cliente</span><span class="avatar-stack"></span><span class="status-dot"><span class="dot" style="background:var(--muted-2)"></span><span class="label">Pendente</span></span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="module collapsed" id="mod-openpoints">
+          <div class="module-head" data-toggle>
+            <span class="htitle"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>Pontos em aberto</span>
+            <span class="hcount">2</span>
+          </div>
+          <div class="module-body">
+            <div class="op-row"><span>Cliente pede atualização diária até resolução</span><span class="chip purple">Aberto</span></div>
+            <div class="op-row"><span>Confirmar se afeta outros clientes no mesmo plano</span><span class="chip purple">Aberto</span></div>
+          </div>
+        </div>
+
+        <div class="module collapsed" id="mod-history">
+          <div class="module-head" data-toggle>
+            <span class="htitle"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>Histórico</span>
+          </div>
+          <div class="module-body">
+            <div class="hist-row"><span class="hdot"></span><div><div>Status mudou para <b>Em andamento</b></div><div class="hwhen">hoje às 09:14 · Rafael Andrade</div></div></div>
+            <div class="hist-row"><span class="hdot"></span><div><div>Incidente criado</div><div class="hwhen">28/07 às 16:40 · Marina Costa</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN: Guia -->
+      <div class="content-inner narrow" id="guide" style="display:none">
+        <div class="detail-header" style="margin-bottom:4px"><h1>Guia do OpEn</h1></div>
+        <p style="color:var(--muted);font-size:12.5px;margin-bottom:18px">Como cada área funciona — clique numa seção pra abrir.</p>
+
+        <div class="anchor-nav">
+          <a data-target="gmod-carteira" class="active">Carteira</a>
+          <a data-target="gmod-portfolio">Portfólio</a>
+          <a data-target="gmod-sustentacao">Sustentação</a>
+          <a data-target="gmod-busca">Atalhos &amp; busca</a>
+        </div>
+
+        <div class="module" id="gmod-carteira">
+          <div class="module-head" data-toggle><span class="htitle"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>Carteira</span></div>
+          <div class="module-body">
+            <div class="desc-block">A Carteira lista todos os clientes, com status (Pré-venda → Implantação → Sustentação/Novos projetos), owner responsável e o CS atual. Use a busca ou os filtros de país/owner pra encontrar um cliente, e o toggle Lista/Kanban pra alternar a visão.</div>
+          </div>
+        </div>
+        <div class="module" id="gmod-portfolio">
+          <div class="module-head" data-toggle><span class="htitle"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>Portfólio</span></div>
+          <div class="module-body">
+            <div class="desc-block">O Portfólio reúne os projetos em andamento. Cada projeto tem uma página própria com Overview (dados + links de Proposta/Negócio), Tarefas (tabela ou kanban), Time e Histórico. Projetos concluídos podem ser arquivados em Configurações.</div>
+          </div>
+        </div>
+        <div class="module collapsed" id="gmod-sustentacao">
+          <div class="module-head" data-toggle><span class="htitle"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>Sustentação</span></div>
+          <div class="module-body">
+            <div class="desc-block">Sustentação é onde ficam os incidentes abertos por clientes já implantados. Cada incidente tem prioridade e impacto, pode ter vários clientes vinculados, e sua própria página com tarefas, pontos em aberto e histórico.</div>
+          </div>
+        </div>
+        <div class="module collapsed" id="gmod-busca">
+          <div class="module-head" data-toggle><span class="htitle"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>Atalhos &amp; busca</span></div>
+          <div class="module-body">
+            <div class="desc-block"><b>⌘K</b> abre a busca global — encontra clientes, projetos, incidentes e tarefas de qualquer tela. O ícone de sino no topo mostra notificações recentes, e o menu do seu avatar tem acesso rápido a editar perfil e sair.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN: Configurações -->
+      <div class="content-inner" id="settings" style="display:none">
+        <div class="page-header"><div><h1>Configurações</h1></div></div>
+        <div class="segmented" id="settings-tabs" style="border-radius:var(--radius-md)">
+          <button class="active" data-tab="geral">Geral</button>
+          <button data-tab="feriados">Feriados</button>
+          <button data-tab="templates">Templates</button>
+          <button data-tab="usuarios">Usuários</button>
+          <button data-tab="arquivados">Arquivados</button>
+        </div>
+
+        <div class="settings-panel" data-panel="geral" style="margin-top:18px">
+          <div class="field-grid">
+            <div class="field-block"><label>Nome do workspace</label><div class="val">Ploomes — OpEn</div></div>
+            <div class="field-block"><label>Fuso horário</label><div class="val">América/São Paulo</div></div>
+          </div>
+        </div>
+
+        <div class="settings-panel" data-panel="feriados" style="display:none;margin-top:18px">
+          <div class="toolbar"><div class="spacer" style="flex:1"></div><button class="btn btn-primary">+ Feriado</button></div>
+          <div class="table-card">
+            <table>
+              <thead><tr><th>Data</th><th>Descrição</th><th style="width:60px"></th></tr></thead>
+              <tbody>
+                <tr><td class="tabular">07/09/2026</td><td>Independência</td><td class="muted">Excluir</td></tr>
+                <tr><td class="tabular">12/10/2026</td><td>Nossa Sra. Aparecida</td><td class="muted">Excluir</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="settings-panel" data-panel="templates" style="display:none;margin-top:18px">
+          <div class="toolbar"><div class="spacer" style="flex:1"></div><button class="btn btn-primary">+ Template</button></div>
+          <div class="table-card">
+            <table>
+              <thead><tr><th>Nome</th><th>Aplica a</th><th style="width:60px"></th></tr></thead>
+              <tbody>
+                <tr><td class="name">Erro de integração</td><td class="muted">Incidentes</td><td class="muted">Editar</td></tr>
+                <tr><td class="name">Onboarding padrão</td><td class="muted">Projetos</td><td class="muted">Editar</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="settings-panel" data-panel="usuarios" style="display:none;margin-top:18px">
+          <div class="toolbar"><p class="count" style="margin:0">6 com acesso · 1 convite pendente</p><div class="spacer"></div><button class="btn btn-primary">+ Convidar usuário</button></div>
+          <div class="table-card" style="margin-bottom:16px">
+            <table>
+              <thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Status</th><th style="width:90px"></th></tr></thead>
+              <tbody>
+                <tr><td class="name" style="display:flex;align-items:center;gap:8px"><span class="avatar-stack"><span class="av">LS</span></span>Leonardo Santos <span class="muted" style="font-size:11px">(você)</span></td><td class="muted">leonardo.santos@ploomes.com</td><td class="muted">Admin</td><td><span class="status-dot"><span class="dot" style="background:var(--success)"></span><span class="label">Ativo</span></span></td><td class="muted"></td></tr>
+                <tr><td class="name" style="display:flex;align-items:center;gap:8px"><span class="avatar-stack"><span class="av">MC</span></span>Marina Costa</td><td class="muted">marina.costa@ploomes.com</td><td class="muted">Membro</td><td><span class="status-dot"><span class="dot" style="background:var(--success)"></span><span class="label">Ativo</span></span></td><td class="muted">Revogar</td></tr>
+                <tr><td class="name" style="display:flex;align-items:center;gap:8px"><span class="avatar-stack"><span class="av">RA</span></span>Rafael Andrade</td><td class="muted">rafael.andrade@ploomes.com</td><td class="muted">Membro</td><td><span class="status-dot"><span class="dot" style="background:var(--danger)"></span><span class="label">Revogado</span></span></td><td class="muted">Reativar</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-card">
+            <div style="padding:8px 16px;background:var(--card-2);font-size:11px;font-weight:600;color:var(--muted)">Convites pendentes</div>
+            <table>
+              <tbody>
+                <tr><td class="name">Diego Nascimento</td><td class="muted">diego.nascimento@ploomes.com</td><td><span class="chip blue">Membro</span></td><td class="muted" style="text-align:right">Cancelar convite</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="settings-panel" data-panel="arquivados" style="display:none;margin-top:18px">
+          <div class="toolbar" id="arquivados-filter">
+            <button class="pill-toggle active">Todas</button>
+            <button class="pill-toggle">Projetos</button>
+            <button class="pill-toggle">Clientes</button>
+            <button class="pill-toggle">Incidentes</button>
+          </div>
+          <div class="table-card">
+            <table>
+              <thead><tr><th>Nome</th><th>Tipo</th><th>Arquivado em</th><th style="width:170px"></th></tr></thead>
+              <tbody>
+                <tr><td class="name">Onboarding CS — Ferreira &amp; Dias</td><td class="muted">Projeto</td><td class="muted tabular">14/06/2026</td><td class="muted" style="text-align:right">Restaurar · Excluir</td></tr>
+                <tr><td class="name">Migração ERP — SulTech</td><td class="muted">Cliente</td><td class="muted tabular">02/05/2026</td><td class="muted" style="text-align:right">Restaurar · Excluir</td></tr>
+                <tr><td class="name">Lentidão ao carregar funil</td><td class="muted">Incidente</td><td class="muted tabular">28/04/2026</td><td class="muted" style="text-align:right">Restaurar · Excluir</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="selection-bar" id="selection-bar">
+        <span class="count"><span id="sb-count">0</span> selecionado(s)</span>
+        <span class="sep"></span>
+        <span class="actions">
+          <button class="sb-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.118a7.5 7.5 0 0115 0"/></svg>Responsável</button>
+          <button class="sb-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Status</button>
+          <button class="sb-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125h4.5M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>Arquivar</button>
+          <button class="sb-action danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>Excluir</button>
+        </span>
+        <button class="sb-close" id="sb-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="entry-modal">
+  <div class="modal-panel">
+    <div class="modal-head">
+      <h2>Nova tarefa</h2>
+      <button class="icon-btn" id="entry-modal-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label>Nome</label>
+        <input class="text-input" type="text" placeholder="Ex: Configurar campos customizados" value="Configurar campos customizados">
+      </div>
+      <div class="form-field">
+        <label>Origem</label>
+        <div><span class="origin-chip" id="entry-modal-origin">Novo · sem vínculo</span></div>
+      </div>
+      <div class="form-field">
+        <label>Status</label>
+        <div class="status-pick">
+          <button><span class="dot" style="background:var(--muted-2)"></span>Pendente</button>
+          <button class="active"><span class="dot" style="background:var(--info)"></span>Em andamento</button>
+          <button><span class="dot" style="background:var(--success)"></span>Feito</button>
+          <button><span class="dot" style="background:var(--danger)"></span>Bloqueado</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Executor</label>
+          <div class="person-slot" id="entry-modal-executor" data-required="true">
+            <span class="chip-person"><span class="avatar-stack"><span class="av">MC</span></span>Marina Costa<span class="x">×</span></span>
+          </div>
+        </div>
+        <div class="form-field">
+          <label>Validador <span style="font-weight:400;color:var(--muted-2)">(opcional)</span></label>
+          <div class="person-slot" id="entry-modal-validator" data-required="false">
+            <button class="add-person-btn" data-person-trigger>+</button>
+          </div>
+        </div>
+      </div>
+      <div class="person-menu" id="entry-modal-person-menu">
+        <button>Marina Costa</button>
+        <button>Rafael Andrade</button>
+        <button>Juliana Prado</button>
+        <button>Diego Nascimento</button>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Data</label>
+          <input class="text-input" type="date" value="2026-08-18">
+        </div>
+      </div>
+      <div class="form-field">
+        <label>Descrição</label>
+        <textarea class="textarea" placeholder="Detalhes da tarefa...">Ajustar os campos customizados criados na etapa de descoberta.</textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" style="color:var(--danger);border-color:var(--danger-soft)">Excluir</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" id="entry-modal-cancel">Cancelar</button>
+        <button class="btn btn-primary">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  var buttons = document.querySelectorAll('.reviewer .screens button');
+  var screens = ['home','s0','s1','s2','s6','s3','s3k','s5','s4','guide','settings'];
+  var navMap = { home: 'nav-inicio', s0: 'nav-carteira', s1: 'nav-portfolio', s2: 'nav-portfolio', s6: 'nav-portfolio', s3: 'nav-sustentacao', s3k: 'nav-sustentacao', s5: 'nav-sustentacao', s4: 'nav-tarefas', guide: 'nav-guide', settings: 'nav-config' };
+  var shortcutMap = { s1: 'projects', s2: 'projects', s6: 'projects', s3: 'incidents', s3k: 'incidents', s5: 'incidents' };
+  buttons.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var target = btn.getAttribute('data-screen');
+      buttons.forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      screens.forEach(function(id) {
+        document.getElementById(id).style.display = (id === target) ? '' : 'none';
+      });
+      document.querySelectorAll('.navitem').forEach(function(n) { n.classList.remove('active'); });
+      var activeNavId = navMap[target];
+      if (activeNavId) document.getElementById(activeNavId).classList.add('active');
+
+      var kind = shortcutMap[target];
+      var divider = document.getElementById('shortcuts-divider');
+      var projGroup = document.getElementById('shortcuts-projects');
+      var incGroup = document.getElementById('shortcuts-incidents');
+      if (!kind) {
+        divider.style.display = 'none'; projGroup.style.display = 'none'; incGroup.style.display = 'none';
+      } else {
+        divider.style.display = '';
+        projGroup.style.display = kind === 'projects' ? '' : 'none';
+        incGroup.style.display = kind === 'incidents' ? '' : 'none';
+      }
+    });
+  });
+
+
+  // Profile menu
+  var profileTrigger = document.getElementById('profile-trigger');
+  var profilePop = document.getElementById('profile-pop');
+  profileTrigger.addEventListener('click', function(e) {
+    e.stopPropagation();
+    profilePop.style.display = profilePop.style.display === 'none' ? '' : 'none';
+  });
+  document.addEventListener('click', function(e) {
+    if (!profilePop.contains(e.target) && e.target !== profileTrigger) profilePop.style.display = 'none';
+  });
+
+  // Anchor nav: smooth-scroll to module + collapsible modules + scroll-spy
+  var contentEl = document.querySelector('.content');
+  document.querySelectorAll('.anchor-nav a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      var el = document.getElementById(a.getAttribute('data-target'));
+      if (el.classList.contains('collapsed')) el.classList.remove('collapsed');
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+  document.querySelectorAll('.module-head[data-toggle]').forEach(function(h) {
+    h.addEventListener('click', function() {
+      h.closest('.module').classList.toggle('collapsed');
+    });
+  });
+
+  // Selection bar: any row checkbox, any table, same bulk-action pattern
+  var sbBar = document.getElementById('selection-bar');
+  var sbCount = document.getElementById('sb-count');
+  function refreshSelection() {
+    var checked = document.querySelectorAll('tbody input[type="checkbox"]:checked').length;
+    sbCount.textContent = checked;
+    sbBar.classList.toggle('show', checked > 0);
+  }
+  document.addEventListener('change', function(e) {
+    if (e.target.matches('tbody input[type="checkbox"]')) refreshSelection();
+  });
+  document.getElementById('sb-close').addEventListener('click', function() {
+    document.querySelectorAll('tbody input[type="checkbox"]:checked').forEach(function(c) { c.checked = false; });
+    refreshSelection();
+  });
+
+  // Tarefas do projeto: alterna tabela/kanban (mesmo padrão da página Tarefas)
+  var pTaskToggle = document.getElementById('pmod-tasks-toggle');
+  if (pTaskToggle) {
+    var pTaskTable = document.getElementById('pmod-tasks-table');
+    var pTaskKanban = document.getElementById('pmod-tasks-kanban');
+    pTaskToggle.querySelectorAll('button').forEach(function(b) {
+      b.addEventListener('click', function() {
+        pTaskToggle.querySelectorAll('button').forEach(function(x) { x.classList.remove('active'); });
+        b.classList.add('active');
+        var view = b.getAttribute('data-view');
+        pTaskTable.style.display = view === 'table' ? '' : 'none';
+        pTaskKanban.style.display = view === 'kanban' ? '' : 'none';
+      });
+    });
+  }
+
+  // Configurações: abas exclusivas
+  var settingsTabs = document.getElementById('settings-tabs');
+  if (settingsTabs) {
+    settingsTabs.querySelectorAll('button').forEach(function(b) {
+      b.addEventListener('click', function() {
+        settingsTabs.querySelectorAll('button').forEach(function(x) { x.classList.remove('active'); });
+        b.classList.add('active');
+        var tab = b.getAttribute('data-tab');
+        document.querySelectorAll('.settings-panel').forEach(function(p) {
+          p.style.display = (p.getAttribute('data-panel') === tab) ? '' : 'none';
+        });
+      });
+    });
+  }
+  var archFilter = document.getElementById('arquivados-filter');
+  if (archFilter) {
+    archFilter.querySelectorAll('.pill-toggle').forEach(function(b) {
+      b.addEventListener('click', function() {
+        archFilter.querySelectorAll('.pill-toggle').forEach(function(x) { x.classList.remove('active'); });
+        b.classList.add('active');
+      });
+    });
+  }
+
+  // Entry modal (tarefa) — abre a partir de Tarefas, do módulo do projeto e do incidente
+  var entryModal = document.getElementById('entry-modal');
+  var entryOrigin = document.getElementById('entry-modal-origin');
+  var entryNameInput = document.querySelector('#entry-modal .text-input[type="text"]');
+  var entryTitle = document.querySelector('#entry-modal .modal-head h2');
+
+  function openEntryModal(opts) {
+    entryTitle.textContent = opts.title;
+    entryOrigin.textContent = opts.origin;
+    entryNameInput.value = opts.name || '';
+    entryModal.classList.add('show');
+  }
+  function closeEntryModal() { entryModal.classList.remove('show'); }
+
+  document.addEventListener('click', function(e) {
+    var trigger = e.target.closest('[data-open-entry]');
+    if (trigger) {
+      openEntryModal({ title: 'Nova tarefa', origin: trigger.getAttribute('data-origin') || 'Novo · sem vínculo', name: '' });
+      return;
+    }
+    if (e.target.tagName === 'INPUT') return;
+    var row = e.target.closest('.entry-row');
+    if (row) {
+      var nameEl = row.querySelector('.name, .t, .title');
+      var origin = 'Novo · sem vínculo';
+      if (row.closest('#pmod-tasks')) origin = 'Projeto: Implementação CRM';
+      else if (row.closest('#mod-tasks')) origin = 'Incidente: Erro de sincronização de propostas';
+      else {
+        var cells = row.querySelectorAll('td');
+        if (cells.length >= 3) origin = cells[2].textContent.trim();
+      }
+      openEntryModal({ title: 'Editar tarefa', origin: origin, name: nameEl ? nameEl.textContent.trim() : '' });
+    }
+  });
+
+  document.getElementById('entry-modal-close').addEventListener('click', closeEntryModal);
+  document.getElementById('entry-modal-cancel').addEventListener('click', closeEntryModal);
+  entryModal.addEventListener('click', function(e) { if (e.target === entryModal) closeEntryModal(); });
+
+  document.querySelectorAll('.status-pick').forEach(function(group) {
+    group.querySelectorAll('button').forEach(function(b) {
+      b.addEventListener('click', function() {
+        group.querySelectorAll('button').forEach(function(x) { x.classList.remove('active'); });
+        b.classList.add('active');
+      });
+    });
+  });
+
+  var personMenu = document.getElementById('entry-modal-person-menu');
+  var activeSlot = null;
+
+  function emptySlot(slot) {
+    slot.innerHTML = '<button class="add-person-btn" data-person-trigger>+</button>';
+  }
+
+  document.querySelectorAll('.person-slot').forEach(function(slot) {
+    slot.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (e.target.classList.contains('x')) {
+        emptySlot(slot);
+        return;
+      }
+      activeSlot = slot;
+      slot.appendChild(personMenu);
+      personMenu.classList.add('show');
+    });
+  });
+  personMenu.querySelectorAll('button').forEach(function(b) {
+    b.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (!activeSlot) return;
+      var name = b.textContent.trim();
+      var initials = name.split(' ').map(function(w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
+      activeSlot.innerHTML = '<span class="chip-person"><span class="avatar-stack"><span class="av">' + initials + '</span></span>' + name + '<span class="x">×</span></span>';
+      personMenu.classList.remove('show');
+      document.getElementById('entry-modal').querySelector('.modal-body').appendChild(personMenu);
+      activeSlot = null;
+    });
+  });
+  document.addEventListener('click', function(e) {
+    if (personMenu.classList.contains('show') && !personMenu.contains(e.target) && !e.target.closest('.person-slot')) {
+      personMenu.classList.remove('show');
+    }
+  });
+</script>
