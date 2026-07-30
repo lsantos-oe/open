@@ -180,6 +180,8 @@
     "hasDependents": "{{count}} entr(a/as) depende(m) desta. As dependências serão removidas automaticamente.",
     "moveToPhase": "A entry será movida para \"{{phase}}\"",
     "owners": "Responsáveis",
+    "executor": "Executor",
+    "validator": "Validador (opcional)",
     "addOwner": "Adicionar responsável",
     "fromTeam": "Da equipe",
     "fromUser": "Usuário",

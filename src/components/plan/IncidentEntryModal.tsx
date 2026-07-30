@@ -58,10 +58,16 @@ function emptyForm(): Form {
 }
 
 function entryToForm(entry: Entry): Form {
+  let owners = entry.owners ?? []
+  // Legacy rows saved before Executor/Validador existed have no `kind` — treat
+  // the first owner as the executor so old entries still open with one set.
+  if (owners.length > 0 && !owners.some((o) => o.kind)) {
+    owners = owners.map((o, i) => (i === 0 ? { ...o, kind: 'executor' as const } : o))
+  }
   return {
     name: entry.name,
     type: entry.type,
-    owners: entry.owners ?? [],
+    owners,
     status: entry.status,
     riskFlag: entry.riskFlag,
     plannedStart: entry.plannedStart ?? '',
@@ -122,11 +128,12 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, onCl
   }
 
   function buildEntryBase() {
+    const executor = form.owners.find((o) => o.kind === 'executor')
     return {
       name: form.name.trim(),
       type: form.type,
       owners: form.owners,
-      responsible: form.owners[0]?.name ?? '',
+      responsible: executor?.name ?? '',
       status: form.status,
       riskFlag: form.riskFlag,
       dependsOn: form.dependsOn,
@@ -141,7 +148,7 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, onCl
   }
 
   function handleSaveCreate() {
-    if (!form.name.trim()) return
+    if (!form.name.trim() || !form.owners.some((o) => o.kind === 'executor')) return
     if (form.type === 'task' && form.plannedStart && form.plannedEnd && form.plannedEnd < form.plannedStart) {
       setEndDateError(t('errors.endBeforeStart')); return
     }
@@ -150,12 +157,13 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, onCl
   }
 
   function handleSaveEdit() {
-    if (!entry || !form.name.trim()) return
+    if (!entry || !form.name.trim() || !form.owners.some((o) => o.kind === 'executor')) return
     if (form.type === 'task' && form.plannedStart && form.plannedEnd && form.plannedEnd < form.plannedStart) {
       setEndDateError(t('errors.endBeforeStart')); return
     }
+    const executor = form.owners.find((o) => o.kind === 'executor')
     updateIncidentEntry(incidentId, entry.id, {
-      name: form.name.trim(), owners: form.owners, responsible: form.owners[0]?.name ?? '',
+      name: form.name.trim(), owners: form.owners, responsible: executor?.name ?? '',
       status: form.status, riskFlag: form.riskFlag, dependsOn: form.dependsOn,
       durationDays: form.type === 'task' ? form.durationDays : undefined,
       durationHours: form.type === 'meeting' ? form.durationHours : undefined,
@@ -204,7 +212,7 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, onCl
       )}
       {mode === 'create' && <div style={{ flex: 1 }} />}
       <Button variant="secondary" onClick={onClose}>{t('actions.cancel')}</Button>
-      <Button onClick={mode === 'edit' ? handleSaveEdit : handleSaveCreate} disabled={!form.name.trim()}>
+      <Button onClick={mode === 'edit' ? handleSaveEdit : handleSaveCreate} disabled={!form.name.trim() || !form.owners.some((o) => o.kind === 'executor')}>
         {mode === 'edit' ? t('entry.saveChanges') : t('actions.confirm')}
       </Button>
     </div>
@@ -243,9 +251,27 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, onCl
           style={{ width: '100%', fontSize: 16, fontWeight: 500, border: 'none', borderBottom: '2px solid var(--border-default)', outline: 'none', background: 'transparent', color: 'var(--text-primary)', paddingBottom: 8, boxSizing: 'border-box' }}
         />
 
-        <div>
-          <FieldLabel>{t('entry.owners')}</FieldLabel>
-          <OwnersField owners={form.owners} onChange={(owners) => set('owners', owners)} teamMembers={directoryAsTeam} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div>
+            <FieldLabel>{t('entry.executor')}</FieldLabel>
+            <OwnersField
+              owners={form.owners.filter((o) => o.kind === 'executor')}
+              onChange={(next) => set('owners', [...form.owners.filter((o) => o.kind !== 'executor'), ...next])}
+              teamMembers={directoryAsTeam}
+              max={1}
+              kind="executor"
+            />
+          </div>
+          <div>
+            <FieldLabel>{t('entry.validator')}</FieldLabel>
+            <OwnersField
+              owners={form.owners.filter((o) => o.kind === 'validator')}
+              onChange={(next) => set('owners', [...form.owners.filter((o) => o.kind !== 'validator'), ...next])}
+              teamMembers={directoryAsTeam}
+              max={1}
+              kind="validator"
+            />
+          </div>
         </div>
 
         {form.type === 'task' && (

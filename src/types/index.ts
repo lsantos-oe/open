@@ -31,6 +31,9 @@ export interface EntryOwner {
   contactId?: string
   name: string
   role?: string
+  /** Assignment kind on an Entry — executor (required) vs validador (optional).
+   *  Unrelated to `role` above, which is a free-text job title. */
+  kind?: 'executor' | 'validator'
 }
 
 export interface Entry {

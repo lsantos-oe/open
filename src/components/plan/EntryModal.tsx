@@ -90,7 +90,7 @@ function emptyForm(
 }
 
 function entryToForm(entry: Entry, projectId: string, phaseId: string): Form {
-  const owners: EntryOwner[] =
+  let owners: EntryOwner[] =
     entry.owners && entry.owners.length > 0
       ? entry.owners.map((o) => ({ ...o }))
       : entry.responsible
@@ -101,6 +101,12 @@ function entryToForm(entry: Entry, projectId: string, phaseId: string): Form {
             name: entry.responsible,
           }]
         : []
+
+  // Legacy rows saved before Executor/Validador existed have no `kind` — treat
+  // the first owner as the executor so old entries still open with one set.
+  if (owners.length > 0 && !owners.some((o) => o.kind)) {
+    owners = owners.map((o, i) => (i === 0 ? { ...o, kind: 'executor' as const } : o))
+  }
 
   return {
     name: entry.name,
@@ -357,11 +363,12 @@ export default function EntryModal({
   // ── build patch ───────────────────────────────────────────────────────────
 
   function buildOwnerPatch() {
+    const executor = form.owners.find((o) => o.kind === 'executor')
     return {
       owners: form.owners,
-      responsible: form.owners[0]?.name ?? '',
-      responsibleMemberId: form.owners.find((o) => o.type === 'member')?.memberId,
-      responsibleMode: (form.owners.find((o) => o.type === 'member') ? 'member' : 'free') as 'member' | 'free',
+      responsible: executor?.name ?? '',
+      responsibleMemberId: executor?.type === 'member' ? executor.memberId : undefined,
+      responsibleMode: (executor?.type === 'member' ? 'member' : 'free') as 'member' | 'free',
     }
   }
 
@@ -388,7 +395,7 @@ export default function EntryModal({
   // ── save / delete ─────────────────────────────────────────────────────────
 
   function handleSaveCreate() {
-    if (!form.name.trim() || !form.phaseId) return
+    if (!form.name.trim() || !form.phaseId || !form.owners.some((o) => o.kind === 'executor')) return
     if (form.type === 'task' && form.plannedStart && form.plannedEnd && form.plannedEnd < form.plannedStart) {
       setEndDateError(t('errors.endBeforeStart'))
       return
@@ -405,7 +412,7 @@ export default function EntryModal({
   }
 
   function handleSaveEdit() {
-    if (!entry || !form.name.trim()) return
+    if (!entry || !form.name.trim() || !form.owners.some((o) => o.kind === 'executor')) return
     if (form.type === 'task' && form.plannedStart && form.plannedEnd && form.plannedEnd < form.plannedStart) {
       setEndDateError(t('errors.endBeforeStart'))
       return
@@ -499,7 +506,7 @@ export default function EntryModal({
       <Button variant="secondary" onClick={onClose}>{t('actions.cancel')}</Button>
       <Button
         onClick={mode === 'edit' ? handleSaveEdit : handleSaveCreate}
-        disabled={!form.name.trim()}
+        disabled={!form.name.trim() || !form.owners.some((o) => o.kind === 'executor')}
       >
         {mode === 'edit' ? t('entry.saveChanges') : t('actions.confirm')}
       </Button>
@@ -557,14 +564,28 @@ export default function EntryModal({
             onBlur={e => (e.currentTarget.style.borderBottomColor = 'var(--border-default)')}
           />
 
-          {/* Owners */}
-          <div>
-            <FieldLabel>{t('entry.owners')}</FieldLabel>
-            <OwnersField
-              owners={form.owners}
-              onChange={(owners) => set('owners', owners)}
-              teamMembers={selectedTeam}
-            />
+          {/* Executor / Validador */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div>
+              <FieldLabel>{t('entry.executor')}</FieldLabel>
+              <OwnersField
+                owners={form.owners.filter((o) => o.kind === 'executor')}
+                onChange={(next) => set('owners', [...form.owners.filter((o) => o.kind !== 'executor'), ...next])}
+                teamMembers={selectedTeam}
+                max={1}
+                kind="executor"
+              />
+            </div>
+            <div>
+              <FieldLabel>{t('entry.validator')}</FieldLabel>
+              <OwnersField
+                owners={form.owners.filter((o) => o.kind === 'validator')}
+                onChange={(next) => set('owners', [...form.owners.filter((o) => o.kind !== 'validator'), ...next])}
+                teamMembers={selectedTeam}
+                max={1}
+                kind="validator"
+              />
+            </div>
           </div>
 
           {/* Date fields — task */}

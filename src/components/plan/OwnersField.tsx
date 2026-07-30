@@ -13,9 +13,15 @@ interface Props {
   owners: EntryOwner[]
   onChange: (owners: EntryOwner[]) => void
   teamMembers: TeamMember[]
+  /** Caps how many owners this field holds — once at max, picking someone new
+   *  replaces the existing one(s) instead of appending. */
+  max?: number
+  /** Tags every owner added through this field instance (e.g. 'executor'/'validator'),
+   *  so a single Entry can carry multiple OwnersField instances for different roles. */
+  kind?: EntryOwner['kind']
 }
 
-export default function OwnersField({ owners, onChange, teamMembers }: Props) {
+export default function OwnersField({ owners, onChange, teamMembers, max, kind }: Props) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<'member' | 'text'>('member')
@@ -33,6 +39,10 @@ export default function OwnersField({ owners, onChange, teamMembers }: Props) {
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
+  function withMax(next: EntryOwner[]): EntryOwner[] {
+    return max ? next.slice(next.length - max) : next
+  }
+
   function memberAlreadyAdded(member: TeamMember): boolean {
     return member.userId
       ? owners.some((o) => o.memberId === member.userId)
@@ -44,17 +54,17 @@ export default function OwnersField({ owners, onChange, teamMembers }: Props) {
     // Only a team member linked to a real registered user (userId) can be stored as
     // type:'member' — entries.responsible_member_id has a FK to profiles(id), so an
     // unlinked (external/free-text) team member must fall back to type:'text' instead.
-    onChange([
+    onChange(withMax([
       ...owners,
       member.userId
-        ? { id: crypto.randomUUID(), type: 'member', memberId: member.userId, name: member.name, role: member.role }
-        : { id: crypto.randomUUID(), type: 'text', name: member.name, role: member.role },
-    ])
+        ? { id: crypto.randomUUID(), type: 'member', memberId: member.userId, name: member.name, role: member.role, kind }
+        : { id: crypto.randomUUID(), type: 'text', name: member.name, role: member.role, kind },
+    ]))
   }
 
   function addFreeText() {
     if (!freeText.trim()) return
-    onChange([...owners, { id: crypto.randomUUID(), type: 'text', name: freeText.trim() }])
+    onChange(withMax([...owners, { id: crypto.randomUUID(), type: 'text', name: freeText.trim(), kind }]))
     setFreeText('')
   }
 

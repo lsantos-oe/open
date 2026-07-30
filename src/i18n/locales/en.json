@@ -180,6 +180,8 @@
     "hasDependents": "{{count}} entr(y/ies) depend(s) on this. Dependencies will be removed automatically.",
     "moveToPhase": "Entry will be moved to \"{{phase}}\"",
     "owners": "Owners",
+    "executor": "Executor",
+    "validator": "Validator (optional)",
     "addOwner": "Add owner",
     "fromTeam": "From team",
     "fromUser": "User",
