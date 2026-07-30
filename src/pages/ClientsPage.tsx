@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/store/useAppStore'
+import { useAuthStore } from '@/stores/useAuthStore'
 import { Button } from '@/components/ui/Button'
 import { Input, Field, Select } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
@@ -10,6 +11,8 @@ import { StatusDot } from '@/components/ui/StatusDot'
 import { AvatarStack } from '@/components/ui/AvatarStack'
 import { FilterMenu } from '@/components/ui/FilterMenu'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { SelectionBar } from '@/components/ui/SelectionBar'
+import { isClientMine } from '@/utils/involvement'
 import { findCountry } from '@/data/countries'
 import { exportClientsCsv } from '@/utils/exportListsCsv'
 import { ClientStatus, EntryOwner, TeamMember } from '@/types'
@@ -30,7 +33,9 @@ const STATUSES: ClientStatus[] = ['pre_venda', 'implantacao', 'sustentacao_novos
 
 export default function ClientsPage() {
   const navigate = useNavigate()
-  const { clients, teamDirectory, createClient, projects } = useAppStore()
+  const { clients, teamDirectory, createClient, updateClient } = useAppStore()
+  const { user } = useAuthStore()
+  const projects = useAppStore((s) => s.projects)
 
   const [view, setView] = useState<'list' | 'kanban'>(() =>
     (localStorage.getItem('pb-carteira-view') as 'list' | 'kanban') ?? 'list',
@@ -41,6 +46,11 @@ export default function ClientsPage() {
   const [query, setQuery] = useState('')
   const [countryFilter, setCountryFilter] = useState('')
   const [ownerFilter, setOwnerFilter] = useState('')
+  const [onlyMine, setOnlyMine] = useState(false)
+
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkOwnersOpen, setBulkOwnersOpen] = useState(false)
+  const [bulkOwners, setBulkOwners] = useState<EntryOwner[]>([])
 
   const [name, setName] = useState('')
   const [country, setCountry] = useState<string | undefined>(undefined)
@@ -60,12 +70,27 @@ export default function ClientsPage() {
 
   const filtered = useMemo(() => {
     return clients.filter((c) => {
+      if (onlyMine && !isClientMine(c, user?.id)) return false
       if (query.trim() && !c.name.toLowerCase().includes(query.trim().toLowerCase())) return false
       if (countryFilter && c.country !== countryFilter) return false
       if (ownerFilter && !c.owners.some((o) => o.memberId === ownerFilter)) return false
       return true
     })
-  }, [clients, query, countryFilter, ownerFilter])
+  }, [clients, query, countryFilter, ownerFilter, onlyMine, user])
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  function applyBulkOwners() {
+    for (const id of selected) updateClient(id, { owners: bulkOwners })
+    setSelected(new Set())
+    setBulkOwnersOpen(false)
+  }
 
   const sorted = [...filtered].sort((a, b) => a.name.localeCompare(b.name))
 
@@ -126,6 +151,15 @@ export default function ClientsPage() {
           placeholder="Buscar cliente..."
           className="flex-1 min-w-[180px]"
         />
+        <button
+          onClick={() => setOnlyMine((v) => !v)}
+          className="text-xs font-medium px-3 py-1.5 rounded-[var(--radius-pill)] transition-colors whitespace-nowrap"
+          style={onlyMine
+            ? { background: 'var(--oe-primary)', color: 'white' }
+            : { border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}
+        >
+          Meus
+        </button>
         <FilterMenu
           activeCount={[countryFilter, ownerFilter].filter(Boolean).length}
           onClear={() => { setCountryFilter(''); setOwnerFilter('') }}
@@ -158,6 +192,7 @@ export default function ClientsPage() {
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10">
               <tr style={{ background: 'var(--surface-subtle)' }}>
+                <th className="px-4 py-2" style={{ width: 32 }} />
                 <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>Cliente</th>
                 <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>País</th>
                 <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>Status</th>
@@ -177,6 +212,9 @@ export default function ClientsPage() {
                     onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
                     onMouseLeave={e => (e.currentTarget.style.background = '')}
                   >
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                      <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]" checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} />
+                    </td>
                     <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-primary)' }}>{c.name}</td>
                     <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{findCountry(c.country)?.name ?? '—'}</td>
                     <td className="px-4 py-3"><StatusDot color={STATUS_COLOR[c.status]} label={STATUS_LABEL[c.status]} /></td>
@@ -203,16 +241,24 @@ export default function ClientsPage() {
                 </div>
                 <div className="space-y-2">
                   {cards.map((c) => (
-                    <button
+                    <div
                       key={c.id}
                       onClick={() => navigate(`/wallet/${c.id}`)}
-                      className="w-full text-left rounded-[var(--radius-lg)] p-3 shadow-sm border hover:border-[var(--oe-primary)] hover:shadow transition-all"
+                      role="button"
+                      className="relative w-full text-left rounded-[var(--radius-lg)] p-3 shadow-sm border hover:border-[var(--oe-primary)] hover:shadow transition-all cursor-pointer"
                       style={{ background: 'var(--surface-card)', borderColor: 'var(--border-default)' }}
                     >
-                      <p className="font-medium text-sm mb-1" style={{ color: 'var(--text-primary)' }}>{c.name}</p>
+                      <input
+                        type="checkbox"
+                        checked={selected.has(c.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={() => toggleSelect(c.id)}
+                        className="absolute top-2 right-2 rounded border-[var(--border-default)] accent-[var(--oe-primary)]"
+                      />
+                      <p className="font-medium text-sm mb-1 pr-5" style={{ color: 'var(--text-primary)' }}>{c.name}</p>
                       <p className="text-xs mb-2" style={{ color: 'var(--text-tertiary)' }}>{findCountry(c.country)?.name ?? '—'}</p>
                       <AvatarStack people={c.owners} size={18} />
-                    </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -267,6 +313,31 @@ export default function ClientsPage() {
           </button>
         </div>
       )}
+
+      <SelectionBar count={selected.size} onClear={() => setSelected(new Set())}>
+        <button
+          onClick={() => { setBulkOwners([]); setBulkOwnersOpen(true) }}
+          className="text-xs px-2 py-1 rounded-[var(--radius-md)]"
+          style={{ background: 'rgba(255,255,255,0.15)' }}
+        >
+          Alterar owner
+        </button>
+      </SelectionBar>
+
+      <Modal
+        open={bulkOwnersOpen}
+        title={`Alterar owner de ${selected.size} item(ns)`}
+        onClose={() => setBulkOwnersOpen(false)}
+        size="sm"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setBulkOwnersOpen(false)}>Cancelar</Button>
+            <Button onClick={applyBulkOwners} disabled={bulkOwners.length === 0}>Aplicar</Button>
+          </>
+        }
+      >
+        <OwnersField owners={bulkOwners} onChange={setBulkOwners} teamMembers={directoryAsTeam} />
+      </Modal>
     </div>
   )
 }

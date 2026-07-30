@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
@@ -37,15 +37,23 @@ const PRIORITY_COLOR: Record<Probability, string> = {
   high: 'var(--color-danger-text)',
 }
 
+const KANBAN_STATUSES: IncidentStatus[] = ['open', 'in_progress', 'waiting_on_client', 'resolved', 'closed']
+
 export default function IncidentsPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { incidents, clients, teamDirectory, settings, createIncident, addIncidentEntry, updateIncident, updateIncidentStatus, linkIncidentClient } = useAppStore()
   const { user } = useAuthStore()
 
+  const [view, setView] = useState<'list' | 'kanban'>(() =>
+    (localStorage.getItem('pb-support-view') as 'list' | 'kanban') ?? 'list',
+  )
+  const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [priorityFilter, setPriorityFilter] = useState('')
   const [onlyMine, setOnlyMine] = useState(false)
+
+  useEffect(() => { localStorage.setItem('pb-support-view', view) }, [view])
   const [showAdd, setShowAdd] = useState(false)
   const [title, setTitle] = useState('')
   const [newClientIds, setNewClientIds] = useState<string[]>([])
@@ -66,18 +74,22 @@ export default function IncidentsPage() {
     [teamDirectory],
   )
 
+  function clientNames(clientIds: string[]): string {
+    return clientIds.map((id) => clients.find((c) => c.id === id)?.name).filter(Boolean).join(', ') || '—'
+  }
+
   const filtered = useMemo(() => {
     return incidents.filter((i) => {
       if (onlyMine && !isIncidentMine(i, user?.id)) return false
+      if (search.trim()) {
+        const haystack = (i.title + ' ' + clientNames(i.clientIds)).toLowerCase()
+        if (!haystack.includes(search.trim().toLowerCase())) return false
+      }
       if (statusFilter && i.status !== statusFilter) return false
       if (priorityFilter && i.priority !== priorityFilter) return false
       return true
     })
-  }, [incidents, statusFilter, priorityFilter, onlyMine, user])
-
-  function clientNames(clientIds: string[]): string {
-    return clientIds.map((id) => clients.find((c) => c.id === id)?.name).filter(Boolean).join(', ') || '—'
-  }
+  }, [incidents, search, statusFilter, priorityFilter, onlyMine, user])
 
   function openAdd() {
     setTitle(''); setNewClientIds([]); setNewOwners([]); setPriority('medium'); setImpact('medium'); setDeadline(''); setTemplateId('')
@@ -164,11 +176,35 @@ export default function IncidentsPage() {
           <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{t('incident.title')}</h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{filtered.length} / {incidents.length}</p>
         </div>
-        <Button onClick={openAdd}>{t('incident.new')}</Button>
+        <div className="flex items-center gap-3">
+          <div className="flex rounded-[var(--radius-lg)] border border-[var(--border-default)] overflow-hidden">
+            <button
+              onClick={() => setView('list')}
+              className={`px-3 py-2 text-sm transition-colors ${view === 'list' ? 'bg-[var(--text-primary)] text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'}`}
+              title="Lista"
+            >
+              <ListIcon />
+            </button>
+            <button
+              onClick={() => setView('kanban')}
+              className={`px-3 py-2 text-sm transition-colors ${view === 'kanban' ? 'bg-[var(--text-primary)] text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'}`}
+              title="Kanban"
+            >
+              <KanbanIcon />
+            </button>
+          </div>
+          <Button onClick={openAdd}>{t('incident.new')}</Button>
+        </div>
       </div>
 
       {incidents.length > 0 && (
         <div className="flex items-center gap-3 mb-5 flex-wrap">
+          <div className="relative" style={{ width: 220 }}>
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }}>
+              <SearchIcon />
+            </span>
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar incidente..." className="pl-8" />
+          </div>
           <button
             onClick={() => setOnlyMine((v) => !v)}
             className="text-xs font-medium px-3 py-1.5 rounded-[var(--radius-pill)] transition-colors"
@@ -206,6 +242,40 @@ export default function IncidentsPage() {
         <EmptyState icon="🛠️" title={t('incident.noIncidents')} action={{ label: t('incident.createFirst'), onClick: openAdd }} />
       ) : filtered.length === 0 ? (
         <EmptyState icon="🛠️" title="Nenhum incidente encontrado com esses filtros." />
+      ) : view === 'kanban' ? (
+        <div className="grid grid-cols-5 gap-4">
+          {KANBAN_STATUSES.map((status) => {
+            const cards = filtered.filter((i) => i.status === status)
+            return (
+              <div key={status} className="border rounded-[var(--radius-lg)] p-3 min-h-[300px]" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-subtle)' }}>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>{t(`incident.status_${status}`)}</span>
+                  <span className="rounded-[var(--radius-pill)] text-xs px-2 py-0.5 font-medium border" style={{ background: 'var(--surface-card)', color: 'var(--text-secondary)', borderColor: 'var(--border-default)' }}>
+                    {cards.length}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {cards.map((i) => (
+                    <div
+                      key={i.id}
+                      onClick={() => navigate(`/support/${i.id}`)}
+                      role="button"
+                      className="w-full text-left rounded-[var(--radius-lg)] p-3 shadow-sm border hover:border-[var(--oe-primary)] hover:shadow transition-all cursor-pointer"
+                      style={{ background: 'var(--surface-card)', borderColor: 'var(--border-default)' }}
+                    >
+                      <p className="font-medium text-sm mb-1 line-clamp-2" style={{ color: 'var(--text-primary)' }}>{i.title}</p>
+                      <p className="text-xs mb-2" style={{ color: 'var(--text-tertiary)' }}>{clientNames(i.clientIds)}</p>
+                      <div className="flex items-center justify-between">
+                        <AvatarStack people={i.owner ? [{ name: i.owner.name }] : []} size={18} />
+                        <StatusDot color={PRIORITY_COLOR[i.priority]} label={t(`risk.${i.priority}`)} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
       ) : (
         <div className="rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
           <table className="w-full text-sm">
@@ -403,5 +473,29 @@ export default function IncidentsPage() {
         </div>
       )}
     </div>
+  )
+}
+
+function ListIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+    </svg>
+  )
+}
+
+function KanbanIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
+    </svg>
+  )
+}
+
+function SearchIcon() {
+  return (
+    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.2-5.2m0 0a7.5 7.5 0 10-10.6-10.6 7.5 7.5 0 0010.6 10.6z" />
+    </svg>
   )
 }

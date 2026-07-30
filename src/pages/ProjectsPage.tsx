@@ -605,6 +605,7 @@ export default function ProjectsPage() {
   const [view, setView] = useState<'list' | 'kanban'>(() =>
     (localStorage.getItem('pb-portfolio-view') as 'list' | 'kanban') ?? 'list',
   )
+  const [search, setSearch] = useState('')
   const [filters, setFilters] = useState<Filters>({ client: '', pm: '', type: '', dev: '' })
   const [onlyMine, setOnlyMine] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
@@ -627,8 +628,11 @@ export default function ProjectsPage() {
   const members = useMemo(() => uniqueMembers(projects), [projects])
   const filtered = useMemo(() => {
     const base = onlyMine ? projects.filter((p) => isProjectMine(p, user?.id)) : projects
-    return applyFilters(base, filters)
-  }, [projects, filters, onlyMine, user])
+    const bySearch = search.trim()
+      ? base.filter((p) => (p.name + ' ' + p.client).toLowerCase().includes(search.trim().toLowerCase()))
+      : base
+    return applyFilters(bySearch, filters)
+  }, [projects, filters, onlyMine, user, search])
 
   function toggleSelect(id: string) {
     setSelected((prev) => {
@@ -734,7 +738,18 @@ export default function ProjectsPage() {
 
       {/* Filters */}
       {!projectsLoading && projects.length > 0 && (
-        <div className="mb-5">
+        <div className="mb-5 flex items-center gap-2.5">
+          <div className="relative flex-1 max-w-xs">
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }}>
+              <SearchIcon />
+            </span>
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar projeto..."
+              className="pl-8"
+            />
+          </div>
           <FilterBar filters={filters} setFilters={setFilters} clients={clientNames} pms={pms} />
         </div>
       )}
@@ -894,6 +909,14 @@ function KanbanIcon() {
   return (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
+    </svg>
+  )
+}
+
+function SearchIcon() {
+  return (
+    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.2-5.2m0 0a7.5 7.5 0 10-10.6-10.6 7.5 7.5 0 0010.6 10.6z" />
     </svg>
   )
 }

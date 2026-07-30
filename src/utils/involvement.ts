@@ -1,4 +1,4 @@
-import { Project, Incident, Entry } from '@/types'
+import { Project, Incident, Entry, Client } from '@/types'
 
 /** "Meu" = usuário está no time do projeto com uma conta real vinculada (userId).
  *  PM/Dev Lead em texto livre não contam — só time vinculado. */
@@ -16,4 +16,9 @@ export function isIncidentMine(incident: Incident, userId?: string): boolean {
 export function isEntryMine(entry: Entry, userId?: string): boolean {
   if (!userId) return false
   return (entry.owners ?? []).some((o) => o.memberId === userId)
+}
+
+export function isClientMine(client: Client, userId?: string): boolean {
+  if (!userId) return false
+  return client.owners.some((o) => o.memberId === userId)
 }

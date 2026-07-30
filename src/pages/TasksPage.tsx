@@ -275,6 +275,7 @@ export default function TasksPage() {
   const [view, setView] = useState<'kanban' | 'table'>(() =>
     (localStorage.getItem('pb-tasks-view') as 'kanban' | 'table') ?? 'kanban',
   )
+  const [search, setSearch] = useState('')
   const [filterScope, setFilterScope] = useState('')
   const [filterMember, setFilterMember] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
@@ -305,6 +306,7 @@ export default function TasksPage() {
   const filteredCards = useMemo(() => {
     return allCards.filter(c => {
       if (onlyMine && !isEntryMine(c, user?.id)) return false
+      if (search.trim() && !c.name.toLowerCase().includes(search.trim().toLowerCase())) return false
       if (filterScope && c._scopeId !== filterScope) return false
       if (filterMember) {
         const owners = entryOwners(c)
@@ -313,7 +315,7 @@ export default function TasksPage() {
       if (filterStatus && c.status !== filterStatus) return false
       return true
     })
-  }, [allCards, onlyMine, user?.id, filterScope, filterMember, filterStatus])
+  }, [allCards, onlyMine, user?.id, search, filterScope, filterMember, filterStatus])
 
   function toggleSelect(id: string) {
     setSelected((prev) => {
@@ -423,6 +425,21 @@ export default function TasksPage() {
         >
           Meus
         </button>
+
+        <div className="relative" style={{ width: 220 }}>
+          <span className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }}>
+            <SearchIcon />
+          </span>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar tarefa..."
+            style={{
+              width: '100%', fontSize: 12.5, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)',
+              padding: '6px 10px 6px 30px', background: 'var(--surface-subtle)', color: 'var(--text-primary)', outline: 'none',
+            }}
+          />
+        </div>
 
         <div style={{ flex: 1 }} />
 
@@ -592,5 +609,13 @@ export default function TasksPage() {
         </div>
       )}
     </div>
+  )
+}
+
+function SearchIcon() {
+  return (
+    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.2-5.2m0 0a7.5 7.5 0 10-10.6-10.6 7.5 7.5 0 0010.6 10.6z" />
+    </svg>
   )
 }
