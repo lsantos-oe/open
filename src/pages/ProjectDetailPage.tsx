@@ -467,7 +467,7 @@ export default function ProjectDetailPage() {
   if (currentPhase) chips.push({ label: t('plan.phase'), value: currentPhase })
 
   return (
-    <div className="flex flex-col min-h-full">
+    <div className="flex flex-col min-h-full min-w-0">
 
       {/* ── Topbar ── */}
       <div
@@ -557,11 +557,12 @@ export default function ProjectDetailPage() {
           }))}
           onNavigate={selectTab}
           active={activeTab}
+          background="var(--surface-card)"
         />
       </div>
 
       {/* ── Active tab content ── */}
-      <div className="flex-1 overflow-auto px-5 pt-5 pb-8" style={{ background: 'var(--surface-page)' }}>
+      <div className="flex-1 overflow-auto min-w-0 px-5 pt-5 pb-8" style={{ background: 'var(--surface-page)' }}>
         {activeTab === 'overview' && <OverviewTab project={project} />}
         {activeTab === 'plan' && (
           <PlanPage projectId={project.id} onNavigateToRisk={(riskId) => { setActiveTab('risks'); setFocusRiskId(riskId) }} />

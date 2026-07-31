@@ -214,6 +214,8 @@ interface AppStore {
   updateEntry: (projectId: string, entryId: string, patch: Partial<Entry>) => void
   deleteEntry: (projectId: string, phaseId: string, entryId: string) => void
   moveEntryToPhase: (projectId: string, fromPhaseId: string, toPhaseId: string, entryId: string) => void
+  convertToSubtask: (projectId: string, phaseId: string, entryId: string, parentEntryId: string) => void
+  promoteSubtaskToEntry: (projectId: string, phaseId: string, parentEntryId: string, subtaskId: string) => void
   updateEntryStatus: (projectId: string, entryId: string, status: EntryStatus) => void
   resetStatusOverride: (projectId: string, entryId: string) => void
   recalculateStatuses: (projectId: string) => void
@@ -1508,6 +1510,74 @@ export const useAppStore = create<AppStore>()(
               phases: phases.map((ph) =>
                 ph.id !== toPhaseId ? ph : { ...ph, entries: [...ph.entries, entry] }
               ),
+            })
+          }),
+        }))
+        sync(async () => {
+          const project = get().projects.find((p) => p.id === projectId)
+          if (!project) return
+          await dbSyncAllEntries(project, getUserId())
+        }, () => set({ projects: prev }))
+      },
+
+      convertToSubtask(projectId, phaseId, entryId, parentEntryId) {
+        if (entryId === parentEntryId) return
+        const prev = get().projects
+        set((s) => ({
+          projects: mutateProject(s.projects, projectId, (p) => {
+            let moved: Entry | undefined
+            const phases = p.phases.map((ph) => {
+              if (ph.id !== phaseId) return ph
+              const found = ph.entries.find((e) => e.id === entryId)
+              if (found) moved = found
+              return { ...ph, entries: ph.entries.filter((e) => e.id !== entryId) }
+            })
+            if (!moved) return p
+            const entry = moved
+            return refreshCriticalPath({
+              ...p,
+              phases: phases.map((ph) =>
+                ph.id !== phaseId
+                  ? ph
+                  : {
+                      ...ph,
+                      entries: ph.entries.map((e) =>
+                        e.id !== parentEntryId ? e : { ...e, subtasks: [...e.subtasks, entry] },
+                      ),
+                    },
+              ),
+            })
+          }),
+        }))
+        sync(async () => {
+          const project = get().projects.find((p) => p.id === projectId)
+          if (!project) return
+          await dbSyncAllEntries(project, getUserId())
+        }, () => set({ projects: prev }))
+      },
+
+      promoteSubtaskToEntry(projectId, phaseId, parentEntryId, subtaskId) {
+        const prev = get().projects
+        set((s) => ({
+          projects: mutateProject(s.projects, projectId, (p) => {
+            let promoted: Entry | undefined
+            const phases = p.phases.map((ph) => {
+              if (ph.id !== phaseId) return ph
+              return {
+                ...ph,
+                entries: ph.entries.map((e) => {
+                  if (e.id !== parentEntryId) return e
+                  const found = e.subtasks.find((sub) => sub.id === subtaskId)
+                  if (found) promoted = found
+                  return { ...e, subtasks: e.subtasks.filter((sub) => sub.id !== subtaskId) }
+                }),
+              }
+            })
+            if (!promoted) return p
+            const entry = promoted
+            return refreshCriticalPath({
+              ...p,
+              phases: phases.map((ph) => (ph.id !== phaseId ? ph : { ...ph, entries: [...ph.entries, entry] })),
             })
           }),
         }))

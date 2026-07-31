@@ -6,6 +6,11 @@ import {
   useReactTable, getCoreRowModel, getExpandedRowModel,
   ColumnDef, flexRender, Row, ExpandedState,
 } from '@tanstack/react-table'
+import {
+  DndContext, DragEndEvent, DragOverlay,
+  PointerSensor, useSensor, useSensors,
+  useDroppable, useDraggable,
+} from '@dnd-kit/core'
 import { parseISO } from 'date-fns'
 import { useAppStore } from '@/store/useAppStore'
 import { Entry, Phase, EntryStatus, RiskFlag, EntryType, DelayLogEntry, Project, TeamMember } from '@/types'
@@ -759,6 +764,26 @@ function DelayModal({ pending, holidays, onConfirm, onSkip }: {
 
 // ─── PhaseHeader ──────────────────────────────────────────────────────────────
 
+// ─── DragHandleCell ───────────────────────────────────────────────────────────
+
+function DragHandleCell({ entryId }: { entryId: string }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: entryId })
+  return (
+    <span
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className="w-4 h-4 flex items-center justify-center touch-none"
+      style={{ cursor: isDragging ? 'grabbing' : 'grab', color: 'var(--text-disabled)', opacity: isDragging ? 0.4 : 1 }}
+      title="Arrastar pra mover de fase"
+    >
+      ⠿
+    </span>
+  )
+}
+
+// ─── PhaseHeader ──────────────────────────────────────────────────────────────
+
 function PhaseHeader({ phase, colSpan, collapsed, onToggle, onAdd, onDelete, onRename }: {
   phase: Phase; colSpan: number; collapsed: boolean
   onToggle: () => void; onAdd: () => void; onDelete: () => void; onRename: (name: string) => void
@@ -767,9 +792,10 @@ function PhaseHeader({ phase, colSpan, collapsed, onToggle, onAdd, onDelete, onR
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(phase.name)
   const entryCount = phase.entries.length + phase.entries.reduce((n, e) => n + e.subtasks.length, 0)
+  const { setNodeRef, isOver } = useDroppable({ id: `phase-${phase.id}` })
 
   return (
-    <tr className="select-none" style={{ background: 'var(--surface-subtle)', borderBottom: '0.5px solid var(--border-default)' }}>
+    <tr ref={setNodeRef} className="select-none" style={{ background: isOver ? 'var(--oe-primary-light)' : 'var(--surface-subtle)', borderBottom: isOver ? '0.5px solid var(--oe-primary)' : '0.5px solid var(--border-default)', outline: isOver ? '2px solid var(--oe-primary)' : 'none', outlineOffset: -2, transition: 'background 0.1s' }}>
       <td colSpan={colSpan} style={{ padding: '5px 12px' }}>
         <div className="flex items-center gap-3">
           <button onClick={onToggle}
@@ -921,6 +947,25 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
     setSelected(new Set())
   }
 
+  // ── Drag-and-drop (move a task/milestone to another phase) ────────────────
+
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const dndSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
+
+  function handleDragEnd(e: DragEndEvent) {
+    setDraggingId(null)
+    const { active, over } = e
+    if (!over) return
+    const overId = String(over.id)
+    if (!overId.startsWith('phase-')) return
+    const toPhaseId = overId.slice('phase-'.length)
+    const entryId = String(active.id)
+    const fromPhaseId = entryPhaseMap.get(entryId)
+    if (fromPhaseId && fromPhaseId !== toPhaseId) {
+      moveEntryToPhase(projectId, fromPhaseId, toPhaseId, entryId)
+    }
+  }
+
   // Build flat data for TanStack (entries → subRows for subtasks + child meetings)
   const data = useMemo<PlanRow[]>(() => {
     // Collect child meetings grouped by parentEntryId
@@ -1011,6 +1056,14 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
   // ── Columns ───────────────────────────────────────────────────────────────
 
   const columns = useMemo<ColumnDef<PlanRow>[]>(() => [
+    // Drag handle — top-level rows only; drop on a phase header to move it there
+    {
+      id: 'drag', size: 20,
+      header: () => null,
+      cell: ({ row }) => row.depth === 0
+        ? <DragHandleCell entryId={row.original.id} />
+        : <span className="w-4 inline-block" />,
+    },
     // Select (bulk actions) — top-level rows only, mirrors TasksPage/ProjectsPage/IncidentsPage
     {
       id: 'select', size: 28,
@@ -1246,7 +1299,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-w-0">
       {/* Toolbar */}
       <div className="px-4 py-2.5 flex flex-wrap items-center gap-1.5" style={{ background: 'var(--surface-card)', borderBottom: '1px solid var(--border-default)' }}>
         {/* Add buttons */}
@@ -1316,7 +1369,13 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
       )}
 
       {/* Table */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto min-w-0">
+        <DndContext
+          sensors={dndSensors}
+          onDragStart={(e) => setDraggingId(String(e.active.id))}
+          onDragEnd={handleDragEnd}
+          onDragCancel={() => setDraggingId(null)}
+        >
         <table className="w-full border-collapse" style={{ minWidth: 1300 }}>
           <thead className="sticky top-0 z-10" style={{ background: 'var(--surface-subtle)' }}>
             {table.getHeaderGroups().map((hg) => (
@@ -1403,6 +1462,17 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
             })}
           </tbody>
         </table>
+        <DragOverlay>
+          {draggingId && (
+            <div
+              className="text-xs font-medium px-3 py-1.5 rounded-[var(--radius-md)]"
+              style={{ background: 'var(--surface-card)', border: '1px solid var(--oe-primary)', color: 'var(--text-primary)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
+            >
+              {entryNameMap.get(draggingId) ?? ''}
+            </div>
+          )}
+        </DragOverlay>
+        </DndContext>
       </div>
 
       {/* Column visibility menu */}

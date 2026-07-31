@@ -34,6 +34,48 @@ function findEntry(entries: Entry[], entryId: string): Entry | undefined {
   return undefined
 }
 
+function summarizeEntry(e: Entry) {
+  return {
+    id: e.id, name: e.name, type: e.type, status: e.status,
+    subtasks: e.subtasks.map((sub) => ({ id: sub.id, name: sub.name, type: sub.type, status: sub.status })),
+  }
+}
+
+export const listTasksTool: AiTool = {
+  name: 'list_tasks',
+  description: 'Lista as tarefas/marcos/reuniões (com id de cada uma, e de cada subtarefa) de um projeto (todas as fases, ou uma fase específica) ou de um incidente. Use sempre que só tiver os nomes (ex: vindos de um relatório) e precisar do id real pra chamar update_task, convert_to_subtask, promote_subtask etc.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      projectId: { type: 'string', description: 'Id do projeto (obtido via find_project) — obrigatório se for tarefa de projeto' },
+      phaseId: { type: 'string', description: 'Filtra por uma fase específica (opcional, obtido via list_phases)' },
+      incidentId: { type: 'string', description: 'Id do incidente (obtido via find_incident) — obrigatório se for tarefa de incidente' },
+    },
+  },
+  isWrite: false,
+  async execute(input) {
+    const store = useAppStore.getState()
+    if (input.incidentId) {
+      const incident = store.incidents.find((i) => i.id === input.incidentId)
+      if (!incident) return { error: 'Incidente não encontrado.' }
+      return { tasks: incident.entries.map(summarizeEntry) }
+    }
+    if (input.projectId) {
+      const project = store.projects.find((p) => p.id === input.projectId)
+      if (!project) return { error: 'Projeto não encontrado.' }
+      const phases = input.phaseId ? project.phases.filter((ph) => ph.id === input.phaseId) : project.phases
+      return {
+        phases: phases.map((ph) => ({
+          phaseId: ph.id,
+          phaseName: ph.name,
+          tasks: ph.entries.map(summarizeEntry),
+        })),
+      }
+    }
+    return { error: 'É necessário informar projectId ou incidentId.' }
+  },
+}
+
 export const createTaskTool: AiTool = {
   name: 'create_task',
   description: 'Cria uma nova tarefa, marco ou reunião em um projeto ou em um incidente. Toda tarefa precisa de um Executor; o Validador é opcional. Datas/duração são opcionais — se omitidas, o item entra sem agendamento e pode ser agendado depois com update_task. Sempre requer confirmação do usuário antes de executar.',
@@ -195,5 +237,54 @@ export const updateTaskTool: AiTool = {
       return { success: true, scope: 'project', projectId: input.projectId, entryId }
     }
     return { error: 'É necessário informar projectId ou incidentId.' }
+  },
+}
+
+export const convertToSubtaskTool: AiTool = {
+  name: 'convert_to_subtask',
+  description: 'Transforma uma tarefa de nível superior em subtarefa de outra tarefa, na mesma fase de um projeto (use list_tasks pra obter os ids). Sempre requer confirmação do usuário antes de executar.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      projectId: { type: 'string', description: 'Id do projeto' },
+      phaseId: { type: 'string', description: 'Id da fase onde as duas tarefas estão (obtido via list_phases/list_tasks)' },
+      entryId: { type: 'string', description: 'Id da tarefa que vai virar subtarefa' },
+      entryName: { type: 'string', description: 'Nome da tarefa, só pro resumo de confirmação' },
+      parentEntryId: { type: 'string', description: 'Id da tarefa que vai receber a subtarefa' },
+      parentEntryName: { type: 'string', description: 'Nome da tarefa mãe, só pro resumo de confirmação' },
+    },
+    required: ['projectId', 'phaseId', 'entryId', 'entryName', 'parentEntryId', 'parentEntryName'],
+  },
+  isWrite: true,
+  describe(input) {
+    return `Estou prestes a transformar "${input.entryName}" em subtarefa de "${input.parentEntryName}". É basicamente isso?`
+  },
+  async execute(input) {
+    useAppStore.getState().convertToSubtask(String(input.projectId), String(input.phaseId), String(input.entryId), String(input.parentEntryId))
+    return { success: true }
+  },
+}
+
+export const promoteSubtaskTool: AiTool = {
+  name: 'promote_subtask',
+  description: 'Transforma uma subtarefa de volta em tarefa de nível superior, na mesma fase (use list_tasks pra obter os ids). Sempre requer confirmação do usuário antes de executar.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      projectId: { type: 'string', description: 'Id do projeto' },
+      phaseId: { type: 'string', description: 'Id da fase onde a tarefa mãe está' },
+      parentEntryId: { type: 'string', description: 'Id da tarefa mãe atual' },
+      subtaskId: { type: 'string', description: 'Id da subtarefa a promover' },
+      subtaskName: { type: 'string', description: 'Nome da subtarefa, só pro resumo de confirmação' },
+    },
+    required: ['projectId', 'phaseId', 'parentEntryId', 'subtaskId', 'subtaskName'],
+  },
+  isWrite: true,
+  describe(input) {
+    return `Estou prestes a promover "${input.subtaskName}" de subtarefa a tarefa de nível superior. É basicamente isso?`
+  },
+  async execute(input) {
+    useAppStore.getState().promoteSubtaskToEntry(String(input.projectId), String(input.phaseId), String(input.parentEntryId), String(input.subtaskId))
+    return { success: true }
   },
 }

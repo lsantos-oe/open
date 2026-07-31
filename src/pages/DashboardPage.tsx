@@ -149,10 +149,10 @@ export default function DashboardPage() {
                 <button
                   key={task.entry.id}
                   onClick={() => navigate(task.projectId ? `/projects/${task.projectId}` : `/support/${task.incidentId}`)}
-                  className="w-full flex items-center justify-between text-left text-sm py-1.5 rounded hover:bg-[var(--surface-subtle)] px-1 -mx-1"
+                  className="w-full flex flex-col text-left text-sm py-1.5 rounded hover:bg-[var(--surface-subtle)] px-1 -mx-1 min-w-0"
                 >
-                  <span className="truncate" style={{ color: 'var(--text-primary)' }}>{task.entry.name}</span>
-                  <span className="shrink-0 ml-3 text-xs" style={{ color: 'var(--text-tertiary)' }}>{task.scopeName}</span>
+                  <span className="truncate w-full" style={{ color: 'var(--text-primary)' }}>{task.entry.name}</span>
+                  <span className="truncate w-full text-xs" style={{ color: 'var(--text-tertiary)' }}>{task.scopeName}</span>
                 </button>
               ))}
               {sortedTasks.length > 8 && (

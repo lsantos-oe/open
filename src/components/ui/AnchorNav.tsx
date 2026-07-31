@@ -14,12 +14,17 @@ interface Props {
    *  tracking clicks internally (used where this still scrolls to an #id
    *  section instead of switching an exclusive tab). */
   active?: string
+  /** Background behind the tab row — must match whatever wraps this component
+   *  or the sticky strip shows as a seam of mismatched color (surface-page's
+   *  cream tint vs. a surface-card white parent, for example). Defaults to
+   *  surface-page for the uncontrolled anchor-scroll usage. */
+  background?: string
 }
 
 /** Row of tab-like links — either a controlled exclusive tab switcher (pass
  *  `active`) or an uncontrolled anchor nav that smooth-scrolls to a `#id`
  *  section on the same page, tracking clicks itself. */
-export function AnchorNav({ items, onNavigate, active: controlledActive }: Props) {
+export function AnchorNav({ items, onNavigate, active: controlledActive, background = 'var(--surface-page)' }: Props) {
   const [uncontrolledActive, setUncontrolledActive] = useState(items[0]?.id)
   const active = controlledActive ?? uncontrolledActive
 
@@ -32,7 +37,7 @@ export function AnchorNav({ items, onNavigate, active: controlledActive }: Props
   return (
     <div
       className="flex gap-6 sticky z-[2]"
-      style={{ borderBottom: '1px solid var(--border-default)', top: 0, background: 'var(--surface-page)' }}
+      style={{ borderBottom: '1px solid var(--border-default)', top: 0, background }}
     >
       {items.map((item) => (
         <button
