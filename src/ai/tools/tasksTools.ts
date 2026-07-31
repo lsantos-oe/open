@@ -24,7 +24,7 @@ export const createTaskTool: AiTool = {
   describe(input) {
     const scope = input.incidentId ? 'no incidente' : 'no projeto'
     const validatorText = input.validatorName ? `, validador ${input.validatorName}` : ''
-    return `Estou prestes a criar uma tarefa ${scope}. O resultado final ficará assim: "${input.name}", executor ${input.executorName}${validatorText}. Você aprova?`
+    return `Estou prestes a criar uma tarefa ${scope}. O resultado final ficará assim: "${input.name}", executor ${input.executorName}${validatorText}. É basicamente isso?`
   },
   async execute(input) {
     const store = useAppStore.getState()

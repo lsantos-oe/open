@@ -86,7 +86,7 @@ export const createProjectTool: AiTool = {
   },
   isWrite: true,
   describe(input) {
-    return `Estou prestes a criar um novo projeto no cliente "${input.clientName}". O resultado final ficará assim: projeto "${input.name}" (${input.type === 'nova_conta' ? 'Nova Conta' : 'Novo Projeto'}), líder ${input.pmName}. Você aprova?`
+    return `Estou prestes a criar um novo projeto no cliente "${input.clientName}". O resultado final ficará assim: projeto "${input.name}" (${input.type === 'nova_conta' ? 'Nova Conta' : 'Novo Projeto'}), líder ${input.pmName}. É basicamente isso?`
   },
   async execute(input) {
     const store = useAppStore.getState()
@@ -122,7 +122,7 @@ export const updateEntityStatusTool: AiTool = {
   },
   isWrite: true,
   describe(input) {
-    return `Estou prestes a alterar o status de "${input.entityName}". O resultado final ficará assim: status = ${input.status}. Você aprova?`
+    return `Estou prestes a alterar o status de "${input.entityName}". O resultado final ficará assim: status = ${input.status}. É basicamente isso?`
   },
   async execute(input) {
     const store = useAppStore.getState()

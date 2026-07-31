@@ -3,9 +3,9 @@ import { useAiChatStore } from '@/stores/useAiChatStore'
 import { ChatPanel } from './ChatPanel'
 
 /** Floating action button that opens the AI chat panel — only rendered once
- *  the user has a validated Anthropic key configured (Fase 9.2). Sits in the
- *  same bottom-right corner as Toaster.tsx, just under it in z-index so a
- *  toast always renders on top if the two ever overlap. */
+ *  an admin has configured the workspace's shared Anthropic key (Configurações
+ *  → Geral). Sits in the same bottom-right corner as Toaster.tsx, just under
+ *  it in z-index so a toast always renders on top if the two ever overlap. */
 export function ChatLauncher() {
   const { hasKey } = useAiStore()
   const { open, toggle } = useAiChatStore()

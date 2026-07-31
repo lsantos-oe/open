@@ -208,7 +208,7 @@ export default function ClientDetailPage() {
               {editingLink ? (
                 <div className="flex gap-2">
                   <Input autoFocus value={linkDraft} onChange={(e) => setLinkDraft(e.target.value)} placeholder="https://..." />
-                  <Button size="sm" onClick={saveLink}>Salvar</Button>
+                  <Button size="sm" onClick={saveLink}>É basicamente isso</Button>
                   <Button size="sm" variant="secondary" onClick={() => setEditingLink(false)}>Cancelar</Button>
                 </div>
               ) : client.ploomesLink ? (
@@ -438,7 +438,7 @@ export default function ClientDetailPage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowCsModal(false)}>Cancelar</Button>
-            <Button onClick={saveCs}>Salvar</Button>
+            <Button onClick={saveCs}>É basicamente isso</Button>
           </>
         }
       >

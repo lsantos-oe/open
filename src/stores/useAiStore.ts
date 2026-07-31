@@ -3,6 +3,10 @@ import { supabase } from '@/lib/supabase'
 import { useToastStore } from '@/stores/useToastStore'
 import { clearCachedKey } from '@/ai/client'
 
+/** Tracks the single Anthropic key shared by the whole workspace (not a
+ *  per-user BYOK key) — ai_get_key()/ai_has_key() return the same value to
+ *  every authenticated user; ai_set_key()/ai_clear_key() are admin-only,
+ *  enforced server-side in the RPCs themselves (see 20260801_ai_shared_key.sql). */
 interface AiStore {
   hasKey: boolean
   hasKeyLoaded: boolean
@@ -55,7 +59,7 @@ export const useAiStore = create<AiStore>((set, get) => ({
       }
       const { error } = await supabase.rpc('ai_set_key', { p_key: trimmed })
       if (error) {
-        useToastStore.getState().addToast('Não foi possível salvar a chave. Tente novamente.')
+        useToastStore.getState().addToast(error.message || 'Não foi possível salvar a chave. Tente novamente.')
         return false
       }
       clearCachedKey()
@@ -69,7 +73,7 @@ export const useAiStore = create<AiStore>((set, get) => ({
   removeKey: async () => {
     const { error } = await supabase.rpc('ai_clear_key')
     if (error) {
-      useToastStore.getState().addToast('Não foi possível remover a chave. Tente novamente.')
+      useToastStore.getState().addToast(error.message || 'Não foi possível remover a chave. Tente novamente.')
       return
     }
     clearCachedKey()

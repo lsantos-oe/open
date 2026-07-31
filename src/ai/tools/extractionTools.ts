@@ -45,7 +45,7 @@ export const proposeExtractedItemsTool: AiTool = {
   describe(input) {
     const items = (input.items as ExtractedItem[]) ?? []
     const list = items.map((i) => `${i.entityType === 'task' ? 'Tarefa' : 'Incidente'}: "${i.name}"`).join('; ')
-    return `Identifiquei ${items.length} item(ns) no conteúdo analisado. O resultado final ficará assim: ${list}. Deseja cadastrá-los no sistema dessa forma?`
+    return `Identifiquei ${items.length} item(ns) no conteúdo analisado. O resultado final ficará assim: ${list}. É basicamente isso?`
   },
   // Real side effects happen in runConversation.ts's approval handler, not here —
   // this tool's own execute() is only reached if something calls it directly.

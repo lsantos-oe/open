@@ -70,7 +70,7 @@ export const createIncidentTool: AiTool = {
   describe(input) {
     const clientsText = Array.isArray(input.clientNames) && input.clientNames.length
       ? ` vinculado a ${(input.clientNames as string[]).join(', ')}` : ''
-    return `Estou prestes a criar um novo incidente${clientsText}. O resultado final ficará assim: "${input.title}" (prioridade ${input.priority}, impacto ${input.impact}). Você aprova?`
+    return `Estou prestes a criar um novo incidente${clientsText}. O resultado final ficará assim: "${input.title}" (prioridade ${input.priority}, impacto ${input.impact}). É basicamente isso?`
   },
   async execute(input) {
     const store = useAppStore.getState()

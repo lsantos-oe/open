@@ -170,7 +170,7 @@ export default function ContactsPage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowModal(false)}>Cancelar</Button>
-            <Button onClick={saveContact} disabled={!form.name.trim()}>Salvar</Button>
+            <Button onClick={saveContact} disabled={!form.name.trim()}>É basicamente isso</Button>
           </>
         }
       >

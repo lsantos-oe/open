@@ -138,7 +138,7 @@ export async function runConversation(turnsLeft: number = MAX_AUTO_TURNS): Promi
       useAiChatStore.getState().setPendingConfirmation({
         toolUseId: block.id,
         toolName: block.name,
-        summary: tool.describe?.(block.input as Record<string, unknown>, ctx) ?? `Estou prestes a executar ${block.name}. Você aprova?`,
+        summary: tool.describe?.(block.input as Record<string, unknown>, ctx) ?? `Estou prestes a executar ${block.name}. É basicamente isso?`,
         input: block.input as Record<string, unknown>,
       })
       useAiChatStore.getState().setStreaming(false)

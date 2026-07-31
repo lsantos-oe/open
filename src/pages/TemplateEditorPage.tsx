@@ -116,7 +116,7 @@ function EntryModal({ entry, allDeps, depGraph, onSave, onClose }: EntryModalPro
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={!form.name.trim()}>Salvar</Button>
+          <Button onClick={handleSave} disabled={!form.name.trim()}>É basicamente isso</Button>
         </>
       }
     >

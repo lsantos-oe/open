@@ -51,7 +51,7 @@ export interface AiTool {
    *  confirmation gate in runConversation.ts — never execute otherwise. */
   isWrite: boolean
   /** Required for write tools: builds the human-readable confirmation summary
-   *  ("Estou prestes a ... Você aprova?") shown before execute() ever runs. */
+   *  ("Estou prestes a ... É basicamente isso?") shown before execute() ever runs. */
   describe?: (input: Record<string, unknown>, ctx: AiToolContext) => string
   execute: (input: Record<string, unknown>, ctx: AiToolContext) => Promise<unknown>
 }

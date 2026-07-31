@@ -41,7 +41,7 @@ export const bulkReassignProjectsTool: AiTool = {
     const toName = teamDirectory.find((p) => p.id === input.toUserId)?.name ?? String(input.toUserId)
     const affected = projects.filter((p) => !p.archived && p.pmMemberId === input.fromUserId)
     const list = affected.length ? affected.map((p) => `"${p.name}"`).join(', ') : '(nenhum projeto encontrado)'
-    return `Estou prestes a reatribuir projetos de ${fromName} para ${toName}. O resultado final ficará assim: ${affected.length} projeto(s) — ${list} — passam a ter ${toName} como Líder. Você aprova?`
+    return `Estou prestes a reatribuir projetos de ${fromName} para ${toName}. O resultado final ficará assim: ${affected.length} projeto(s) — ${list} — passam a ter ${toName} como Líder. É basicamente isso?`
   },
   async execute(input) {
     const store = useAppStore.getState()

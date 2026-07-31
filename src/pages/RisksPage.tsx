@@ -190,7 +190,7 @@ function RiskPanel({ projectId, risk, riskIndex, allEntries, onClose }: RiskPane
           )}
 
           <div className="flex justify-end">
-            <Button size="sm" onClick={handleSave}>Salvar alterações</Button>
+            <Button size="sm" onClick={handleSave}>É basicamente isso</Button>
           </div>
         </div>
 

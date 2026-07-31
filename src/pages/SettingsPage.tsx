@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useAiStore } from '@/stores/useAiStore'
+import { useToastStore } from '@/stores/useToastStore'
 import { DateFormat, Workdays, IncidentTemplate, Probability, IncidentStatus } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Input, Field, Select, Textarea } from '@/components/ui/Input'
@@ -62,6 +64,9 @@ export default function SettingsPage() {
   const navigate = useNavigate()
   const { profile } = useAuthStore()
   const isAdmin = profile?.role === 'admin'
+  const { hasKey, saving: savingAiKey, saveKey: saveAiKey, removeKey: removeAiKey } = useAiStore()
+  const { addToast } = useToastStore()
+  const [aiApiKey, setAiApiKey] = useState('')
   const {
     settings, updateSettings, addHoliday, removeHoliday,
     archivedProjects, archivedProjectsLoaded, loadArchivedProjects, unarchiveProject, hideProject,
@@ -100,6 +105,19 @@ export default function SettingsPage() {
   function changeLanguage(lang: 'pt' | 'en' | 'es') {
     i18n.changeLanguage(lang)
     updateSettings({ defaultLanguage: lang })
+  }
+
+  async function handleSaveAiKey() {
+    const ok = await saveAiKey(aiApiKey)
+    if (ok) {
+      setAiApiKey('')
+      addToast('Chave da API salva com sucesso', 'success')
+    }
+  }
+
+  async function handleRemoveAiKey() {
+    await removeAiKey()
+    addToast('Chave da API removida', 'success')
   }
 
   function handleDeleteArchived(id: string, name: string) {
@@ -211,6 +229,32 @@ export default function SettingsPage() {
               ]}
             />
           </Section>
+
+          {isAdmin && (
+            <Section title="Assistente de IA" description="Chave da API da Anthropic (Claude) compartilhada por todo o time — não é por usuário.">
+              {hasKey ? (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm" style={{ color: 'var(--color-success-text)' }}>Chave configurada ✓</span>
+                  <Button variant="secondary" size="sm" onClick={handleRemoveAiKey} disabled={savingAiKey}>Remover chave</Button>
+                </div>
+              ) : (
+                <Field label="API key da Anthropic">
+                  <div className="flex gap-2">
+                    <Input
+                      type="password"
+                      value={aiApiKey}
+                      onChange={(e) => setAiApiKey(e.target.value)}
+                      placeholder="sk-ant-..."
+                      className="flex-1"
+                    />
+                    <Button size="sm" onClick={handleSaveAiKey} disabled={!aiApiKey.trim() || savingAiKey}>
+                      {savingAiKey ? 'Validando...' : 'Validar e salvar'}
+                    </Button>
+                  </div>
+                </Field>
+              )}
+            </Section>
+          )}
         </>
       )}
 
@@ -382,7 +426,7 @@ export default function SettingsPage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowIncidentTemplate(false)}>Cancelar</Button>
-            <Button onClick={saveIncidentTemplate} disabled={!itName.trim()}>Salvar</Button>
+            <Button onClick={saveIncidentTemplate} disabled={!itName.trim()}>É basicamente isso</Button>
           </>
         }
       >
