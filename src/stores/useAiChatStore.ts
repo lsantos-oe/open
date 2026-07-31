@@ -6,6 +6,9 @@ interface AiChatStore {
   toggle: () => void
   setOpen: (open: boolean) => void
 
+  expanded: boolean
+  toggleExpanded: () => void
+
   conversationId: string | null
   messages: ChatMessage[]
   setMessages: (messages: ChatMessage[]) => void
@@ -37,6 +40,9 @@ export const useAiChatStore = create<AiChatStore>((set) => ({
   open: false,
   toggle: () => set((s) => ({ open: !s.open })),
   setOpen: (open) => set({ open }),
+
+  expanded: false,
+  toggleExpanded: () => set((s) => ({ expanded: !s.expanded })),
 
   conversationId: null,
   messages: [],

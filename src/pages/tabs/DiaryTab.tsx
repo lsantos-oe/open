@@ -4,8 +4,9 @@ import { Project } from '@/types'
 import OpenPointsTab from './diary/OpenPointsTab'
 import MeetingsTab from './diary/MeetingsTab'
 import HistoryTab from './diary/HistoryTab'
+import DelayLogPage from '../DelayLogPage'
 
-type DiarySubTab = 'openPoints' | 'meetings' | 'history'
+type DiarySubTab = 'openPoints' | 'meetings' | 'delayLog' | 'history'
 
 interface Props {
   project: Project
@@ -21,9 +22,12 @@ export default function DiaryTab({ project }: Props) {
 
   const openCount = openPoints.filter((op) => op.status === 'open').length
 
+  const delayCount = project.delayLog.length
+
   const tabs: { id: DiarySubTab; label: string; count?: number }[] = [
     { id: 'openPoints', label: t('diary.tabOpenPoints'), count: openCount || undefined },
     { id: 'meetings', label: t('diary.tabMeetings'), count: meetings.length || undefined },
+    { id: 'delayLog', label: t('tabs.delayLog'), count: delayCount || undefined },
     { id: 'history', label: t('diary.tabHistory'), count: history.length || undefined },
   ]
 
@@ -75,6 +79,9 @@ export default function DiaryTab({ project }: Props) {
           phases={project.phases}
           teamMembers={project.team}
         />
+      )}
+      {sub === 'delayLog' && (
+        <DelayLogPage projectId={project.id} />
       )}
       {sub === 'history' && (
         <HistoryTab

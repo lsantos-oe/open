@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
-import { Entry, EntryOwner, IncidentStatus, Probability } from '@/types'
+import { Entry, EntryOwner, EntryStatus, IncidentStatus, Probability } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Input, Select, Field } from '@/components/ui/Input'
@@ -13,6 +13,8 @@ import EntryBoard, { BoardCard } from '@/components/plan/EntryBoard'
 import IncidentEntryModal from '@/components/plan/IncidentEntryModal'
 import { AnchorNav } from '@/components/ui/AnchorNav'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
+import { StatusDot } from '@/components/ui/StatusDot'
+import { AvatarStack } from '@/components/ui/AvatarStack'
 import { contactsForClients } from '@/utils/contacts'
 import { differenceInCalendarDays } from 'date-fns'
 
@@ -21,6 +23,25 @@ type Tab = 'overview' | 'tasks' | 'openPoints' | 'history'
 const STATUS_OPTIONS: IncidentStatus[] = ['open', 'in_progress', 'waiting_on_client', 'resolved', 'closed']
 const STATUS_VARIANT: Record<IncidentStatus, 'gray' | 'primary' | 'orange' | 'green' | 'red'> = {
   open: 'gray', in_progress: 'primary', waiting_on_client: 'orange', resolved: 'green', closed: 'red',
+}
+const ENTRY_STATUS_COLOR: Record<EntryStatus, string> = {
+  pending: 'var(--text-tertiary)',
+  in_progress: 'var(--color-info-text)',
+  validation: 'var(--color-warning-text)',
+  done: 'var(--color-success-text)',
+  blocked: 'var(--color-danger-text)',
+  overdue: 'var(--color-warning-text)',
+}
+
+function entryOwners(entry: Entry) {
+  if (entry.owners && entry.owners.length > 0) return entry.owners
+  if (entry.responsible) return [{ id: entry.responsible, type: 'text' as const, name: entry.responsible }]
+  return []
+}
+
+function fmtEntryDate(iso: string): string {
+  const [y, m, d] = iso.split('-')
+  return `${d}/${m}/${y}`
 }
 
 export default function IncidentDetailPage() {
@@ -47,6 +68,14 @@ export default function IncidentDetailPage() {
   const [newContactClientId, setNewContactClientId] = useState('')
   const [newContactForm, setNewContactForm] = useState({ name: '', role: '', email: '', phone: '' })
   const [taskModal, setTaskModal] = useState<{ mode: 'create' | 'edit'; entry?: Entry } | null>(null)
+  const [taskView, setTaskView] = useState<'kanban' | 'table'>(() => (localStorage.getItem('pb-incident-tasks-view') as 'kanban' | 'table') ?? 'kanban')
+  const [taskFilterStatus, setTaskFilterStatus] = useState('')
+  const [taskFilterResponsible, setTaskFilterResponsible] = useState('')
+
+  function changeTaskView(v: 'kanban' | 'table') {
+    setTaskView(v)
+    localStorage.setItem('pb-incident-tasks-view', v)
+  }
 
   const incident = incidents.find((i) => i.id === id)
 
@@ -125,11 +154,19 @@ export default function IncidentDetailPage() {
   const TABS: { id: Tab; label: string }[] = [
     { id: 'overview', label: t('incident.tabOverview') },
     { id: 'tasks', label: `${t('incident.tabTasks')}${incident.entries.length ? ` (${incident.entries.length})` : ''}` },
-    { id: 'openPoints', label: `${t('incident.tabOpenPoints')}${incident.openPoints.length ? ` (${incident.openPoints.length})` : ''}` },
+    { id: 'openPoints', label: `${t('tabs.diary')}${incident.openPoints.length ? ` (${incident.openPoints.length})` : ''}` },
     { id: 'history', label: t('incident.tabHistory') },
   ]
 
   const boardCards: BoardCard[] = incident.entries.map((e) => ({ ...e }))
+
+  const allTaskResponsibles = Array.from(new Set(boardCards.flatMap((c) => entryOwners(c).map((o) => o.name)))).sort()
+
+  const filteredBoardCards = boardCards.filter((c) => {
+    if (taskFilterStatus && c.status !== taskFilterStatus) return false
+    if (taskFilterResponsible && !entryOwners(c).some((o) => o.name === taskFilterResponsible)) return false
+    return true
+  })
 
   return (
     <div>
@@ -160,13 +197,12 @@ export default function IncidentDetailPage() {
               </div>
             </div>
 
-            <Field label={t('incident.colStatus')}>
-              <Select value={incident.status} onChange={(e) => updateIncidentStatus(incident.id, e.target.value as IncidentStatus)}>
-                {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{t(`incident.status_${s}`)}</option>)}
-              </Select>
-            </Field>
-
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <Field label={t('incident.colStatus')}>
+                <Select value={incident.status} onChange={(e) => updateIncidentStatus(incident.id, e.target.value as IncidentStatus)}>
+                  {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{t(`incident.status_${s}`)}</option>)}
+                </Select>
+              </Field>
               <Field label={t('incident.priority')} hint="Urgência de resolução: Alta = ação imediata, Média = prazo normal, Baixa = pode aguardar.">
                 <Select value={incident.priority} onChange={(e) => updateIncident(incident.id, { priority: e.target.value as Probability })}>
                   <option value="low">{t('risk.low')}</option>
@@ -181,11 +217,10 @@ export default function IncidentDetailPage() {
                   <option value="high">{t('risk.high')}</option>
                 </Select>
               </Field>
+              <Field label={t('incident.deadline')}>
+                <Input type="date" value={incident.deadline ?? ''} onChange={(e) => updateIncident(incident.id, { deadline: e.target.value || undefined })} />
+              </Field>
             </div>
-
-            <Field label={t('incident.deadline')}>
-              <Input type="date" value={incident.deadline ?? ''} onChange={(e) => updateIncident(incident.id, { deadline: e.target.value || undefined })} />
-            </Field>
 
             <Field label={t('incident.description')}>
               <textarea
@@ -197,67 +232,138 @@ export default function IncidentDetailPage() {
               />
             </Field>
 
-            <Field label={t('incident.clients')}>
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {linkedClients.map((c) => (
-                  <span key={c.id} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[var(--radius-pill)] text-xs font-medium" style={{ background: 'var(--oe-primary-light)', color: 'var(--oe-primary)' }}>
-                    <Link to={`/wallet/${c.id}`}>{c.name}</Link>
-                    <button onClick={() => unlinkIncidentClient(incident.id, c.id)}>×</button>
-                  </span>
-                ))}
-                <button onClick={() => setShowLinkClient(true)} className="text-xs px-2 py-0.5 rounded-[var(--radius-pill)] border" style={{ borderColor: 'var(--border-default)', color: 'var(--text-tertiary)', borderStyle: 'dashed' }}>+ {t('incident.clients')}</button>
-              </div>
-            </Field>
-
-            <Field label={t('incident.projects')}>
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {linkedProjects.map((p) => (
-                  <span key={p.id} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[var(--radius-pill)] text-xs font-medium" style={{ background: 'var(--oe-primary-light)', color: 'var(--oe-primary)' }}>
-                    <Link to={`/projects/${p.id}`}>{p.name}</Link>
-                    <button onClick={() => unlinkIncidentProject(incident.id, p.id)}>×</button>
-                  </span>
-                ))}
-                <button onClick={() => setShowLinkProject(true)} className="text-xs px-2 py-0.5 rounded-[var(--radius-pill)] border" style={{ borderColor: 'var(--border-default)', color: 'var(--text-tertiary)', borderStyle: 'dashed' }}>+ {t('incident.projects')}</button>
-              </div>
-            </Field>
-
-            <Field label={t('incident.stakeholders')}>
-              {incident.stakeholders.length === 0 ? (
-                <p className="text-sm mb-2" style={{ color: 'var(--text-tertiary)' }}>{t('incident.noStakeholders')}</p>
-              ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Field label={t('incident.clients')}>
                 <div className="flex flex-wrap gap-1.5 mb-2">
-                  {incident.stakeholders.map((o) => (
-                    <span key={o.id} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[var(--radius-pill)] text-xs font-medium" style={{ background: 'var(--surface-subtle)', color: 'var(--text-secondary)' }}>
-                      {o.name}{o.role ? ` · ${o.role}` : ''}
-                      <button onClick={() => removeIncidentStakeholder(incident.id, o.id)}>×</button>
+                  {linkedClients.map((c) => (
+                    <span key={c.id} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[var(--radius-pill)] text-xs font-medium" style={{ background: 'var(--oe-primary-light)', color: 'var(--oe-primary)' }}>
+                      <Link to={`/wallet/${c.id}`}>{c.name}</Link>
+                      <button onClick={() => unlinkIncidentClient(incident.id, c.id)}>×</button>
                     </span>
                   ))}
+                  <button onClick={() => setShowLinkClient(true)} className="text-xs px-2 py-0.5 rounded-[var(--radius-pill)] border" style={{ borderColor: 'var(--border-default)', color: 'var(--text-tertiary)', borderStyle: 'dashed' }}>+ {t('incident.clients')}</button>
                 </div>
-              )}
-              <Button size="sm" variant="secondary" onClick={openAddStakeholder}>{t('incident.addStakeholder')}</Button>
-            </Field>
+              </Field>
+
+              <Field label={t('incident.projects')}>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {linkedProjects.map((p) => (
+                    <span key={p.id} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[var(--radius-pill)] text-xs font-medium" style={{ background: 'var(--oe-primary-light)', color: 'var(--oe-primary)' }}>
+                      <Link to={`/projects/${p.id}`}>{p.name}</Link>
+                      <button onClick={() => unlinkIncidentProject(incident.id, p.id)}>×</button>
+                    </span>
+                  ))}
+                  <button onClick={() => setShowLinkProject(true)} className="text-xs px-2 py-0.5 rounded-[var(--radius-pill)] border" style={{ borderColor: 'var(--border-default)', color: 'var(--text-tertiary)', borderStyle: 'dashed' }}>+ {t('incident.projects')}</button>
+                </div>
+              </Field>
+
+              <Field label={t('incident.stakeholders')}>
+                {incident.stakeholders.length === 0 ? (
+                  <p className="text-sm mb-2" style={{ color: 'var(--text-tertiary)' }}>{t('incident.noStakeholders')}</p>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {incident.stakeholders.map((o) => (
+                      <span key={o.id} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[var(--radius-pill)] text-xs font-medium" style={{ background: 'var(--surface-subtle)', color: 'var(--text-secondary)' }}>
+                        {o.name}{o.role ? ` · ${o.role}` : ''}
+                        <button onClick={() => removeIncidentStakeholder(incident.id, o.id)}>×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <Button size="sm" variant="secondary" onClick={openAddStakeholder}>{t('incident.addStakeholder')}</Button>
+              </Field>
+            </div>
           </div>
         </CollapsibleSection>
 
         <CollapsibleSection id="tasks" title={t('incident.tabTasks')} count={incident.entries.length} open={openSections.has('tasks')} onToggle={() => toggleSection('tasks')}>
           <div>
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center flex-wrap gap-2 mb-4">
               <Button size="sm" onClick={() => setTaskModal({ mode: 'create' })}>{t('plan.addTask')}</Button>
+
+              {incident.entries.length > 0 && (
+                <>
+                  <div className="flex rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
+                    <button
+                      onClick={() => changeTaskView('kanban')}
+                      className="px-3 py-1.5 text-xs font-medium transition-colors"
+                      style={{ background: taskView === 'kanban' ? 'var(--text-primary)' : 'var(--surface-card)', color: taskView === 'kanban' ? 'white' : 'var(--text-secondary)' }}
+                    >
+                      {t('actions.viewKanban')}
+                    </button>
+                    <button
+                      onClick={() => changeTaskView('table')}
+                      className="px-3 py-1.5 text-xs font-medium transition-colors"
+                      style={{ background: taskView === 'table' ? 'var(--text-primary)' : 'var(--surface-card)', color: taskView === 'table' ? 'white' : 'var(--text-secondary)' }}
+                    >
+                      {t('actions.viewTable')}
+                    </button>
+                  </div>
+
+                  <select
+                    value={taskFilterStatus}
+                    onChange={(e) => setTaskFilterStatus(e.target.value)}
+                    className="text-xs rounded-[var(--radius-md)] px-2 py-1.5 border"
+                    style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)', color: 'var(--text-secondary)' }}
+                  >
+                    <option value="">{t('tasks.filterStatus')}</option>
+                    <option value="pending">{t('entry.pending')}</option>
+                    <option value="in_progress">{t('entry.in_progress')}</option>
+                    <option value="validation">{t('entry.validation')}</option>
+                    <option value="done">{t('entry.done')}</option>
+                    <option value="blocked">{t('entry.blocked')}</option>
+                  </select>
+
+                  <select
+                    value={taskFilterResponsible}
+                    onChange={(e) => setTaskFilterResponsible(e.target.value)}
+                    className="text-xs rounded-[var(--radius-md)] px-2 py-1.5 border"
+                    style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)', color: 'var(--text-secondary)' }}
+                  >
+                    <option value="">{t('tasks.filterMember')}</option>
+                    {allTaskResponsibles.map((name) => <option key={name} value={name}>{name}</option>)}
+                  </select>
+                </>
+              )}
             </div>
             {incident.entries.length === 0 ? (
               <p className="text-sm text-center py-12" style={{ color: 'var(--text-tertiary)' }}>{t('plan.noEntries')}</p>
-            ) : (
+            ) : taskView === 'kanban' ? (
               <EntryBoard
-                cards={boardCards}
+                cards={filteredBoardCards}
                 onStatusChange={(entryId, status) => updateIncidentEntryStatus(incident.id, entryId, status)}
                 onCardClick={(card) => setTaskModal({ mode: 'edit', entry: card })}
                 showInternalSection={false}
               />
+            ) : (
+              <table className="w-full text-sm rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
+                <thead>
+                  <tr style={{ background: 'var(--surface-subtle)' }}>
+                    <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('entry.name')}</th>
+                    <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('entry.responsible')}</th>
+                    <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('entry.status')}</th>
+                    <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('plan.colEnd')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
+                  {filteredBoardCards.map((card) => {
+                    const endDate = card.type === 'task' ? card.plannedEnd : card.plannedDate
+                    return (
+                      <tr key={card.id} className="cursor-pointer transition-colors" onClick={() => setTaskModal({ mode: 'edit', entry: card })}>
+                        <td className="px-3 py-2.5" style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{card.name}</td>
+                        <td className="px-3 py-2.5"><AvatarStack people={entryOwners(card)} size={20} /></td>
+                        <td className="px-3 py-2.5"><StatusDot color={ENTRY_STATUS_COLOR[card.status]} label={t(`entry.${card.status}` as any)} /></td>
+                        <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)' }}>{endDate ? fmtEntryDate(endDate) : '—'}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             )}
           </div>
         </CollapsibleSection>
 
-        <CollapsibleSection id="openPoints" title={t('incident.tabOpenPoints')} count={incident.openPoints.length} open={openSections.has('openPoints')} onToggle={() => toggleSection('openPoints')}>
+        <CollapsibleSection id="openPoints" title={t('tabs.diary')} count={incident.openPoints.length} open={openSections.has('openPoints')} onToggle={() => toggleSection('openPoints')}>
           <OpenPointsTab scope={{ type: 'incident', id: incident.id }} openPoints={incident.openPoints} phases={[]} />
         </CollapsibleSection>
 

@@ -15,19 +15,17 @@ import ReportConfigModal from '@/components/report/ReportConfigModal'
 import ImportJsonModal from '@/components/import/ImportJsonModal'
 import { exportProjectCsv } from '@/utils/exportCsv'
 import { exportProjectToJson } from '@/utils/exportJson'
-import { projectDurationDays, isProjectDelayed } from '@/utils/projectStats'
+import { projectDurationDays, isProjectDelayed, findGoLiveDate } from '@/utils/projectStats'
 import { Badge } from '@/components/ui/Badge'
 import PlanPage from './PlanPage'
 import KanbanPage from './KanbanPage'
 import RisksPage from './RisksPage'
-import DelayLogPage from './DelayLogPage'
 import OverviewTab from './tabs/OverviewTab'
-import TeamTab from './tabs/TeamTab'
 import DiaryTab from './tabs/DiaryTab'
 import { AnchorNav } from '@/components/ui/AnchorNav'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 
-const TAB_IDS = ['overview', 'team', 'plan', 'kanban', 'risks', 'delayLog', 'diary'] as const
+const TAB_IDS = ['overview', 'plan', 'kanban', 'risks', 'diary'] as const
 type TabId = typeof TAB_IDS[number]
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -36,18 +34,6 @@ function fmtDate(iso?: string): string {
   if (!iso) return ''
   const [y, m, d] = iso.split('-')
   return `${d}/${m}/${y}`
-}
-
-function findGoLive(project: Project): string | undefined {
-  const milestones: Entry[] = []
-  for (const ph of project.phases) {
-    for (const e of ph.entries) {
-      if (e.type === 'milestone') milestones.push(e)
-    }
-  }
-  const goLive = milestones.find((e) => e.name.toLowerCase().includes('go live') || e.name.toLowerCase().includes('go-live'))
-  const target = goLive ?? milestones[milestones.length - 1]
-  return target?.plannedDate
 }
 
 function findCurrentPhase(project: Project): string | undefined {
@@ -443,7 +429,7 @@ export default function ProjectDetailPage() {
     () => (project ? isProjectDelayed(project, settings.holidays) : false),
     [project, settings.holidays],
   )
-  const goLiveDate = useMemo(() => (project ? findGoLive(project) : undefined), [project])
+  const goLiveDate = useMemo(() => (project ? findGoLiveDate(project) : undefined), [project])
   const currentPhase = useMemo(() => (project ? findCurrentPhase(project) : undefined), [project])
 
   function toggleSection(id: TabId) {
@@ -569,29 +555,14 @@ export default function ProjectDetailPage() {
         />
       </div>
 
-      {/* ── Subheader chips ── */}
-      <div
-        className="flex items-center flex-wrap px-5 shrink-0"
-        style={{ background: 'var(--surface-subtle)', borderBottom: '0.5px solid var(--border-default)', padding: '12px 20px' }}
-      >
-        {chips.map((chip, i) => (
-          <span key={chip.label} className="flex items-center">
-            {i > 0 && <ChipSep />}
-            <InfoChip label={chip.label} value={chip.value} />
-          </span>
-        ))}
-      </div>
-
       {/* ── Anchor nav ── */}
       <div className="px-5 pt-3 shrink-0" style={{ background: 'var(--surface-card)' }}>
         <AnchorNav
           items={TAB_IDS.map((tid) => ({
             id: tid,
             label:
-              t(`tabs.${tid}`) +
+              (tid === 'kanban' ? t('tasks.title') : t(`tabs.${tid}`)) +
               (tid === 'risks' && project.risks.length > 0 ? ` (${project.risks.length})` : '') +
-              (tid === 'delayLog' && project.delayLog.length > 0 ? ` (${project.delayLog.length})` : '') +
-              (tid === 'team' && project.team.length > 0 ? ` (${project.team.length})` : '') +
               (tid === 'diary' && (project.openPoints?.filter((op) => op.status === 'open').length ?? 0) > 0
                 ? ` (${project.openPoints!.filter((op) => op.status === 'open').length})`
                 : ''),
@@ -605,24 +576,31 @@ export default function ProjectDetailPage() {
         <CollapsibleSection id="overview" title={t('tabs.overview')} open={openSections.has('overview')} onToggle={() => toggleSection('overview')}>
           <OverviewTab project={project} />
         </CollapsibleSection>
-        <CollapsibleSection id="team" title={t('tabs.team')} count={project.team.length || undefined} open={openSections.has('team')} onToggle={() => toggleSection('team')}>
-          <TeamTab project={project} />
-        </CollapsibleSection>
         <CollapsibleSection id="plan" title={t('tabs.plan')} open={openSections.has('plan')} onToggle={() => toggleSection('plan')}>
           <PlanPage projectId={project.id} onNavigateToRisk={(riskId) => { openAndScroll('risks'); setFocusRiskId(riskId) }} />
         </CollapsibleSection>
-        <CollapsibleSection id="kanban" title={t('tabs.kanban')} open={openSections.has('kanban')} onToggle={() => toggleSection('kanban')}>
+        <CollapsibleSection id="kanban" title={t('tasks.title')} open={openSections.has('kanban')} onToggle={() => toggleSection('kanban')}>
           <KanbanPage projectId={project.id} />
         </CollapsibleSection>
         <CollapsibleSection id="risks" title={t('tabs.risks')} count={project.risks.length || undefined} open={openSections.has('risks')} onToggle={() => toggleSection('risks')}>
           <RisksPage projectId={project.id} focusRiskId={focusRiskId} onFocusConsumed={() => setFocusRiskId(null)} />
         </CollapsibleSection>
-        <CollapsibleSection id="delayLog" title={t('tabs.delayLog')} count={project.delayLog.length || undefined} open={openSections.has('delayLog')} onToggle={() => toggleSection('delayLog')}>
-          <DelayLogPage projectId={project.id} />
-        </CollapsibleSection>
         <CollapsibleSection id="diary" title={t('tabs.diary')} open={openSections.has('diary')} onToggle={() => toggleSection('diary')}>
           <DiaryTab project={project} />
         </CollapsibleSection>
+      </div>
+
+      {/* ── Footer metadata bar ── */}
+      <div
+        className="flex items-center flex-wrap px-5 shrink-0"
+        style={{ background: 'var(--surface-subtle)', borderTop: '0.5px solid var(--border-default)', padding: '8px 20px' }}
+      >
+        {chips.map((chip, i) => (
+          <span key={chip.label} className="flex items-center">
+            {i > 0 && <ChipSep />}
+            <InfoChip label={chip.label} value={chip.value} />
+          </span>
+        ))}
       </div>
 
       {showReportModal && (

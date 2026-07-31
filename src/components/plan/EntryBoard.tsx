@@ -152,7 +152,7 @@ function BoardEntryCard({ card, onClick, ghost = false }: {
       </div>
 
       {/* Title */}
-      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.4, marginBottom: 10 }}>
+      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.4, marginBottom: 10, overflowWrap: 'anywhere' }}>
         {card.name}
       </p>
 
@@ -209,7 +209,7 @@ function BoardColumn({ status, cards, onEdit, droppableId }: {
   return (
     <div
       style={{
-        display: 'flex', flexDirection: 'column', minHeight: '30vh',
+        display: 'flex', flexDirection: 'column', minHeight: '30vh', minWidth: 0,
         background: colStyle.bg,
         borderRadius: 'var(--radius-lg)',
         outline: isOver ? `2px solid ${colStyle.header}` : '2px solid transparent',
@@ -220,7 +220,7 @@ function BoardColumn({ status, cards, onEdit, droppableId }: {
         <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: colStyle.header }}>
           {t(KANBAN_COLS.find(c => c.status === status)?.labelKey as any)}
         </span>
-        <span style={{ minWidth: 20, height: 20, borderRadius: 'var(--radius-pill)', background: 'var(--surface-card)', color: 'var(--text-tertiary)', fontSize: 11, fontWeight: 500, padding: '0 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ minWidth: 20, height: 20, borderRadius: 'var(--radius-pill)', background: 'var(--surface-card)', color: colStyle.header, fontSize: 11, fontWeight: 600, padding: '0 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {cards.length}
         </span>
       </div>

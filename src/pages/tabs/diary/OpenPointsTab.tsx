@@ -5,6 +5,7 @@ import { OpenPoint, OpenPointStatus, OpenPointPriority, Phase } from '@/types'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input, Select, Field } from '@/components/ui/Input'
+import { EmptyState } from '@/components/ui/EmptyState'
 import DiaryComments from '@/components/diary/DiaryComments'
 import FileAttachments from '@/components/diary/FileAttachments'
 
@@ -203,7 +204,7 @@ export default function OpenPointsTab({ scope, openPoints, phases }: Props) {
 
       {/* Table */}
       {filtered.length === 0 ? (
-        <p className="text-sm text-center py-12" style={{ color: 'var(--text-tertiary)' }}>{t('diary.noOpenPoints')}</p>
+        <EmptyState icon="📌" title={t('diary.noOpenPoints')} />
       ) : (
         <div className="border rounded-[var(--radius-lg)] overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
           <table className="w-full text-sm">

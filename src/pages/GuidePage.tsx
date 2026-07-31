@@ -1,5 +1,4 @@
 import { useState, ReactNode } from 'react'
-import { AnchorNav } from '@/components/ui/AnchorNav'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 
 interface Section {
@@ -105,18 +104,12 @@ export default function GuidePage() {
     })
   }
 
-  function openAndScroll(id: string) {
-    setOpenIds((prev) => new Set(prev).add(id))
-  }
-
   return (
     <div className="p-8 max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Guia do open</h1>
       <p className="text-sm mb-4" style={{ color: 'var(--text-tertiary)' }}>
         Um resumo rápido de cada área do sistema e como usá-la.
       </p>
-
-      <AnchorNav items={SECTIONS.map((s) => ({ id: s.id, label: `${s.icon} ${s.title}` }))} onNavigate={openAndScroll} />
 
       <div className="mt-4">
         {SECTIONS.map((s) => (

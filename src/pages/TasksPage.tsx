@@ -161,7 +161,7 @@ function TaskCard({ card, onClick, ghost = false }: {
       </div>
 
       {/* Name */}
-      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.4, marginBottom: 10 }}>
+      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.4, marginBottom: 10, overflowWrap: 'anywhere' }}>
         {card.name}
       </p>
 
@@ -218,7 +218,7 @@ function KanbanColumn({ status, labelKey, cards, onEdit }: {
   return (
     <div
       style={{
-        display: 'flex', flexDirection: 'column', minHeight: '60vh',
+        display: 'flex', flexDirection: 'column', minHeight: '60vh', minWidth: 0,
         background: style.bg, borderRadius: 'var(--radius-lg)',
         outline: isOver ? `2px solid ${style.header}` : '2px solid transparent',
         transition: 'outline 0.1s',
@@ -228,7 +228,7 @@ function KanbanColumn({ status, labelKey, cards, onEdit }: {
         <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: style.header }}>
           {t(labelKey as any)}
         </span>
-        <span style={{ minWidth: 20, height: 20, borderRadius: 'var(--radius-pill)', background: 'var(--surface-card)', color: 'var(--text-tertiary)', fontSize: 11, fontWeight: 500, padding: '0 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ minWidth: 20, height: 20, borderRadius: 'var(--radius-pill)', background: 'var(--surface-card)', color: style.header, fontSize: 11, fontWeight: 600, padding: '0 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {cards.length}
         </span>
       </div>

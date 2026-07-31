@@ -64,7 +64,7 @@ export default function TeamTab({ project }: Props) {
   }
 
   return (
-    <div className="p-6">
+    <>
       <div className="bg-[var(--surface-card)] rounded-[var(--radius-lg)] border border-[var(--border-default)] p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -204,6 +204,6 @@ export default function TeamTab({ project }: Props) {
           </Field>
         </div>
       </Modal>
-    </div>
+    </>
   )
 }

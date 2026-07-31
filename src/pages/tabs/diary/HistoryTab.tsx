@@ -5,6 +5,7 @@ import { HistoryEntry, HistoryEventType } from '@/types'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input, Field } from '@/components/ui/Input'
+import { EmptyState } from '@/components/ui/EmptyState'
 import DiaryComments from '@/components/diary/DiaryComments'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR, enUS, es, type Locale } from 'date-fns/locale'
@@ -88,7 +89,7 @@ export default function HistoryTab({ scope, history }: Props) {
       </div>
 
       {sorted.length === 0 ? (
-        <p className="text-sm text-center py-12" style={{ color: 'var(--text-tertiary)' }}>{t('diary.noHistory')}</p>
+        <EmptyState icon="🕓" title={t('diary.noHistory')} />
       ) : (
         <div className="relative">
           {/* Timeline line */}

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { Input, Select, Textarea, Field } from '@/components/ui/Input'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 const RESPONSIBILITY_KEYS: DelayResponsibility[] = ['internal', 'client_business', 'client_it', 'client_provider']
 const TYPE_KEYS: DelayType[] = ['execution', 'definition', 'planning']
@@ -208,7 +209,7 @@ export default function DelayLogPage({ projectId }: DelayLogPageProps) {
   const totalPositiveDays = Object.values(byResponsibility).reduce((s, v) => s + v, 0)
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-[var(--text-secondary)]">{t('delay.logTitle')}</h2>
@@ -283,10 +284,7 @@ export default function DelayLogPage({ projectId }: DelayLogPageProps) {
 
       {/* Table */}
       {log.length === 0 ? (
-        <div className="text-center py-16 text-[var(--text-tertiary)]">
-          <div className="text-4xl mb-2">📋</div>
-          <p>{t('delay.noEntries')}</p>
-        </div>
+        <EmptyState icon="📋" title={t('delay.noEntries')} />
       ) : (
         <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--border-default)] shadow-[var(--shadow-sm)] bg-[var(--surface-card)]">
           <table className="w-full text-sm">

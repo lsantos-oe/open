@@ -5,6 +5,7 @@ import { useAppStore } from '@/store/useAppStore'
 import { Button } from '@/components/ui/Button'
 import { Input, Textarea, Field } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
+import TeamTab from './TeamTab'
 
 const EMPTY_CHARTER: ProjectCharter = {
   sponsor: '',
@@ -75,6 +76,7 @@ export default function OverviewTab({ project }: Props) {
   const [charter, setCharter] = useState<ProjectCharter>(project.charter ?? EMPTY_CHARTER)
   const [linkModal, setLinkModal] = useState(false)
   const [linkForm, setLinkForm] = useState({ label: '', url: '' })
+  const [charterOpen, setCharterOpen] = useState(false)
   const overviewTimer = useRef<ReturnType<typeof setTimeout>>()
   const charterTimer = useRef<ReturnType<typeof setTimeout>>()
 
@@ -110,22 +112,88 @@ export default function OverviewTab({ project }: Props) {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Ploomes links */}
-      <div className="bg-[var(--surface-card)] rounded-[var(--radius-lg)] border border-[var(--border-default)] p-6">
-        <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-4">Ploomes</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <ExternalLinkField
-            label="Proposta"
-            value={project.proposalLink}
-            buttonLabel="Abrir proposta"
-            onSave={(url) => updateProject(project.id, { proposalLink: url || undefined })}
-          />
-          <ExternalLinkField
-            label="Negócio (deal)"
-            value={project.dealLink}
-            buttonLabel="Abrir negócio"
-            onSave={(url) => updateProject(project.id, { dealLink: url || undefined })}
-          />
+      {/* Dados gerais + Equipe side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <div className="bg-[var(--surface-card)] rounded-[var(--radius-lg)] border border-[var(--border-default)] p-6">
+          <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-4">{t('overview.information')}</h3>
+          <dl className="grid grid-cols-2 gap-4 text-sm">
+            {[
+              [t('project.client'), project.client],
+              [t('project.pm'), project.pm],
+              [t('project.devLead'), project.devLead || '—'],
+              [t('overview.devType'), project.devType ? t(`project.${project.devType}`) : '—'],
+              [t('project.devIntegration'), project.devIntegration || '—'],
+              [t('overview.baseline'), project.baselineSetAt ? new Date(project.baselineSetAt).toLocaleDateString() : '—'],
+            ].map(([label, value]) => (
+              <div key={label}>
+                <dt className="text-[var(--text-tertiary)] text-xs">{label}</dt>
+                <dd className="font-medium text-[var(--text-primary)] mt-0.5">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+
+        <TeamTab project={project} />
+      </div>
+
+      {/* Ploomes + Links externos side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <div className="bg-[var(--surface-card)] rounded-[var(--radius-lg)] border border-[var(--border-default)] p-6">
+          <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-4">Ploomes</h3>
+          <div className="grid grid-cols-1 gap-5">
+            <ExternalLinkField
+              label="Proposta"
+              value={project.proposalLink}
+              buttonLabel="Abrir proposta"
+              onSave={(url) => updateProject(project.id, { proposalLink: url || undefined })}
+            />
+            <ExternalLinkField
+              label="Negócio (deal)"
+              value={project.dealLink}
+              buttonLabel="Abrir negócio"
+              onSave={(url) => updateProject(project.id, { dealLink: url || undefined })}
+            />
+          </div>
+        </div>
+
+        <div className="bg-[var(--surface-card)] rounded-[var(--radius-lg)] border border-[var(--border-default)] p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-[var(--text-secondary)]">{t('overview.links')}</h3>
+            <Button size="sm" variant="secondary" onClick={() => setLinkModal(true)}>
+              + {t('overview.addLink')}
+            </Button>
+          </div>
+
+          {project.links.length === 0 ? (
+            <p className="text-sm text-[var(--text-tertiary)]">{t('overview.noLinks')}</p>
+          ) : (
+            <ul className="space-y-2">
+              {project.links.map((link) => (
+                <li key={link.id} className="flex items-center gap-3 group">
+                  <div className="w-5 h-5 rounded-[var(--radius-sm)] bg-[var(--color-info-bg)] flex items-center justify-center shrink-0">
+                    <svg className="w-3 h-3 text-[var(--color-info-text)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </div>
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-[var(--oe-primary)] hover:underline flex-1 truncate"
+                  >
+                    {link.label}
+                  </a>
+                  <span className="text-xs text-[var(--text-disabled)] truncate max-w-[200px] hidden sm:block">{link.url}</span>
+                  <button
+                    onClick={() => removeProjectLink(project.id, link.id)}
+                    className="text-[var(--text-disabled)] hover:text-[var(--color-danger-text)] opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
 
@@ -135,109 +203,61 @@ export default function OverviewTab({ project }: Props) {
         <Textarea
           value={overview}
           onChange={(e) => setOverview(e.target.value)}
-          rows={10}
+          rows={8}
           placeholder={t('overview.notesPlaceholder')}
         />
         <p className="text-xs text-[var(--text-tertiary)] mt-2">{t('overview.autosaved')}</p>
       </div>
 
-      {/* External links */}
+      {/* Charter — collapsed by default, least glanced-at info */}
       <div className="bg-[var(--surface-card)] rounded-[var(--radius-lg)] border border-[var(--border-default)] p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-[var(--text-secondary)]">{t('overview.links')}</h3>
-          <Button size="sm" variant="secondary" onClick={() => setLinkModal(true)}>
-            + {t('overview.addLink')}
-          </Button>
-        </div>
-
-        {project.links.length === 0 ? (
-          <p className="text-sm text-[var(--text-tertiary)]">{t('overview.noLinks')}</p>
-        ) : (
-          <ul className="space-y-2">
-            {project.links.map((link) => (
-              <li key={link.id} className="flex items-center gap-3 group">
-                <div className="w-5 h-5 rounded-[var(--radius-sm)] bg-[var(--color-info-bg)] flex items-center justify-center shrink-0">
-                  <svg className="w-3 h-3 text-[var(--color-info-text)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </div>
-                <a
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-[var(--oe-primary)] hover:underline flex-1 truncate"
-                >
-                  {link.label}
-                </a>
-                <span className="text-xs text-[var(--text-disabled)] truncate max-w-[200px] hidden sm:block">{link.url}</span>
-                <button
-                  onClick={() => removeProjectLink(project.id, link.id)}
-                  className="text-[var(--text-disabled)] hover:text-[var(--color-danger-text)] opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  ×
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* Charter */}
-      <div className="bg-[var(--surface-card)] rounded-[var(--radius-lg)] border border-[var(--border-default)] p-6 space-y-6">
-        <div className="flex items-center justify-between">
+        <button
+          onClick={() => setCharterOpen((v) => !v)}
+          className="w-full flex items-center gap-2 text-left"
+        >
+          <svg
+            className="w-4 h-4 shrink-0 transition-transform"
+            style={{ transform: charterOpen ? 'rotate(0deg)' : 'rotate(-90deg)', color: 'var(--text-tertiary)' }}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+          </svg>
           <h3 className="text-sm font-semibold text-[var(--text-secondary)]">{t('charter.title')}</h3>
-          <span className="text-xs text-[var(--text-tertiary)]">Salvo automaticamente</span>
-        </div>
+        </button>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <Field label={t('charter.sponsor')}>
-            <Input
-              value={charter.sponsor}
-              onChange={(e) => setCharterField('sponsor', e.target.value)}
-              placeholder="Nome do sponsor executivo"
-            />
-          </Field>
-          <Field label={t('charter.budget')}>
-            <Input
-              value={charter.budget ?? ''}
-              onChange={(e) => setCharterField('budget', e.target.value)}
-              placeholder="Ex: R$ 50.000"
-            />
-          </Field>
-        </div>
-
-        <div className="border-t border-[var(--border-default)] pt-5 grid grid-cols-1 gap-5">
-          {CHARTER_TEXTAREAS.map(({ key, rows }) => (
-            <Field key={key} label={t(`charter.${key}`)}>
-              <Textarea
-                value={charter[key] ?? ''}
-                onChange={(e) => setCharterField(key, e.target.value)}
-                rows={rows ?? 3}
-                placeholder={`Descreva ${t(`charter.${key}`).toLowerCase()}...`}
-              />
-            </Field>
-          ))}
-        </div>
-      </div>
-
-      {/* Project metadata */}
-      <div className="bg-[var(--surface-card)] rounded-[var(--radius-lg)] border border-[var(--border-default)] p-6">
-        <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-4">{t('overview.information')}</h3>
-        <dl className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
-          {[
-            [t('project.client'), project.client],
-            [t('project.pm'), project.pm],
-            [t('project.devLead'), project.devLead || '—'],
-            [t('overview.devType'), project.devType ? t(`project.${project.devType}`) : '—'],
-            [t('project.devIntegration'), project.devIntegration || '—'],
-            [t('overview.baseline'), project.baselineSetAt ? new Date(project.baselineSetAt).toLocaleDateString() : '—'],
-          ].map(([label, value]) => (
-            <div key={label}>
-              <dt className="text-[var(--text-tertiary)] text-xs">{label}</dt>
-              <dd className="font-medium text-[var(--text-primary)] mt-0.5">{value}</dd>
+        {charterOpen && (
+          <div className="space-y-6 mt-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <Field label={t('charter.sponsor')}>
+                <Input
+                  value={charter.sponsor}
+                  onChange={(e) => setCharterField('sponsor', e.target.value)}
+                  placeholder="Nome do sponsor executivo"
+                />
+              </Field>
+              <Field label={t('charter.budget')}>
+                <Input
+                  value={charter.budget ?? ''}
+                  onChange={(e) => setCharterField('budget', e.target.value)}
+                  placeholder="Ex: R$ 50.000"
+                />
+              </Field>
             </div>
-          ))}
-        </dl>
+
+            <div className="border-t border-[var(--border-default)] pt-5 grid grid-cols-1 gap-5">
+              {CHARTER_TEXTAREAS.map(({ key, rows }) => (
+                <Field key={key} label={t(`charter.${key}`)}>
+                  <Textarea
+                    value={charter[key] ?? ''}
+                    onChange={(e) => setCharterField(key, e.target.value)}
+                    rows={rows ?? 3}
+                    placeholder={`Descreva ${t(`charter.${key}`).toLowerCase()}...`}
+                  />
+                </Field>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add link modal */}

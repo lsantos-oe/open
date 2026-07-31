@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { Input, Select, Textarea, Field } from '@/components/ui/Input'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 const PROB_VAL: Record<Probability | Impact, number> = { low: 1, medium: 2, high: 3 }
 
@@ -442,10 +443,7 @@ export default function RisksPage({ projectId, focusRiskId, onFocusConsumed }: R
       </div>
 
       {project.risks.length === 0 ? (
-        <div className="text-center py-16 text-[var(--text-tertiary)]">
-          <div className="text-4xl mb-2">🛡️</div>
-          <p>{t('risk.noRisks')}</p>
-        </div>
+        <EmptyState icon="🛡️" title={t('risk.noRisks')} />
       ) : (
         <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--border-default)] shadow-[var(--shadow-sm)] bg-[var(--surface-card)]">
           <table className="w-full text-sm">

@@ -36,7 +36,7 @@ function fileToBase64(file: File): Promise<string> {
 
 export function ChatPanel() {
   const {
-    open, setOpen, messages, isStreaming, streamingText, pendingConfirmation,
+    open, setOpen, expanded, toggleExpanded, messages, isStreaming, streamingText, pendingConfirmation,
     input, setInput, attachments, addAttachment, removeAttachment, clearAttachments,
     appendMessage, actionLink, setActionLink,
   } = useAiChatStore()
@@ -119,27 +119,34 @@ export function ChatPanel() {
   }
 
   return createPortal(
-    <div
-      style={{
-        position: 'fixed',
-        bottom: 88,
-        ...(sidePanelOpen
-          ? { left: '50%', transform: 'translateX(-50%)' }
-          : { right: 24 }),
-        width: 400,
-        maxWidth: 'calc(100vw - 32px)',
-        height: 560,
-        maxHeight: 'calc(100vh - 120px)',
-        background: 'var(--surface-card)',
-        border: '1px solid var(--border-default)',
-        borderRadius: 'var(--radius-lg)',
-        boxShadow: '0 12px 32px rgba(0,0,0,0.25)',
-        display: 'flex',
-        flexDirection: 'column',
-        zIndex: 9985,
-        overflow: 'hidden',
-      }}
-    >
+    <>
+      {expanded && (
+        <div
+          onClick={toggleExpanded}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 9984 }}
+        />
+      )}
+      <div
+        style={{
+          position: 'fixed',
+          ...(expanded
+            ? { top: '10vh', left: '50%', transform: 'translateX(-50%)', width: 800, maxWidth: 'calc(100vw - 48px)', height: '80vh', maxHeight: '80vh' }
+            : {
+                bottom: 88,
+                ...(sidePanelOpen ? { left: '50%', transform: 'translateX(-50%)' } : { right: 24 }),
+                width: 400, maxWidth: 'calc(100vw - 32px)', height: 560, maxHeight: 'calc(100vh - 120px)',
+              }),
+          background: 'var(--surface-card)',
+          border: '1px solid var(--border-default)',
+          borderRadius: 'var(--radius-lg)',
+          boxShadow: '0 12px 32px rgba(0,0,0,0.25)',
+          display: 'flex',
+          flexDirection: 'column',
+          zIndex: 9985,
+          overflow: 'hidden',
+          transition: 'width 150ms ease, height 150ms ease',
+        }}
+      >
       {/* Header */}
       <div
         style={{
@@ -150,12 +157,21 @@ export function ChatPanel() {
         }}
       >
         <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Assistente de IA</span>
-        <button
-          onClick={() => setOpen(false)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 18, lineHeight: 1 }}
-        >
-          ×
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button
+            onClick={toggleExpanded}
+            title={expanded ? 'Recolher' : 'Expandir'}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', padding: 4 }}
+          >
+            {expanded ? <CollapseIcon /> : <ExpandIcon />}
+          </button>
+          <button
+            onClick={() => setOpen(false)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 18, lineHeight: 1, padding: 4 }}
+          >
+            ×
+          </button>
+        </div>
       </div>
 
       {/* Messages */}
@@ -303,7 +319,24 @@ export function ChatPanel() {
           Enviar
         </button>
       </div>
-    </div>,
+      </div>
+    </>,
     document.body,
+  )
+}
+
+function ExpandIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+    </svg>
+  )
+}
+
+function CollapseIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V5m0 4H5m4 0L4 4m11 5V5m0 4h4m-4 0l5-5M9 15v4m0-4H5m4 0l-5 5m11-5v4m0-4h4m-4 0l5 5" />
+    </svg>
   )
 }

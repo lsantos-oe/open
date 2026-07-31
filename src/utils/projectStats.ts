@@ -78,3 +78,12 @@ export function uniqueMembers(projects: Project[]): string[] {
   const names = projects.flatMap((p) => [p.pm, p.devLead ?? '', ...p.team.map((m) => m.name)]).filter(Boolean)
   return [...new Set(names)].sort()
 }
+
+/** The project's Go-live milestone date, if one exists — looks for a milestone
+ *  named "go live"/"go-live", falling back to the last milestone otherwise. */
+export function findGoLiveDate(project: Project): string | undefined {
+  const milestones = project.phases.flatMap((ph) => ph.entries.filter((e) => e.type === 'milestone'))
+  const goLive = milestones.find((e) => e.name.toLowerCase().includes('go live') || e.name.toLowerCase().includes('go-live'))
+  const target = goLive ?? milestones[milestones.length - 1]
+  return target?.plannedDate
+}

@@ -16,13 +16,14 @@ import { FilterMenu } from '@/components/ui/FilterMenu'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { TableSkeleton } from '@/components/ui/TableSkeleton'
 import { isProjectMine } from '@/utils/involvement'
-import { Project, ProjectStatus, ProjectType, ProjectTemplate, Client, TeamMember } from '@/types'
+import { Project, ProjectStatus, ProjectType, ProjectTemplate, Client, ClientStatus, TeamMember } from '@/types'
 import {
   projectDurationDays,
   projectEndVariance,
   isProjectDelayed,
   uniqueClients,
   uniquePMs,
+  findGoLiveDate,
 } from '@/utils/projectStats'
 
 // ─── constants ────────────────────────────────────────────────────────────────
@@ -604,6 +605,227 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
   )
 }
 
+// ─── PmoDashboard ─────────────────────────────────────────────────────────────
+
+const CLIENT_STATUS_LABEL: Record<ClientStatus, string> = {
+  pre_venda: 'Pré-venda',
+  implantacao: 'Implantação',
+  sustentacao_novos_projetos: 'Sustentação / Novos projetos',
+}
+
+function KpiCard({ label, value, danger }: { label: string; value: string | number; danger?: boolean }) {
+  return (
+    <div className="rounded-[var(--radius-lg)] border p-3" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
+      <p className="text-[11px] mb-1" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
+      <p className="text-xl font-bold" style={{ color: danger ? 'var(--color-danger-text)' : 'var(--text-primary)' }}>{value}</p>
+    </div>
+  )
+}
+
+function PmoDashboard({ projects, clients, holidays }: { projects: Project[]; clients: Client[]; holidays: string[] }) {
+  const navigate = useNavigate()
+  const [clientIds, setClientIds] = useState<Set<string>>(new Set())
+  const activeClients = useMemo(() => clients.filter((c) => !c.archived), [clients])
+
+  function toggleClientId(id: string) {
+    setClientIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  const scoped = useMemo(
+    () => (clientIds.size === 0 ? projects : projects.filter((p) => p.clientId && clientIds.has(p.clientId))),
+    [projects, clientIds],
+  )
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<ProjectStatus, number> = { backlog: 0, planning: 0, in_progress: 0, done: 0 }
+    for (const p of scoped) counts[p.status]++
+    return counts
+  }, [scoped])
+
+  const inProgress = scoped.filter((p) => p.status === 'in_progress')
+  const delayedCount = useMemo(() => inProgress.filter((p) => isProjectDelayed(p, holidays)).length, [inProgress, holidays])
+  const delayedPct = inProgress.length > 0 ? Math.round((delayedCount / inProgress.length) * 100) : 0
+
+  const avgVariance = useMemo(() => {
+    const variances = scoped.map((p) => projectEndVariance(p, holidays)).filter((v): v is number => v !== undefined)
+    if (variances.length === 0) return undefined
+    return Math.round(variances.reduce((a, b) => a + b, 0) / variances.length)
+  }, [scoped, holidays])
+
+  const risksBySeverity = useMemo(() => {
+    const counts = { high: 0, medium: 0, low: 0 }
+    for (const p of scoped) {
+      for (const r of p.risks) {
+        if (r.status === 'resolved' || r.status === 'mitigated') continue
+        if (r.score >= 6) counts.high++
+        else if (r.score >= 3) counts.medium++
+        else counts.low++
+      }
+    }
+    return counts
+  }, [scoped])
+  const openRisksTotal = risksBySeverity.high + risksBySeverity.medium + risksBySeverity.low
+
+  const loadByPm = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const p of scoped) {
+      if (p.status === 'done') continue
+      counts.set(p.pm, (counts.get(p.pm) ?? 0) + 1)
+    }
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5)
+  }, [scoped])
+
+  const scopedClients = useMemo(
+    () => (clientIds.size === 0 ? activeClients : activeClients.filter((c) => clientIds.has(c.id))),
+    [activeClients, clientIds],
+  )
+  const clientsByStatus = useMemo(() => {
+    const counts: Record<ClientStatus, number> = { pre_venda: 0, implantacao: 0, sustentacao_novos_projetos: 0 }
+    for (const c of scopedClients) counts[c.status]++
+    return counts
+  }, [scopedClients])
+
+  const withoutBaseline = scoped.filter((p) => !p.baselineSetAt && p.status === 'in_progress')
+
+  const upcomingGoLives = useMemo(() => {
+    const today = new Date()
+    const in60 = new Date()
+    in60.setDate(today.getDate() + 60)
+    return scoped
+      .map((p) => ({ project: p, date: findGoLiveDate(p) }))
+      .filter((x): x is { project: Project; date: string } => !!x.date)
+      .filter((x) => { const d = new Date(x.date); return d >= today && d <= in60 })
+      .sort((a, b) => a.date.localeCompare(b.date))
+  }, [scoped])
+
+  return (
+    <div className="mb-6 space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Dashboard PMO</h2>
+        <FilterMenu activeCount={clientIds.size} onClear={() => setClientIds(new Set())}>
+          <p className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Cliente(s)</p>
+          <div className="max-h-56 overflow-y-auto space-y-1">
+            {activeClients.length === 0 ? (
+              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Nenhum cliente cadastrado.</p>
+            ) : activeClients.map((c) => (
+              <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" className="accent-[var(--oe-primary)]" checked={clientIds.has(c.id)} onChange={() => toggleClientId(c.id)} />
+                {c.name}
+              </label>
+            ))}
+          </div>
+        </FilterMenu>
+      </div>
+
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <KpiCard label="Backlog" value={statusCounts.backlog} />
+        <KpiCard label="Planejamento" value={statusCounts.planning} />
+        <KpiCard label="Em andamento" value={statusCounts.in_progress} />
+        <KpiCard label="Concluídos" value={statusCounts.done} />
+        <KpiCard label="% atrasados" value={`${delayedPct}%`} danger={delayedPct > 0} />
+        <KpiCard label="Variância média" value={avgVariance !== undefined ? `${avgVariance > 0 ? '+' : ''}${avgVariance}d` : '—'} danger={!!avgVariance && avgVariance > 0} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        {/* Open risks */}
+        <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
+          <h3 className="text-xs font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>Riscos abertos ({openRisksTotal})</h3>
+          {openRisksTotal === 0 ? (
+            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Nenhum risco aberto.</p>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex h-2 rounded-[var(--radius-pill)] overflow-hidden gap-px" style={{ background: 'var(--surface-subtle)' }}>
+                {risksBySeverity.high > 0 && <div className="bg-red-500" style={{ width: `${(risksBySeverity.high / openRisksTotal) * 100}%` }} />}
+                {risksBySeverity.medium > 0 && <div className="bg-orange-400" style={{ width: `${(risksBySeverity.medium / openRisksTotal) * 100}%` }} />}
+                {risksBySeverity.low > 0 && <div className="bg-green-400" style={{ width: `${(risksBySeverity.low / openRisksTotal) * 100}%` }} />}
+              </div>
+              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                <span>🔴 Alto: {risksBySeverity.high}</span>
+                <span>🟠 Médio: {risksBySeverity.medium}</span>
+                <span>🟢 Baixo: {risksBySeverity.low}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Load by PM */}
+        <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
+          <h3 className="text-xs font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>Carga por líder</h3>
+          {loadByPm.length === 0 ? (
+            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Sem projetos ativos.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {loadByPm.map(([pm, count]) => (
+                <div key={pm} className="flex items-center justify-between text-xs">
+                  <span style={{ color: 'var(--text-secondary)' }}>{pm}</span>
+                  <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Clients by status */}
+        <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
+          <h3 className="text-xs font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>Clientes por status</h3>
+          <div className="space-y-1.5">
+            {(Object.keys(CLIENT_STATUS_LABEL) as ClientStatus[]).map((s) => (
+              <div key={s} className="flex items-center justify-between text-xs">
+                <span style={{ color: 'var(--text-secondary)' }}>{CLIENT_STATUS_LABEL[s]}</span>
+                <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{clientsByStatus[s]}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {/* Projects without baseline */}
+        <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
+          <h3 className="text-xs font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>Em andamento sem baseline ({withoutBaseline.length})</h3>
+          {withoutBaseline.length === 0 ? (
+            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Todos os projetos ativos têm baseline definida.</p>
+          ) : (
+            <ul className="space-y-1">
+              {withoutBaseline.slice(0, 6).map((p) => (
+                <li key={p.id}>
+                  <button className="text-xs hover:underline text-left" style={{ color: 'var(--oe-primary)' }} onClick={() => navigate(`/projects/${p.id}`)}>
+                    {p.name} <span style={{ color: 'var(--text-tertiary)' }}>· {p.client}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Upcoming go-lives */}
+        <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
+          <h3 className="text-xs font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>Go-lives nos próximos 60 dias ({upcomingGoLives.length})</h3>
+          {upcomingGoLives.length === 0 ? (
+            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Nenhum go-live previsto no período.</p>
+          ) : (
+            <ul className="space-y-1">
+              {upcomingGoLives.slice(0, 6).map(({ project, date }) => (
+                <li key={project.id} className="flex items-center justify-between">
+                  <button className="text-xs hover:underline text-left" style={{ color: 'var(--oe-primary)' }} onClick={() => navigate(`/projects/${project.id}`)}>
+                    {project.name} <span style={{ color: 'var(--text-tertiary)' }}>· {project.client}</span>
+                  </button>
+                  <span className="text-xs shrink-0 ml-2" style={{ color: 'var(--text-secondary)' }}>{date.split('-').reverse().join('/')}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── ProjectsPage ─────────────────────────────────────────────────────────────
 
 export default function ProjectsPage() {
@@ -761,6 +983,10 @@ export default function ProjectsPage() {
           </Button>
         </div>
       </div>
+
+      {!projectsLoading && projects.length > 0 && (
+        <PmoDashboard projects={projects.filter((p) => !p.archived)} clients={storeClients} holidays={settings.holidays} />
+      )}
 
       {/* Filters */}
       {!projectsLoading && projects.length > 0 && (
