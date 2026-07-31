@@ -1,6 +1,6 @@
-import Anthropic, { APIError } from '@anthropic-ai/sdk'
+import type Anthropic from '@anthropic-ai/sdk'
 import { v4 as uuid } from 'uuid'
-import { createAnthropicClient, AI_MODEL } from './client'
+import { streamChat, ChatApiError } from './client'
 import { SYSTEM_PROMPT } from './systemPrompt'
 import { ALL_TOOLS, TOOLS_BY_NAME } from './tools'
 import type { ExtractedItem } from './tools/extractionTools'
@@ -42,8 +42,8 @@ function friendlyKeyError(): void {
 }
 
 function handleAnthropicError(err: unknown): void {
-  if (err instanceof APIError) {
-    const billingLike = err.status === 400 && /credit|balance|billing|insufficient/i.test(err.message ?? '')
+  if (err instanceof ChatApiError) {
+    const billingLike = err.status === 400 && /credit|balance|billing|insufficient|chave/i.test(err.message ?? '')
     if (err.status === 401 || err.status === 403 || billingLike) {
       friendlyKeyError()
       return
@@ -72,29 +72,13 @@ export async function runConversation(turnsLeft: number = MAX_AUTO_TURNS): Promi
     return
   }
 
-  let client: Anthropic
   try {
-    client = await createAnthropicClient()
-  } catch {
-    friendlyKeyError()
-    chat.setStreaming(false)
-    return
-  }
-
-  try {
-    const stream = client.messages.stream({
-      model: AI_MODEL,
-      max_tokens: 8192,
+    const final = await streamChat({
       system: SYSTEM_PROMPT,
       tools: anthropicTools,
       messages: toAnthropicMessages(useAiChatStore.getState().messages),
+      onText: (snapshot) => useAiChatStore.getState().setStreamingText(snapshot),
     })
-
-    stream.on('text', (_delta, snapshot) => {
-      useAiChatStore.getState().setStreamingText(snapshot)
-    })
-
-    const final = await stream.finalMessage()
 
     const assistantBlocks: ChatContentBlock[] = []
     for (const block of final.content) {

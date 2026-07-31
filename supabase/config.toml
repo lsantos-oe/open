@@ -1,0 +1,4 @@
+[functions.ai-chat]
+# Explicit: Supabase rejects any call without a valid logged-in user's JWT
+# before this function's code even runs. Never set this to false.
+verify_jwt = true

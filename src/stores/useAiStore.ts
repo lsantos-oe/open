@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { supabase } from '@/lib/supabase'
 import { useToastStore } from '@/stores/useToastStore'
-import { clearCachedKey } from '@/ai/client'
 
 /** Tracks the single Anthropic key shared by the whole workspace (not a
  *  per-user BYOK key) — ai_get_key()/ai_has_key() return the same value to
@@ -62,7 +61,6 @@ export const useAiStore = create<AiStore>((set, get) => ({
         useToastStore.getState().addToast(error.message || 'Não foi possível salvar a chave. Tente novamente.')
         return false
       }
-      clearCachedKey()
       set({ hasKey: true })
       return true
     } finally {
@@ -76,7 +74,6 @@ export const useAiStore = create<AiStore>((set, get) => ({
       useToastStore.getState().addToast(error.message || 'Não foi possível remover a chave. Tente novamente.')
       return
     }
-    clearCachedKey()
     set({ hasKey: false })
   },
 }))
