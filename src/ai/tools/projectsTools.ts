@@ -105,6 +105,50 @@ export const createProjectTool: AiTool = {
   },
 }
 
+export const updateProjectTool: AiTool = {
+  name: 'update_project',
+  description: 'Edita um projeto já existente (nome, líder, dev lead, status, visão geral/notas). Sempre requer confirmação do usuário antes de executar.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      projectId: { type: 'string', description: 'Id do projeto (obtido via find_project)' },
+      projectName: { type: 'string', description: 'Nome atual do projeto, só pro resumo de confirmação' },
+      name: { type: 'string', description: 'Novo nome (opcional)' },
+      pmName: { type: 'string', description: 'Novo líder do projeto (opcional) — precisa ser um usuário cadastrado' },
+      devLead: { type: 'string', description: 'Novo dev lead (opcional)' },
+      status: { type: 'string', enum: ['backlog', 'planning', 'in_progress', 'done'] },
+      overview: { type: 'string', description: 'Novo texto de notas/visão geral (opcional)' },
+    },
+    required: ['projectId', 'projectName'],
+  },
+  isWrite: true,
+  describe(input) {
+    const changes: string[] = []
+    if (input.name) changes.push(`nome → "${input.name}"`)
+    if (input.pmName) changes.push(`líder → ${input.pmName}`)
+    if (input.devLead) changes.push(`dev lead → ${input.devLead}`)
+    if (input.status) changes.push(`status → ${input.status}`)
+    if (input.overview !== undefined) changes.push('notas atualizadas')
+    return `Estou prestes a editar o projeto "${input.projectName}". O resultado final ficará assim: ${changes.join(', ') || '(nenhuma alteração informada)'}. É basicamente isso?`
+  },
+  async execute(input) {
+    const store = useAppStore.getState()
+    const patch: Record<string, unknown> = {}
+    if (input.name) patch.name = String(input.name)
+    if (input.devLead) patch.devLead = String(input.devLead)
+    if (input.status) patch.status = input.status
+    if (input.overview !== undefined) patch.overview = String(input.overview)
+    if (input.pmName) {
+      const teamMembers = teamDirectoryAsTeamMembers(store.teamDirectory)
+      const pmMember = teamMembers.find((m) => m.name.toLowerCase() === String(input.pmName).toLowerCase())
+      patch.pm = pmMember?.name ?? String(input.pmName)
+      patch.pmMemberId = pmMember?.userId
+    }
+    store.updateProject(String(input.projectId), patch as never)
+    return { success: true, projectId: input.projectId }
+  },
+}
+
 export const updateEntityStatusTool: AiTool = {
   name: 'update_entity_status',
   description: 'Atualiza o status de um projeto, tarefa ou incidente. Sempre requer confirmação do usuário antes de executar.',

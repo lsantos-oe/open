@@ -1,9 +1,25 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useNavigate } from 'react-router-dom'
 import { v4 as uuid } from 'uuid'
+import ReactMarkdown from 'react-markdown'
 import { useAiChatStore } from '@/stores/useAiChatStore'
+import { useOverlayStore } from '@/stores/useOverlayStore'
 import { runConversation, approveConfirmation, rejectConfirmation } from '@/ai/runConversation'
 import type { ChatContentBlock, PendingAttachment } from '@/types/ai'
+
+const MARKDOWN_COMPONENTS = {
+  p: ({ children }: { children?: React.ReactNode }) => <p style={{ margin: '0 0 6px' }}>{children}</p>,
+  ul: ({ children }: { children?: React.ReactNode }) => <ul style={{ margin: '0 0 6px', paddingLeft: 18 }}>{children}</ul>,
+  ol: ({ children }: { children?: React.ReactNode }) => <ol style={{ margin: '0 0 6px', paddingLeft: 18 }}>{children}</ol>,
+  li: ({ children }: { children?: React.ReactNode }) => <li style={{ marginBottom: 2 }}>{children}</li>,
+  a: ({ href, children }: { href?: string; children?: React.ReactNode }) => (
+    <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>{children}</a>
+  ),
+  code: ({ children }: { children?: React.ReactNode }) => (
+    <code style={{ background: 'rgba(127,127,127,0.15)', borderRadius: 4, padding: '1px 4px', fontSize: '0.9em' }}>{children}</code>
+  ),
+}
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -22,15 +38,17 @@ export function ChatPanel() {
   const {
     open, setOpen, messages, isStreaming, streamingText, pendingConfirmation,
     input, setInput, attachments, addAttachment, removeAttachment, clearAttachments,
-    appendMessage,
+    appendMessage, actionLink, setActionLink,
   } = useAiChatStore()
+  const sidePanelOpen = useOverlayStore((s) => s.sidePanelCount > 0)
+  const navigate = useNavigate()
   const [approving, setApproving] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight })
-  }, [messages, streamingText, pendingConfirmation])
+  }, [messages, streamingText, pendingConfirmation, actionLink])
 
   if (!open) return null
 
@@ -83,6 +101,7 @@ export function ChatPanel() {
     appendMessage({ id: uuid(), role: 'user', content, createdAt: new Date().toISOString() })
     setInput('')
     clearAttachments()
+    setActionLink(null)
     await runConversation()
   }
 
@@ -104,7 +123,9 @@ export function ChatPanel() {
       style={{
         position: 'fixed',
         bottom: 88,
-        right: 24,
+        ...(sidePanelOpen
+          ? { left: '50%', transform: 'translateX(-50%)' }
+          : { right: 24 }),
         width: 400,
         maxWidth: 'calc(100vw - 32px)',
         height: 560,
@@ -161,7 +182,7 @@ export function ChatPanel() {
                   color: m.role === 'user' ? 'white' : 'var(--text-primary)',
                 }}
               >
-                {text}
+                <ReactMarkdown components={MARKDOWN_COMPONENTS}>{text}</ReactMarkdown>
               </div>
             </div>
           )
@@ -169,7 +190,7 @@ export function ChatPanel() {
         {isStreaming && streamingText && (
           <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
             <div style={{ maxWidth: '85%', padding: '8px 12px', borderRadius: 'var(--radius-lg)', fontSize: 13, lineHeight: 1.5, whiteSpace: 'pre-wrap', background: 'var(--surface-subtle)', color: 'var(--text-primary)' }}>
-              {streamingText}
+              <ReactMarkdown components={MARKDOWN_COMPONENTS}>{streamingText}</ReactMarkdown>
             </div>
           </div>
         )}
@@ -205,6 +226,21 @@ export function ChatPanel() {
                 {approving ? 'Aplicando...' : 'Aprovar'}
               </button>
             </div>
+          </div>
+        )}
+
+        {actionLink && (
+          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+            <button
+              onClick={() => { navigate(actionLink.to); setActionLink(null); setOpen(false) }}
+              style={{
+                fontSize: 12.5, fontWeight: 500, padding: '6px 12px', borderRadius: 'var(--radius-pill)',
+                border: '1px solid var(--oe-primary)', background: 'var(--oe-primary-light)', color: 'var(--oe-primary)',
+                cursor: 'pointer',
+              }}
+            >
+              {actionLink.label}
+            </button>
           </div>
         )}
       </div>
@@ -246,11 +282,11 @@ export function ChatPanel() {
           onChange={(e) => setInput(e.target.value)}
           onPaste={handlePaste}
           onKeyDown={handleKeyDown}
-          placeholder="Pergunte algo, ou cole um texto/imagem..."
-          rows={1}
+          placeholder="Pergunte algo ou cole um texto/imagem..."
+          rows={2}
           disabled={isStreaming || !!pendingConfirmation}
           style={{
-            flex: 1, resize: 'none', fontSize: 13, padding: '7px 10px', maxHeight: 100,
+            flex: 1, resize: 'none', fontSize: 13, padding: '8px 10px', minHeight: 52, maxHeight: 140,
             border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)',
             background: 'var(--surface-input, var(--surface-card))', color: 'var(--text-primary)', outline: 'none',
           }}

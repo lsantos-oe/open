@@ -739,7 +739,7 @@ export default function ProjectsPage() {
               borderColor: onlyMine ? 'var(--oe-primary)' : 'var(--border-default)',
             }}
           >
-            Meus
+            {t('actions.onlyMine')}
           </button>
           <button
             onClick={() => setOnlyDelayed((v) => !v)}

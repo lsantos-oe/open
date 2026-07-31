@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Routes, Route } from 'react-router-dom'
+import i18n from '@/i18n'
 import { Layout } from '@/components/layout/Layout'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -23,6 +24,12 @@ import LoginPage from '@/pages/LoginPage'
 import AuthCallback from '@/pages/AuthCallback'
 
 export default function App() {
+  const defaultLanguage = useAppStore((s) => s.settings.defaultLanguage)
+
+  useEffect(() => {
+    if (defaultLanguage && defaultLanguage !== i18n.language) i18n.changeLanguage(defaultLanguage)
+  }, [defaultLanguage])
+
   useEffect(() => {
     // 1. Explicit session check on mount — reliable, doesn't wait for onAuthStateChange
     useAuthStore.getState().initialize().then(() => {

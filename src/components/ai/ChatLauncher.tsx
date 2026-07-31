@@ -1,14 +1,19 @@
 import { useAiStore } from '@/stores/useAiStore'
 import { useAiChatStore } from '@/stores/useAiChatStore'
+import { useOverlayStore } from '@/stores/useOverlayStore'
 import { ChatPanel } from './ChatPanel'
 
 /** Floating action button that opens the AI chat panel — only rendered once
  *  an admin has configured the workspace's shared Anthropic key (Configurações
  *  → Geral). Sits in the same bottom-right corner as Toaster.tsx, just under
- *  it in z-index so a toast always renders on top if the two ever overlap. */
+ *  it in z-index so a toast always renders on top if the two ever overlap.
+ *  Full-height right-side drawers (CommentsPanel, RiskPanel) occupy that same
+ *  corner, so while one is open the button hops to bottom-center instead of
+ *  sitting on top of its content. */
 export function ChatLauncher() {
   const { hasKey } = useAiStore()
   const { open, toggle } = useAiChatStore()
+  const sidePanelOpen = useOverlayStore((s) => s.sidePanelCount > 0)
 
   if (!hasKey) return null
 
@@ -20,7 +25,9 @@ export function ChatLauncher() {
         style={{
           position: 'fixed',
           bottom: 24,
-          right: 24,
+          ...(sidePanelOpen
+            ? { left: '50%', transform: 'translateX(-50%)' }
+            : { right: 24 }),
           width: 52,
           height: 52,
           borderRadius: '50%',
@@ -33,6 +40,7 @@ export function ChatLauncher() {
           justifyContent: 'center',
           cursor: 'pointer',
           zIndex: 9990,
+          transition: 'left 200ms ease, right 200ms ease',
         }}
       >
         {open ? <CloseIcon /> : <ChatIcon />}

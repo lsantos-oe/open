@@ -16,6 +16,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Textarea, Field } from '@/components/ui/Input'
 import CommentsPanel from '@/components/plan/CommentsPanel'
 import EntryModal from '@/components/plan/EntryModal'
+import { SelectionBar } from '@/components/ui/SelectionBar'
 import { computeVariance } from '@/utils/dateEngine'
 import { workdaysBetween, parseHolidays } from '@/utils/businessDays'
 import { exportProjectCsv } from '@/utils/exportCsv'
@@ -844,6 +845,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
   const [addingPhase, setAddingPhase] = useState(false)
   const [newPhaseName, setNewPhaseName] = useState('')
   const [colMenuOpen, setColMenuOpen] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
   const { triggerRef: colMenuTriggerRef, popoverRef: colMenuPopoverRef, position: colMenuPosition } = useSmartPosition(colMenuOpen)
   const [columnVisibility, setColVisLocal] = useState<Record<string, boolean>>(project.columnVisibility ?? {})
 
@@ -897,6 +899,27 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
     }
     return map
   }, [project.phases])
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  function applyBulkStatus(status: EntryStatus) {
+    for (const id of selected) updateEntryStatus(projectId, id, status)
+    setSelected(new Set())
+  }
+
+  function applyBulkMovePhase(toPhaseId: string) {
+    for (const id of selected) {
+      const fromPhaseId = entryPhaseMap.get(id)
+      if (fromPhaseId) moveEntryToPhase(projectId, fromPhaseId, toPhaseId, id)
+    }
+    setSelected(new Set())
+  }
 
   // Build flat data for TanStack (entries → subRows for subtasks + child meetings)
   const data = useMemo<PlanRow[]>(() => {
@@ -988,6 +1011,21 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
   // ── Columns ───────────────────────────────────────────────────────────────
 
   const columns = useMemo<ColumnDef<PlanRow>[]>(() => [
+    // Select (bulk actions) — top-level rows only, mirrors TasksPage/ProjectsPage/IncidentsPage
+    {
+      id: 'select', size: 28,
+      header: () => null,
+      cell: ({ row }) => row.depth === 0
+        ? (
+          <input
+            type="checkbox"
+            className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]"
+            checked={selected.has(row.original.id)}
+            onChange={() => toggleSelect(row.original.id)}
+          />
+        )
+        : <span className="w-4 inline-block" />,
+    },
     // Expand toggle
     {
       id: 'expand', size: 28,
@@ -1186,7 +1224,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
       },
     },
   ], [project, settings.holidays, entryPhaseMap, projectId,
-    updateEntryStatus, updateEntryRisk, deleteEntry])
+    updateEntryStatus, updateEntryRisk, deleteEntry, selected])
 
   const table = useReactTable<PlanRow>({
     data,
@@ -1437,6 +1475,31 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
           }
         />
       )}
+
+      <SelectionBar count={selected.size} onClear={() => setSelected(new Set())}>
+        <select
+          onChange={(e) => { if (e.target.value) applyBulkStatus(e.target.value as EntryStatus) }}
+          value=""
+          className="text-xs rounded-[var(--radius-md)] px-2 py-1"
+          style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
+        >
+          <option value="" disabled>Alterar status...</option>
+          <option value="pending">{t('status.pending')}</option>
+          <option value="in_progress">{t('status.in_progress')}</option>
+          <option value="validation">{t('status.validation')}</option>
+          <option value="done">{t('status.done')}</option>
+          <option value="blocked">{t('status.blocked')}</option>
+        </select>
+        <select
+          onChange={(e) => { if (e.target.value) applyBulkMovePhase(e.target.value) }}
+          value=""
+          className="text-xs rounded-[var(--radius-md)] px-2 py-1"
+          style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
+        >
+          <option value="" disabled>Mover para fase...</option>
+          {project.phases.map((ph) => <option key={ph.id} value={ph.id}>{ph.name}</option>)}
+        </select>
+      </SelectionBar>
     </div>
   )
 }

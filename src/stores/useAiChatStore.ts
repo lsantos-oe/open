@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { ChatMessage, PendingWriteConfirmation, PendingAttachment } from '@/types/ai'
+import type { ChatMessage, PendingWriteConfirmation, PendingAttachment, ActionLink } from '@/types/ai'
 
 interface AiChatStore {
   open: boolean
@@ -18,6 +18,9 @@ interface AiChatStore {
 
   pendingConfirmation: PendingWriteConfirmation | null
   setPendingConfirmation: (p: PendingWriteConfirmation | null) => void
+
+  actionLink: ActionLink | null
+  setActionLink: (a: ActionLink | null) => void
 
   input: string
   setInput: (v: string) => void
@@ -48,6 +51,9 @@ export const useAiChatStore = create<AiChatStore>((set) => ({
   pendingConfirmation: null,
   setPendingConfirmation: (p) => set({ pendingConfirmation: p }),
 
+  actionLink: null,
+  setActionLink: (a) => set({ actionLink: a }),
+
   input: '',
   setInput: (v) => set({ input: v }),
 
@@ -58,6 +64,6 @@ export const useAiChatStore = create<AiChatStore>((set) => ({
 
   reset: () => set({
     conversationId: null, messages: [], isStreaming: false, streamingText: '',
-    pendingConfirmation: null, input: '', attachments: [],
+    pendingConfirmation: null, actionLink: null, input: '', attachments: [],
   }),
 }))

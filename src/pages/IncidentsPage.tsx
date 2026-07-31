@@ -188,7 +188,7 @@ export default function IncidentsPage() {
             <button
               onClick={() => setView('kanban')}
               className={`px-3 py-2 text-sm transition-colors ${view === 'kanban' ? 'bg-[var(--text-primary)] text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'}`}
-              title="Kanban"
+              title={t('actions.viewKanban')}
             >
               <KanbanIcon />
             </button>
@@ -212,7 +212,7 @@ export default function IncidentsPage() {
               ? { background: 'var(--oe-primary)', color: 'white' }
               : { border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}
           >
-            Meus
+            {t('actions.onlyMine')}
           </button>
           <FilterMenu
             activeCount={[statusFilter, priorityFilter].filter(Boolean).length}

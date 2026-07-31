@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useOverlayStore } from '@/stores/useOverlayStore'
 import { Entry, EntryComment } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Textarea } from '@/components/ui/Input'
@@ -87,6 +88,11 @@ export default function CommentsPanel({ projectId, entry, onClose }: Props) {
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
   }, [onClose])
+
+  useEffect(() => {
+    useOverlayStore.getState().openSidePanel()
+    return () => useOverlayStore.getState().closeSidePanel()
+  }, [])
 
   function handleSubmit() {
     if (!text.trim()) return

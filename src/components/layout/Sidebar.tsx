@@ -88,17 +88,17 @@ export function Sidebar() {
 
       {/* Main nav */}
       <nav style={{ padding: collapsed ? '8px 6px' : '8px 8px' }}>
-        <NavLink to="/" end className={navLinkCls} title={collapsed ? 'Início' : undefined}>
+        <NavLink to="/" end className={navLinkCls} title={collapsed ? t('nav.home') : undefined}>
           <span className="shrink-0 w-4 h-4 flex items-center justify-center"><HomeIcon /></span>
-          {!collapsed && <span>Início</span>}
+          {!collapsed && <span>{t('nav.home')}</span>}
         </NavLink>
         <NavLink to="/wallet" className={navLinkCls} title={t('nav.walletTooltip')}>
           <span className="shrink-0 w-4 h-4 flex items-center justify-center"><WalletIcon /></span>
           {!collapsed && <span>{t('nav.wallet')}</span>}
         </NavLink>
-        <NavLink to="/contacts" className={navLinkCls} title={collapsed ? 'Contatos' : undefined}>
+        <NavLink to="/contacts" className={navLinkCls} title={collapsed ? t('nav.contacts') : undefined}>
           <span className="shrink-0 w-4 h-4 flex items-center justify-center"><ContactsIcon /></span>
-          {!collapsed && <span>Contatos</span>}
+          {!collapsed && <span>{t('nav.contacts')}</span>}
         </NavLink>
         <NavLink to="/portfolio" className={navLinkCls} title={t('nav.projects')}>
           <span className="shrink-0 w-4 h-4 flex items-center justify-center"><PortfolioIcon /></span>
@@ -117,9 +117,9 @@ export function Sidebar() {
           <span className="shrink-0 w-4 h-4 flex items-center justify-center"><GearIcon /></span>
           {!collapsed && <span>{t('nav.settings')}</span>}
         </NavLink>
-        <NavLink to="/guide" className={navLinkCls} title={collapsed ? 'Guia' : undefined}>
+        <NavLink to="/guide" className={navLinkCls} title={collapsed ? t('nav.guide') : undefined}>
           <span className="shrink-0 w-4 h-4 flex items-center justify-center"><GuideIcon /></span>
-          {!collapsed && <span>Guia</span>}
+          {!collapsed && <span>{t('nav.guide')}</span>}
         </NavLink>
       </nav>
 
@@ -140,7 +140,7 @@ export function Sidebar() {
               textTransform: 'uppercase',
               padding: '4px 8px 6px',
             }}>
-              {shortcutKind === 'projects' ? t('nav.projects') : 'Incidentes'}
+              {shortcutKind === 'projects' ? t('nav.projects') : t('nav.recentIncidents')}
             </p>
           )}
           {shortcutKind === 'projects'

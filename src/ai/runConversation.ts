@@ -7,7 +7,7 @@ import type { ExtractedItem } from './tools/extractionTools'
 import { useAiChatStore } from '@/stores/useAiChatStore'
 import { useToastStore } from '@/stores/useToastStore'
 import { useAuthStore } from '@/stores/useAuthStore'
-import type { ChatMessage, ChatContentBlock, AiToolContext } from '@/types/ai'
+import type { ChatMessage, ChatContentBlock, AiToolContext, ActionLink } from '@/types/ai'
 
 // Hard safety cap on automatic read-tool→read-tool turns per user message, so
 // a buggy/looping tool chain can't silently drain the user's API credits.
@@ -138,6 +138,26 @@ export async function runConversation(turnsLeft: number = MAX_AUTO_TURNS): Promi
   }
 }
 
+/** Builds a "go to what was just created" shortcut from a write tool's result,
+ *  when that result names something navigable. Returns null for tools whose
+ *  result isn't a single created entity (status updates, batch extraction, ...). */
+function computeActionLink(toolName: string, result: unknown): ActionLink | null {
+  if (!result || typeof result !== 'object') return null
+  const r = result as Record<string, unknown>
+  switch (toolName) {
+    case 'create_project':
+      return typeof r.createdProjectId === 'string' ? { label: 'Ver projeto →', to: `/projects/${r.createdProjectId}` } : null
+    case 'create_incident':
+      return typeof r.createdIncidentId === 'string' ? { label: 'Ver incidente →', to: `/support/${r.createdIncidentId}` } : null
+    case 'create_task':
+      if (r.scope === 'project' && typeof r.projectId === 'string') return { label: 'Ver projeto →', to: `/projects/${r.projectId}` }
+      if (r.scope === 'incident' && typeof r.incidentId === 'string') return { label: 'Ver incidente →', to: `/support/${r.incidentId}` }
+      return null
+    default:
+      return null
+  }
+}
+
 async function dispatchExtractedItems(input: Record<string, unknown>, ctx: AiToolContext): Promise<string> {
   const items = (Array.isArray(input.items) ? input.items : []) as ExtractedItem[]
   const outcomes: string[] = []
@@ -171,6 +191,8 @@ export async function approveConfirmation(): Promise<void> {
       const tool = TOOLS_BY_NAME[pendingConfirmation.toolName]
       const result = await tool.execute(pendingConfirmation.input, ctx)
       resultContent = JSON.stringify(result)
+      const actionLink = computeActionLink(pendingConfirmation.toolName, result)
+      if (actionLink) useAiChatStore.getState().setActionLink(actionLink)
     }
   } catch (err) {
     resultContent = err instanceof Error ? err.message : 'Erro ao executar a ação.'

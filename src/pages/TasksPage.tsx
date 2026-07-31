@@ -406,14 +406,14 @@ export default function TasksPage() {
             className="px-3 py-1.5 text-xs font-medium transition-colors"
             style={{ background: view === 'kanban' ? 'var(--text-primary)' : 'var(--surface-card)', color: view === 'kanban' ? 'white' : 'var(--text-secondary)' }}
           >
-            Kanban
+            {t('actions.viewKanban')}
           </button>
           <button
             onClick={() => setView('table')}
             className="px-3 py-1.5 text-xs font-medium transition-colors"
             style={{ background: view === 'table' ? 'var(--text-primary)' : 'var(--surface-card)', color: view === 'table' ? 'white' : 'var(--text-secondary)' }}
           >
-            Tabela
+            {t('actions.viewTable')}
           </button>
         </div>
 
@@ -426,7 +426,7 @@ export default function TasksPage() {
             borderColor: onlyMine ? 'var(--oe-primary)' : 'var(--border-default)',
           }}
         >
-          Meus
+          {t('actions.onlyMine')}
         </button>
 
         <div className="relative" style={{ width: 220 }}>

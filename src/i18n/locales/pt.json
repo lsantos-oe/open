@@ -1,6 +1,10 @@
 {
   "appName": "open",
   "nav": {
+    "recentIncidents": "Incidentes",
+    "home": "Início",
+    "contacts": "Contatos",
+    "guide": "Guia",
     "projects": "Projetos",
     "tasks": "Tarefas",
     "settings": "Configurações",
@@ -98,7 +102,7 @@
     "backupIncludeArchived": "Incluir projetos arquivados no backup?"
   },
   "tabs": {
-    "overview": "Overview",
+    "overview": "Visão geral",
     "charter": "Charter",
     "team": "Equipe",
     "plan": "Plano",
@@ -111,7 +115,7 @@
     "notes": "Notas do Projeto",
     "links": "Links Externos",
     "addLink": "Adicionar link",
-    "linkLabel": "Label",
+    "linkLabel": "Rótulo",
     "linkUrl": "URL",
     "noLinks": "Nenhum link adicionado.",
     "information": "Informações",
@@ -121,8 +125,8 @@
     "baseline": "Baseline"
   },
   "charter": {
-    "title": "Project Charter",
-    "sponsor": "Sponsor",
+    "title": "Charter",
+    "sponsor": "Patrocinador",
     "objectives": "Objetivos",
     "scope": "Escopo",
     "outOfScope": "Fora do Escopo",
@@ -408,7 +412,7 @@
     "addStakeholder": "+ Stakeholder",
     "noStakeholders": "Nenhum stakeholder ainda.",
     "fromContact": "Contato do cliente",
-    "tabOverview": "Overview",
+    "tabOverview": "Visão geral",
     "tabTasks": "Tarefas",
     "tabOpenPoints": "Open Points",
     "tabHistory": "Histórico",
@@ -419,7 +423,7 @@
   "report": {
     "exportBtn": "Exportar report",
     "generating": "Gerando...",
-    "title": "Status Report",
+    "title": "Relatório de Status",
     "generatedOn": "Gerado em",
     "summary": "Resumo Executivo",
     "currentStatus": "Status Atual",
@@ -501,7 +505,10 @@
     "cancel": "Cancelar",
     "save": "É basicamente isso",
     "add": "Adicionar",
-    "remove": "Remover"
+    "remove": "Remover",
+    "onlyMine": "Meus",
+    "viewKanban": "Kanban",
+    "viewTable": "Tabela"
   },
   "diary": {
     "title": "Diário do Projeto",

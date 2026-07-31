@@ -1,6 +1,10 @@
 {
   "appName": "open",
   "nav": {
+    "recentIncidents": "Incidentes",
+    "home": "Inicio",
+    "contacts": "Contactos",
+    "guide": "Guía",
     "projects": "Proyectos",
     "tasks": "Tareas",
     "settings": "Configuración",
@@ -536,7 +540,10 @@
     "cancel": "Cancelar",
     "save": "Guardar",
     "add": "Agregar",
-    "remove": "Eliminar"
+    "remove": "Eliminar",
+    "onlyMine": "Míos",
+    "viewKanban": "Kanban",
+    "viewTable": "Tabla"
   },
   "diary": {
     "title": "Diario del Proyecto",

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { createPortal } from 'react-dom'
 import { useAppStore } from '@/store/useAppStore'
+import { useOverlayStore } from '@/stores/useOverlayStore'
 import { Risk, ActionTask, Probability, Impact, Phase } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -57,6 +58,11 @@ function RiskPanel({ projectId, risk, riskIndex, allEntries, onClose }: RiskPane
     dueDate: risk.dueDate ?? '',
     linkedEntryIds: risk.linkedEntryIds,
   })
+
+  useEffect(() => {
+    useOverlayStore.getState().openSidePanel()
+    return () => useOverlayStore.getState().closeSidePanel()
+  }, [])
 
   const [taskForm, setTaskForm] = useState({ description: '', responsible: '', dueDate: '' })
   const score = PROB_VAL[form.probability] * PROB_VAL[form.impact]

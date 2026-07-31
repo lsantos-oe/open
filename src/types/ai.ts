@@ -36,6 +36,13 @@ export interface PendingAttachment {
   name?: string
 }
 
+/** A "go to what I just created" shortcut surfaced after a write tool runs —
+ *  cleared as soon as the user sends a new message. */
+export interface ActionLink {
+  label: string
+  to: string
+}
+
 // ─── Tool (function-calling) definitions ───────────────────────────────────
 
 export interface AiToolContext {

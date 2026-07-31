@@ -1,9 +1,9 @@
 import { AiTool } from '@/types/ai'
-import { findProjectTool, getProjectOverviewTool, listProjectsTool, createProjectTool, updateEntityStatusTool } from './projectsTools'
-import { findClientTool } from './clientsTools'
+import { findProjectTool, getProjectOverviewTool, listProjectsTool, createProjectTool, updateProjectTool, updateEntityStatusTool } from './projectsTools'
+import { findClientTool, createClientTool, updateClientTool, findContactTool, createContactTool, updateContactTool } from './clientsTools'
 import { findIncidentTool, listIncidentsTool, createIncidentTool } from './incidentsTools'
 import { findUserTool, bulkReassignProjectsTool } from './usersTools'
-import { createTaskTool } from './tasksTools'
+import { listPhasesTool, createTaskTool, updateTaskTool } from './tasksTools'
 import { generateStatusReportMarkdownTool } from './reportTools'
 import { proposeExtractedItemsTool } from './extractionTools'
 
@@ -12,14 +12,22 @@ export const ALL_TOOLS: AiTool[] = [
   getProjectOverviewTool,
   listProjectsTool,
   createProjectTool,
+  updateProjectTool,
   updateEntityStatusTool,
   findClientTool,
+  createClientTool,
+  updateClientTool,
+  findContactTool,
+  createContactTool,
+  updateContactTool,
   findIncidentTool,
   listIncidentsTool,
   createIncidentTool,
   findUserTool,
   bulkReassignProjectsTool,
+  listPhasesTool,
   createTaskTool,
+  updateTaskTool,
   generateStatusReportMarkdownTool,
   proposeExtractedItemsTool,
 ]
