@@ -8,15 +8,23 @@ export interface AnchorItem {
 interface Props {
   items: AnchorItem[]
   onNavigate: (id: string) => void
+  /** Controlled active id — pass the page's own tab state so the underline
+   *  stays in sync when the active tab changes from elsewhere (e.g. a "go to
+   *  risk" link switching tabs programmatically). Omit to fall back to
+   *  tracking clicks internally (used where this still scrolls to an #id
+   *  section instead of switching an exclusive tab). */
+  active?: string
 }
 
-/** Row of anchor links that smooth-scroll to a `#id` section on the same page,
- *  used by detail pages instead of exclusive tabs (see CollapsibleSection). */
-export function AnchorNav({ items, onNavigate }: Props) {
-  const [active, setActive] = useState(items[0]?.id)
+/** Row of tab-like links — either a controlled exclusive tab switcher (pass
+ *  `active`) or an uncontrolled anchor nav that smooth-scrolls to a `#id`
+ *  section on the same page, tracking clicks itself. */
+export function AnchorNav({ items, onNavigate, active: controlledActive }: Props) {
+  const [uncontrolledActive, setUncontrolledActive] = useState(items[0]?.id)
+  const active = controlledActive ?? uncontrolledActive
 
   function handleClick(id: string) {
-    setActive(id)
+    setUncontrolledActive(id)
     onNavigate(id)
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }

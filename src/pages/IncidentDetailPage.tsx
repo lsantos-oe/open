@@ -12,7 +12,6 @@ import HistoryTab from '@/pages/tabs/diary/HistoryTab'
 import EntryBoard, { BoardCard } from '@/components/plan/EntryBoard'
 import IncidentEntryModal from '@/components/plan/IncidentEntryModal'
 import { AnchorNav } from '@/components/ui/AnchorNav'
-import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { StatusDot } from '@/components/ui/StatusDot'
 import { AvatarStack } from '@/components/ui/AvatarStack'
 import { contactsForClients } from '@/utils/contacts'
@@ -55,7 +54,7 @@ export default function IncidentDetailPage() {
     addIncidentStakeholder, removeIncidentStakeholder, updateIncidentEntryStatus, createContact,
   } = useAppStore()
 
-  const [openSections, setOpenSections] = useState<Set<Tab>>(new Set(['overview', 'tasks']))
+  const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showLinkClient, setShowLinkClient] = useState(false)
   const [showLinkProject, setShowLinkProject] = useState(false)
@@ -139,16 +138,8 @@ export default function IncidentDetailPage() {
     setShowStakeholder(false)
   }
 
-  function toggleSection(id: Tab) {
-    setOpenSections((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id); else next.add(id)
-      return next
-    })
-  }
-
-  function openAndScroll(id: string) {
-    setOpenSections((prev) => new Set(prev).add(id as Tab))
+  function selectTab(id: string) {
+    setActiveTab(id as Tab)
   }
 
   const TABS: { id: Tab; label: string }[] = [
@@ -180,11 +171,11 @@ export default function IncidentDetailPage() {
       </div>
 
       <div className="px-6 pt-3">
-        <AnchorNav items={TABS} onNavigate={openAndScroll} />
+        <AnchorNav items={TABS} onNavigate={selectTab} active={activeTab} />
       </div>
 
       <div className="p-6">
-        <CollapsibleSection id="overview" title={t('incident.tabOverview')} open={openSections.has('overview')} onToggle={() => toggleSection('overview')}>
+        {activeTab === 'overview' && (
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <div className="p-3 rounded-[var(--radius-lg)]" style={{ background: 'var(--surface-subtle)' }}>
@@ -274,9 +265,9 @@ export default function IncidentDetailPage() {
               </Field>
             </div>
           </div>
-        </CollapsibleSection>
+        )}
 
-        <CollapsibleSection id="tasks" title={t('incident.tabTasks')} count={incident.entries.length} open={openSections.has('tasks')} onToggle={() => toggleSection('tasks')}>
+        {activeTab === 'tasks' && (
           <div>
             <div className="flex items-center flex-wrap gap-2 mb-4">
               <Button size="sm" onClick={() => setTaskModal({ mode: 'create' })}>{t('plan.addTask')}</Button>
@@ -361,15 +352,15 @@ export default function IncidentDetailPage() {
               </table>
             )}
           </div>
-        </CollapsibleSection>
+        )}
 
-        <CollapsibleSection id="openPoints" title={t('tabs.diary')} count={incident.openPoints.length} open={openSections.has('openPoints')} onToggle={() => toggleSection('openPoints')}>
+        {activeTab === 'openPoints' && (
           <OpenPointsTab scope={{ type: 'incident', id: incident.id }} openPoints={incident.openPoints} phases={[]} />
-        </CollapsibleSection>
+        )}
 
-        <CollapsibleSection id="history" title={t('incident.tabHistory')} open={openSections.has('history')} onToggle={() => toggleSection('history')}>
+        {activeTab === 'history' && (
           <HistoryTab scope={{ type: 'incident', id: incident.id }} history={incident.history} />
-        </CollapsibleSection>
+        )}
       </div>
 
       {/* Link client modal */}

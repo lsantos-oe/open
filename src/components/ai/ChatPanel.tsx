@@ -37,7 +37,7 @@ function fileToBase64(file: File): Promise<string> {
 export function ChatPanel() {
   const {
     open, setOpen, expanded, toggleExpanded, messages, isStreaming, streamingText, pendingConfirmation,
-    input, setInput, attachments, addAttachment, removeAttachment, clearAttachments,
+    queuedConfirmations, input, setInput, attachments, addAttachment, removeAttachment, clearAttachments,
     appendMessage, actionLink, setActionLink,
   } = useAiChatStore()
   const sidePanelOpen = useOverlayStore((s) => s.sidePanelCount > 0)
@@ -226,6 +226,11 @@ export function ChatPanel() {
             }}
           >
             <p style={{ marginBottom: 10, lineHeight: 1.5 }}>{pendingConfirmation.summary}</p>
+            {queuedConfirmations.length > 0 && (
+              <p style={{ marginBottom: 10, fontSize: 11, color: 'var(--text-tertiary)' }}>
+                +{queuedConfirmations.length} ação{queuedConfirmations.length !== 1 ? 'ões' : ''} aguardando depois desta
+              </p>
+            )}
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button
                 onClick={() => rejectConfirmation()}

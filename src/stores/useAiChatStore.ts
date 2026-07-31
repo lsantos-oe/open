@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { ChatMessage, PendingWriteConfirmation, PendingAttachment, ActionLink } from '@/types/ai'
+import type { ChatMessage, ChatContentBlock, PendingWriteConfirmation, PendingAttachment, ActionLink } from '@/types/ai'
 
 interface AiChatStore {
   open: boolean
@@ -21,6 +21,19 @@ interface AiChatStore {
 
   pendingConfirmation: PendingWriteConfirmation | null
   setPendingConfirmation: (p: PendingWriteConfirmation | null) => void
+
+  /** Write confirmations still waiting behind the current one, when a single
+   *  model turn requested more than one write tool at once. */
+  queuedConfirmations: PendingWriteConfirmation[]
+  setQueuedConfirmations: (q: PendingWriteConfirmation[]) => void
+
+  /** tool_result blocks already resolved this turn (read tools + approved/
+   *  rejected write tools) but not yet flushed as a message — every tool_use
+   *  block from the same assistant turn must get a tool_result before the
+   *  combined message is sent back to Claude, so partial resolution is held
+   *  here instead of being sent early. */
+  pendingToolResults: ChatContentBlock[]
+  setPendingToolResults: (r: ChatContentBlock[]) => void
 
   actionLink: ActionLink | null
   setActionLink: (a: ActionLink | null) => void
@@ -57,6 +70,12 @@ export const useAiChatStore = create<AiChatStore>((set) => ({
   pendingConfirmation: null,
   setPendingConfirmation: (p) => set({ pendingConfirmation: p }),
 
+  queuedConfirmations: [],
+  setQueuedConfirmations: (q) => set({ queuedConfirmations: q }),
+
+  pendingToolResults: [],
+  setPendingToolResults: (r) => set({ pendingToolResults: r }),
+
   actionLink: null,
   setActionLink: (a) => set({ actionLink: a }),
 
@@ -70,6 +89,7 @@ export const useAiChatStore = create<AiChatStore>((set) => ({
 
   reset: () => set({
     conversationId: null, messages: [], isStreaming: false, streamingText: '',
-    pendingConfirmation: null, actionLink: null, input: '', attachments: [],
+    pendingConfirmation: null, queuedConfirmations: [], pendingToolResults: [],
+    actionLink: null, input: '', attachments: [],
   }),
 }))

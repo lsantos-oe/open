@@ -23,7 +23,6 @@ import RisksPage from './RisksPage'
 import OverviewTab from './tabs/OverviewTab'
 import DiaryTab from './tabs/DiaryTab'
 import { AnchorNav } from '@/components/ui/AnchorNav'
-import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 
 const TAB_IDS = ['overview', 'plan', 'kanban', 'risks', 'diary'] as const
 type TabId = typeof TAB_IDS[number]
@@ -411,7 +410,7 @@ export default function ProjectDetailPage() {
     : (TAB_IDS as readonly string[]).includes(defaultTab ?? '')
       ? (defaultTab as TabId)
       : 'overview'
-  const [openSections, setOpenSections] = useState<Set<TabId>>(new Set([initialTab]))
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab)
   const [focusRiskId, setFocusRiskId] = useState<string | null>(null)
   const [exportingReport, setExportingReport] = useState(false)
   const [showReportModal, setShowReportModal] = useState(false)
@@ -432,19 +431,8 @@ export default function ProjectDetailPage() {
   const goLiveDate = useMemo(() => (project ? findGoLiveDate(project) : undefined), [project])
   const currentPhase = useMemo(() => (project ? findCurrentPhase(project) : undefined), [project])
 
-  function toggleSection(id: TabId) {
-    setOpenSections((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id); else next.add(id)
-      return next
-    })
-  }
-
-  function openAndScroll(id: string) {
-    setOpenSections((prev) => new Set(prev).add(id as TabId))
-    requestAnimationFrame(() => {
-      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    })
+  function selectTab(id: string) {
+    setActiveTab(id as TabId)
   }
 
   async function handleGenerateReport(config: ReportConfig) {
@@ -536,8 +524,8 @@ export default function ProjectDetailPage() {
           {exportingReport ? t('report.generating') : t('report.exportBtn')}
         </GhostBtn>
 
-        {/* Export CSV — only while the Plano section is open */}
-        {openSections.has('plan') && (
+        {/* Export CSV — only while the Plano tab is active */}
+        {activeTab === 'plan' && (
           <GhostBtn onClick={() => exportProjectCsv(project, settings.holidays)}>
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -567,27 +555,22 @@ export default function ProjectDetailPage() {
                 ? ` (${project.openPoints!.filter((op) => op.status === 'open').length})`
                 : ''),
           }))}
-          onNavigate={openAndScroll}
+          onNavigate={selectTab}
+          active={activeTab}
         />
       </div>
 
-      {/* ── Sections ── */}
+      {/* ── Active tab content ── */}
       <div className="flex-1 overflow-auto px-5 pt-5 pb-8" style={{ background: 'var(--surface-page)' }}>
-        <CollapsibleSection id="overview" title={t('tabs.overview')} open={openSections.has('overview')} onToggle={() => toggleSection('overview')}>
-          <OverviewTab project={project} />
-        </CollapsibleSection>
-        <CollapsibleSection id="plan" title={t('tabs.plan')} open={openSections.has('plan')} onToggle={() => toggleSection('plan')}>
-          <PlanPage projectId={project.id} onNavigateToRisk={(riskId) => { openAndScroll('risks'); setFocusRiskId(riskId) }} />
-        </CollapsibleSection>
-        <CollapsibleSection id="kanban" title={t('tasks.title')} open={openSections.has('kanban')} onToggle={() => toggleSection('kanban')}>
-          <KanbanPage projectId={project.id} />
-        </CollapsibleSection>
-        <CollapsibleSection id="risks" title={t('tabs.risks')} count={project.risks.length || undefined} open={openSections.has('risks')} onToggle={() => toggleSection('risks')}>
+        {activeTab === 'overview' && <OverviewTab project={project} />}
+        {activeTab === 'plan' && (
+          <PlanPage projectId={project.id} onNavigateToRisk={(riskId) => { setActiveTab('risks'); setFocusRiskId(riskId) }} />
+        )}
+        {activeTab === 'kanban' && <KanbanPage projectId={project.id} />}
+        {activeTab === 'risks' && (
           <RisksPage projectId={project.id} focusRiskId={focusRiskId} onFocusConsumed={() => setFocusRiskId(null)} />
-        </CollapsibleSection>
-        <CollapsibleSection id="diary" title={t('tabs.diary')} open={openSections.has('diary')} onToggle={() => toggleSection('diary')}>
-          <DiaryTab project={project} />
-        </CollapsibleSection>
+        )}
+        {activeTab === 'diary' && <DiaryTab project={project} />}
       </div>
 
       {/* ── Footer metadata bar ── */}

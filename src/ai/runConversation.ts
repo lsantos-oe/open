@@ -7,7 +7,7 @@ import type { ExtractedItem } from './tools/extractionTools'
 import { useAiChatStore } from '@/stores/useAiChatStore'
 import { useToastStore } from '@/stores/useToastStore'
 import { useAuthStore } from '@/stores/useAuthStore'
-import type { ChatMessage, ChatContentBlock, AiToolContext, ActionLink } from '@/types/ai'
+import type { ChatMessage, ChatContentBlock, AiToolContext, ActionLink, PendingWriteConfirmation } from '@/types/ai'
 
 // Hard safety cap on automatic read-tool→read-tool turns per user message, so
 // a buggy/looping tool chain can't silently drain the user's API credits.
@@ -100,7 +100,11 @@ export async function runConversation(turnsLeft: number = MAX_AUTO_TURNS): Promi
     const ctx = currentCtx()
     const toolUseBlocks = final.content.filter((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use')
     const resultBlocks: ChatContentBlock[] = []
+    const writeConfirmations: PendingWriteConfirmation[] = []
 
+    // Every tool_use block in this turn MUST get a matching tool_result before
+    // the next message is sent to Claude (API requirement) — so write tools
+    // are only queued here, never executed. Read tools execute immediately.
     for (const block of toolUseBlocks) {
       const tool = TOOLS_BY_NAME[block.name]
       if (!tool) {
@@ -117,21 +121,30 @@ export async function runConversation(turnsLeft: number = MAX_AUTO_TURNS): Promi
         continue
       }
 
-      // Write tool — never executes here. Surface the confirmation card and
-      // stop; approveConfirmation()/rejectConfirmation() resume the loop.
-      useAiChatStore.getState().setPendingConfirmation({
+      writeConfirmations.push({
         toolUseId: block.id,
         toolName: block.name,
         summary: tool.describe?.(block.input as Record<string, unknown>, ctx) ?? `Estou prestes a executar ${block.name}. É basicamente isso?`,
         input: block.input as Record<string, unknown>,
       })
-      useAiChatStore.getState().setStreaming(false)
+    }
+
+    if (writeConfirmations.length === 0) {
+      // Every tool call this turn was read-only — feed the results back and continue.
+      useAiChatStore.getState().appendMessage(newMessage('user', resultBlocks))
+      await runConversation(turnsLeft - 1)
       return
     }
 
-    // Every tool call this turn was read-only — feed the results back and continue.
-    useAiChatStore.getState().appendMessage(newMessage('user', resultBlocks))
-    await runConversation(turnsLeft - 1)
+    // One or more write tools this turn — stash the already-resolved read
+    // results and surface the first confirmation card. approveConfirmation()/
+    // rejectConfirmation() work through queuedConfirmations one at a time and
+    // only flush the combined tool_result message once none remain.
+    const [first, ...rest] = writeConfirmations
+    useAiChatStore.getState().setPendingToolResults(resultBlocks)
+    useAiChatStore.getState().setQueuedConfirmations(rest)
+    useAiChatStore.getState().setPendingConfirmation(first)
+    useAiChatStore.getState().setStreaming(false)
   } catch (err) {
     handleAnthropicError(err)
     useAiChatStore.getState().setStreaming(false)
@@ -174,6 +187,29 @@ async function dispatchExtractedItems(input: Record<string, unknown>, ctx: AiToo
   return outcomes.join('; ')
 }
 
+/** After a confirmation (approved or rejected) resolves, either advance to the
+ *  next queued write confirmation from the same turn, or — once none remain —
+ *  flush every resolved tool_result (reads + writes) as one combined message
+ *  and let the model continue. Every tool_use block from that turn must be
+ *  accounted for before anything is sent back to Claude. */
+async function advanceAfterConfirmation(resolvedResult: ChatContentBlock): Promise<void> {
+  const { queuedConfirmations, pendingToolResults } = useAiChatStore.getState()
+  const allResults = [...pendingToolResults, resolvedResult]
+
+  if (queuedConfirmations.length > 0) {
+    const [next, ...rest] = queuedConfirmations
+    useAiChatStore.getState().setPendingToolResults(allResults)
+    useAiChatStore.getState().setQueuedConfirmations(rest)
+    useAiChatStore.getState().setPendingConfirmation(next)
+    return
+  }
+
+  useAiChatStore.getState().setPendingToolResults([])
+  useAiChatStore.getState().setStreaming(true)
+  useAiChatStore.getState().appendMessage(newMessage('user', allResults))
+  await runConversation()
+}
+
 /** Confirmation card → Aprovar. Executes the real tool (or fans out
  *  propose_extracted_items into individual create_* calls) and resumes. */
 export async function approveConfirmation(): Promise<void> {
@@ -181,7 +217,6 @@ export async function approveConfirmation(): Promise<void> {
   if (!pendingConfirmation) return
   const ctx = currentCtx()
   useAiChatStore.getState().setPendingConfirmation(null)
-  useAiChatStore.getState().setStreaming(true)
 
   let resultContent: string
   try {
@@ -198,10 +233,7 @@ export async function approveConfirmation(): Promise<void> {
     resultContent = err instanceof Error ? err.message : 'Erro ao executar a ação.'
   }
 
-  useAiChatStore.getState().appendMessage(newMessage('user', [
-    { type: 'tool_result', tool_use_id: pendingConfirmation.toolUseId, content: resultContent },
-  ]))
-  await runConversation()
+  await advanceAfterConfirmation({ type: 'tool_result', tool_use_id: pendingConfirmation.toolUseId, content: resultContent })
 }
 
 /** Confirmation card → Cancelar. Nothing is executed; Claude is told the user
@@ -210,8 +242,5 @@ export async function rejectConfirmation(): Promise<void> {
   const { pendingConfirmation } = useAiChatStore.getState()
   if (!pendingConfirmation) return
   useAiChatStore.getState().setPendingConfirmation(null)
-  useAiChatStore.getState().appendMessage(newMessage('user', [
-    { type: 'tool_result', tool_use_id: pendingConfirmation.toolUseId, content: 'O usuário não aprovou esta ação.', is_error: true },
-  ]))
-  await runConversation()
+  await advanceAfterConfirmation({ type: 'tool_result', tool_use_id: pendingConfirmation.toolUseId, content: 'O usuário não aprovou esta ação.', is_error: true })
 }
