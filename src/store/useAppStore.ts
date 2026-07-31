@@ -214,6 +214,7 @@ interface AppStore {
   updateEntry: (projectId: string, entryId: string, patch: Partial<Entry>) => void
   deleteEntry: (projectId: string, phaseId: string, entryId: string) => void
   moveEntryToPhase: (projectId: string, fromPhaseId: string, toPhaseId: string, entryId: string) => void
+  reorderEntry: (projectId: string, fromPhaseId: string, toPhaseId: string, entryId: string, beforeEntryId: string | null) => void
   convertToSubtask: (projectId: string, phaseId: string, entryId: string, parentEntryId: string) => void
   promoteSubtaskToEntry: (projectId: string, phaseId: string, parentEntryId: string, subtaskId: string) => void
   updateEntryStatus: (projectId: string, entryId: string, status: EntryStatus) => void
@@ -1510,6 +1511,43 @@ export const useAppStore = create<AppStore>()(
               phases: phases.map((ph) =>
                 ph.id !== toPhaseId ? ph : { ...ph, entries: [...ph.entries, entry] }
               ),
+            })
+          }),
+        }))
+        sync(async () => {
+          const project = get().projects.find((p) => p.id === projectId)
+          if (!project) return
+          await dbSyncAllEntries(project, getUserId())
+        }, () => set({ projects: prev }))
+      },
+
+      /** Drag-and-drop reorder: moves entryId to sit right before beforeEntryId
+       *  (append to the end if beforeEntryId is null/not found). Works within
+       *  the same phase (pure reorder) or across phases (move + position) —
+       *  `order` is renumbered by final array position on the target phase. */
+      reorderEntry(projectId, fromPhaseId, toPhaseId, entryId, beforeEntryId) {
+        const prev = get().projects
+        set((s) => ({
+          projects: mutateProject(s.projects, projectId, (p) => {
+            let movedEntry: Entry | undefined
+            const phases = p.phases.map((ph) => {
+              if (ph.id !== fromPhaseId) return ph
+              const found = ph.entries.find((e) => e.id === entryId)
+              if (found) movedEntry = found
+              return { ...ph, entries: ph.entries.filter((e) => e.id !== entryId) }
+            })
+            if (!movedEntry) return p
+            const entry = movedEntry
+            return refreshCriticalPath({
+              ...p,
+              phases: phases.map((ph) => {
+                if (ph.id !== toPhaseId) return ph
+                const entries = [...ph.entries]
+                const idx = beforeEntryId ? entries.findIndex((e) => e.id === beforeEntryId) : -1
+                if (idx === -1) entries.push(entry)
+                else entries.splice(idx, 0, entry)
+                return { ...ph, entries: entries.map((e, i) => ({ ...e, order: i })) }
+              }),
             })
           }),
         }))

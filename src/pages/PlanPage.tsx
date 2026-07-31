@@ -775,10 +775,39 @@ function DragHandleCell({ entryId }: { entryId: string }) {
       {...attributes}
       className="w-4 h-4 flex items-center justify-center touch-none"
       style={{ cursor: isDragging ? 'grabbing' : 'grab', color: 'var(--text-disabled)', opacity: isDragging ? 0.4 : 1 }}
-      title="Arrastar pra mover de fase"
+      title="Arrastar pra mover de fase ou reordenar"
     >
       ⠿
     </span>
+  )
+}
+
+// ─── PlanTableRow ─────────────────────────────────────────────────────────────
+// Drop target for reordering: dropping another row's drag handle here moves
+// it to sit right before this row (same phase → pure reorder; different
+// phase → move + position). Disabled for non-top-level rows (subtasks/child
+// meetings), matching the drag handle's own depth restriction.
+
+function PlanTableRow({ entryId, disabled, className, style, onMouseEnter, onMouseLeave, children }: {
+  entryId: string
+  disabled: boolean
+  className?: string
+  style?: React.CSSProperties
+  onMouseEnter?: React.MouseEventHandler<HTMLTableRowElement>
+  onMouseLeave?: React.MouseEventHandler<HTMLTableRowElement>
+  children: React.ReactNode
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: `entry-${entryId}`, disabled })
+  return (
+    <tr
+      ref={setNodeRef}
+      className={className}
+      style={{ ...style, outline: isOver ? '2px solid var(--oe-primary)' : 'none', outlineOffset: -2 }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      {children}
+    </tr>
   )
 }
 
@@ -854,7 +883,7 @@ function PhaseHeader({ phase, colSpan, collapsed, onToggle, onAdd, onDelete, onR
 export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: string; onNavigateToRisk?: (riskId: string) => void }) {
   const {
     projects, settings,
-    updateEntry, deleteEntry, moveEntryToPhase, updateEntryStatus, resetStatusOverride, updateEntryRisk,
+    updateEntry, deleteEntry, moveEntryToPhase, reorderEntry, updateEntryStatus, resetStatusOverride, updateEntryRisk,
     updatePhase, deletePhase, setBaseline, clearBaseline, changeEntryDate, addDelayLogEntry,
     addPhase, setColumnVisibility,
   } = useAppStore()
@@ -957,12 +986,22 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
     const { active, over } = e
     if (!over) return
     const overId = String(over.id)
-    if (!overId.startsWith('phase-')) return
-    const toPhaseId = overId.slice('phase-'.length)
     const entryId = String(active.id)
     const fromPhaseId = entryPhaseMap.get(entryId)
-    if (fromPhaseId && fromPhaseId !== toPhaseId) {
-      moveEntryToPhase(projectId, fromPhaseId, toPhaseId, entryId)
+    if (!fromPhaseId) return
+
+    if (overId.startsWith('phase-')) {
+      const toPhaseId = overId.slice('phase-'.length)
+      if (fromPhaseId !== toPhaseId) moveEntryToPhase(projectId, fromPhaseId, toPhaseId, entryId)
+      return
+    }
+
+    if (overId.startsWith('entry-')) {
+      const targetEntryId = overId.slice('entry-'.length)
+      if (targetEntryId === entryId) return
+      const toPhaseId = entryPhaseMap.get(targetEntryId)
+      if (!toPhaseId) return
+      reorderEntry(projectId, fromPhaseId, toPhaseId, entryId, targetEntryId)
     }
   }
 
@@ -1438,8 +1477,10 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
                     ? 'var(--color-warning-bg)'
                     : 'var(--surface-card)'
                 items.push(
-                  <tr
+                  <PlanTableRow
                     key={row.id}
+                    entryId={row.original.id}
+                    disabled={row.depth !== 0}
                     className="group/row transition-colors"
                     style={{ borderBottom: '0.5px solid var(--border-default)', background: rowBg }}
                     onMouseEnter={ev => { if (!isSpecialRow) (ev.currentTarget as HTMLElement).style.background = 'rgba(232,89,12,0.03)' }}
@@ -1454,7 +1495,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     ))}
-                  </tr>,
+                  </PlanTableRow>,
                 )
               }
 
