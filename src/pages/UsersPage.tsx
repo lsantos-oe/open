@@ -134,7 +134,7 @@ export function UsersManagementPanel() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowInvite(false)}>Cancelar</Button>
-            <Button onClick={handleInvite} disabled={!inviteEmail.trim()}>Convidar</Button>
+            <Button onClick={handleInvite} disabled={!inviteEmail.trim()}>É basicamente isso</Button>
           </>
         }
       >

@@ -182,11 +182,11 @@ export default function ClientDetailPage() {
         <Button variant="secondary" size="sm" onClick={() => setShowArchiveConfirm(true)}>Excluir cliente</Button>
       </div>
 
-      <div className="px-6">
+      <div className="px-6 pt-3">
         <AnchorNav items={TABS} onNavigate={openAndScroll} />
       </div>
 
-      <div className="p-6 max-w-3xl">
+      <div className="p-6">
         <CollapsibleSection id="overview" title="Overview" open={openSections.has('overview')} onToggle={() => toggleSection('overview')}>
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">

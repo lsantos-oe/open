@@ -142,11 +142,11 @@ export default function IncidentDetailPage() {
         <Button variant="secondary" size="sm" onClick={() => setShowDeleteConfirm(true)}>{t('incident.delete')}</Button>
       </div>
 
-      <div className="px-6">
+      <div className="px-6 pt-3">
         <AnchorNav items={TABS} onNavigate={openAndScroll} />
       </div>
 
-      <div className="p-6 max-w-4xl">
+      <div className="p-6">
         <CollapsibleSection id="overview" title={t('incident.tabOverview')} open={openSections.has('overview')} onToggle={() => toggleSection('overview')}>
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">

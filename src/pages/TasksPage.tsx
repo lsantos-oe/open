@@ -606,7 +606,7 @@ export default function TasksPage() {
             <OwnersField owners={bulkOwners} onChange={setBulkOwners} teamMembers={directoryAsTeam} />
             <div className="flex justify-end gap-2 mt-4">
               <button onClick={() => setBulkOwnersOpen(false)} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)]" style={{ color: 'var(--text-secondary)' }}>Cancelar</button>
-              <button onClick={applyBulkOwners} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)] text-white" style={{ background: 'var(--oe-primary)' }}>Aplicar</button>
+              <button onClick={applyBulkOwners} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)] text-white" style={{ background: 'var(--oe-primary)' }}>É basicamente isso</button>
             </div>
           </div>
         </div>

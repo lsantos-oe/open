@@ -280,7 +280,7 @@ export default function ClientsPage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowAdd(false)}>Cancelar</Button>
-            <Button onClick={handleCreate} disabled={!name.trim()}>Criar</Button>
+            <Button onClick={handleCreate} disabled={!name.trim()}>É basicamente isso</Button>
           </>
         }
       >
@@ -344,7 +344,7 @@ export default function ClientsPage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setBulkOwnersOpen(false)}>Cancelar</Button>
-            <Button onClick={applyBulkOwners} disabled={bulkOwners.length === 0}>Aplicar</Button>
+            <Button onClick={applyBulkOwners} disabled={bulkOwners.length === 0}>É basicamente isso</Button>
           </>
         }
       >
