@@ -109,7 +109,7 @@ export default function OverviewTab({ project }: Props) {
   }
 
   return (
-    <div className="p-6 max-w-4xl space-y-6">
+    <div className="p-6 space-y-6">
       {/* Ploomes links */}
       <div className="bg-[var(--surface-card)] rounded-[var(--radius-lg)] border border-[var(--border-default)] p-6">
         <h3 className="text-sm font-semibold text-[var(--text-secondary)] mb-4">Ploomes</h3>
