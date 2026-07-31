@@ -4,6 +4,7 @@ import { Layout } from '@/components/layout/Layout'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useAppStore } from '@/store/useAppStore'
+import { useAiStore } from '@/stores/useAiStore'
 import { supabase } from '@/lib/supabase'
 import DashboardPage from '@/pages/DashboardPage'
 import ProjectsPage from '@/pages/ProjectsPage'
@@ -35,6 +36,7 @@ export default function App() {
         useAppStore.getState().loadClients()
         useAppStore.getState().loadIncidents()
         useAppStore.getState().loadContacts()
+        useAiStore.getState().loadHasKey()
       }
     })
 
