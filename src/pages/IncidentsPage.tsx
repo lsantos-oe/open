@@ -12,6 +12,7 @@ import { AvatarStack } from '@/components/ui/AvatarStack'
 import { FilterMenu } from '@/components/ui/FilterMenu'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { isIncidentMine } from '@/utils/involvement'
+import { contactsForClients } from '@/utils/contacts'
 import OwnersField from '@/components/plan/OwnersField'
 import { IncidentStatus, Probability, EntryOwner, TeamMember } from '@/types'
 import { exportIncidentsCsv } from '@/utils/exportListsCsv'
@@ -42,7 +43,7 @@ const KANBAN_STATUSES: IncidentStatus[] = ['open', 'in_progress', 'waiting_on_cl
 export default function IncidentsPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { incidents, clients, teamDirectory, settings, createIncident, addIncidentEntry, updateIncident, updateIncidentStatus, linkIncidentClient } = useAppStore()
+  const { incidents, clients, projects, contacts, teamDirectory, settings, createIncident, addIncidentEntry, addIncidentStakeholder, updateIncident, updateIncidentStatus, linkIncidentClient } = useAppStore()
   const { user } = useAuthStore()
 
   const [view, setView] = useState<'list' | 'kanban'>(() =>
@@ -57,6 +58,10 @@ export default function IncidentsPage() {
   const [showAdd, setShowAdd] = useState(false)
   const [title, setTitle] = useState('')
   const [newClientIds, setNewClientIds] = useState<string[]>([])
+  const [newProjectIds, setNewProjectIds] = useState<string[]>([])
+  const [newStakeholders, setNewStakeholders] = useState<EntryOwner[]>([])
+  const [clientSearch, setClientSearch] = useState('')
+  const [projectSearch, setProjectSearch] = useState('')
   const [newOwners, setNewOwners] = useState<EntryOwner[]>([])
   const [priority, setPriority] = useState<Probability>('medium')
   const [impact, setImpact] = useState<Probability>('medium')
@@ -92,13 +97,46 @@ export default function IncidentsPage() {
   }, [incidents, search, statusFilter, priorityFilter, onlyMine, user])
 
   function openAdd() {
-    setTitle(''); setNewClientIds([]); setNewOwners([]); setPriority('medium'); setImpact('medium'); setDeadline(''); setTemplateId('')
+    setTitle(''); setNewClientIds([]); setNewProjectIds([]); setNewStakeholders([]); setClientSearch(''); setProjectSearch('')
+    setNewOwners([]); setPriority('medium'); setImpact('medium'); setDeadline(''); setTemplateId('')
     setShowAdd(true)
   }
 
   function toggleNewClient(clientId: string) {
-    setNewClientIds((prev) => prev.includes(clientId) ? prev.filter((id) => id !== clientId) : [...prev, clientId])
+    setNewClientIds((prev) => {
+      const next = prev.includes(clientId) ? prev.filter((id) => id !== clientId) : [...prev, clientId]
+      // Drop any picked project that no longer belongs to the (updated) client filter.
+      setNewProjectIds((prevProjects) =>
+        next.length === 0 ? prevProjects : prevProjects.filter((pid) => {
+          const proj = projects.find((p) => p.id === pid)
+          return proj?.clientId && next.includes(proj.clientId)
+        }),
+      )
+      return next
+    })
   }
+
+  function toggleNewProject(projectId: string) {
+    setNewProjectIds((prev) => prev.includes(projectId) ? prev.filter((id) => id !== projectId) : [...prev, projectId])
+  }
+
+  const filteredNewClients = useMemo(
+    () => [...clients].sort((a, b) => a.name.localeCompare(b.name)).filter((c) => c.name.toLowerCase().includes(clientSearch.trim().toLowerCase())),
+    [clients, clientSearch],
+  )
+
+  const filteredNewProjects = useMemo(
+    () => [...projects]
+      .filter((p) => !p.archived && (newClientIds.length === 0 || (p.clientId && newClientIds.includes(p.clientId))))
+      .filter((p) => p.name.toLowerCase().includes(projectSearch.trim().toLowerCase()))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    [projects, newClientIds, projectSearch],
+  )
+
+  const stakeholderContacts = useMemo(
+    () => newClientIds.length > 0 ? contactsForClients(contacts, newClientIds) : [],
+    [contacts, newClientIds],
+  )
 
   function handlePriorityChange(p: Probability) {
     setPriority(p)
@@ -122,8 +160,10 @@ export default function IncidentsPage() {
       impact,
       deadline: deadline || undefined,
       clientIds: newClientIds,
+      projectIds: newProjectIds,
       owner: newOwners[0],
     })
+    for (const stakeholder of newStakeholders) addIncidentStakeholder(id, stakeholder)
     const tpl = settings.incidentTemplates.find((t) => t.id === templateId)
     if (tpl) {
       for (const taskTitle of tpl.taskTitles) {
@@ -321,7 +361,7 @@ export default function IncidentsPage() {
         open={showAdd}
         title={t('incident.new')}
         onClose={() => setShowAdd(false)}
-        size="sm"
+        size="md"
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowAdd(false)}>{t('actions.cancel')}</Button>
@@ -342,11 +382,21 @@ export default function IncidentsPage() {
             <Input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} />
           </Field>
           <Field label={t('incident.colClients')} required>
+            {clients.length > 3 && (
+              <Input
+                value={clientSearch}
+                onChange={(e) => setClientSearch(e.target.value)}
+                placeholder="Buscar cliente..."
+                className="mb-2"
+              />
+            )}
             <div className="border rounded-[var(--radius-lg)] max-h-40 overflow-y-auto p-2 space-y-1" style={{ borderColor: 'var(--border-default)' }}>
-              {clients.length === 0 ? (
-                <p className="text-xs px-1 py-1" style={{ color: 'var(--text-tertiary)' }}>Nenhum cliente cadastrado ainda.</p>
+              {filteredNewClients.length === 0 ? (
+                <p className="text-xs px-1 py-1" style={{ color: 'var(--text-tertiary)' }}>
+                  {clients.length === 0 ? 'Nenhum cliente cadastrado ainda.' : 'Nada encontrado.'}
+                </p>
               ) : (
-                [...clients].sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
+                filteredNewClients.map((c) => (
                   <label key={c.id} className="flex items-center gap-2.5 p-1 rounded hover:bg-[var(--surface-subtle)] cursor-pointer">
                     <input
                       type="checkbox"
@@ -360,8 +410,38 @@ export default function IncidentsPage() {
               )}
             </div>
           </Field>
+          <Field label={t('incident.colProjects' as any)}>
+            {projects.length > 3 && (
+              <Input
+                value={projectSearch}
+                onChange={(e) => setProjectSearch(e.target.value)}
+                placeholder="Buscar projeto..."
+                className="mb-2"
+              />
+            )}
+            <div className="border rounded-[var(--radius-lg)] max-h-40 overflow-y-auto p-2 space-y-1" style={{ borderColor: 'var(--border-default)' }}>
+              {filteredNewProjects.length === 0 ? (
+                <p className="text-xs px-1 py-1" style={{ color: 'var(--text-tertiary)' }}>Nada encontrado.</p>
+              ) : (
+                filteredNewProjects.map((p) => (
+                  <label key={p.id} className="flex items-center gap-2.5 p-1 rounded hover:bg-[var(--surface-subtle)] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newProjectIds.includes(p.id)}
+                      onChange={() => toggleNewProject(p.id)}
+                      className="rounded border-[var(--border-strong)] accent-[var(--oe-primary)]"
+                    />
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{p.name}</span>
+                  </label>
+                ))
+              )}
+            </div>
+          </Field>
           <Field label="Responsável" required>
             <OwnersField owners={newOwners.slice(0, 1)} onChange={(owners) => setNewOwners(owners.slice(-1))} teamMembers={directoryAsTeam} />
+          </Field>
+          <Field label={t('incident.stakeholders' as any)}>
+            <OwnersField owners={newStakeholders} onChange={setNewStakeholders} teamMembers={directoryAsTeam} contacts={stakeholderContacts} />
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label={t('incident.priority')} hint="Urgência de resolução: Alta = ação imediata, Média = prazo normal, Baixa = pode aguardar.">

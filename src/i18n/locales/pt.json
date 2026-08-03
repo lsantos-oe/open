@@ -393,6 +393,8 @@
     "createFirst": "+ Criar primeiro incidente",
     "colTitle": "Título",
     "colClients": "Clientes",
+    "colProjects": "Projetos",
+    "stakeholders": "Stakeholders",
     "colStatus": "Status",
     "colPriority": "Prioridade",
     "colDeadline": "Prazo",
