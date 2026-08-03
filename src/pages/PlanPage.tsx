@@ -958,6 +958,17 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
     return map
   }, [project.phases])
 
+  const entryDependsOnMap = useMemo(() => {
+    const map = new Map<string, string[]>()
+    for (const ph of project.phases) {
+      for (const e of ph.entries) {
+        map.set(e.id, e.dependsOn)
+        for (const sub of e.subtasks) map.set(sub.id, sub.dependsOn)
+      }
+    }
+    return map
+  }, [project.phases])
+
   // Find which phaseId an entry belongs to
   const entryPhaseMap = useMemo(() => {
     const map = new Map<string, string>()
@@ -1023,6 +1034,16 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
       const phaseId = entryPhaseMap.get(id)
       const parentPhaseId = entryPhaseMap.get(parentEntryId)
       if (phaseId && phaseId === parentPhaseId) convertToSubtask(projectId, phaseId, id, parentEntryId)
+    }
+    setSelected(new Set())
+  }
+
+  function applyBulkAddDependency(depId: string) {
+    for (const id of selected) {
+      if (id === depId) continue
+      const current = entryDependsOnMap.get(id) ?? []
+      if (current.includes(depId)) continue
+      updateEntry(projectId, id, { dependsOn: [...current, depId] })
     }
     setSelected(new Set())
   }
@@ -1739,6 +1760,17 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
           style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
         >
           <option value="" disabled>Virar subtarefa de...</option>
+          {project.phases.flatMap((ph) => ph.entries
+            .filter((e) => !selected.has(e.id))
+            .map((e) => <option key={e.id} value={e.id}>{ph.name} · {e.name}</option>))}
+        </select>
+        <select
+          onChange={(e) => { if (e.target.value) applyBulkAddDependency(e.target.value) }}
+          value=""
+          className="text-xs rounded-[var(--radius-md)] px-2 py-1"
+          style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
+        >
+          <option value="" disabled>Adicionar dependência...</option>
           {project.phases.flatMap((ph) => ph.entries
             .filter((e) => !selected.has(e.id))
             .map((e) => <option key={e.id} value={e.id}>{ph.name} · {e.name}</option>))}
