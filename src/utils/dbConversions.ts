@@ -153,6 +153,7 @@ export function dbPhaseToStore(row: DbPhase, entries: DbEntry[], comments: DbCom
     name: row.name,
     order: row.order ?? 0,
     entries: phaseEntries,
+    isUnassigned: row.is_unassigned ?? false,
   }
 }
 
@@ -424,6 +425,7 @@ function storePhaseToDb(phase: Phase, projectId: string): DbPhase {
     name: phase.name,
     order: phase.order,
     created_at: new Date().toISOString(),
+    is_unassigned: phase.isUnassigned ?? false,
   }
 }
 

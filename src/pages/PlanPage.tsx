@@ -1476,7 +1476,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
         <div className="flex items-center gap-1">
           {([['task', t('plan.addTask')], ['milestone', t('plan.addMilestone')], ['meeting', t('plan.addMeeting')]] as [EntryType, string][]).map(([type, label]) => (
             <Button key={type} size="xs" variant="pill"
-              onClick={() => setAddModal({ type, phaseId: project.phases[0]?.id })}>
+              onClick={() => setAddModal({ type, phaseId: project.phases.find((ph) => !ph.isUnassigned)?.id })}>
               {label}
             </Button>
           ))}
@@ -1740,7 +1740,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
           style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
         >
           <option value="" disabled>Mover para fase...</option>
-          {project.phases.map((ph) => <option key={ph.id} value={ph.id}>{ph.name}</option>)}
+          {project.phases.filter((ph) => !ph.isUnassigned).map((ph) => <option key={ph.id} value={ph.id}>{ph.name}</option>)}
         </select>
         <select
           onChange={(e) => { if (e.target.value) applyBulkType(e.target.value as EntryType) }}

@@ -146,6 +146,7 @@ export interface DbPhase {
   name: string
   order: number | null
   created_at: string | null
+  is_unassigned: boolean | null
 }
 
 export interface DbEntry {

@@ -210,6 +210,11 @@ interface AppStore {
 
   // Entries
   addEntry: (projectId: string, phaseId: string, entry: Omit<Entry, 'id' | 'isCritical' | 'comments' | 'links' | 'subtasks'>) => void
+  /** Like addEntry, but for tasks with no phase (only valid when hiddenFromPlan) —
+   *  creates/reuses the project's hidden "Sem fase" bucket phase. */
+  addUnassignedEntry: (projectId: string, entry: Omit<Entry, 'id' | 'isCritical' | 'comments' | 'links' | 'subtasks'>) => void
+  /** Moves an existing entry into the project's hidden "Sem fase" bucket phase. */
+  moveEntryToUnassignedPhase: (projectId: string, fromPhaseId: string, entryId: string) => void
   addSubtask: (projectId: string, phaseId: string, parentId: string, entry: Omit<Entry, 'id' | 'isCritical' | 'comments' | 'links' | 'subtasks'>) => void
   updateEntry: (projectId: string, entryId: string, patch: Partial<Entry>) => void
   deleteEntry: (projectId: string, phaseId: string, entryId: string) => void
@@ -1364,6 +1369,92 @@ export const useAppStore = create<AppStore>()(
           if (!entry || !phase || !project) return
           const { error } = await supabase.from('entries').insert(storeEntryToDb(entry, phaseId, projectId, userId))
           if (error) throw new Error(error.message)
+        }, () => set({ projects: prev }))
+      },
+
+      addUnassignedEntry(projectId, entryData) {
+        const existingBucket = get().projects.find((p) => p.id === projectId)?.phases.find((ph) => ph.isUnassigned)
+        const phaseId = existingBucket?.id ?? uuid()
+        const bucketIsNew = !existingBucket
+        const entryId = uuid()
+        const prev = get().projects
+        set((s) => ({
+          projects: mutateProject(s.projects, projectId, (p) => {
+            const phases = bucketIsNew
+              ? [...p.phases, { id: phaseId, name: 'Sem fase', order: p.phases.length, entries: [], isUnassigned: true }]
+              : p.phases
+            return refreshCriticalPath({
+              ...p,
+              phases: phases.map((ph) =>
+                ph.id !== phaseId
+                  ? ph
+                  : { ...ph, entries: [...ph.entries, { ...entryData, id: entryId, isCritical: false, subtasks: [], comments: [], links: [] }] },
+              ),
+            })
+          }),
+        }))
+        sync(async () => {
+          // The bucket phase must exist in the DB before the entry insert below
+          // (entries.phase_id FK) — awaiting this first avoids the race that
+          // once broke createProject (Fase 8.11 fix).
+          if (bucketIsNew) {
+            const order = get().projects.find((p) => p.id === projectId)?.phases.findIndex((ph) => ph.id === phaseId) ?? 0
+            const { error: phaseError } = await supabase.from('phases').insert({
+              id: phaseId, project_id: projectId, name: 'Sem fase', order,
+              created_at: new Date().toISOString(), is_unassigned: true,
+            })
+            if (phaseError) throw new Error(phaseError.message)
+          }
+          const userId = getUserId()
+          const project = get().projects.find((p) => p.id === projectId)
+          const phase = project?.phases.find((ph) => ph.id === phaseId)
+          const entry = phase?.entries.find((e) => e.id === entryId)
+          if (!entry || !phase || !project) return
+          const { error } = await supabase.from('entries').insert(storeEntryToDb(entry, phaseId, projectId, userId))
+          if (error) throw new Error(error.message)
+        }, () => set({ projects: prev }))
+      },
+
+      moveEntryToUnassignedPhase(projectId, fromPhaseId, entryId) {
+        const existingBucket = get().projects.find((p) => p.id === projectId)?.phases.find((ph) => ph.isUnassigned)
+        const toPhaseId = existingBucket?.id ?? uuid()
+        const bucketIsNew = !existingBucket
+        if (fromPhaseId === toPhaseId) return
+        const prev = get().projects
+        set((s) => ({
+          projects: mutateProject(s.projects, projectId, (p) => {
+            const basePhases = bucketIsNew
+              ? [...p.phases, { id: toPhaseId, name: 'Sem fase', order: p.phases.length, entries: [], isUnassigned: true }]
+              : p.phases
+            let movedEntry: Entry | undefined
+            const phases = basePhases.map((ph) => {
+              if (ph.id !== fromPhaseId) return ph
+              const found = ph.entries.find((e) => e.id === entryId)
+              if (found) movedEntry = found
+              return { ...ph, entries: ph.entries.filter((e) => e.id !== entryId) }
+            })
+            if (!movedEntry) return p
+            const entry = movedEntry
+            return refreshCriticalPath({
+              ...p,
+              phases: phases.map((ph) =>
+                ph.id !== toPhaseId ? ph : { ...ph, entries: [...ph.entries, entry] }
+              ),
+            })
+          }),
+        }))
+        sync(async () => {
+          if (bucketIsNew) {
+            const order = get().projects.find((p) => p.id === projectId)?.phases.findIndex((ph) => ph.id === toPhaseId) ?? 0
+            const { error: phaseError } = await supabase.from('phases').insert({
+              id: toPhaseId, project_id: projectId, name: 'Sem fase', order,
+              created_at: new Date().toISOString(), is_unassigned: true,
+            })
+            if (phaseError) throw new Error(phaseError.message)
+          }
+          const project = get().projects.find((p) => p.id === projectId)
+          if (!project) return
+          await dbSyncAllEntries(project, getUserId())
         }, () => set({ projects: prev }))
       },
 

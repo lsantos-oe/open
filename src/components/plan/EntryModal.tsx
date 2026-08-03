@@ -7,6 +7,7 @@ import { Entry, EntryOwner, EntryType, EntryStatus, RiskFlag, Link, TeamMember }
 import { contactsForClient } from '@/utils/contacts'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
+import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import OwnersField from '@/components/plan/OwnersField'
 
 // ─── types ────────────────────────────────────────────────────────────────────
@@ -177,8 +178,8 @@ export default function EntryModal({
 }: EntryModalProps) {
   const { t } = useTranslation()
   const {
-    projects, contacts, teamDirectory,
-    addEntry, addSubtask, updateEntry, deleteEntry, moveEntryToPhase,
+    projects, clients, contacts, teamDirectory,
+    addEntry, addUnassignedEntry, addSubtask, updateEntry, deleteEntry, moveEntryToPhase, moveEntryToUnassignedPhase,
     addComment, removeComment,
   } = useAppStore()
   const { profile } = useAuthStore()
@@ -209,6 +210,11 @@ export default function EntryModal({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, origProjectId])
 
+  const origClientId = useMemo(
+    () => projects.find((p) => p.id === origProjectId)?.clientId ?? '',
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [open, origProjectId])
+
   // ── form state ────────────────────────────────────────────────────────────
 
   const makeForm = (): Form => {
@@ -222,6 +228,7 @@ export default function EntryModal({
   }
 
   const [form, setForm] = useState<Form>(makeForm)
+  const [clientFilter, setClientFilter] = useState(origClientId)
   const [endDateError, setEndDateError] = useState('')
   const [deleteStep, setDeleteStep] = useState<'idle' | 'confirm'>('idle')
   const [newLinkLabel, setNewLinkLabel] = useState('')
@@ -237,6 +244,7 @@ export default function EntryModal({
     setNewLinkUrl('')
     setCommentText('')
     setDepsOpen(false)
+    setClientFilter(origClientId)
     setForm(makeForm())
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
@@ -252,6 +260,11 @@ export default function EntryModal({
     [projects, form.projectId],
   )
   const selectedPhases = selectedProject?.phases ?? []
+  const visiblePhases = useMemo(() => selectedPhases.filter((ph) => !ph.isUnassigned), [selectedPhases])
+  const visibleProjects = useMemo(
+    () => projects.filter((p) => !p.archived && (!clientFilter || p.clientId === clientFilter)),
+    [projects, clientFilter],
+  )
   // OwnersField expects TeamMember[] — map the global registered-user directory
   // into that shape (userId = profile.id), same as IncidentEntryModal, so any
   // registered user can be picked as executor/validator, not just people
@@ -278,8 +291,19 @@ export default function EntryModal({
 
   function handleProjectChange(newProjectId: string) {
     const newProj = projects.find((p) => p.id === newProjectId)
-    const newPhaseId = newProj?.phases[0]?.id ?? ''
+    const newPhaseId = form.hiddenFromPlan ? '' : newProj?.phases.find((ph) => !ph.isUnassigned)?.id ?? ''
     setForm((f) => ({ ...f, projectId: newProjectId, phaseId: newPhaseId, dependsOn: [] }))
+  }
+
+  function handleClientFilterChange(newClientId: string) {
+    setClientFilter(newClientId)
+    const stillValid = newClientId
+      ? projects.find((p) => p.id === form.projectId)?.clientId === newClientId
+      : true
+    if (!stillValid) {
+      const candidates = projects.filter((p) => !p.archived && (!newClientId || p.clientId === newClientId))
+      handleProjectChange(candidates[0]?.id ?? '')
+    }
   }
 
   function toggleDep(id: string) {
@@ -319,7 +343,14 @@ export default function EntryModal({
 
   function handleToggleHiddenFromPlan() {
     const next = !form.hiddenFromPlan
-    set('hiddenFromPlan', next)
+    setForm((f) => ({
+      ...f,
+      hiddenFromPlan: next,
+      // Turning on: default to no phase (as requested, "pré-definido não ter
+      // fase vinculada"). Turning off: fall back to the first real phase if
+      // it was left empty, since a visible task always needs a phase.
+      phaseId: next ? '' : (f.phaseId || visiblePhases[0]?.id || ''),
+    }))
     if (mode === 'edit' && entry) {
       updateEntry(origProjectId, entry.id, { hiddenFromPlan: next || undefined })
       addToast(next ? t('entry.hiddenFromPlanToast') : t('entry.showInPlanToast'), 'info')
@@ -411,7 +442,7 @@ export default function EntryModal({
   // ── save / delete ─────────────────────────────────────────────────────────
 
   function handleSaveCreate() {
-    if (!form.name.trim() || !form.phaseId || !form.owners.some((o) => o.kind === 'executor')) return
+    if (!form.name.trim() || (!form.hiddenFromPlan && !form.phaseId) || !form.owners.some((o) => o.kind === 'executor')) return
     if (form.type === 'task' && form.plannedStart && form.plannedEnd && form.plannedEnd < form.plannedStart) {
       setEndDateError(t('errors.endBeforeStart'))
       return
@@ -420,15 +451,20 @@ export default function EntryModal({
     const base = buildEntryBase()
     const parentId = defaultParentId || form.subtaskOf || ''
     if (parentId) {
-      addSubtask(form.projectId, form.phaseId, parentId, base)
-    } else {
+      // Subtasks always live inside their parent's phase — "no phase" doesn't
+      // apply here even if hiddenFromPlan is set; fall back to a real phase.
+      const phaseForSubtask = form.phaseId || visiblePhases[0]?.id || selectedPhases[0]?.id || ''
+      addSubtask(form.projectId, phaseForSubtask, parentId, base)
+    } else if (form.phaseId) {
       addEntry(form.projectId, form.phaseId, base)
+    } else {
+      addUnassignedEntry(form.projectId, base)
     }
     onClose()
   }
 
   function handleSaveEdit() {
-    if (!entry || !form.name.trim() || !form.owners.some((o) => o.kind === 'executor')) return
+    if (!entry || !form.name.trim() || (!form.hiddenFromPlan && !form.phaseId) || !form.owners.some((o) => o.kind === 'executor')) return
     if (form.type === 'task' && form.plannedStart && form.plannedEnd && form.plannedEnd < form.plannedStart) {
       setEndDateError(t('errors.endBeforeStart'))
       return
@@ -437,9 +473,13 @@ export default function EntryModal({
 
     if (projectChanged) {
       deleteEntry(origProjectId, origPhaseId, entry.id)
-      addEntry(form.projectId, form.phaseId, buildEntryBase())
+      if (form.phaseId) addEntry(form.projectId, form.phaseId, buildEntryBase())
+      else addUnassignedEntry(form.projectId, buildEntryBase())
     } else {
-      if (phaseChanged) moveEntryToPhase(origProjectId, origPhaseId, form.phaseId, entry.id)
+      if (phaseChanged) {
+        if (form.phaseId) moveEntryToPhase(origProjectId, origPhaseId, form.phaseId, entry.id)
+        else moveEntryToUnassignedPhase(origProjectId, origPhaseId, entry.id)
+      }
       updateEntry(origProjectId, entry.id, {
         name: form.name.trim(),
         description: form.description.trim() || undefined,
@@ -523,7 +563,7 @@ export default function EntryModal({
       <Button variant="secondary" onClick={onClose}>{t('actions.cancel')}</Button>
       <Button
         onClick={mode === 'edit' ? handleSaveEdit : handleSaveCreate}
-        disabled={!form.name.trim() || !form.owners.some((o) => o.kind === 'executor')}
+        disabled={!form.name.trim() || (!form.hiddenFromPlan && !form.phaseId) || !form.owners.some((o) => o.kind === 'executor')}
       >
         {mode === 'edit' ? t('entry.saveChanges') : t('actions.confirm')}
       </Button>
@@ -590,7 +630,6 @@ export default function EntryModal({
                 onChange={(next) => set('owners', [...next, ...form.owners.filter((o) => o.kind !== 'executor')])}
                 teamMembers={selectedTeam}
                 contacts={selectedContacts}
-                max={1}
                 kind="executor"
               />
             </div>
@@ -765,18 +804,27 @@ export default function EntryModal({
           display: 'flex', flexDirection: 'column', gap: 16,
         }}>
 
+          {/* Client (filters the Project picker below) */}
+          <FieldBox label={t('entry.client' as any)}>
+            <SearchableSelect
+              value={clientFilter}
+              onChange={handleClientFilterChange}
+              options={clients.map(c => ({ id: c.id, label: c.name }))}
+              emptyOptionLabel={`— ${t('entry.allClients' as any)} —`}
+              disabled={lockProject && mode === 'create'}
+              style={inputStyle}
+            />
+          </FieldBox>
+
           {/* Project */}
           <FieldBox label={t('entry.project' as any)}>
-            <select
+            <SearchableSelect
               value={form.projectId}
-              onChange={e => handleProjectChange(e.target.value)}
+              onChange={handleProjectChange}
+              options={visibleProjects.map(p => ({ id: p.id, label: p.name }))}
               disabled={lockProject && mode === 'create'}
-              style={{ ...inputStyle, cursor: lockProject && mode === 'create' ? 'default' : 'pointer' }}
-            >
-              {projects.filter(p => !p.archived).map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
+              style={inputStyle}
+            />
             {projectChanged && (
               <p style={{ fontSize: 11, color: 'var(--color-warning-text)', marginTop: 4 }}>
                 ⚠ {t('entry.moveWarning')}
@@ -788,17 +836,20 @@ export default function EntryModal({
           {!isSubtask && (
             <FieldBox label={t('plan.phase')}>
               <select
-                value={form.phaseId}
+                value={selectedProject?.phases.find(ph => ph.id === form.phaseId)?.isUnassigned ? '' : form.phaseId}
                 onChange={e => set('phaseId', e.target.value)}
                 style={{ ...inputStyle, cursor: 'pointer' }}
               >
-                {selectedPhases.map(ph => (
+                {form.hiddenFromPlan && (
+                  <option value="">— {t('entry.noPhase' as any)} —</option>
+                )}
+                {visiblePhases.map(ph => (
                   <option key={ph.id} value={ph.id}>{ph.name}</option>
                 ))}
               </select>
               {phaseChanged && (
                 <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 4 }}>
-                  ↳ {t('entry.moveToPhase', { phase: selectedPhases.find(p => p.id === form.phaseId)?.name ?? '' })}
+                  ↳ {t('entry.moveToPhase', { phase: visiblePhases.find(p => p.id === form.phaseId)?.name ?? t('entry.noPhase' as any) })}
                 </p>
               )}
             </FieldBox>

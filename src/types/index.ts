@@ -77,6 +77,9 @@ export interface Phase {
   name: string
   order: number
   entries: Entry[]
+  /** Hidden bucket phase, auto-created per project to hold tasks that are
+   *  hiddenFromPlan and have no real phase — never shown in phase pickers. */
+  isUnassigned?: boolean
 }
 
 export interface ActionTask {
