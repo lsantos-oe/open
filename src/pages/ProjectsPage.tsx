@@ -14,6 +14,10 @@ import { StatusDot } from '@/components/ui/StatusDot'
 import { AvatarStack } from '@/components/ui/AvatarStack'
 import { FilterMenu } from '@/components/ui/FilterMenu'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { SearchInput } from '@/components/ui/SearchInput'
+import { MineToggle } from '@/components/ui/MineToggle'
+import { ViewToggle } from '@/components/ui/ViewToggle'
+import { ListIcon, KanbanIcon } from '@/components/ui/icons'
 import { TableSkeleton } from '@/components/ui/TableSkeleton'
 import { isProjectMine } from '@/utils/involvement'
 import { Project, ProjectStatus, ProjectType, ProjectTemplate, Client, ClientStatus, TeamMember } from '@/types'
@@ -985,47 +989,6 @@ export default function ProjectsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {/* View toggle */}
-          <div className="flex rounded-[var(--radius-lg)] border border-[var(--border-default)] overflow-hidden">
-            <button
-              onClick={() => setView('list')}
-              className={`px-3 py-2 text-sm transition-colors ${view === 'list' ? 'text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'}`}
-              style={view === 'list' ? { background: 'var(--oe-primary)' } : undefined}
-              title={t('project.viewList')}
-            >
-              <ListIcon />
-            </button>
-            <button
-              onClick={() => setView('kanban')}
-              className={`px-3 py-2 text-sm transition-colors ${view === 'kanban' ? 'text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'}`}
-              style={view === 'kanban' ? { background: 'var(--oe-primary)' } : undefined}
-              title={t('project.viewKanban')}
-            >
-              <KanbanIcon />
-            </button>
-          </div>
-          <button
-            onClick={() => setOnlyMine((v) => !v)}
-            className="px-3 py-1.5 text-xs font-medium rounded-[var(--radius-pill)] border transition-colors"
-            style={{
-              background: onlyMine ? 'var(--oe-primary)' : 'var(--surface-card)',
-              color: onlyMine ? 'white' : 'var(--text-secondary)',
-              borderColor: onlyMine ? 'var(--oe-primary)' : 'var(--border-default)',
-            }}
-          >
-            {t('actions.onlyMine')}
-          </button>
-          <button
-            onClick={() => setOnlyDelayed((v) => !v)}
-            className="px-3 py-1.5 text-xs font-medium rounded-[var(--radius-pill)] border transition-colors"
-            style={{
-              background: onlyDelayed ? 'var(--color-danger-text)' : 'var(--surface-card)',
-              color: onlyDelayed ? 'white' : 'var(--text-secondary)',
-              borderColor: onlyDelayed ? 'var(--color-danger-text)' : 'var(--border-default)',
-            }}
-          >
-            {t('project.delayed')}
-          </button>
           <Button variant="secondary" onClick={() => setShowImportModal(true)}>
             {t('import.title')}
           </Button>
@@ -1042,18 +1005,33 @@ export default function ProjectsPage() {
 
       {/* Filters */}
       {!projectsLoading && projects.length > 0 && (
-        <div className="mb-5 flex items-center gap-2.5">
-          <div className="relative flex-1 max-w-xs">
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }}>
-              <SearchIcon />
-            </span>
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar projeto..."
-              className="pl-8"
-            />
-          </div>
+        <div className="mb-5 flex items-center gap-2 flex-wrap">
+          <SearchInput
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar projeto..."
+          />
+          <ViewToggle
+            value={view}
+            onChange={setView}
+            options={[
+              { value: 'list', label: t('project.viewList'), icon: <ListIcon className="w-3.5 h-3.5" /> },
+              { value: 'kanban', label: t('project.viewKanban'), icon: <KanbanIcon className="w-3.5 h-3.5" /> },
+            ]}
+          />
+          <MineToggle active={onlyMine} onClick={() => setOnlyMine((v) => !v)} />
+          <button
+            onClick={() => setOnlyDelayed((v) => !v)}
+            className="px-3 py-1.5 text-xs font-medium rounded-[var(--radius-pill)] border transition-colors whitespace-nowrap"
+            style={{
+              background: onlyDelayed ? 'var(--color-danger-text)' : 'var(--surface-card)',
+              color: onlyDelayed ? 'white' : 'var(--text-secondary)',
+              borderColor: onlyDelayed ? 'var(--color-danger-text)' : 'var(--border-default)',
+            }}
+          >
+            {t('project.delayed')}
+          </button>
+          <div className="flex-1" />
           <FilterBar filters={filters} setFilters={setFilters} clients={clientNames} pms={pms} />
         </div>
       )}
@@ -1196,31 +1174,5 @@ export default function ProjectsPage() {
         </Field>
       </Modal>
     </div>
-  )
-}
-
-// ─── icons ────────────────────────────────────────────────────────────────────
-
-function ListIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-    </svg>
-  )
-}
-
-function KanbanIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
-    </svg>
-  )
-}
-
-function SearchIcon() {
-  return (
-    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.2-5.2m0 0a7.5 7.5 0 10-10.6-10.6 7.5 7.5 0 0010.6 10.6z" />
-    </svg>
   )
 }

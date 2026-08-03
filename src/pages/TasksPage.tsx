@@ -19,6 +19,11 @@ import { AvatarStack } from '@/components/ui/AvatarStack'
 import { FilterMenu } from '@/components/ui/FilterMenu'
 import { EmptyState as SharedEmptyState } from '@/components/ui/EmptyState'
 import { Field } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
+import { SearchInput } from '@/components/ui/SearchInput'
+import { MineToggle } from '@/components/ui/MineToggle'
+import { ViewToggle } from '@/components/ui/ViewToggle'
+import { ListIcon, KanbanIcon } from '@/components/ui/icons'
 import { isEntryMine } from '@/utils/involvement'
 import { contactsForClients } from '@/utils/contacts'
 
@@ -419,87 +424,45 @@ export default function TasksPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', background: 'var(--surface-page)' }}>
-      {/* Topbar */}
+      {/* Header */}
       <div
         style={{
-          display: 'flex', alignItems: 'center', gap: 12, padding: '0 20px',
-          height: 52, background: 'var(--surface-card)', borderBottom: '0.5px solid var(--border-default)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px',
+          background: 'var(--surface-card)', borderBottom: '0.5px solid var(--border-default)',
           flexShrink: 0,
         }}
       >
         <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>
           {t('tasks.title')}
         </span>
-
-        <button
-          onClick={() => setNewTaskOpen(true)}
-          style={{
-            fontSize: 13, fontWeight: 500, padding: '5px 12px',
-            background: 'var(--oe-primary)', color: 'white',
-            border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
-          }}
-          onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
-          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-        >
-          + {t('tasks.newTask')}
-        </button>
-
-        <button
-          onClick={() => setNewStandaloneOpen(true)}
-          title={t('tasks.newStandaloneTask' as any)}
-          style={{
-            fontSize: 13, fontWeight: 500, padding: '5px 12px',
-            background: 'var(--surface-card)', color: 'var(--text-secondary)',
-            border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', cursor: 'pointer',
-          }}
-        >
-          + {t('tasks.standaloneTask' as any)}
-        </button>
-
-        <div className="flex rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
-          <button
-            onClick={() => setView('kanban')}
-            className="px-3 py-1.5 text-xs font-medium transition-colors"
-            style={{ background: view === 'kanban' ? 'var(--oe-primary)' : 'var(--surface-card)', color: view === 'kanban' ? 'white' : 'var(--text-secondary)' }}
-          >
-            {t('actions.viewKanban')}
-          </button>
-          <button
-            onClick={() => setView('table')}
-            className="px-3 py-1.5 text-xs font-medium transition-colors"
-            style={{ background: view === 'table' ? 'var(--oe-primary)' : 'var(--surface-card)', color: view === 'table' ? 'white' : 'var(--text-secondary)' }}
-          >
-            {t('actions.viewTable')}
-          </button>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={() => setNewStandaloneOpen(true)}>
+            + {t('tasks.standaloneTask' as any)}
+          </Button>
+          <Button onClick={() => setNewTaskOpen(true)}>
+            + {t('tasks.newTask')}
+          </Button>
         </div>
+      </div>
 
-        <button
-          onClick={() => setOnlyMine((v) => !v)}
-          className="px-3 py-1.5 text-xs font-medium rounded-[var(--radius-pill)] border transition-colors"
-          style={{
-            background: onlyMine ? 'var(--oe-primary)' : 'var(--surface-card)',
-            color: onlyMine ? 'white' : 'var(--text-secondary)',
-            borderColor: onlyMine ? 'var(--oe-primary)' : 'var(--border-default)',
-          }}
-        >
-          {t('actions.onlyMine')}
-        </button>
-
-        <div className="relative" style={{ width: 220 }}>
-          <span className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }}>
-            <SearchIcon />
-          </span>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar tarefa..."
-            style={{
-              width: '100%', fontSize: 12.5, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)',
-              padding: '6px 10px 6px 30px', background: 'var(--surface-subtle)', color: 'var(--text-primary)', outline: 'none',
-            }}
-          />
-        </div>
-
+      {/* Toolbar */}
+      <div
+        className="flex items-center gap-2 flex-wrap"
+        style={{
+          padding: '10px 20px', background: 'var(--surface-card)',
+          borderBottom: '0.5px solid var(--border-default)', flexShrink: 0,
+        }}
+      >
+        <SearchInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar tarefa..." />
+        <ViewToggle
+          value={view}
+          onChange={setView}
+          options={[
+            { value: 'kanban', label: t('actions.viewKanban'), icon: <KanbanIcon className="w-3.5 h-3.5" /> },
+            { value: 'table', label: t('actions.viewTable'), icon: <ListIcon className="w-3.5 h-3.5" /> },
+          ]}
+        />
+        <MineToggle active={onlyMine} onClick={() => setOnlyMine((v) => !v)} />
         <div style={{ flex: 1 }} />
 
         <FilterMenu
@@ -681,13 +644,5 @@ export default function TasksPage() {
         </div>
       )}
     </div>
-  )
-}
-
-function SearchIcon() {
-  return (
-    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.2-5.2m0 0a7.5 7.5 0 10-10.6-10.6 7.5 7.5 0 0010.6 10.6z" />
-    </svg>
   )
 }

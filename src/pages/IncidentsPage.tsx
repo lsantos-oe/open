@@ -11,6 +11,10 @@ import { StatusDot } from '@/components/ui/StatusDot'
 import { AvatarStack } from '@/components/ui/AvatarStack'
 import { FilterMenu } from '@/components/ui/FilterMenu'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { SearchInput } from '@/components/ui/SearchInput'
+import { MineToggle } from '@/components/ui/MineToggle'
+import { ViewToggle } from '@/components/ui/ViewToggle'
+import { ListIcon, KanbanIcon } from '@/components/ui/icons'
 import { isIncidentMine } from '@/utils/involvement'
 import { contactsForClients } from '@/utils/contacts'
 import OwnersField from '@/components/plan/OwnersField'
@@ -221,46 +225,22 @@ export default function IncidentsPage() {
           <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{t('incident.title')}</h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{filtered.length} / {incidents.length}</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex rounded-[var(--radius-lg)] border border-[var(--border-default)] overflow-hidden">
-            <button
-              onClick={() => setView('list')}
-              className={`px-3 py-2 text-sm transition-colors ${view === 'list' ? 'text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'}`}
-              style={view === 'list' ? { background: 'var(--oe-primary)' } : undefined}
-              title="Lista"
-            >
-              <ListIcon />
-            </button>
-            <button
-              onClick={() => setView('kanban')}
-              className={`px-3 py-2 text-sm transition-colors ${view === 'kanban' ? 'text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'}`}
-              style={view === 'kanban' ? { background: 'var(--oe-primary)' } : undefined}
-              title={t('actions.viewKanban')}
-            >
-              <KanbanIcon />
-            </button>
-          </div>
-          <Button onClick={openAdd}>{t('incident.new')}</Button>
-        </div>
+        <Button onClick={openAdd}>{t('incident.new')}</Button>
       </div>
 
       {incidents.length > 0 && (
-        <div className="flex items-center gap-3 mb-5 flex-wrap">
-          <div className="relative" style={{ width: 220 }}>
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }}>
-              <SearchIcon />
-            </span>
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar incidente..." className="pl-8" />
-          </div>
-          <button
-            onClick={() => setOnlyMine((v) => !v)}
-            className="text-xs font-medium px-3 py-1.5 rounded-[var(--radius-pill)] transition-colors"
-            style={onlyMine
-              ? { background: 'var(--oe-primary)', color: 'white' }
-              : { border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}
-          >
-            {t('actions.onlyMine')}
-          </button>
+        <div className="flex items-center gap-2 mb-5 flex-wrap">
+          <SearchInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar incidente..." />
+          <ViewToggle
+            value={view}
+            onChange={setView}
+            options={[
+              { value: 'list', label: t('project.viewList'), icon: <ListIcon className="w-3.5 h-3.5" /> },
+              { value: 'kanban', label: t('actions.viewKanban'), icon: <KanbanIcon className="w-3.5 h-3.5" /> },
+            ]}
+          />
+          <MineToggle active={onlyMine} onClick={() => setOnlyMine((v) => !v)} />
+          <div className="flex-1" />
           <FilterMenu
             activeCount={[statusFilter, priorityFilter].filter(Boolean).length}
             onClear={() => { setStatusFilter(''); setPriorityFilter('') }}
@@ -560,29 +540,5 @@ export default function IncidentsPage() {
         </div>
       )}
     </div>
-  )
-}
-
-function ListIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-    </svg>
-  )
-}
-
-function KanbanIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
-    </svg>
-  )
-}
-
-function SearchIcon() {
-  return (
-    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.2-5.2m0 0a7.5 7.5 0 10-10.6-10.6 7.5 7.5 0 0010.6 10.6z" />
-    </svg>
   )
 }

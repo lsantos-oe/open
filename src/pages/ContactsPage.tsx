@@ -1,16 +1,20 @@
 import { useState, useMemo } from 'react'
 import { useAppStore } from '@/store/useAppStore'
 import { Button } from '@/components/ui/Button'
-import { Input, Field } from '@/components/ui/Input'
+import { Input, Field, Select } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SelectionBar } from '@/components/ui/SelectionBar'
+import { SearchInput } from '@/components/ui/SearchInput'
+import { FilterMenu } from '@/components/ui/FilterMenu'
+import { CappedBadgeList } from '@/components/ui/CappedBadgeList'
 import { ClientContact } from '@/types'
 
 export default function ContactsPage() {
   const { contacts, clients, createContact, updateContact, deleteContact, linkContactToClient, unlinkContactFromClient } = useAppStore()
 
   const [query, setQuery] = useState('')
+  const [filterClientId, setFilterClientId] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
   const [showModal, setShowModal] = useState(false)
@@ -20,13 +24,14 @@ export default function ContactsPage() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return contacts
-    return contacts.filter((c) =>
-      c.name.toLowerCase().includes(q) ||
-      (c.role ?? '').toLowerCase().includes(q) ||
-      (c.email ?? '').toLowerCase().includes(q),
-    )
-  }, [contacts, query])
+    return contacts.filter((c) => {
+      if (filterClientId && !c.clientIds.includes(filterClientId)) return false
+      if (!q) return true
+      return c.name.toLowerCase().includes(q) ||
+        (c.role ?? '').toLowerCase().includes(q) ||
+        (c.email ?? '').toLowerCase().includes(q)
+    })
+  }, [contacts, query, filterClientId])
 
   const sorted = [...filtered].sort((a, b) => a.name.localeCompare(b.name))
 
@@ -99,12 +104,22 @@ export default function ContactsPage() {
       </div>
 
       <div className="flex items-center gap-2 mb-4 flex-wrap">
-        <Input
+        <SearchInput
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Buscar contato..."
-          className="flex-1 min-w-[180px]"
         />
+        <div className="flex-1" />
+        <FilterMenu activeCount={filterClientId ? 1 : 0} onClear={() => setFilterClientId('')}>
+          <Field label="Cliente vinculado">
+            <Select value={filterClientId} onChange={(e) => setFilterClientId(e.target.value)}>
+              <option value="">Todos os clientes</option>
+              {[...clients].sort((a, b) => a.name.localeCompare(b.name)).map((cl) => (
+                <option key={cl.id} value={cl.id}>{cl.name}</option>
+              ))}
+            </Select>
+          </Field>
+        </FilterMenu>
       </div>
 
       {sorted.length === 0 ? (
@@ -137,23 +152,21 @@ export default function ContactsPage() {
                   <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                     <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]" checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} />
                   </td>
-                  <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-primary)' }}>{c.name}</td>
+                  <td className="px-4 py-3 font-medium" style={{ maxWidth: 220 }}>
+                    <span
+                      className="block truncate"
+                      style={{ color: 'var(--text-primary)' }}
+                      title={c.name}
+                    >
+                      {c.name}
+                    </span>
+                  </td>
                   <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{c.role ?? '—'}</td>
                   <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>
                     {[c.email, c.phone].filter(Boolean).join(' · ') || '—'}
                   </td>
-                  <td className="px-4 py-3">
-                    {clientNames(c).length === 0 ? (
-                      <span style={{ color: 'var(--text-tertiary)' }}>—</span>
-                    ) : (
-                      <div className="flex flex-wrap gap-1">
-                        {clientNames(c).map((name, i) => (
-                          <span key={i} className="text-xs px-1.5 py-0.5 rounded-[var(--radius-pill)]" style={{ background: 'var(--surface-subtle)', color: 'var(--text-secondary)' }}>
-                            {name}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                  <td className="px-4 py-3" style={{ maxWidth: 260 }}>
+                    <CappedBadgeList items={clientNames(c)} />
                   </td>
                 </tr>
               ))}

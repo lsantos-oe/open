@@ -12,6 +12,10 @@ import { AvatarStack } from '@/components/ui/AvatarStack'
 import { FilterMenu } from '@/components/ui/FilterMenu'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SelectionBar } from '@/components/ui/SelectionBar'
+import { SearchInput } from '@/components/ui/SearchInput'
+import { MineToggle } from '@/components/ui/MineToggle'
+import { ViewToggle } from '@/components/ui/ViewToggle'
+import { ListIcon, KanbanIcon } from '@/components/ui/icons'
 import { isClientMine } from '@/utils/involvement'
 import { findCountry } from '@/data/countries'
 import { exportClientsCsv } from '@/utils/exportListsCsv'
@@ -128,43 +132,25 @@ export default function ClientsPage() {
           <h1 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Carteira</h1>
           <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{filtered.length} / {clients.length} cliente{clients.length !== 1 ? 's' : ''}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
-            <button
-              onClick={() => setView('list')}
-              className="px-3 py-2 text-sm transition-colors"
-              style={{ background: view === 'list' ? 'var(--oe-primary)' : 'var(--surface-card)', color: view === 'list' ? 'white' : 'var(--text-secondary)' }}
-            >
-              Lista
-            </button>
-            <button
-              onClick={() => setView('kanban')}
-              className="px-3 py-2 text-sm transition-colors"
-              style={{ background: view === 'kanban' ? 'var(--oe-primary)' : 'var(--surface-card)', color: view === 'kanban' ? 'white' : 'var(--text-secondary)' }}
-            >
-              Kanban
-            </button>
-          </div>
-          <Button onClick={openAdd}>+ Cliente</Button>
-        </div>
+        <Button onClick={openAdd}>+ Cliente</Button>
       </div>
 
       <div className="flex items-center gap-2 mb-4 flex-wrap">
-        <Input
+        <SearchInput
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Buscar cliente..."
-          className="flex-1 min-w-[180px]"
         />
-        <button
-          onClick={() => setOnlyMine((v) => !v)}
-          className="text-xs font-medium px-3 py-1.5 rounded-[var(--radius-pill)] transition-colors whitespace-nowrap"
-          style={onlyMine
-            ? { background: 'var(--oe-primary)', color: 'white' }
-            : { border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}
-        >
-          Meus
-        </button>
+        <ViewToggle
+          value={view}
+          onChange={setView}
+          options={[
+            { value: 'list', label: 'Lista', icon: <ListIcon className="w-3.5 h-3.5" /> },
+            { value: 'kanban', label: 'Kanban', icon: <KanbanIcon className="w-3.5 h-3.5" /> },
+          ]}
+        />
+        <MineToggle active={onlyMine} onClick={() => setOnlyMine((v) => !v)} label="Meus" />
+        <div className="flex-1" />
         <FilterMenu
           activeCount={[countryFilter, ownerFilter].filter(Boolean).length}
           onClear={() => { setCountryFilter(''); setOwnerFilter('') }}

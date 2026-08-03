@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useAppStore } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { Button } from '@/components/ui/Button'
@@ -7,6 +7,9 @@ import { Modal } from '@/components/ui/Modal'
 import { Input, Select, Field } from '@/components/ui/Input'
 import { StatusDot } from '@/components/ui/StatusDot'
 import { AvatarStack } from '@/components/ui/AvatarStack'
+import { SearchInput } from '@/components/ui/SearchInput'
+import { FilterMenu } from '@/components/ui/FilterMenu'
+import { EmptyState } from '@/components/ui/EmptyState'
 import type { UserRole } from '@/types/database'
 
 /** Full users management UI (active users table + pending invites + invite modal),
@@ -19,6 +22,21 @@ export function UsersManagementPanel() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteName, setInviteName] = useState('')
   const [inviteRole, setInviteRole] = useState<UserRole>('member')
+
+  const [query, setQuery] = useState('')
+  const [roleFilter, setRoleFilter] = useState<'' | UserRole>('')
+  const [statusFilter, setStatusFilter] = useState<'' | 'active' | 'revoked'>('')
+
+  const filteredUsers = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return teamDirectory.filter((p) => {
+      if (roleFilter && p.role !== roleFilter) return false
+      if (statusFilter === 'active' && !p.active) return false
+      if (statusFilter === 'revoked' && p.active) return false
+      if (!q) return true
+      return (p.name ?? '').toLowerCase().includes(q) || (p.email ?? '').toLowerCase().includes(q)
+    })
+  }, [teamDirectory, query, roleFilter, statusFilter])
 
   function openInvite() {
     setInviteEmail(''); setInviteName(''); setInviteRole('member')
@@ -43,7 +61,41 @@ export function UsersManagementPanel() {
         <Button onClick={openInvite}>+ Convidar usuário</Button>
       </div>
 
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <SearchInput
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar por nome ou e-mail..."
+        />
+        <div className="flex-1" />
+        <FilterMenu
+          activeCount={[roleFilter, statusFilter].filter(Boolean).length}
+          onClear={() => { setRoleFilter(''); setStatusFilter('') }}
+        >
+          <Field label="Papel">
+            <Select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value as '' | UserRole)}>
+              <option value="">Todos os papéis</option>
+              <option value="member">Membro</option>
+              <option value="admin">Admin</option>
+            </Select>
+          </Field>
+          <Field label="Status">
+            <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as '' | 'active' | 'revoked')}>
+              <option value="">Todos os status</option>
+              <option value="active">Ativo</option>
+              <option value="revoked">Revogado</option>
+            </Select>
+          </Field>
+        </FilterMenu>
+      </div>
+
       {/* Active users */}
+      {filteredUsers.length === 0 ? (
+        <EmptyState
+          icon="👥"
+          title={teamDirectory.length === 0 ? 'Nenhum usuário ainda.' : 'Nenhum usuário encontrado com esses filtros.'}
+        />
+      ) : (
       <div className="rounded-[var(--radius-lg)] border overflow-hidden mb-6" style={{ borderColor: 'var(--border-default)' }}>
         <table className="w-full text-sm">
           <thead className="sticky top-0 z-10">
@@ -56,7 +108,7 @@ export function UsersManagementPanel() {
             </tr>
           </thead>
           <tbody className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
-            {teamDirectory.map((p) => {
+            {filteredUsers.map((p) => {
               const isSelf = p.id === user?.id
               return (
                 <tr key={p.id}>
@@ -97,6 +149,7 @@ export function UsersManagementPanel() {
           </tbody>
         </table>
       </div>
+      )}
 
       {/* Pending invites */}
       {invitedUsers.length > 0 && (
