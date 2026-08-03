@@ -82,14 +82,14 @@ export default function KanbanPage({ projectId }: { projectId: string }) {
             <button
               onClick={() => changeView('kanban')}
               className="px-3 py-1.5 text-xs font-medium transition-colors"
-              style={{ background: view === 'kanban' ? 'var(--text-primary)' : 'var(--surface-card)', color: view === 'kanban' ? 'white' : 'var(--text-secondary)' }}
+              style={{ background: view === 'kanban' ? 'var(--oe-primary)' : 'var(--surface-card)', color: view === 'kanban' ? 'white' : 'var(--text-secondary)' }}
             >
               {t('actions.viewKanban')}
             </button>
             <button
               onClick={() => changeView('table')}
               className="px-3 py-1.5 text-xs font-medium transition-colors"
-              style={{ background: view === 'table' ? 'var(--text-primary)' : 'var(--surface-card)', color: view === 'table' ? 'white' : 'var(--text-secondary)' }}
+              style={{ background: view === 'table' ? 'var(--oe-primary)' : 'var(--surface-card)', color: view === 'table' ? 'white' : 'var(--text-secondary)' }}
             >
               {t('actions.viewTable')}
             </button>

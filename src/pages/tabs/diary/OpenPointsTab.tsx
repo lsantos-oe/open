@@ -1,11 +1,13 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore, DiaryScope } from '@/store/useAppStore'
-import { OpenPoint, OpenPointStatus, OpenPointPriority, Phase } from '@/types'
+import { OpenPoint, OpenPointStatus, OpenPointPriority, Phase, EntryOwner, TeamMember } from '@/types'
+import { contactsForClients } from '@/utils/contacts'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input, Select, Field } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
+import OwnersField from '@/components/plan/OwnersField'
 import DiaryComments from '@/components/diary/DiaryComments'
 import FileAttachments from '@/components/diary/FileAttachments'
 
@@ -40,13 +42,19 @@ function emptyForm(): OpForm {
   return { title: '', description: '', priority: 'medium', responsible: '', dueDate: '', linkedEntryId: '' }
 }
 
+function responsibleToOwners(name: string): EntryOwner[] {
+  return name ? [{ id: 'responsible', type: 'text', name }] : []
+}
+
 interface OpFormFieldsProps {
   form: OpForm
   set: <K extends keyof OpForm>(k: K, v: OpForm[K]) => void
   allEntries: { id: string; name: string }[]
+  teamMembers: TeamMember[]
+  contacts: ReturnType<typeof contactsForClients>
 }
 
-function OpFormFields({ form, set, allEntries }: OpFormFieldsProps) {
+function OpFormFields({ form, set, allEntries, teamMembers, contacts }: OpFormFieldsProps) {
   const { t } = useTranslation()
   return (
     <div className="space-y-4">
@@ -71,7 +79,13 @@ function OpFormFields({ form, set, allEntries }: OpFormFieldsProps) {
           </Select>
         </Field>
         <Field label={t('diary.opResponsible')}>
-          <Input value={form.responsible} onChange={(e) => set('responsible', e.target.value)} />
+          <OwnersField
+            owners={responsibleToOwners(form.responsible)}
+            onChange={(owners) => set('responsible', owners[0]?.name ?? '')}
+            teamMembers={teamMembers}
+            contacts={contacts}
+            max={1}
+          />
         </Field>
         <Field label={t('diary.opDueDate')}>
           <Input type="date" value={form.dueDate} onChange={(e) => set('dueDate', e.target.value)} />
@@ -89,7 +103,26 @@ function OpFormFields({ form, set, allEntries }: OpFormFieldsProps) {
 
 export default function OpenPointsTab({ scope, openPoints, phases }: Props) {
   const { t } = useTranslation()
-  const { addOpenPoint, updateOpenPoint, resolveOpenPoint, deleteOpenPoint, addDiaryAttachment, removeDiaryAttachment } = useAppStore()
+  const { addOpenPoint, updateOpenPoint, resolveOpenPoint, deleteOpenPoint, addDiaryAttachment, removeDiaryAttachment, teamDirectory, contacts, projects, incidents } = useAppStore()
+
+  const directoryAsTeam: TeamMember[] = useMemo(
+    () => teamDirectory.filter((p) => p.active).map((p) => ({ id: p.id, name: p.name ?? p.email ?? '', role: '', email: p.email ?? undefined, userId: p.id })),
+    [teamDirectory],
+  )
+
+  const scopeClientIds = useMemo(() => {
+    if (scope.type === 'project') {
+      const clientId = projects.find((p) => p.id === scope.id)?.clientId
+      return clientId ? [clientId] : []
+    }
+    return incidents.find((i) => i.id === scope.id)?.clientIds ?? []
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scope.type, scope.id, projects, incidents])
+
+  const scopeContacts = useMemo(
+    () => scopeClientIds.length > 0 ? contactsForClients(contacts, scopeClientIds) : [],
+    [contacts, scopeClientIds],
+  )
 
   const [filter, setFilter] = useState<'all' | 'open' | 'resolved'>('open')
   const [showAdd, setShowAdd] = useState(false)
@@ -306,7 +339,7 @@ export default function OpenPointsTab({ scope, openPoints, phases }: Props) {
           </>
         }
       >
-        <OpFormFields form={form} set={set} allEntries={allEntries} />
+        <OpFormFields form={form} set={set} allEntries={allEntries} teamMembers={directoryAsTeam} contacts={scopeContacts} />
       </Modal>
 
       {/* Edit Modal */}
@@ -322,7 +355,7 @@ export default function OpenPointsTab({ scope, openPoints, phases }: Props) {
           </>
         }
       >
-        <OpFormFields form={form} set={set} allEntries={allEntries} />
+        <OpFormFields form={form} set={set} allEntries={allEntries} teamMembers={directoryAsTeam} contacts={scopeContacts} />
       </Modal>
 
       {/* Resolve Modal */}

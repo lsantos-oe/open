@@ -278,14 +278,14 @@ export default function IncidentDetailPage() {
                     <button
                       onClick={() => changeTaskView('kanban')}
                       className="px-3 py-1.5 text-xs font-medium transition-colors"
-                      style={{ background: taskView === 'kanban' ? 'var(--text-primary)' : 'var(--surface-card)', color: taskView === 'kanban' ? 'white' : 'var(--text-secondary)' }}
+                      style={{ background: taskView === 'kanban' ? 'var(--oe-primary)' : 'var(--surface-card)', color: taskView === 'kanban' ? 'white' : 'var(--text-secondary)' }}
                     >
                       {t('actions.viewKanban')}
                     </button>
                     <button
                       onClick={() => changeTaskView('table')}
                       className="px-3 py-1.5 text-xs font-medium transition-colors"
-                      style={{ background: taskView === 'table' ? 'var(--text-primary)' : 'var(--surface-card)', color: taskView === 'table' ? 'white' : 'var(--text-secondary)' }}
+                      style={{ background: taskView === 'table' ? 'var(--oe-primary)' : 'var(--surface-card)', color: taskView === 'table' ? 'white' : 'var(--text-secondary)' }}
                     >
                       {t('actions.viewTable')}
                     </button>

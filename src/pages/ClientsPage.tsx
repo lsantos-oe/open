@@ -133,14 +133,14 @@ export default function ClientsPage() {
             <button
               onClick={() => setView('list')}
               className="px-3 py-2 text-sm transition-colors"
-              style={{ background: view === 'list' ? 'var(--text-primary)' : 'var(--surface-card)', color: view === 'list' ? 'white' : 'var(--text-secondary)' }}
+              style={{ background: view === 'list' ? 'var(--oe-primary)' : 'var(--surface-card)', color: view === 'list' ? 'white' : 'var(--text-secondary)' }}
             >
               Lista
             </button>
             <button
               onClick={() => setView('kanban')}
               className="px-3 py-2 text-sm transition-colors"
-              style={{ background: view === 'kanban' ? 'var(--text-primary)' : 'var(--surface-card)', color: view === 'kanban' ? 'white' : 'var(--text-secondary)' }}
+              style={{ background: view === 'kanban' ? 'var(--oe-primary)' : 'var(--surface-card)', color: view === 'kanban' ? 'white' : 'var(--text-secondary)' }}
             >
               Kanban
             </button>

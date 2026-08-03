@@ -486,7 +486,7 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
                     if (e.target.value === '__new__') { setIsNewClient(true); setClientId('') }
                     else setClientId(e.target.value)
                   }}
-                  className={`block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] ${errors.client ? 'border-red-400' : 'border-[var(--border-default)]'}`}
+                  className={`block w-full rounded-[var(--radius-md)] border bg-[var(--surface-input)] text-[var(--text-primary)] px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] ${errors.client ? 'border-red-400' : 'border-[var(--border-default)]'}`}
                 >
                   <option value="">{t('project.selectClient')}</option>
                   {[...clients].sort((a, b) => a.name.localeCompare(b.name)).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -512,7 +512,7 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
               <select
                 value={pmMemberId}
                 onChange={(e) => setPmMemberId(e.target.value)}
-                className={`block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] ${errors.pm ? 'border-red-400' : 'border-[var(--border-default)]'}`}
+                className={`block w-full rounded-[var(--radius-md)] border bg-[var(--surface-input)] text-[var(--text-primary)] px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] ${errors.pm ? 'border-red-400' : 'border-[var(--border-default)]'}`}
               >
                 <option value="">{t('project.pmPlaceholder')}</option>
                 {teamMembers.map((m) => <option key={m.id} value={m.userId ?? ''}>{m.name}</option>)}
