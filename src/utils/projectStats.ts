@@ -1,5 +1,5 @@
 import { parseISO } from 'date-fns'
-import { Project } from '@/types'
+import { Project, Entry } from '@/types'
 import { workdaysBetween, parseHolidays } from './businessDays'
 
 function allEntryDates(project: Project): { starts: Date[]; ends: Date[]; blEnds: Date[] } {
@@ -86,4 +86,54 @@ export function findGoLiveDate(project: Project): string | undefined {
   const goLive = milestones.find((e) => e.name.toLowerCase().includes('go live') || e.name.toLowerCase().includes('go-live'))
   const target = goLive ?? milestones[milestones.length - 1]
   return target?.plannedDate
+}
+
+function allVisibleEntries(project: Project): Entry[] {
+  const result: Entry[] = []
+  for (const phase of project.phases) {
+    for (const entry of phase.entries) {
+      if (entry.hiddenFromPlan) continue
+      result.push(entry)
+      for (const sub of entry.subtasks) {
+        if (!sub.hiddenFromPlan) result.push(sub)
+      }
+    }
+  }
+  return result
+}
+
+/** % of deliverables (tasks/milestones/meetings, including subtasks, excluding
+ *  internal/hidden-from-plan items) marked done. */
+export function projectProgress(project: Project): { done: number; total: number; pct: number } | undefined {
+  const entries = allVisibleEntries(project)
+  if (entries.length === 0) return undefined
+  const done = entries.filter((e) => e.status === 'done').length
+  return { done, total: entries.length, pct: Math.round((done / entries.length) * 100) }
+}
+
+/** Count of entries currently flagged overdue (plannedEnd/plannedDate < today, not yet done). */
+export function projectOverdueCount(project: Project): number {
+  return allVisibleEntries(project).filter((e) => e.status === 'overdue').length
+}
+
+export function projectMilestoneProgress(project: Project): { done: number; total: number } | undefined {
+  const milestones = allVisibleEntries(project).filter((e) => e.type === 'milestone')
+  if (milestones.length === 0) return undefined
+  return { done: milestones.filter((e) => e.status === 'done').length, total: milestones.length }
+}
+
+/** Deadline reference for the countdown KPI: go-live milestone if one exists,
+ *  otherwise the latest planned end date across the plan. */
+export function projectDeadline(project: Project): { date: string; isGoLive: boolean } | undefined {
+  const goLive = findGoLiveDate(project)
+  if (goLive) return { date: goLive, isGoLive: true }
+  const end = projectDateRange(project).end
+  return end ? { date: end, isGoLive: false } : undefined
+}
+
+/** Calendar days from today to a target ISO date — negative when the date has passed. */
+export function daysUntil(targetIso: string): number {
+  const today = new Date(new Date().toISOString().split('T')[0])
+  const target = new Date(targetIso)
+  return Math.round((target.getTime() - today.getTime()) / 86_400_000)
 }

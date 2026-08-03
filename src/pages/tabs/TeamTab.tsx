@@ -49,15 +49,16 @@ export default function TeamTab({ project }: Props) {
     setOpen(false)
   }
 
-  const roleColors: Record<string, string> = {
-    PM: 'bg-blue-100 text-blue-700',
-    'Dev Lead': 'bg-purple-100 text-purple-700',
-    Desenvolvedor: 'bg-indigo-100 text-indigo-700',
-    Consultor: 'bg-teal-100 text-teal-700',
-    Analista: 'bg-cyan-100 text-cyan-700',
-    'Cliente (Champion)': 'bg-orange-100 text-orange-700',
-    Patrocinador: 'bg-green-100 text-green-700',
+  const roleColors: Record<string, { bg: string; color: string }> = {
+    PM: { bg: 'var(--color-violet-bg)', color: 'var(--color-violet-text)' },
+    'Dev Lead': { bg: 'var(--color-info-bg)', color: 'var(--color-info-text)' },
+    Desenvolvedor: { bg: 'var(--color-success-bg)', color: 'var(--color-success-text)' },
+    Consultor: { bg: 'var(--color-warning-bg)', color: 'var(--color-warning-text)' },
+    Analista: { bg: 'var(--color-info-bg)', color: 'var(--color-info-text)' },
+    'Cliente (Champion)': { bg: 'var(--color-warning-bg)', color: 'var(--color-warning-text)' },
+    Patrocinador: { bg: 'var(--color-success-bg)', color: 'var(--color-success-text)' },
   }
+  const fallbackRoleColor = { bg: 'var(--surface-subtle)', color: 'var(--text-secondary)' }
 
   function initials(name: string) {
     return name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
@@ -65,24 +66,21 @@ export default function TeamTab({ project }: Props) {
 
   return (
     <>
-      <div className="bg-[var(--surface-card)] rounded-[var(--radius-lg)] border border-[var(--border-default)] p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-sm font-semibold text-[var(--text-primary)]">{t('team.title')}</h2>
-            <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{project.team.length} membro{project.team.length !== 1 ? 's' : ''}</p>
-          </div>
-          <Button size="sm" onClick={openAdd}>+ {t('team.add')}</Button>
-        </div>
+      <div className="flex justify-end mb-3">
+        <Button size="sm" onClick={openAdd}>+ {t('team.add')}</Button>
+      </div>
 
-        {project.team.length === 0 ? (
-          <div className="text-center py-10 text-[var(--text-tertiary)]">
-            <div className="text-3xl mb-2">👥</div>
-            <p className="text-sm">{t('team.noMembers')}</p>
-            <Button size="sm" className="mt-3" variant="secondary" onClick={openAdd}>{t('team.add')}</Button>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {project.team.map((member) => (
+      {project.team.length === 0 ? (
+        <div className="text-center py-10 text-[var(--text-tertiary)]">
+          <div className="text-3xl mb-2">👥</div>
+          <p className="text-sm">{t('team.noMembers')}</p>
+          <Button size="sm" className="mt-3" variant="secondary" onClick={openAdd}>{t('team.add')}</Button>
+        </div>
+      ) : (
+        <div className="space-y-1">
+          {project.team.map((member) => {
+            const rc = roleColors[member.role] ?? fallbackRoleColor
+            return (
               <div
                 key={member.id}
                 className="flex items-center gap-4 p-3 rounded-[var(--radius-lg)] hover:bg-[var(--surface-subtle)] group transition-colors"
@@ -96,7 +94,7 @@ export default function TeamTab({ project }: Props) {
                     <p className="text-xs text-[var(--text-tertiary)] truncate">{member.email}</p>
                   )}
                 </div>
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-[var(--radius-pill)] ${roleColors[member.role] ?? 'bg-[var(--surface-subtle)] text-[var(--text-secondary)]'}`}>
+                <span className="text-xs font-medium px-2 py-0.5 rounded-[var(--radius-pill)]" style={{ background: rc.bg, color: rc.color }}>
                   {member.role}
                 </span>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -104,10 +102,10 @@ export default function TeamTab({ project }: Props) {
                   <button onClick={() => removeTeamMember(project.id, member.id)} className="text-[var(--text-tertiary)] hover:text-[var(--color-danger-text)] text-xs px-1">✕</button>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            )
+          })}
+        </div>
+      )}
 
       <Modal
         open={open}
