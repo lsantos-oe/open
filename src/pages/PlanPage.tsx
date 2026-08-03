@@ -597,9 +597,9 @@ function DepsCell({ entry, phases, projectId }: {
 function TypePill({ type }: { type: EntryType }) {
   const { t } = useTranslation()
   const styles: Record<EntryType, { bg: string; color: string }> = {
-    task:      { bg: '#EFF6FF', color: '#1E3A8A' },
-    milestone: { bg: '#FFFBEB', color: '#78350F' },
-    meeting:   { bg: '#F5F3FF', color: '#5B21B6' },
+    task:      { bg: 'var(--color-info-bg)',    color: 'var(--color-info-text)' },
+    milestone: { bg: 'var(--color-warning-bg)', color: 'var(--color-warning-text)' },
+    meeting:   { bg: 'var(--color-violet-bg)',  color: 'var(--color-violet-text)' },
   }
   const s = styles[type]
   return (

@@ -43,6 +43,8 @@
   --color-warning-text: #A8790A;
   --color-info-bg: #EAF0FC;
   --color-info-text: #3568C4;
+  --color-violet-bg: #F5F3FF;
+  --color-violet-text: #5B21B6;
 
   /* Radii */
   --radius-sm: 6px;
@@ -64,12 +66,15 @@
     --oe-primary-light: rgba(217, 83, 14, 0.18);
     --oe-primary-mid: #C96A3E;
 
-    /* Surfaces — each one step lighter, warm-tinted */
+    /* Surfaces — each one step lighter, warm-tinted. Steps widened vs the
+       original palette: --surface-card was only ~6-8 rgb points above
+       --surface-subtle, so cards barely separated from their column/row
+       background (esp. Kanban cards over a tinted column) — hard to read. */
     --surface-page: #131110;
-    --surface-subtle: #1B1815;
-    --surface-card: #211D19;
-    --surface-raised: #29241F;
-    --surface-input: #1B1815;
+    --surface-subtle: #1C1815;
+    --surface-card: #292319;
+    --surface-raised: #342C21;
+    --surface-input: #1C1815;
 
     /* Text */
     --text-primary: #F2EEE8;
@@ -90,6 +95,8 @@
     --color-warning-text: #D6A93B;
     --color-info-bg: rgba(53, 104, 196, 0.2);
     --color-info-text: #6C97DE;
+    --color-violet-bg: rgba(124, 58, 237, 0.2);
+    --color-violet-text: #A78BFA;
 
     /* Shadows — darker backgrounds need stronger shadows to read */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);

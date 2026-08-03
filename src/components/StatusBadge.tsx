@@ -4,14 +4,14 @@ import { useSmartPosition } from '@/hooks/useSmartPosition'
 
 export function getStatusStyle(status: string): { background: string; color: string } {
   switch (status) {
-    case 'done':        return { background: '#F0FDF4', color: '#166534' }
-    case 'in_progress': return { background: '#FFF9C4', color: '#92400E' }
-    case 'pending':     return { background: '#F5F4F2', color: '#A8A29E' }
+    case 'done':        return { background: 'var(--color-success-bg)', color: 'var(--color-success-text)' }
+    case 'in_progress': return { background: 'var(--color-warning-bg)', color: 'var(--color-warning-text)' }
+    case 'pending':     return { background: 'var(--surface-subtle)',   color: 'var(--text-tertiary)' }
     case 'blocked':
     case 'overdue':
-    case 'delayed':     return { background: '#FEF2F2', color: '#991B1B' }
-    case 'planning':    return { background: '#F5F4F2', color: '#A8A29E' }
-    default:            return { background: '#F5F4F2', color: '#A8A29E' }
+    case 'delayed':     return { background: 'var(--color-danger-bg)',  color: 'var(--color-danger-text)' }
+    case 'planning':    return { background: 'var(--surface-subtle)',   color: 'var(--text-tertiary)' }
+    default:            return { background: 'var(--surface-subtle)',   color: 'var(--text-tertiary)' }
   }
 }
 
