@@ -365,11 +365,14 @@ export function importNewProject(raw: string): Project {
     email: m.email,
   }))
 
+  const clientId = resolveClientId(p.client)
+
   return {
     id: uuid(),
     name: p.name,
     client: p.client ?? '',
-    clientId: resolveClientId(p.client),
+    clientId,
+    clientIds: clientId ? [clientId] : [],
     type: p.type ?? 'novo_projeto',
     pm: p.pm ?? '',
     language: p.language ?? 'pt',
@@ -402,6 +405,7 @@ export function importUpdateProject(
       name: imported.name,
       client: imported.client,
       clientId: imported.clientId,
+      clientIds: imported.clientIds,
       type: imported.type,
       pm: imported.pm,
       language: imported.language,

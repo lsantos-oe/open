@@ -154,6 +154,7 @@ export interface DbEntry {
   project_id: string | null
   phase_id: string | null
   incident_id: string | null
+  client_id: string | null
   type: EntryType
   name: string
   description: string | null
@@ -210,6 +211,11 @@ export interface DbDelayLog {
   triggered_by: 'manual' | 'cascade' | null
   created_at: string | null           // used as the delay date
   created_by: string | null
+}
+
+export interface DbProjectClient {
+  project_id: string
+  client_id: string
 }
 
 export interface DbReportLink {
@@ -391,6 +397,7 @@ export interface DbProjectFull {
   delay_log: DbDelayLog[]
   risks: DbRisk[]
   report_links: DbReportLink[]
+  project_clients: DbProjectClient[]
   open_points: DbOpenPoint[]
   meeting_logs: DbMeetingLog[]
   history: DbHistory[]

@@ -8,7 +8,6 @@ import {
 } from '@/utils/projectStats'
 import { Button } from '@/components/ui/Button'
 import { Input, Textarea, Field } from '@/components/ui/Input'
-import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { Modal } from '@/components/ui/Modal'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import OwnersField from '@/components/plan/OwnersField'
@@ -173,45 +172,65 @@ function ReportLinkRow({ link, onDelete }: { link: ReportLink; onDelete: () => v
   )
 }
 
-/** Click-to-edit identity field backed by a searchable id→label picklist
- *  (client or team member). Local edit state, same interaction as
- *  ExternalLinkField — no field is ever locked to a separate "edit project"
- *  flow; everything here is editable in place. */
-function EditableSelectField({
-  label, value, options, onSave, allowClear,
+/** Multi-select client picker — a project can be linked
+ *  to more than one client, so this renders as chips + a checkbox list
+ *  instead of a single dropdown. */
+function EditableClientsField({
+  label, clientIds, options, onSave,
 }: {
   label: string
-  value: string
+  clientIds: string[]
   options: { id: string; label: string }[]
-  onSave: (id: string) => void
-  allowClear?: boolean
+  onSave: (ids: string[]) => void
 }) {
   const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(value)
-  const displayLabel = options.find((o) => o.id === value)?.label
+  const [draft, setDraft] = useState<string[]>(clientIds)
+
+  function toggle(id: string) {
+    setDraft((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]))
+  }
+
+  const selectedLabels = clientIds.map((id) => options.find((o) => o.id === id)?.label).filter(Boolean) as string[]
 
   return (
     <div>
       <p className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
       {editing ? (
-        <div className="flex gap-2">
-          <SearchableSelect
-            value={draft}
-            onChange={setDraft}
-            options={options}
-            emptyOptionLabel={allowClear ? '— Nenhum —' : undefined}
-          />
-          <Button size="sm" onClick={() => { onSave(draft); setEditing(false) }}>Salvar</Button>
-          <Button size="sm" variant="secondary" onClick={() => setEditing(false)}>Cancelar</Button>
+        <div className="space-y-2 p-3 rounded-[var(--radius-md)]" style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border-default)' }}>
+          <div className="max-h-40 overflow-y-auto space-y-1">
+            {options.map((o) => (
+              <label key={o.id} className="flex items-center gap-2.5 p-1 rounded hover:bg-[var(--surface-card)] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={draft.includes(o.id)}
+                  onChange={() => toggle(o.id)}
+                  className="rounded border-[var(--border-strong)] accent-[var(--oe-primary)]"
+                />
+                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{o.label}</span>
+              </label>
+            ))}
+          </div>
+          <div className="flex gap-2 pt-1">
+            <Button size="sm" onClick={() => { onSave(draft); setEditing(false) }}>Salvar</Button>
+            <Button size="sm" variant="secondary" onClick={() => setEditing(false)}>Cancelar</Button>
+          </div>
         </div>
       ) : (
         <div
-          onClick={() => { setDraft(value); setEditing(true) }}
+          onClick={() => { setDraft(clientIds); setEditing(true) }}
           className="group flex items-center justify-between gap-2 px-2.5 py-1.5 -mx-2.5 rounded-[var(--radius-md)] cursor-pointer hover:bg-[var(--surface-subtle)]"
         >
-          <span className="text-sm font-medium" style={{ color: displayLabel ? 'var(--text-primary)' : 'var(--text-disabled)', fontStyle: displayLabel ? 'normal' : 'italic' }}>
-            {displayLabel ?? '—'}
-          </span>
+          {selectedLabels.length === 0 ? (
+            <span className="text-sm italic" style={{ color: 'var(--text-disabled)' }}>—</span>
+          ) : (
+            <div className="flex flex-wrap gap-1">
+              {selectedLabels.map((l) => (
+                <span key={l} className="text-xs px-1.5 py-0.5 rounded-[var(--radius-pill)]" style={{ background: 'var(--surface-subtle)', color: 'var(--text-secondary)' }}>
+                  {l}
+                </span>
+              ))}
+            </div>
+          )}
           <PencilIcon className="opacity-0 group-hover:opacity-100 shrink-0" />
         </div>
       )}
@@ -301,7 +320,7 @@ function EditableDevField({ project, onSave }: {
 
 export default function OverviewTab({ project }: Props) {
   const { t } = useTranslation()
-  const { updateProject, addProjectLink, removeProjectLink, deleteReportLink, clients, teamDirectory, settings } = useAppStore()
+  const { updateProject, linkProjectClient, unlinkProjectClient, addProjectLink, removeProjectLink, deleteReportLink, clients, teamDirectory, settings } = useAppStore()
   const [overview, setOverview] = useState(project.overview ?? '')
   const [charter, setCharter] = useState<ProjectCharter>(project.charter ?? EMPTY_CHARTER)
   const [linkModal, setLinkModal] = useState(false)
@@ -421,11 +440,16 @@ export default function OverviewTab({ project }: Props) {
           {/* Informações */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-3.5">
-              <EditableSelectField
+              <EditableClientsField
                 label={t('project.client')}
-                value={project.clientId ?? ''}
+                clientIds={project.clientIds}
                 options={clientOptions}
-                onSave={(id) => updateProject(project.id, { clientId: id || undefined, client: clients.find((c) => c.id === id)?.name ?? project.client })}
+                onSave={(ids) => {
+                  for (const id of ids) if (!project.clientIds.includes(id)) linkProjectClient(project.id, id)
+                  for (const id of project.clientIds) if (!ids.includes(id)) unlinkProjectClient(project.id, id)
+                  const primary = clients.find((c) => c.id === ids[0])
+                  updateProject(project.id, { clientId: ids[0] ?? undefined, client: primary?.name ?? '' })
+                }}
               />
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('project.pm')}</p>

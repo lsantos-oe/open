@@ -100,7 +100,7 @@ export default function ClientsPage() {
   const sorted = [...filtered].sort((a, b) => a.name.localeCompare(b.name))
 
   function projectCount(clientId: string): number {
-    return projects.filter((p) => p.clientId === clientId).length
+    return projects.filter((p) => p.clientIds.includes(clientId)).length
   }
 
   function currentCs(clientId: string): string | undefined {

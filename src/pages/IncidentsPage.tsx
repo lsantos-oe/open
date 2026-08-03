@@ -109,7 +109,7 @@ export default function IncidentsPage() {
       setNewProjectIds((prevProjects) =>
         next.length === 0 ? prevProjects : prevProjects.filter((pid) => {
           const proj = projects.find((p) => p.id === pid)
-          return proj?.clientId && next.includes(proj.clientId)
+          return !!proj?.clientIds.some((id) => next.includes(id))
         }),
       )
       return next
@@ -127,7 +127,7 @@ export default function IncidentsPage() {
 
   const filteredNewProjects = useMemo(
     () => [...projects]
-      .filter((p) => !p.archived && (newClientIds.length === 0 || (p.clientId && newClientIds.includes(p.clientId))))
+      .filter((p) => !p.archived && (newClientIds.length === 0 || p.clientIds.some((id) => newClientIds.includes(id))))
       .filter((p) => p.name.toLowerCase().includes(projectSearch.trim().toLowerCase()))
       .sort((a, b) => a.name.localeCompare(b.name)),
     [projects, newClientIds, projectSearch],
@@ -225,14 +225,16 @@ export default function IncidentsPage() {
           <div className="flex rounded-[var(--radius-lg)] border border-[var(--border-default)] overflow-hidden">
             <button
               onClick={() => setView('list')}
-              className={`px-3 py-2 text-sm transition-colors ${view === 'list' ? 'bg-[var(--text-primary)] text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'}`}
+              className={`px-3 py-2 text-sm transition-colors ${view === 'list' ? 'text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'}`}
+              style={view === 'list' ? { background: 'var(--oe-primary)' } : undefined}
               title="Lista"
             >
               <ListIcon />
             </button>
             <button
               onClick={() => setView('kanban')}
-              className={`px-3 py-2 text-sm transition-colors ${view === 'kanban' ? 'bg-[var(--text-primary)] text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'}`}
+              className={`px-3 py-2 text-sm transition-colors ${view === 'kanban' ? 'text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'}`}
+              style={view === 'kanban' ? { background: 'var(--oe-primary)' } : undefined}
               title={t('actions.viewKanban')}
             >
               <KanbanIcon />

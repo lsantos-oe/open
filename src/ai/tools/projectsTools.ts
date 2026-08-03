@@ -94,8 +94,7 @@ export const createProjectTool: AiTool = {
     const pmMember = teamMembers.find((m) => m.name.toLowerCase() === String(input.pmName).toLowerCase())
     const id = store.createProject({
       name: String(input.name),
-      client: String(input.clientName),
-      clientId: input.clientId ? String(input.clientId) : undefined,
+      clientIds: input.clientId ? [String(input.clientId)] : [],
       pm: pmMember?.name ?? String(input.pmName),
       pmMemberId: pmMember?.userId,
       type: (input.type as 'nova_conta' | 'novo_projeto') ?? 'novo_projeto',

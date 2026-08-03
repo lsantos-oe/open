@@ -43,6 +43,7 @@ export default function App() {
         useAppStore.getState().loadClients()
         useAppStore.getState().loadIncidents()
         useAppStore.getState().loadContacts()
+        useAppStore.getState().loadStandaloneTasks()
         useAiStore.getState().loadHasKey()
       }
     })

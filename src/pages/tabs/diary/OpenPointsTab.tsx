@@ -112,8 +112,7 @@ export default function OpenPointsTab({ scope, openPoints, phases }: Props) {
 
   const scopeClientIds = useMemo(() => {
     if (scope.type === 'project') {
-      const clientId = projects.find((p) => p.id === scope.id)?.clientId
-      return clientId ? [clientId] : []
+      return projects.find((p) => p.id === scope.id)?.clientIds ?? []
     }
     return incidents.find((i) => i.id === scope.id)?.clientIds ?? []
   // eslint-disable-next-line react-hooks/exhaustive-deps

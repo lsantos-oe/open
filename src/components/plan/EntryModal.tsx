@@ -4,7 +4,7 @@ import { useAppStore } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useToastStore } from '@/stores/useToastStore'
 import { Entry, EntryOwner, EntryType, EntryStatus, RiskFlag, Link, TeamMember } from '@/types'
-import { contactsForClient } from '@/utils/contacts'
+import { contactsForClients } from '@/utils/contacts'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
@@ -262,7 +262,7 @@ export default function EntryModal({
   const selectedPhases = selectedProject?.phases ?? []
   const visiblePhases = useMemo(() => selectedPhases.filter((ph) => !ph.isUnassigned), [selectedPhases])
   const visibleProjects = useMemo(
-    () => projects.filter((p) => !p.archived && (!clientFilter || p.clientId === clientFilter)),
+    () => projects.filter((p) => !p.archived && (!clientFilter || p.clientIds.includes(clientFilter))),
     [projects, clientFilter],
   )
   // OwnersField expects TeamMember[] — map the global registered-user directory
@@ -274,8 +274,8 @@ export default function EntryModal({
     [teamDirectory],
   )
   const selectedContacts = useMemo(
-    () => selectedProject?.clientId ? contactsForClient(contacts, selectedProject.clientId) : [],
-    [contacts, selectedProject?.clientId],
+    () => selectedProject?.clientIds.length ? contactsForClients(contacts, selectedProject.clientIds) : [],
+    [contacts, selectedProject?.clientIds],
   )
 
   const origProject = useMemo(
@@ -298,10 +298,10 @@ export default function EntryModal({
   function handleClientFilterChange(newClientId: string) {
     setClientFilter(newClientId)
     const stillValid = newClientId
-      ? projects.find((p) => p.id === form.projectId)?.clientId === newClientId
+      ? !!projects.find((p) => p.id === form.projectId)?.clientIds.includes(newClientId)
       : true
     if (!stillValid) {
-      const candidates = projects.filter((p) => !p.archived && (!newClientId || p.clientId === newClientId))
+      const candidates = projects.filter((p) => !p.archived && (!newClientId || p.clientIds.includes(newClientId)))
       handleProjectChange(candidates[0]?.id ?? '')
     }
   }

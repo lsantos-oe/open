@@ -28,7 +28,7 @@ import { computeVariance } from '@/utils/dateEngine'
 import { workdaysBetween, parseHolidays } from '@/utils/businessDays'
 import { exportProjectCsv } from '@/utils/exportCsv'
 import { computeAutoStatus } from '@/utils/statusCalc'
-import { contactsForClient } from '@/utils/contacts'
+import { contactsForClients } from '@/utils/contacts'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -1092,8 +1092,8 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
     [teamDirectory],
   )
   const projectContacts = useMemo(
-    () => project.clientId ? contactsForClient(contacts, project.clientId) : [],
-    [contacts, project.clientId],
+    () => project.clientIds.length ? contactsForClients(contacts, project.clientIds) : [],
+    [contacts, project.clientIds],
   )
 
   function applyBulkOwners() {

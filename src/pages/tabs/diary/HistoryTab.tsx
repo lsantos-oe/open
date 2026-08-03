@@ -14,6 +14,7 @@ const LOCALES: Record<string, Locale> = { pt: ptBR, en: enUS, es }
 
 const EVENT_ICONS: Record<HistoryEventType, string> = {
   project_created: '🚀',
+  name_changed: '✏️',
   status_changed: '🔄',
   baseline_set: '📌',
   risk_added: '⚠️',

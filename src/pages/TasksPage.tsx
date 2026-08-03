@@ -8,9 +8,10 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { useAppStore } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
-import { Entry, EntryOwner, EntryStatus, Project, Incident, TeamMember } from '@/types'
+import { Entry, EntryOwner, EntryStatus, Project, Incident, Client, TeamMember } from '@/types'
 import EntryModal from '@/components/plan/EntryModal'
 import IncidentEntryModal from '@/components/plan/IncidentEntryModal'
+import StandaloneEntryModal from '@/components/plan/StandaloneEntryModal'
 import OwnersField from '@/components/plan/OwnersField'
 import { SelectionBar } from '@/components/ui/SelectionBar'
 import { StatusDot } from '@/components/ui/StatusDot'
@@ -53,7 +54,7 @@ const COL_STYLE: Record<string, { header: string; bg: string }> = {
 // ─── types ────────────────────────────────────────────────────────────────────
 
 type GlobalCard = Entry & {
-  _scopeType: 'project' | 'incident'
+  _scopeType: 'project' | 'incident' | 'standalone'
   _scopeId: string
   _scopeName: string
   _scopeColor: string
@@ -71,13 +72,19 @@ function fmtDate(iso: string): string {
   return `${d}/${m}/${y}`
 }
 
+function scopeLabel(card: GlobalCard): string {
+  if (card._scopeType === 'incident') return `🛠️ ${card._scopeName}`
+  if (card._scopeType === 'standalone') return card._scopeName ? `📌 ${card._scopeName}` : '📌 Tarefa solta'
+  return card._scopeName
+}
+
 function entryOwners(entry: Entry): EntryOwner[] {
   if (entry.owners && entry.owners.length > 0) return entry.owners
   if (entry.responsible) return [{ id: entry.responsible, type: 'text', name: entry.responsible }]
   return []
 }
 
-function buildCards(projects: Project[], incidents: Incident[]): GlobalCard[] {
+function buildCards(projects: Project[], incidents: Incident[], standaloneTasks: Entry[], clients: Client[]): GlobalCard[] {
   const cards: GlobalCard[] = []
   for (let i = 0; i < projects.length; i++) {
     const proj = projects[i]
@@ -108,6 +115,14 @@ function buildCards(projects: Project[], incidents: Incident[]): GlobalCard[] {
         cards.push({ ...entry, _scopeType: 'incident', _scopeId: inc.id, _scopeName: inc.title, _scopeColor: color })
       }
     }
+  }
+  for (let i = 0; i < standaloneTasks.length; i++) {
+    const entry = standaloneTasks[i]
+    const owners = entryOwners(entry)
+    if (owners.length === 0) continue
+    const clientName = entry.clientId ? clients.find((c) => c.id === entry.clientId)?.name : undefined
+    const color = PALETTE[(projects.length + incidents.length + i) % PALETTE.length]
+    cards.push({ ...entry, _scopeType: 'standalone', _scopeId: entry.id, _scopeName: clientName ?? '', _scopeColor: color })
   }
   return cards
 }
@@ -145,7 +160,7 @@ function TaskCard({ card, onClick, ghost = false }: {
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
         <span style={{ width: 6, height: 6, borderRadius: '50%', background: card._scopeColor, flexShrink: 0 }} />
         <span style={{ flex: 1, fontSize: 10, color: 'var(--text-tertiary)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {card._scopeType === 'incident' ? `🛠️ ${card._scopeName}` : card._scopeName}
+          {scopeLabel(card)}
         </span>
         {hasComments && (
           <span style={{ fontSize: 10, color: 'var(--text-disabled)' }}>💬{card.comments.length}</span>
@@ -266,7 +281,8 @@ export default function TasksPage() {
   const { t } = useTranslation()
   const {
     projects, incidents, updateEntryStatus, updateIncidentEntryStatus,
-    updateEntry, updateIncidentEntry, teamDirectory, contacts,
+    updateEntry, updateIncidentEntry, teamDirectory, contacts, clients,
+    standaloneTasks, updateStandaloneTask, updateStandaloneTaskStatus,
   } = useAppStore()
   const { user } = useAuthStore()
 
@@ -286,6 +302,7 @@ export default function TasksPage() {
   const [onlyMine, setOnlyMine] = useState(false)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [newTaskOpen, setNewTaskOpen] = useState(false)
+  const [newStandaloneOpen, setNewStandaloneOpen] = useState(false)
   const [editCard, setEditCard] = useState<GlobalCard | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkOwnersOpen, setBulkOwnersOpen] = useState(false)
@@ -297,7 +314,10 @@ export default function TasksPage() {
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   )
 
-  const allCards = useMemo(() => buildCards(projects, incidents), [projects, incidents])
+  const allCards = useMemo(
+    () => buildCards(projects, incidents, standaloneTasks, clients),
+    [projects, incidents, standaloneTasks, clients],
+  )
 
   // Selected cards can span different projects/incidents — union their clients
   // so the bulk owner picker's "Contato" tab covers everyone relevant.
@@ -306,11 +326,13 @@ export default function TasksPage() {
     for (const card of allCards) {
       if (!selected.has(card.id)) continue
       if (card._scopeType === 'project') {
-        const clientId = projects.find((p) => p.id === card._scopeId)?.clientId
-        if (clientId) clientIds.add(clientId)
-      } else {
+        const project = projects.find((p) => p.id === card._scopeId)
+        project?.clientIds.forEach((id) => clientIds.add(id))
+      } else if (card._scopeType === 'incident') {
         const incident = incidents.find((i) => i.id === card._scopeId)
         incident?.clientIds.forEach((id) => clientIds.add(id))
+      } else if (card.clientId) {
+        clientIds.add(card.clientId)
       }
     }
     return clientIds.size > 0 ? contactsForClients(contacts, [...clientIds]) : []
@@ -351,6 +373,7 @@ export default function TasksPage() {
       const card = allCards.find(c => c.id === id)
       if (!card) continue
       if (card._scopeType === 'incident') updateIncidentEntryStatus(card._scopeId, id, status)
+      else if (card._scopeType === 'standalone') updateStandaloneTaskStatus(id, status)
       else updateEntryStatus(card._scopeId, id, status)
     }
     setSelected(new Set())
@@ -362,6 +385,7 @@ export default function TasksPage() {
       if (!card) continue
       const patch = { owners: bulkOwners, responsible: bulkOwners[0]?.name ?? '' }
       if (card._scopeType === 'incident') updateIncidentEntry(card._scopeId, id, patch)
+      else if (card._scopeType === 'standalone') updateStandaloneTask(id, patch)
       else updateEntry(card._scopeId, id, patch)
     }
     setSelected(new Set())
@@ -385,6 +409,8 @@ export default function TasksPage() {
     if (card && card.status !== newStatus) {
       if (card._scopeType === 'incident') {
         updateIncidentEntryStatus(card._scopeId, String(active.id), newStatus)
+      } else if (card._scopeType === 'standalone') {
+        updateStandaloneTaskStatus(String(active.id), newStatus)
       } else {
         updateEntryStatus(card._scopeId, String(active.id), newStatus)
       }
@@ -416,6 +442,18 @@ export default function TasksPage() {
           onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
         >
           + {t('tasks.newTask')}
+        </button>
+
+        <button
+          onClick={() => setNewStandaloneOpen(true)}
+          title={t('tasks.newStandaloneTask' as any)}
+          style={{
+            fontSize: 13, fontWeight: 500, padding: '5px 12px',
+            background: 'var(--surface-card)', color: 'var(--text-secondary)',
+            border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+          }}
+        >
+          + {t('tasks.standaloneTask' as any)}
         </button>
 
         <div className="flex rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
@@ -531,7 +569,7 @@ export default function TasksPage() {
                       <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{card.name}</span>
                     </td>
                     <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)' }}>
-                      {card._scopeType === 'incident' ? `🛠️ ${card._scopeName}` : card._scopeName}
+                      {scopeLabel(card)}
                     </td>
                     <td className="px-3 py-2.5">
                       <AvatarStack people={entryOwners(card)} size={20} />
@@ -576,6 +614,11 @@ export default function TasksPage() {
         mode="create"
         onClose={() => setNewTaskOpen(false)}
       />
+      <StandaloneEntryModal
+        open={newStandaloneOpen}
+        mode="create"
+        onClose={() => setNewStandaloneOpen(false)}
+      />
 
       {/* Edit task modal */}
       {editCard && editCard._scopeType === 'incident' && (
@@ -594,6 +637,14 @@ export default function TasksPage() {
           entry={editCard}
           entryProjectId={editCard._scopeId}
           entryPhaseId={editCard._phaseId}
+          onClose={() => setEditCard(null)}
+        />
+      )}
+      {editCard && editCard._scopeType === 'standalone' && (
+        <StandaloneEntryModal
+          open
+          mode="edit"
+          entry={editCard}
           onClose={() => setEditCard(null)}
         />
       )}

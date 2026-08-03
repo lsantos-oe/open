@@ -41,6 +41,9 @@ export interface Entry {
   type: EntryType
   name: string
   description?: string
+  /** Set only on a standalone task (no project/incident) — the client it's
+   *  optionally scoped to. Always undefined for project- or incident-owned entries. */
+  clientId?: string
   responsible: string
   dependsOn: string[]
   isCritical: boolean
@@ -197,6 +200,7 @@ export interface MeetingLog {
 
 export type HistoryEventType =
   | 'project_created'
+  | 'name_changed'
   | 'status_changed'
   | 'baseline_set'
   | 'risk_added'
@@ -290,8 +294,9 @@ export interface ProjectCharter {
 export interface Project {
   id: string
   name: string
-  client: string          // deprecated free-text — being replaced by clientId (Carteira)
-  clientId?: string
+  client: string          // deprecated free-text — derived from clientIds[0], kept for legacy consumers
+  clientId?: string       // deprecated singular — derived from clientIds[0], kept for legacy consumers
+  clientIds: string[]     // real source of truth — a project can have multiple linked clients
   type: ProjectType
   pm: string
   pmMemberId?: string

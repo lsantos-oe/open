@@ -19,6 +19,7 @@
   "project": {
     "new": "Nuevo Proyecto",
     "name": "Nombre del Proyecto",
+    "editNameHint": "Haz clic para editar el nombre del proyecto",
     "client": "Cliente",
     "pm": "Líder",
     "devLead": "Dev Lead",
@@ -381,7 +382,10 @@
     "newTask": "Nueva Tarea",
     "editTask": "Editar Tarea",
     "selectProject": "Seleccionar proyecto",
-    "selectPhase": "Seleccionar fase"
+    "selectPhase": "Seleccionar fase",
+    "newStandaloneTask": "Nueva tarea suelta",
+    "standaloneTask": "Tarea suelta",
+    "noClient": "— Sin cliente —"
   },
   "kanban": {
     "internalSection": "Tareas internas"

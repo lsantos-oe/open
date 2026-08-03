@@ -227,8 +227,7 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
     const devLeadMember = teamMembers.find((m) => m.userId === devLeadMemberId)
     const newId = duplicateProject(project, {
       name: name.trim(),
-      client: finalClient.trim(),
-      clientId: finalClientId,
+      clientIds: finalClientId ? [finalClientId] : [],
       pm: pmMember?.name ?? '',
       pmMemberId: pmMemberId || undefined,
       language,
@@ -403,7 +402,7 @@ export default function ProjectDetailPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { projects, settings, updateProject, archiveProject, clients: storeClients } = useAppStore()
+  const { projects, settings, updateProject, renameProject, archiveProject, clients: storeClients } = useAppStore()
   const queryTab = searchParams.get('tab')
   const defaultTab = localStorage.getItem('pb-default-project-tab')
   const initialTab = (TAB_IDS as readonly string[]).includes(queryTab ?? '')
@@ -413,6 +412,8 @@ export default function ProjectDetailPage() {
       : 'overview'
   const [activeTab, setActiveTab] = useState<TabId>(initialTab)
   const [focusRiskId, setFocusRiskId] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState(false)
+  const [nameDraft, setNameDraft] = useState('')
   const [exportingReport, setExportingReport] = useState(false)
   const [showReportModal, setShowReportModal] = useState(false)
   const [linkReportConfig, setLinkReportConfig] = useState<ReportConfig | null>(null)
@@ -435,6 +436,17 @@ export default function ProjectDetailPage() {
 
   function selectTab(id: string) {
     setActiveTab(id as TabId)
+  }
+
+  function startEditName() {
+    if (!project) return
+    setNameDraft(project.name)
+    setEditingName(true)
+  }
+
+  function saveName() {
+    if (project) renameProject(project.id, nameDraft)
+    setEditingName(false)
   }
 
   async function handleGenerateReport(config: ReportConfig) {
@@ -488,9 +500,29 @@ export default function ProjectDetailPage() {
             ← {t('nav.portfolio')}
           </button>
           <span style={{ color: 'var(--border-strong)', fontSize: 11 }}>·</span>
-          <span className="text-[15px] font-[500] truncate" style={{ color: 'var(--text-primary)' }}>
-            {project.name}
-          </span>
+          {editingName ? (
+            <input
+              autoFocus
+              value={nameDraft}
+              onChange={(e) => setNameDraft(e.target.value)}
+              onBlur={saveName}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') e.currentTarget.blur()
+                if (e.key === 'Escape') setEditingName(false)
+              }}
+              className="text-[15px] font-[500] bg-transparent outline-none border-b"
+              style={{ color: 'var(--text-primary)', borderColor: 'var(--oe-primary)', width: `${Math.min(60, Math.max(10, nameDraft.length + 2))}ch` }}
+            />
+          ) : (
+            <span
+              onClick={startEditName}
+              className="text-[15px] font-[500] truncate cursor-text hover:opacity-70 transition-opacity"
+              style={{ color: 'var(--text-primary)' }}
+              title={t('project.editNameHint')}
+            >
+              {project.name}
+            </span>
+          )}
         </div>
 
         {/* Spacer */}

@@ -111,6 +111,7 @@ function dbEntryToStore(row: DbEntry, comments: DbComment[]): Entry {
     type: row.type,
     name: row.name,
     description: row.description ?? undefined,
+    clientId: row.client_id ?? undefined,
     responsible: row.responsible ?? '',
     dependsOn: (row.depends_on as string[]) ?? [],
     isCritical: row.is_critical ?? false,
@@ -282,7 +283,7 @@ function dbDelayLogToStore(row: DbDelayLog): DelayLogEntry {
 
 /** Reconstruct a full Project from all fetched DB rows. */
 export function dbProjectToStore(data: DbProjectFull): Project {
-  const { project, phases, entries, comments, delay_log, risks, report_links, open_points, meeting_logs, history, diary_comments } = data
+  const { project, phases, entries, comments, delay_log, risks, report_links, project_clients, open_points, meeting_logs, history, diary_comments } = data
 
   const sortedPhases = [...phases].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
 
@@ -291,6 +292,7 @@ export function dbProjectToStore(data: DbProjectFull): Project {
     name: project.name,
     client: project.client ?? '',
     clientId: project.client_id ?? undefined,
+    clientIds: (project_clients ?? []).map((pc) => pc.client_id),
     type: (project.type as ProjectType) ?? 'nova_conta',
     pm: project.pm ?? '',
     pmMemberId: project.pm_member_id ?? undefined,
@@ -397,6 +399,7 @@ function storeEntryToDb(entry: Entry, phaseId: string | null, projectId: string 
     project_id: projectId,
     phase_id: phaseId,
     incident_id: incidentId ?? null,
+    client_id: entry.clientId ?? null,
     type: entry.type,
     name: entry.name,
     description: entry.description ?? null,

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
 import { MeetingLog, MeetingItem, Phase, TeamMember, EntryOwner } from '@/types'
-import { contactsForClient } from '@/utils/contacts'
+import { contactsForClients } from '@/utils/contacts'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input, Select, Field } from '@/components/ui/Input'
@@ -35,8 +35,8 @@ export default function MeetingsTab({ projectId, meetings, phases, teamMembers }
   const { addMeetingLog, updateMeetingLog, deleteMeetingLog, addMeetingItem, updateMeetingItem, deleteMeetingItem, addDiaryAttachment, removeDiaryAttachment, projects, contacts } = useAppStore()
 
   const projectContacts = useMemo(() => {
-    const clientId = projects.find((p) => p.id === projectId)?.clientId
-    return clientId ? contactsForClient(contacts, clientId) : []
+    const clientIds = projects.find((p) => p.id === projectId)?.clientIds ?? []
+    return clientIds.length ? contactsForClients(contacts, clientIds) : []
   }, [projects, contacts, projectId])
 
   const [showAdd, setShowAdd] = useState(false)

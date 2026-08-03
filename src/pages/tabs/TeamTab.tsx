@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Project, TeamMember, EntryOwner } from '@/types'
 import { useAppStore } from '@/store/useAppStore'
-import { contactsForClient } from '@/utils/contacts'
+import { contactsForClients } from '@/utils/contacts'
 import { Button } from '@/components/ui/Button'
 import { Input, Field } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
@@ -30,8 +30,8 @@ export default function TeamTab({ project }: Props) {
     [teamDirectory],
   )
   const projectContacts = useMemo(
-    () => project.clientId ? contactsForClient(contacts, project.clientId) : [],
-    [contacts, project.clientId],
+    () => project.clientIds.length ? contactsForClients(contacts, project.clientIds) : [],
+    [contacts, project.clientIds],
   )
 
   function openAdd() {

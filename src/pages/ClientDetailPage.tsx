@@ -75,7 +75,7 @@ export default function ClientDetailPage() {
 
   const clientContacts = contactsForClient(contacts, client.id)
   const otherContacts = contacts.filter((c) => !c.clientIds.includes(client.id))
-  const clientProjects = projects.filter((p) => p.clientId === client.id)
+  const clientProjects = projects.filter((p) => p.clientIds.includes(client.id))
   const sortedCsHistory = [...client.csHistory].sort((a, b) => b.assignedAt.localeCompare(a.assignedAt))
   const currentCs = sortedCsHistory[0]
 

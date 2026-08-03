@@ -338,7 +338,7 @@ interface NewProjectModalProps {
   teamMembers: TeamMember[]
   templates: ProjectTemplate[]
   onCreate: (data: {
-    name: string; client: string; clientId?: string; pm: string; pmMemberId?: string; type: ProjectType
+    name: string; clientIds: string[]; pm: string; pmMemberId?: string; type: ProjectType
     language: 'pt' | 'en' | 'es'; devLead?: string; devLeadMemberId?: string
     devType?: 'integration' | 'application'; devIntegration?: string
   }) => void
@@ -348,8 +348,9 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
   const { t, i18n } = useTranslation()
   const { createClient } = useAppStore()
   const [selectedType, setSelectedType] = useState<ProjectType>('nova_conta')
-  const [clientId, setClientId] = useState('')
-  const [isNewClient, setIsNewClient] = useState(false)
+  const [clientIds, setClientIds] = useState<string[]>([])
+  const [clientSearch, setClientSearch] = useState('')
+  const [isAddingClient, setIsAddingClient] = useState(false)
   const [newClientName, setNewClientName] = useState('')
   const [name, setName] = useState('')
   const [pmMemberId, setPmMemberId] = useState('')
@@ -360,17 +361,34 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
   const [devIntegration, setDevIntegration] = useState('')
   const [attempted, setAttempted] = useState(false)
 
-  const selectedClient = clients.find((c) => c.id === clientId)
-  const finalClient = isNewClient ? newClientName : (selectedClient?.name ?? '')
+  const primaryClientName = clients.find((c) => c.id === clientIds[0])?.name ?? ''
   const errors = {
     name: attempted && !name.trim() ? t('errors.nameRequired') : '',
-    client: attempted && !finalClient.trim() ? t('errors.clientRequired') : '',
+    client: attempted && clientIds.length === 0 ? t('errors.clientRequired') : '',
     pm: attempted && !pmMemberId ? t('errors.pmRequired') : '',
   }
-  const canCreate = name.trim() && finalClient.trim() && pmMemberId
+  const canCreate = name.trim() && clientIds.length > 0 && pmMemberId
+
+  const filteredClients = useMemo(
+    () => [...clients].sort((a, b) => a.name.localeCompare(b.name))
+      .filter((c) => c.name.toLowerCase().includes(clientSearch.toLowerCase())),
+    [clients, clientSearch],
+  )
+
+  function toggleClient(id: string) {
+    setClientIds((prev) => prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id])
+  }
+
+  function commitNewClient() {
+    if (!newClientName.trim()) return
+    const id = createClient({ name: newClientName.trim() })
+    setClientIds((prev) => [...prev, id])
+    setNewClientName('')
+    setIsAddingClient(false)
+  }
 
   function reset() {
-    setSelectedType('nova_conta'); setClientId(''); setIsNewClient(false); setNewClientName('')
+    setSelectedType('nova_conta'); setClientIds([]); setClientSearch(''); setIsAddingClient(false); setNewClientName('')
     setName(''); setPmMemberId(''); setLanguage('pt'); setHasDev(false)
     setDevLeadMemberId(''); setDevType('integration'); setDevIntegration('')
     setAttempted(false)
@@ -379,11 +397,10 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
   function handleCreate() {
     setAttempted(true)
     if (!canCreate) return
-    const finalClientId = isNewClient ? createClient({ name: newClientName.trim() }) : (clientId || undefined)
     const pmMember = teamMembers.find((m) => m.userId === pmMemberId)
     const devLeadMember = teamMembers.find((m) => m.userId === devLeadMemberId)
     onCreate({
-      name: name.trim(), client: finalClient.trim(), clientId: finalClientId,
+      name: name.trim(), clientIds,
       pm: pmMember?.name ?? '', pmMemberId: pmMemberId || undefined, type: selectedType,
       language,
       ...(hasDev && {
@@ -462,8 +479,38 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
           <div className="grid grid-cols-2 gap-4">
             {/* Client */}
             <Field label={t('project.client')} required>
-              {isNewClient ? (
-                <div className="flex gap-1">
+              {clients.length > 3 && (
+                <Input
+                  value={clientSearch}
+                  onChange={(e) => setClientSearch(e.target.value)}
+                  placeholder="Buscar cliente..."
+                  className="mb-2"
+                />
+              )}
+              <div
+                className="border rounded-[var(--radius-lg)] max-h-32 overflow-y-auto p-2 space-y-1"
+                style={{ borderColor: errors.client ? 'var(--color-danger-text)' : 'var(--border-default)' }}
+              >
+                {filteredClients.length === 0 ? (
+                  <p className="text-xs px-1 py-1" style={{ color: 'var(--text-tertiary)' }}>
+                    {clients.length === 0 ? 'Nenhum cliente cadastrado ainda.' : 'Nada encontrado.'}
+                  </p>
+                ) : (
+                  filteredClients.map((c) => (
+                    <label key={c.id} className="flex items-center gap-2.5 p-1 rounded hover:bg-[var(--surface-subtle)] cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={clientIds.includes(c.id)}
+                        onChange={() => toggleClient(c.id)}
+                        className="rounded border-[var(--border-strong)] accent-[var(--oe-primary)]"
+                      />
+                      <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{c.name}</span>
+                    </label>
+                  ))
+                )}
+              </div>
+              {isAddingClient ? (
+                <div className="flex gap-1 mt-1.5">
                   <Input
                     autoFocus
                     value={newClientName}
@@ -471,27 +518,21 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
                     placeholder={t('project.newClient')}
                     className="flex-1"
                   />
+                  <Button type="button" size="sm" onClick={commitNewClient}>{t('actions.confirm')}</Button>
                   <button
                     type="button"
-                    onClick={() => setIsNewClient(false)}
+                    onClick={() => { setIsAddingClient(false); setNewClientName('') }}
                     className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] px-2 text-sm"
-                  >
-                    ×
-                  </button>
+                  >×</button>
                 </div>
               ) : (
-                <select
-                  value={clientId}
-                  onChange={(e) => {
-                    if (e.target.value === '__new__') { setIsNewClient(true); setClientId('') }
-                    else setClientId(e.target.value)
-                  }}
-                  className={`block w-full rounded-[var(--radius-md)] border bg-[var(--surface-input)] text-[var(--text-primary)] px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] ${errors.client ? 'border-red-400' : 'border-[var(--border-default)]'}`}
+                <button
+                  type="button"
+                  onClick={() => setIsAddingClient(true)}
+                  className="text-xs font-medium text-[var(--oe-primary)] hover:underline mt-1.5"
                 >
-                  <option value="">{t('project.selectClient')}</option>
-                  {[...clients].sort((a, b) => a.name.localeCompare(b.name)).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  <option value="__new__">{t('project.newClient')}</option>
-                </select>
+                  + {t('project.newClient')}
+                </button>
               )}
               {errors.client && <p className="text-xs text-[var(--color-danger-text)] mt-1">{errors.client}</p>}
             </Field>
@@ -501,7 +542,7 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder={selectedType === 'nova_conta' ? 'Implementação ' + (finalClient || 'Cliente') : 'Projeto ' + (finalClient || 'Cliente')}
+                placeholder={selectedType === 'nova_conta' ? 'Implementação ' + (primaryClientName || 'Cliente') : 'Projeto ' + (primaryClientName || 'Cliente')}
                 className={errors.name ? 'border-red-400' : ''}
               />
               {errors.name && <p className="text-xs text-[var(--color-danger-text)] mt-1">{errors.name}</p>}
@@ -636,7 +677,7 @@ function PmoDashboard({ projects, clients, holidays }: { projects: Project[]; cl
   }
 
   const scoped = useMemo(
-    () => (clientIds.size === 0 ? projects : projects.filter((p) => p.clientId && clientIds.has(p.clientId))),
+    () => (clientIds.size === 0 ? projects : projects.filter((p) => p.clientIds.some((id) => clientIds.has(id)))),
     [projects, clientIds],
   )
 
@@ -831,7 +872,7 @@ function PmoDashboard({ projects, clients, holidays }: { projects: Project[]; cl
 export default function ProjectsPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { projects, projectsLoading, settings, createProject, updateProject, archiveProject, archivedProjects, archivedProjectsLoaded, loadArchivedProjects, clients: storeClients, teamDirectory } = useAppStore()
+  const { projects, projectsLoading, settings, createProject, updateProject, linkProjectClient, unlinkProjectClient, archiveProject, archivedProjects, archivedProjectsLoaded, loadArchivedProjects, clients: storeClients, teamDirectory } = useAppStore()
   const { user } = useAuthStore()
 
   const [view, setView] = useState<'list' | 'kanban'>(() =>
@@ -899,7 +940,16 @@ export default function ProjectsPage() {
   function applyBulkClient() {
     const client = storeClients.find((c) => c.id === bulkClientId)
     if (!client) return
-    for (const id of selected) updateProject(id, { clientId: client.id, client: client.name })
+    for (const id of selected) {
+      const project = projects.find((p) => p.id === id)
+      if (project) {
+        for (const existingId of project.clientIds) {
+          if (existingId !== client.id) unlinkProjectClient(id, existingId)
+        }
+        if (!project.clientIds.includes(client.id)) linkProjectClient(id, client.id)
+      }
+      updateProject(id, { clientId: client.id, client: client.name })
+    }
     setSelected(new Set())
     setBulkClientOpen(false)
   }
@@ -939,14 +989,16 @@ export default function ProjectsPage() {
           <div className="flex rounded-[var(--radius-lg)] border border-[var(--border-default)] overflow-hidden">
             <button
               onClick={() => setView('list')}
-              className={`px-3 py-2 text-sm transition-colors ${view === 'list' ? 'bg-[var(--text-primary)] text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'}`}
+              className={`px-3 py-2 text-sm transition-colors ${view === 'list' ? 'text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'}`}
+              style={view === 'list' ? { background: 'var(--oe-primary)' } : undefined}
               title={t('project.viewList')}
             >
               <ListIcon />
             </button>
             <button
               onClick={() => setView('kanban')}
-              className={`px-3 py-2 text-sm transition-colors ${view === 'kanban' ? 'bg-[var(--text-primary)] text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'}`}
+              className={`px-3 py-2 text-sm transition-colors ${view === 'kanban' ? 'text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'}`}
+              style={view === 'kanban' ? { background: 'var(--oe-primary)' } : undefined}
               title={t('project.viewKanban')}
             >
               <KanbanIcon />
