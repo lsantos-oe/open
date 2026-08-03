@@ -28,6 +28,7 @@ import { computeVariance } from '@/utils/dateEngine'
 import { workdaysBetween, parseHolidays } from '@/utils/businessDays'
 import { exportProjectCsv } from '@/utils/exportCsv'
 import { computeAutoStatus } from '@/utils/statusCalc'
+import { contactsForClient } from '@/utils/contacts'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -898,7 +899,7 @@ function PhaseHeader({ phase, phaseNumber, colSpan, collapsed, onToggle, onAdd, 
 
 export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: string; onNavigateToRisk?: (riskId: string) => void }) {
   const {
-    projects, settings, teamDirectory,
+    projects, settings, teamDirectory, contacts,
     updateEntry, deleteEntry, moveEntryToPhase, reorderEntry, updateEntryStatus, resetStatusOverride, updateEntryRisk,
     updatePhase, deletePhase, setBaseline, clearBaseline, changeEntryDate, addDelayLogEntry,
     addPhase, setColumnVisibility, addComment, convertToSubtask,
@@ -1089,6 +1090,10 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
   const directoryAsTeam: TeamMember[] = useMemo(
     () => teamDirectory.filter((p) => p.active).map((p) => ({ id: p.id, name: p.name ?? p.email ?? '', role: '', email: p.email ?? undefined, userId: p.id })),
     [teamDirectory],
+  )
+  const projectContacts = useMemo(
+    () => project.clientId ? contactsForClient(contacts, project.clientId) : [],
+    [contacts, project.clientId],
   )
 
   function applyBulkOwners() {
@@ -1824,7 +1829,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
         <div className="fixed inset-0 z-[60] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)' }} onClick={() => setBulkOwnersOpen(false)}>
           <div className="rounded-[var(--radius-lg)] p-5 w-full max-w-sm" style={{ background: 'var(--surface-card)' }} onClick={(e) => e.stopPropagation()}>
             <p className="text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>Alterar responsável de {selected.size} item(ns)</p>
-            <OwnersField owners={bulkOwners} onChange={setBulkOwners} teamMembers={directoryAsTeam} />
+            <OwnersField owners={bulkOwners} onChange={setBulkOwners} teamMembers={directoryAsTeam} contacts={projectContacts} />
             <div className="flex justify-end gap-2 mt-4">
               <button onClick={() => setBulkOwnersOpen(false)} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)]" style={{ color: 'var(--text-secondary)' }}>Cancelar</button>
               <button onClick={applyBulkOwners} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)] text-white" style={{ background: 'var(--oe-primary)' }}>É basicamente isso</button>

@@ -19,6 +19,7 @@ import { FilterMenu } from '@/components/ui/FilterMenu'
 import { EmptyState as SharedEmptyState } from '@/components/ui/EmptyState'
 import { Field } from '@/components/ui/Input'
 import { isEntryMine } from '@/utils/involvement'
+import { contactsForClients } from '@/utils/contacts'
 
 const ENTRY_STATUS_COLOR: Record<EntryStatus, string> = {
   pending: 'var(--text-tertiary)',
@@ -265,7 +266,7 @@ export default function TasksPage() {
   const { t } = useTranslation()
   const {
     projects, incidents, updateEntryStatus, updateIncidentEntryStatus,
-    updateEntry, updateIncidentEntry, teamDirectory,
+    updateEntry, updateIncidentEntry, teamDirectory, contacts,
   } = useAppStore()
   const { user } = useAuthStore()
 
@@ -297,6 +298,23 @@ export default function TasksPage() {
   )
 
   const allCards = useMemo(() => buildCards(projects, incidents), [projects, incidents])
+
+  // Selected cards can span different projects/incidents — union their clients
+  // so the bulk owner picker's "Contato" tab covers everyone relevant.
+  const bulkOwnerContacts = useMemo(() => {
+    const clientIds = new Set<string>()
+    for (const card of allCards) {
+      if (!selected.has(card.id)) continue
+      if (card._scopeType === 'project') {
+        const clientId = projects.find((p) => p.id === card._scopeId)?.clientId
+        if (clientId) clientIds.add(clientId)
+      } else {
+        const incident = incidents.find((i) => i.id === card._scopeId)
+        incident?.clientIds.forEach((id) => clientIds.add(id))
+      }
+    }
+    return clientIds.size > 0 ? contactsForClients(contacts, [...clientIds]) : []
+  }, [allCards, selected, projects, incidents, contacts])
 
   const allMembers = useMemo(() => {
     const names = new Set<string>()
@@ -603,7 +621,7 @@ export default function TasksPage() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)' }} onClick={() => setBulkOwnersOpen(false)}>
           <div className="rounded-[var(--radius-lg)] p-5 w-full max-w-sm" style={{ background: 'var(--surface-card)' }} onClick={(e) => e.stopPropagation()}>
             <p className="text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>Alterar responsável de {selected.size} item(ns)</p>
-            <OwnersField owners={bulkOwners} onChange={setBulkOwners} teamMembers={directoryAsTeam} />
+            <OwnersField owners={bulkOwners} onChange={setBulkOwners} teamMembers={directoryAsTeam} contacts={bulkOwnerContacts} />
             <div className="flex justify-end gap-2 mt-4">
               <button onClick={() => setBulkOwnersOpen(false)} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)]" style={{ color: 'var(--text-secondary)' }}>Cancelar</button>
               <button onClick={applyBulkOwners} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)] text-white" style={{ background: 'var(--oe-primary)' }}>É basicamente isso</button>

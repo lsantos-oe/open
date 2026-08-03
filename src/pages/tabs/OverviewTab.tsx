@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Project, ProjectCharter, TeamMember } from '@/types'
+import { Project, ProjectCharter, TeamMember, EntryOwner } from '@/types'
 import { useAppStore } from '@/store/useAppStore'
 import {
   projectProgress, projectOverdueCount, projectMilestoneProgress,
@@ -11,6 +11,7 @@ import { Input, Textarea, Field } from '@/components/ui/Input'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { Modal } from '@/components/ui/Modal'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
+import OwnersField from '@/components/plan/OwnersField'
 import TeamTab from './TeamTab'
 
 const EMPTY_CHARTER: ProjectCharter = {
@@ -41,6 +42,14 @@ function fmtDate(iso?: string): string {
   if (!iso) return '—'
   const [y, m, d] = iso.split('-')
   return `${d}/${m}/${y}`
+}
+
+/** Líder/Dev Lead as a single-slot EntryOwner — no `contacts` prop is passed
+ *  when rendering these with OwnersField, so client contacts never show up
+ *  as pickable there (project leadership stays internal, team or free text). */
+function personToOwner(memberId: string | undefined, name: string | undefined): EntryOwner[] {
+  if (!name) return []
+  return [{ id: 'x', type: memberId ? 'member' : 'text', memberId, name }]
 }
 
 // ─── small shared bits ─────────────────────────────────────────────────────
@@ -295,7 +304,6 @@ export default function OverviewTab({ project }: Props) {
     () => teamDirectory.filter((p) => p.active).map((p) => ({ id: p.id, name: p.name ?? p.email ?? '', role: '', email: p.email ?? undefined, userId: p.id })),
     [teamDirectory],
   )
-  const memberOptions = useMemo(() => teamMembers.map((m) => ({ id: m.userId ?? m.id, label: m.name })), [teamMembers])
   const clientOptions = useMemo(() => [...clients].sort((a, b) => a.name.localeCompare(b.name)).map((c) => ({ id: c.id, label: c.name })), [clients])
 
   // ── KPIs ──────────────────────────────────────────────────────────────
@@ -373,19 +381,30 @@ export default function OverviewTab({ project }: Props) {
                 options={clientOptions}
                 onSave={(id) => updateProject(project.id, { clientId: id || undefined, client: clients.find((c) => c.id === id)?.name ?? project.client })}
               />
-              <EditableSelectField
-                label={t('project.pm')}
-                value={project.pmMemberId ?? ''}
-                options={memberOptions}
-                onSave={(id) => updateProject(project.id, { pmMemberId: id || undefined, pm: teamMembers.find((m) => (m.userId ?? m.id) === id)?.name ?? project.pm })}
-              />
-              <EditableSelectField
-                label={t('project.devLead')}
-                value={project.devLeadMemberId ?? ''}
-                options={memberOptions}
-                allowClear
-                onSave={(id) => updateProject(project.id, { devLeadMemberId: id || undefined, devLead: id ? teamMembers.find((m) => (m.userId ?? m.id) === id)?.name : undefined })}
-              />
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('project.pm')}</p>
+                <OwnersField
+                  owners={personToOwner(project.pmMemberId, project.pm)}
+                  onChange={(owners) => {
+                    const o = owners[0]
+                    updateProject(project.id, { pmMemberId: o?.type === 'member' ? o.memberId : undefined, pm: o?.name ?? '' })
+                  }}
+                  teamMembers={teamMembers}
+                  max={1}
+                />
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('project.devLead')}</p>
+                <OwnersField
+                  owners={personToOwner(project.devLeadMemberId, project.devLead)}
+                  onChange={(owners) => {
+                    const o = owners[0]
+                    updateProject(project.id, { devLeadMemberId: o?.type === 'member' ? o.memberId : undefined, devLead: o?.name })
+                  }}
+                  teamMembers={teamMembers}
+                  max={1}
+                />
+              </div>
               <EditableDevField project={project} onSave={(patch) => updateProject(project.id, patch)} />
             </div>
 

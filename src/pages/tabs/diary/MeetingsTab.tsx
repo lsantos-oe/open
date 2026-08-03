@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
 import { MeetingLog, MeetingItem, Phase, TeamMember, EntryOwner } from '@/types'
+import { contactsForClient } from '@/utils/contacts'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input, Select, Field } from '@/components/ui/Input'
@@ -31,7 +32,12 @@ const ITEM_TYPE_ICONS: Record<MeetingItem['type'], string> = { action: '⚡', de
 
 export default function MeetingsTab({ projectId, meetings, phases, teamMembers }: Props) {
   const { t } = useTranslation()
-  const { addMeetingLog, updateMeetingLog, deleteMeetingLog, addMeetingItem, updateMeetingItem, deleteMeetingItem, addDiaryAttachment, removeDiaryAttachment } = useAppStore()
+  const { addMeetingLog, updateMeetingLog, deleteMeetingLog, addMeetingItem, updateMeetingItem, deleteMeetingItem, addDiaryAttachment, removeDiaryAttachment, projects, contacts } = useAppStore()
+
+  const projectContacts = useMemo(() => {
+    const clientId = projects.find((p) => p.id === projectId)?.clientId
+    return clientId ? contactsForClient(contacts, clientId) : []
+  }, [projects, contacts, projectId])
 
   const [showAdd, setShowAdd] = useState(false)
   const [editMeeting, setEditMeeting] = useState<MeetingLog | null>(null)
@@ -116,7 +122,7 @@ export default function MeetingsTab({ projectId, meetings, phases, teamMembers }
             <Input type="date" value={form.date} onChange={(e) => set('date', e.target.value)} />
           </Field>
           <Field label={t('diary.meetingAttendees')} className="col-span-2">
-            <OwnersField owners={participants} onChange={setParticipants} teamMembers={teamMembers} />
+            <OwnersField owners={participants} onChange={setParticipants} teamMembers={teamMembers} contacts={projectContacts} />
           </Field>
           <Field label={t('diary.meetingNotes')} className="col-span-2">
             <textarea

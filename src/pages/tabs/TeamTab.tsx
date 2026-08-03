@@ -1,46 +1,67 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Project, TeamMember } from '@/types'
+import { Project, TeamMember, EntryOwner } from '@/types'
 import { useAppStore } from '@/store/useAppStore'
+import { contactsForClient } from '@/utils/contacts'
 import { Button } from '@/components/ui/Button'
 import { Input, Field } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
+import OwnersField from '@/components/plan/OwnersField'
 
 interface Props { project: Project }
 
 const ROLES = ['PM', 'Dev Lead', 'Desenvolvedor', 'Consultor', 'Analista', 'Cliente (Champion)', 'Patrocinador']
 
+function memberToOwner(m: Omit<TeamMember, 'id'>): EntryOwner[] {
+  if (!m.name) return []
+  return [{ id: 'pending', type: m.userId ? 'member' : 'text', memberId: m.userId, name: m.name }]
+}
+
 export default function TeamTab({ project }: Props) {
   const { t } = useTranslation()
-  const { addTeamMember, updateTeamMember, removeTeamMember, teamDirectory } = useAppStore()
+  const { addTeamMember, updateTeamMember, removeTeamMember, teamDirectory, contacts } = useAppStore()
   const [open, setOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
-  const [mode, setMode] = useState<'directory' | 'text'>('directory')
   const [form, setForm] = useState<Omit<TeamMember, 'id'>>({ name: '', role: 'PM', email: '' })
+  const [pendingOwner, setPendingOwner] = useState<EntryOwner[]>([])
+
+  const directoryAsTeam: TeamMember[] = useMemo(
+    () => teamDirectory.filter((p) => p.active).map((p) => ({ id: p.id, name: p.name ?? p.email ?? '', role: '', email: p.email ?? undefined, userId: p.id })),
+    [teamDirectory],
+  )
+  const projectContacts = useMemo(
+    () => project.clientId ? contactsForClient(contacts, project.clientId) : [],
+    [contacts, project.clientId],
+  )
 
   function openAdd() {
     setEditId(null)
-    setMode('directory')
     setForm({ name: '', role: 'PM', email: '' })
+    setPendingOwner([])
     setOpen(true)
   }
 
   function openEdit(m: TeamMember) {
     setEditId(m.id)
-    setMode(m.userId ? 'directory' : 'text')
     setForm({ name: m.name, role: m.role, email: m.email ?? '', userId: m.userId })
+    setPendingOwner(memberToOwner(m))
     setOpen(true)
   }
 
-  function pickFromDirectory(profileId: string) {
-    const profile = teamDirectory.filter((p) => p.active).find((p) => p.id === profileId)
-    if (!profile) return
-    setForm((f) => ({ ...f, userId: profile.id, name: profile.name ?? profile.email ?? '', email: profile.email ?? '' }))
-  }
-
   function handleSave() {
-    if (!form.name) return
-    const member = { ...form, email: form.email || undefined, userId: mode === 'directory' ? form.userId : undefined }
+    const picked = pendingOwner[0]
+    if (!picked) return
+    const email = picked.type === 'member'
+      ? directoryAsTeam.find((m) => m.userId === picked.memberId)?.email
+      : picked.type === 'contact'
+      ? contacts.find((c) => c.id === picked.contactId)?.email
+      : form.email || undefined
+    const member: Omit<TeamMember, 'id'> = {
+      name: picked.name,
+      role: form.role,
+      email,
+      userId: picked.type === 'member' ? picked.memberId : undefined,
+    }
     if (editId) {
       updateTeamMember(project.id, editId, member)
     } else {
@@ -115,56 +136,20 @@ export default function TeamTab({ project }: Props) {
         footer={
           <>
             <Button variant="secondary" onClick={() => setOpen(false)}>{t('actions.cancel')}</Button>
-            <Button onClick={handleSave} disabled={!form.name}>{t('actions.save')}</Button>
+            <Button onClick={handleSave} disabled={!pendingOwner[0]}>{t('actions.save')}</Button>
           </>
         }
       >
         <div className="space-y-4">
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setMode('directory')}
-              className={`flex-1 text-xs font-medium px-3 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${
-                mode === 'directory' ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-strong)]'
-              }`}
-            >
-              {t('entry.fromUser')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('text')}
-              className={`flex-1 text-xs font-medium px-3 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${
-                mode === 'text' ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-strong)]'
-              }`}
-            >
-              {t('entry.freeText')}
-            </button>
-          </div>
-
-          {mode === 'directory' ? (
-            <Field label={t('team.name')} required>
-              <select
-                value={form.userId ?? ''}
-                onChange={(e) => pickFromDirectory(e.target.value)}
-                className="block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:outline-none"
-                style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)' }}
-              >
-                <option value="">Selecione um usuário cadastrado...</option>
-                {teamDirectory.filter((p) => p.active).map((p) => (
-                  <option key={p.id} value={p.id}>{p.name ?? p.email}</option>
-                ))}
-              </select>
-              {teamDirectory.length === 0 && (
-                <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-                  Nenhum usuário cadastrado encontrado ainda — use "{t('entry.freeText')}" para pessoas externas.
-                </p>
-              )}
-            </Field>
-          ) : (
-            <Field label={t('team.name')} required>
-              <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value, userId: undefined }))} placeholder="Nome completo" />
-            </Field>
-          )}
+          <Field label={t('team.name')} required>
+            <OwnersField
+              owners={pendingOwner}
+              onChange={setPendingOwner}
+              teamMembers={directoryAsTeam}
+              contacts={projectContacts}
+              max={1}
+            />
+          </Field>
           <Field label={t('team.role')}>
             <div className="flex flex-wrap gap-2 mt-1">
               {ROLES.map((r) => (
@@ -197,9 +182,11 @@ export default function TeamTab({ project }: Props) {
               className="mt-2"
             />
           </Field>
-          <Field label={t('team.email')}>
-            <Input type="email" value={form.email ?? ''} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="email@empresa.com" />
-          </Field>
+          {pendingOwner[0]?.type === 'text' && (
+            <Field label={t('team.email')}>
+              <Input type="email" value={form.email ?? ''} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="email@empresa.com" />
+            </Field>
+          )}
         </div>
       </Modal>
     </>

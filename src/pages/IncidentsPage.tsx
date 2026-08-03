@@ -138,6 +138,11 @@ export default function IncidentsPage() {
     [contacts, newClientIds],
   )
 
+  const bulkOwnerContacts = useMemo(() => {
+    const clientIds = [...new Set(incidents.filter((i) => selected.has(i.id)).flatMap((i) => i.clientIds))]
+    return clientIds.length > 0 ? contactsForClients(contacts, clientIds) : []
+  }, [contacts, incidents, selected])
+
   function handlePriorityChange(p: Probability) {
     setPriority(p)
     if (!deadline) setDeadline(suggestDeadline(p))
@@ -438,7 +443,7 @@ export default function IncidentsPage() {
             </div>
           </Field>
           <Field label="Responsável" required>
-            <OwnersField owners={newOwners.slice(0, 1)} onChange={(owners) => setNewOwners(owners.slice(-1))} teamMembers={directoryAsTeam} />
+            <OwnersField owners={newOwners.slice(0, 1)} onChange={(owners) => setNewOwners(owners.slice(-1))} teamMembers={directoryAsTeam} contacts={stakeholderContacts} />
           </Field>
           <Field label={t('incident.stakeholders' as any)}>
             <OwnersField owners={newStakeholders} onChange={setNewStakeholders} teamMembers={directoryAsTeam} contacts={stakeholderContacts} />
@@ -516,7 +521,7 @@ export default function IncidentsPage() {
           </>
         }
       >
-        <OwnersField owners={bulkOwners.slice(0, 1)} onChange={(owners) => setBulkOwners(owners.slice(-1))} teamMembers={directoryAsTeam} />
+        <OwnersField owners={bulkOwners.slice(0, 1)} onChange={(owners) => setBulkOwners(owners.slice(-1))} teamMembers={directoryAsTeam} contacts={bulkOwnerContacts} />
       </Modal>
 
       <Modal
