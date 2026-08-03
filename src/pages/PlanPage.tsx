@@ -13,7 +13,8 @@ import {
 } from '@dnd-kit/core'
 import { parseISO } from 'date-fns'
 import { useAppStore } from '@/store/useAppStore'
-import { Entry, Phase, EntryStatus, RiskFlag, EntryType, DelayLogEntry, Project, TeamMember } from '@/types'
+import { useAuthStore } from '@/stores/useAuthStore'
+import { Entry, Phase, EntryStatus, RiskFlag, EntryType, DelayLogEntry, Project, TeamMember, EntryOwner } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Input'
 import StatusBadge from '@/components/StatusBadge'
@@ -21,6 +22,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Textarea, Field } from '@/components/ui/Input'
 import CommentsPanel from '@/components/plan/CommentsPanel'
 import EntryModal from '@/components/plan/EntryModal'
+import OwnersField from '@/components/plan/OwnersField'
 import { SelectionBar } from '@/components/ui/SelectionBar'
 import { computeVariance } from '@/utils/dateEngine'
 import { workdaysBetween, parseHolidays } from '@/utils/businessDays'
@@ -50,6 +52,7 @@ function fmtDate(iso?: string): string {
 }
 
 const TOGGLEABLE_COLS = [
+  { id: 'number',      key: 'plan.colNumber' },
   { id: 'responsible', key: 'entry.responsible' },
   { id: 'deps',      key: 'plan.colDeps' },
   { id: 'dateStart', key: 'plan.colStart' },
@@ -813,8 +816,8 @@ function PlanTableRow({ entryId, disabled, className, style, onMouseEnter, onMou
 
 // ─── PhaseHeader ──────────────────────────────────────────────────────────────
 
-function PhaseHeader({ phase, colSpan, collapsed, onToggle, onAdd, onDelete, onRename }: {
-  phase: Phase; colSpan: number; collapsed: boolean
+function PhaseHeader({ phase, phaseNumber, colSpan, collapsed, onToggle, onAdd, onDelete, onRename }: {
+  phase: Phase; phaseNumber: number; colSpan: number; collapsed: boolean
   onToggle: () => void; onAdd: () => void; onDelete: () => void; onRename: (name: string) => void
 }) {
   const { t } = useTranslation()
@@ -849,7 +852,7 @@ function PhaseHeader({ phase, colSpan, collapsed, onToggle, onAdd, onDelete, onR
               style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}
               title="Clique duplo para renomear"
             >
-              {phase.name}
+              {phaseNumber}. {phase.name}
             </span>
           )}
 
@@ -882,11 +885,12 @@ function PhaseHeader({ phase, colSpan, collapsed, onToggle, onAdd, onDelete, onR
 
 export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: string; onNavigateToRisk?: (riskId: string) => void }) {
   const {
-    projects, settings,
+    projects, settings, teamDirectory,
     updateEntry, deleteEntry, moveEntryToPhase, reorderEntry, updateEntryStatus, resetStatusOverride, updateEntryRisk,
     updatePhase, deletePhase, setBaseline, clearBaseline, changeEntryDate, addDelayLogEntry,
-    addPhase, setColumnVisibility,
+    addPhase, setColumnVisibility, addComment, convertToSubtask,
   } = useAppStore()
+  const { profile, user } = useAuthStore()
 
   const { t } = useTranslation()
   const project = projects.find((p) => p.id === projectId)!
@@ -943,6 +947,17 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
     return map
   }, [project.phases])
 
+  const entryTypeMap = useMemo(() => {
+    const map = new Map<string, EntryType>()
+    for (const ph of project.phases) {
+      for (const e of ph.entries) {
+        map.set(e.id, e.type)
+        for (const sub of e.subtasks) map.set(sub.id, sub.type)
+      }
+    }
+    return map
+  }, [project.phases])
+
   // Find which phaseId an entry belongs to
   const entryPhaseMap = useMemo(() => {
     const map = new Map<string, string>()
@@ -952,6 +967,27 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
         for (const sub of e.subtasks) map.set(sub.id, ph.id)
       }
     }
+    return map
+  }, [project.phases])
+
+  // Hierarchy numbering (1 / 1.1 / 1.1.1) — purely derived from current array
+  // position, never stored, so it's always in sync with drag-and-drop reorders.
+  const phaseNumberMap = useMemo(() => {
+    const map = new Map<string, number>()
+    project.phases.forEach((ph, i) => map.set(ph.id, i + 1))
+    return map
+  }, [project.phases])
+
+  const hierarchyNumberMap = useMemo(() => {
+    const map = new Map<string, string>()
+    project.phases.forEach((ph, phaseIdx) => {
+      const topEntries = ph.entries.filter((e) => !e.parentEntryId)
+      topEntries.forEach((e, entryIdx) => {
+        const num = `${phaseIdx + 1}.${entryIdx + 1}`
+        map.set(e.id, num)
+        e.subtasks.forEach((sub, subIdx) => map.set(sub.id, `${num}.${subIdx + 1}`))
+      })
+    })
     return map
   }, [project.phases])
 
@@ -974,6 +1010,72 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
       if (fromPhaseId) moveEntryToPhase(projectId, fromPhaseId, toPhaseId, id)
     }
     setSelected(new Set())
+  }
+
+  function applyBulkType(type: EntryType) {
+    for (const id of selected) updateEntry(projectId, id, { type })
+    setSelected(new Set())
+  }
+
+  function applyBulkConvertToSubtask(parentEntryId: string) {
+    for (const id of selected) {
+      if (id === parentEntryId) continue
+      const phaseId = entryPhaseMap.get(id)
+      const parentPhaseId = entryPhaseMap.get(parentEntryId)
+      if (phaseId && phaseId === parentPhaseId) convertToSubtask(projectId, phaseId, id, parentEntryId)
+    }
+    setSelected(new Set())
+  }
+
+  function applyBulkDelete() {
+    if (!confirm(`Excluir ${selected.size} item(ns) selecionado(s)? Esta ação não pode ser desfeita.`)) return
+    for (const id of selected) {
+      const phaseId = entryPhaseMap.get(id)
+      if (phaseId) deleteEntry(projectId, phaseId, id)
+    }
+    setSelected(new Set())
+  }
+
+  const [bulkCommentOpen, setBulkCommentOpen] = useState(false)
+  const [bulkCommentText, setBulkCommentText] = useState('')
+
+  function applyBulkComment() {
+    if (!bulkCommentText.trim()) return
+    const author = profile?.name ?? user?.email ?? 'Anônimo'
+    for (const id of selected) {
+      addComment(projectId, id, { author, text: bulkCommentText.trim(), createdAt: new Date().toISOString() })
+    }
+    setSelected(new Set())
+    setBulkCommentText('')
+    setBulkCommentOpen(false)
+  }
+
+  const [bulkOwnersOpen, setBulkOwnersOpen] = useState(false)
+  const [bulkOwners, setBulkOwners] = useState<EntryOwner[]>([])
+  const directoryAsTeam: TeamMember[] = useMemo(
+    () => teamDirectory.filter((p) => p.active).map((p) => ({ id: p.id, name: p.name ?? p.email ?? '', role: '', email: p.email ?? undefined, userId: p.id })),
+    [teamDirectory],
+  )
+
+  function applyBulkOwners() {
+    for (const id of selected) updateEntry(projectId, id, { owners: bulkOwners, responsible: bulkOwners[0]?.name ?? '' })
+    setSelected(new Set())
+    setBulkOwnersOpen(false)
+  }
+
+  const [bulkDateOpen, setBulkDateOpen] = useState(false)
+  const [bulkDate, setBulkDate] = useState('')
+
+  function applyBulkDate() {
+    if (!bulkDate) return
+    for (const id of selected) {
+      const type = entryTypeMap.get(id)
+      if (!type) continue
+      updateEntry(projectId, id, type === 'task' ? { plannedEnd: bulkDate } : { plannedDate: bulkDate })
+    }
+    setSelected(new Set())
+    setBulkDate('')
+    setBulkDateOpen(false)
   }
 
   // ── Drag-and-drop (move a task/milestone to another phase) ────────────────
@@ -1107,16 +1209,14 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
     {
       id: 'select', size: 28,
       header: () => null,
-      cell: ({ row }) => row.depth === 0
-        ? (
-          <input
-            type="checkbox"
-            className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]"
-            checked={selected.has(row.original.id)}
-            onChange={() => toggleSelect(row.original.id)}
-          />
-        )
-        : <span className="w-4 inline-block" />,
+      cell: ({ row }) => (
+        <input
+          type="checkbox"
+          className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]"
+          checked={selected.has(row.original.id)}
+          onChange={() => toggleSelect(row.original.id)}
+        />
+      ),
     },
     // Expand toggle
     {
@@ -1125,6 +1225,16 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
       cell: ({ row }) => row.getCanExpand()
         ? <button onClick={row.getToggleExpandedHandler()} className="text-xs w-4 transition-colors" style={{ color: 'var(--text-tertiary)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>{row.getIsExpanded() ? '▾' : '▸'}</button>
         : <span className="w-4 inline-block" />,
+    },
+    // Hierarchy number (1 / 1.1 / 1.1.1) — toggleable, purely computed
+    {
+      id: 'number', size: 60,
+      header: () => <span>{t('plan.colNumber')}</span>,
+      cell: ({ row }) => (
+        <span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontVariantNumeric: 'tabular-nums' }}>
+          {hierarchyNumberMap.get(row.original.id) ?? ''}
+        </span>
+      ),
     },
     // Name (with TypePill + icons inline)
     {
@@ -1315,7 +1425,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
         )
       },
     },
-  ], [project, settings.holidays, entryPhaseMap, projectId,
+  ], [project, settings.holidays, entryPhaseMap, hierarchyNumberMap, projectId,
     updateEntryStatus, updateEntryRisk, deleteEntry, selected])
 
   const table = useReactTable<PlanRow>({
@@ -1453,6 +1563,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
                   <PhaseHeader
                     key={`phase-${phaseId}`}
                     phase={phase}
+                    phaseNumber={phaseNumberMap.get(phaseId) ?? 0}
                     colSpan={columns.length}
                     collapsed={isCollapsed}
                     onToggle={() => setCollapsedPhases((s) => {
@@ -1610,7 +1721,101 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
           <option value="" disabled>Mover para fase...</option>
           {project.phases.map((ph) => <option key={ph.id} value={ph.id}>{ph.name}</option>)}
         </select>
+        <select
+          onChange={(e) => { if (e.target.value) applyBulkType(e.target.value as EntryType) }}
+          value=""
+          className="text-xs rounded-[var(--radius-md)] px-2 py-1"
+          style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
+        >
+          <option value="" disabled>Alterar tipo...</option>
+          <option value="task">{t('entry.task')}</option>
+          <option value="milestone">{t('entry.milestone')}</option>
+          <option value="meeting">{t('entry.meeting')}</option>
+        </select>
+        <select
+          onChange={(e) => { if (e.target.value) applyBulkConvertToSubtask(e.target.value) }}
+          value=""
+          className="text-xs rounded-[var(--radius-md)] px-2 py-1"
+          style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
+        >
+          <option value="" disabled>Virar subtarefa de...</option>
+          {project.phases.flatMap((ph) => ph.entries
+            .filter((e) => !selected.has(e.id))
+            .map((e) => <option key={e.id} value={e.id}>{ph.name} · {e.name}</option>))}
+        </select>
+        <button
+          onClick={() => { setBulkOwners([]); setBulkOwnersOpen(true) }}
+          className="text-xs px-2 py-1 rounded-[var(--radius-md)]"
+          style={{ background: 'rgba(255,255,255,0.15)' }}
+        >
+          Alterar responsável
+        </button>
+        <button
+          onClick={() => { setBulkDate(''); setBulkDateOpen(true) }}
+          className="text-xs px-2 py-1 rounded-[var(--radius-md)]"
+          style={{ background: 'rgba(255,255,255,0.15)' }}
+        >
+          Alterar data
+        </button>
+        <button
+          onClick={() => { setBulkCommentText(''); setBulkCommentOpen(true) }}
+          className="text-xs px-2 py-1 rounded-[var(--radius-md)]"
+          style={{ background: 'rgba(255,255,255,0.15)' }}
+        >
+          Comentar
+        </button>
+        <button
+          onClick={applyBulkDelete}
+          className="text-xs px-2 py-1 rounded-[var(--radius-md)]"
+          style={{ background: 'rgba(239,68,68,0.25)', color: '#fca5a5' }}
+        >
+          Excluir
+        </button>
       </SelectionBar>
+
+      {bulkOwnersOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)' }} onClick={() => setBulkOwnersOpen(false)}>
+          <div className="rounded-[var(--radius-lg)] p-5 w-full max-w-sm" style={{ background: 'var(--surface-card)' }} onClick={(e) => e.stopPropagation()}>
+            <p className="text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>Alterar responsável de {selected.size} item(ns)</p>
+            <OwnersField owners={bulkOwners} onChange={setBulkOwners} teamMembers={directoryAsTeam} />
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setBulkOwnersOpen(false)} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)]" style={{ color: 'var(--text-secondary)' }}>Cancelar</button>
+              <button onClick={applyBulkOwners} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)] text-white" style={{ background: 'var(--oe-primary)' }}>É basicamente isso</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {bulkDateOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)' }} onClick={() => setBulkDateOpen(false)}>
+          <div className="rounded-[var(--radius-lg)] p-5 w-full max-w-sm" style={{ background: 'var(--surface-card)' }} onClick={(e) => e.stopPropagation()}>
+            <p className="text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>Alterar data de {selected.size} item(ns)</p>
+            <p className="text-xs mb-2" style={{ color: 'var(--text-tertiary)' }}>Tarefas usam esta data como fim planejado; marcos e reuniões usam como a própria data.</p>
+            <input
+              type="date" autoFocus value={bulkDate} onChange={(e) => setBulkDate(e.target.value)}
+              className="w-full text-sm rounded-[var(--radius-md)] border px-2 py-1.5"
+              style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)' }}
+            />
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setBulkDateOpen(false)} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)]" style={{ color: 'var(--text-secondary)' }}>Cancelar</button>
+              <button onClick={applyBulkDate} disabled={!bulkDate} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)] text-white disabled:opacity-40" style={{ background: 'var(--oe-primary)' }}>É basicamente isso</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {bulkCommentOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)' }} onClick={() => setBulkCommentOpen(false)}>
+          <div className="rounded-[var(--radius-lg)] p-5 w-full max-w-sm" style={{ background: 'var(--surface-card)' }} onClick={(e) => e.stopPropagation()}>
+            <p className="text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>Comentar em {selected.size} item(ns)</p>
+            <Textarea autoFocus value={bulkCommentText} onChange={(e) => setBulkCommentText(e.target.value)} rows={3} placeholder="Escreva o comentário..." />
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setBulkCommentOpen(false)} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)]" style={{ color: 'var(--text-secondary)' }}>Cancelar</button>
+              <button onClick={applyBulkComment} disabled={!bulkCommentText.trim()} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)] text-white disabled:opacity-40" style={{ background: 'var(--oe-primary)' }}>É basicamente isso</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

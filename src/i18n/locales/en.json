@@ -234,6 +234,7 @@
     "linkedTaskNone": "None",
     "addChildMeeting": "Add linked meeting",
     "childMeetingOutOfRange": "Meeting date is outside the task range",
+    "colNumber": "No.",
     "colDeps": "Deps.",
     "colStart": "Start / Date",
     "colEnd": "End",

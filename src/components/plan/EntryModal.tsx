@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useToastStore } from '@/stores/useToastStore'
-import { Entry, EntryOwner, EntryType, EntryStatus, RiskFlag, Link } from '@/types'
+import { Entry, EntryOwner, EntryType, EntryStatus, RiskFlag, Link, TeamMember } from '@/types'
 import { contactsForClient } from '@/utils/contacts'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
@@ -177,7 +177,7 @@ export default function EntryModal({
 }: EntryModalProps) {
   const { t } = useTranslation()
   const {
-    projects, contacts,
+    projects, contacts, teamDirectory,
     addEntry, addSubtask, updateEntry, deleteEntry, moveEntryToPhase,
     addComment, removeComment,
   } = useAppStore()
@@ -252,7 +252,14 @@ export default function EntryModal({
     [projects, form.projectId],
   )
   const selectedPhases = selectedProject?.phases ?? []
-  const selectedTeam = selectedProject?.team ?? []
+  // OwnersField expects TeamMember[] — map the global registered-user directory
+  // into that shape (userId = profile.id), same as IncidentEntryModal, so any
+  // registered user can be picked as executor/validator, not just people
+  // explicitly added to this project's own "Equipe" roster.
+  const selectedTeam: TeamMember[] = useMemo(
+    () => teamDirectory.filter((p) => p.active).map((p) => ({ id: p.id, name: p.name ?? p.email ?? '', role: '', email: p.email ?? undefined, userId: p.id })),
+    [teamDirectory],
+  )
   const selectedContacts = useMemo(
     () => selectedProject?.clientId ? contactsForClient(contacts, selectedProject.clientId) : [],
     [contacts, selectedProject?.clientId],

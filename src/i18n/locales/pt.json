@@ -234,6 +234,7 @@
     "linkedTaskNone": "Nenhuma",
     "addChildMeeting": "Adicionar reunião vinculada",
     "childMeetingOutOfRange": "Data da reunião está fora do intervalo da tarefa",
+    "colNumber": "Nº",
     "colDeps": "Depend.",
     "colStart": "Início / Data",
     "colEnd": "Fim",

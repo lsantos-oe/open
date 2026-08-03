@@ -240,6 +240,41 @@ export const updateTaskTool: AiTool = {
   },
 }
 
+export const reorderTaskTool: AiTool = {
+  name: 'reorder_task',
+  description: 'Reposiciona uma tarefa/marco/reunião de nível superior dentro do plano do projeto, colocando ela logo antes de outra (use list_tasks pra obter os ids). Funciona na mesma fase (só reordena) ou entre fases (move e posiciona de uma vez). Sempre requer confirmação do usuário antes de executar.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      projectId: { type: 'string', description: 'Id do projeto' },
+      entryId: { type: 'string', description: 'Id da tarefa a reposicionar' },
+      entryName: { type: 'string', description: 'Nome da tarefa, só pro resumo de confirmação' },
+      beforeEntryId: { type: 'string', description: 'Id da tarefa antes da qual esta deve ficar (obtido via list_tasks) — se omitido, vai pro fim da fase de destino' },
+      beforeEntryName: { type: 'string', description: 'Nome dessa tarefa de referência, só pro resumo de confirmação' },
+    },
+    required: ['projectId', 'entryId', 'entryName'],
+  },
+  isWrite: true,
+  describe(input) {
+    const posText = input.beforeEntryName ? `logo antes de "${input.beforeEntryName}"` : 'no fim da fase'
+    return `Estou prestes a reposicionar "${input.entryName}", ${posText}. É basicamente isso?`
+  },
+  async execute(input) {
+    const store = useAppStore.getState()
+    const project = store.projects.find((p) => p.id === input.projectId)
+    if (!project) return { error: 'Projeto não encontrado.' }
+    const fromPhaseId = project.phases.find((ph) => ph.entries.some((e) => e.id === input.entryId))?.id
+    if (!fromPhaseId) return { error: 'Tarefa não encontrada (verifique se é uma tarefa de nível superior, não uma subtarefa).' }
+    const beforeEntryId = input.beforeEntryId ? String(input.beforeEntryId) : null
+    const toPhaseId = beforeEntryId
+      ? project.phases.find((ph) => ph.entries.some((e) => e.id === beforeEntryId))?.id
+      : fromPhaseId
+    if (!toPhaseId) return { error: 'Tarefa de referência (beforeEntryId) não encontrada.' }
+    store.reorderEntry(String(input.projectId), fromPhaseId, toPhaseId, String(input.entryId), beforeEntryId)
+    return { success: true }
+  },
+}
+
 export const convertToSubtaskTool: AiTool = {
   name: 'convert_to_subtask',
   description: 'Transforma uma tarefa de nível superior em subtarefa de outra tarefa, na mesma fase de um projeto (use list_tasks pra obter os ids). Sempre requer confirmação do usuário antes de executar.',
