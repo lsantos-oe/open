@@ -240,7 +240,7 @@ function InternalTasksSection({ cards, onEdit }: {
   onEdit: (c: BoardCard) => void
 }) {
   const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
   if (cards.length === 0) return null
 
   return (
