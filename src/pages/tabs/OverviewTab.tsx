@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Project, ProjectCharter, TeamMember, EntryOwner } from '@/types'
+import { Project, ProjectCharter, TeamMember, EntryOwner, ReportLink } from '@/types'
 import { useAppStore } from '@/store/useAppStore'
 import {
   projectProgress, projectOverdueCount, projectMilestoneProgress,
@@ -42,6 +42,14 @@ function fmtDate(iso?: string): string {
   if (!iso) return '—'
   const [y, m, d] = iso.split('-')
   return `${d}/${m}/${y}`
+}
+
+function fmtGeneratedAt(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString('pt-BR', {
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    })
+  } catch { return iso }
 }
 
 /** Líder/Dev Lead as a single-slot EntryOwner — no `contacts` prop is passed
@@ -124,6 +132,44 @@ function ExternalLinkField({
         <button onClick={() => { setDraft(''); setEditing(true) }} className="text-sm text-[var(--oe-primary)] hover:underline">+ Adicionar link</button>
       )}
     </Field>
+  )
+}
+
+function ReportLinkRow({ link, onDelete }: { link: ReportLink; onDelete: () => void }) {
+  const { t } = useTranslation()
+  const [copied, setCopied] = useState(false)
+
+  async function copy() {
+    if (!link.url) return
+    await navigator.clipboard.writeText(link.url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <li className="flex items-center gap-2 group">
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-[var(--text-primary)] truncate">{link.label}</p>
+        <p className="text-[11px] text-[var(--text-tertiary)]">{fmtGeneratedAt(link.generatedAt)}</p>
+      </div>
+      <button onClick={copy} className="text-xs font-medium text-[var(--oe-primary)] hover:underline shrink-0">
+        {copied ? t('report.linkCopied') : t('report.linkCopy')}
+      </button>
+      <a
+        href={link.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-xs font-medium text-[var(--text-secondary)] hover:underline shrink-0"
+      >
+        {t('report.linkOpen')}
+      </a>
+      <button
+        onClick={onDelete}
+        className="text-[var(--text-disabled)] hover:text-[var(--color-danger-text)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+      >
+        ×
+      </button>
+    </li>
   )
 }
 
@@ -255,7 +301,7 @@ function EditableDevField({ project, onSave }: {
 
 export default function OverviewTab({ project }: Props) {
   const { t } = useTranslation()
-  const { updateProject, addProjectLink, removeProjectLink, clients, teamDirectory, settings } = useAppStore()
+  const { updateProject, addProjectLink, removeProjectLink, deleteReportLink, clients, teamDirectory, settings } = useAppStore()
   const [overview, setOverview] = useState(project.overview ?? '')
   const [charter, setCharter] = useState<ProjectCharter>(project.charter ?? EMPTY_CHARTER)
   const [linkModal, setLinkModal] = useState(false)
@@ -448,6 +494,23 @@ export default function OverviewTab({ project }: Props) {
                           ×
                         </button>
                       </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="border-t pt-4" style={{ borderColor: 'var(--border-default)' }}>
+                <p className="text-[11px] font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>{t('report.linksTitle')}</p>
+                {project.reportLinks.length === 0 ? (
+                  <p className="text-sm text-[var(--text-tertiary)]">{t('report.noLinks')}</p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {project.reportLinks.map((link) => (
+                      <ReportLinkRow
+                        key={link.id}
+                        link={link}
+                        onDelete={() => { if (confirm(t('report.linkDeleteConfirm'))) deleteReportLink(project.id, link.id) }}
+                      />
                     ))}
                   </ul>
                 )}

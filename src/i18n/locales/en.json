@@ -478,7 +478,22 @@
     "colBaselineEnd": "BL End",
     "layout": "Layout",
     "layout_standard": "Standard (clean)",
-    "layout_ploomes": "Ploomes branded"
+    "layout_ploomes": "Ploomes branded",
+    "generateLinkBtn": "Generate link",
+    "linkModalTitle": "Status report link",
+    "linkChooseTarget": "You already have generated links",
+    "linkNew": "Generate new link",
+    "linkOverwrite": "Overwrite",
+    "linkLimitReached": "Limit of 3 links per project reached — pick one to overwrite.",
+    "linkLabel": "Link name",
+    "linkGenerated": "Link generated!",
+    "linkCopy": "Copy link",
+    "linkCopied": "Copied!",
+    "linkOpen": "Open",
+    "linkDone": "Done",
+    "linksTitle": "Status report links",
+    "noLinks": "No links generated yet",
+    "linkDeleteConfirm": "Delete this link? Anyone who saved it will no longer be able to access it."
   },
   "import": {
     "title": "Import JSON",

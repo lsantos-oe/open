@@ -103,6 +103,16 @@ export interface Risk {
   actionTasks: ActionTask[]
 }
 
+export interface ReportLink {
+  id: string
+  storagePath: string
+  label: string
+  generatedAt: string
+  createdBy?: string
+  /** Set client-side from the storage path — never persisted. */
+  url?: string
+}
+
 export interface DelayLogEntry {
   id: string
   date: string
@@ -300,6 +310,7 @@ export interface Project {
   reportPrefs?: { sections: Record<string, boolean>; planColumns: Record<string, boolean> }
   phases: Phase[]
   risks: Risk[]
+  reportLinks: ReportLink[]
   delayLog: DelayLogEntry[]
   team: TeamMember[]
   links: Link[]

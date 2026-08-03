@@ -478,7 +478,22 @@
     "colBaselineEnd": "BL Fin",
     "layout": "Layout",
     "layout_standard": "Estándar (clean)",
-    "layout_ploomes": "Ploomes branded"
+    "layout_ploomes": "Ploomes branded",
+    "generateLinkBtn": "Generar link",
+    "linkModalTitle": "Link del status report",
+    "linkChooseTarget": "Ya tienes links generados",
+    "linkNew": "Generar nuevo link",
+    "linkOverwrite": "Sobrescribir",
+    "linkLimitReached": "Límite de 3 links por proyecto alcanzado — elige uno para sobrescribir.",
+    "linkLabel": "Nombre del link",
+    "linkGenerated": "¡Link generado!",
+    "linkCopy": "Copiar link",
+    "linkCopied": "¡Copiado!",
+    "linkOpen": "Abrir",
+    "linkDone": "Listo",
+    "linksTitle": "Links de status report",
+    "noLinks": "Aún no hay links generados",
+    "linkDeleteConfirm": "¿Eliminar este link? Quien ya lo tenga guardado dejará de poder acceder a él."
   },
   "import": {
     "title": "Importar JSON",

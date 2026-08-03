@@ -212,6 +212,15 @@ export interface DbDelayLog {
   created_by: string | null
 }
 
+export interface DbReportLink {
+  id: string
+  project_id: string | null
+  storage_path: string
+  label: string
+  generated_at: string | null
+  created_by: string | null
+}
+
 export interface DbRisk {
   id: string
   project_id: string | null
@@ -381,6 +390,7 @@ export interface DbProjectFull {
   comments: DbComment[]
   delay_log: DbDelayLog[]
   risks: DbRisk[]
+  report_links: DbReportLink[]
   open_points: DbOpenPoint[]
   meeting_logs: DbMeetingLog[]
   history: DbHistory[]

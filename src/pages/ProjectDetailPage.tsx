@@ -12,6 +12,7 @@ import { ProjectStatus, Project, Entry, AppLanguage, TeamMember } from '@/types'
 import { generateStatusReport, ReportConfig } from '@/utils/statusReport'
 import { useSmartPosition } from '@/hooks/useSmartPosition'
 import ReportConfigModal from '@/components/report/ReportConfigModal'
+import ReportLinkModal from '@/components/report/ReportLinkModal'
 import ImportJsonModal from '@/components/import/ImportJsonModal'
 import { exportProjectCsv } from '@/utils/exportCsv'
 import { exportProjectToJson } from '@/utils/exportJson'
@@ -414,6 +415,7 @@ export default function ProjectDetailPage() {
   const [focusRiskId, setFocusRiskId] = useState<string | null>(null)
   const [exportingReport, setExportingReport] = useState(false)
   const [showReportModal, setShowReportModal] = useState(false)
+  const [linkReportConfig, setLinkReportConfig] = useState<ReportConfig | null>(null)
   const [showImportModal, setShowImportModal] = useState(false)
   const [showArchiveModal, setShowArchiveModal] = useState(false)
   const [showDuplicateModal, setShowDuplicateModal] = useState(false)
@@ -591,7 +593,17 @@ export default function ProjectDetailPage() {
         <ReportConfigModal
           projectId={project.id}
           onGenerate={(config) => { setShowReportModal(false); handleGenerateReport(config) }}
+          onGenerateLink={(config) => { setShowReportModal(false); setLinkReportConfig(config) }}
           onClose={() => setShowReportModal(false)}
+        />
+      )}
+
+      {linkReportConfig && (
+        <ReportLinkModal
+          project={project}
+          settings={settings}
+          config={linkReportConfig}
+          onClose={() => setLinkReportConfig(null)}
         />
       )}
 

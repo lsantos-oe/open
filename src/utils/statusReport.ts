@@ -998,15 +998,22 @@ ${body}
 
 // ─── main export ──────────────────────────────────────────────────────────────
 
+export function buildStatusReportHtml(
+  project: Project,
+  settings: AppSettings,
+  config: ReportConfig,
+): string {
+  return config.layout === 'ploomes'
+    ? buildPloomesHTML(project, settings, config)
+    : buildStandardHTML(project, settings, config)
+}
+
 export async function generateStatusReport(
   project: Project,
   settings: AppSettings,
   config: ReportConfig,
 ): Promise<void> {
-  const html = config.layout === 'ploomes'
-    ? buildPloomesHTML(project, settings, config)
-    : buildStandardHTML(project, settings, config)
-
+  const html = buildStatusReportHtml(project, settings, config)
   const blob = new Blob([html], { type: 'text/html' })
   const url  = URL.createObjectURL(blob)
   window.open(url, '_blank')

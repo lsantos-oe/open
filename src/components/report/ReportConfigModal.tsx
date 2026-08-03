@@ -7,6 +7,7 @@ import { ReportConfig, DEFAULT_REPORT_CONFIG } from '@/utils/statusReport'
 interface Props {
   projectId: string
   onGenerate: (config: ReportConfig) => void
+  onGenerateLink: (config: ReportConfig) => void
   onClose: () => void
 }
 
@@ -30,7 +31,7 @@ function saveConfig(projectId: string, config: ReportConfig) {
   localStorage.setItem(`reportConfig_${projectId}`, JSON.stringify(config))
 }
 
-export default function ReportConfigModal({ projectId, onGenerate, onClose }: Props) {
+export default function ReportConfigModal({ projectId, onGenerate, onGenerateLink, onClose }: Props) {
   const { t } = useTranslation()
   const [config, setConfig] = useState<ReportConfig>(() => loadConfig(projectId))
 
@@ -51,6 +52,11 @@ export default function ReportConfigModal({ projectId, onGenerate, onClose }: Pr
   function handleGenerate() {
     saveConfig(projectId, config)
     onGenerate(config)
+  }
+
+  function handleGenerateLink() {
+    saveConfig(projectId, config)
+    onGenerateLink(config)
   }
 
   const sections: { key: keyof ReportConfig['sections']; label: string }[] = [
@@ -85,6 +91,7 @@ export default function ReportConfigModal({ projectId, onGenerate, onClose }: Pr
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>{t('actions.cancel')}</Button>
+          <Button variant="secondary" onClick={handleGenerateLink}>{t('report.generateLinkBtn')}</Button>
           <Button onClick={handleGenerate}>{t('report.generatePdf')}</Button>
         </>
       }

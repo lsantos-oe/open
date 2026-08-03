@@ -381,6 +381,7 @@ export function importNewProject(raw: string): Project {
     charter: p.charter as ProjectCharter | undefined,
     phases: applyIsCritical(phases),
     risks,
+    reportLinks: [],
     delayLog: [],
     team,
     links: [],

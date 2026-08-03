@@ -3,8 +3,9 @@
  * Zustand store types (camelCase).
  */
 
+import { supabaseUrl } from '@/lib/supabase'
 import type {
-  Project, Phase, Entry, EntryComment, EntryOwner, Link, Risk, ActionTask,
+  Project, Phase, Entry, EntryComment, EntryOwner, Link, Risk, ActionTask, ReportLink,
   DelayLogEntry, TeamMember, ProjectCharter, EntryType, EntryStatus,
   RiskFlag, ProjectStatus, ProjectType, AppLanguage,
   DelayResponsibility, DelayType, OpenPoint, OpenPointStatus, OpenPointPriority,
@@ -14,7 +15,7 @@ import type {
 } from '@/types'
 
 import type {
-  DbProject, DbPhase, DbEntry, DbComment, DbDelayLog, DbRisk,
+  DbProject, DbPhase, DbEntry, DbComment, DbDelayLog, DbRisk, DbReportLink,
   DbCharter, DbLink, DbTeamMember, DbActionTask, DbSubtaskJson,
   DbCommentJson, DbProjectFull, DbProjectFlat, DbOpenPoint,
   DbMeetingLog, DbHistory, DbDiaryComment,
@@ -170,6 +171,17 @@ function dbCharterToStore(db: DbCharter): ProjectCharter {
   }
 }
 
+function dbReportLinkToStore(row: DbReportLink): ReportLink {
+  return {
+    id: row.id,
+    storagePath: row.storage_path,
+    label: row.label,
+    generatedAt: row.generated_at ?? new Date().toISOString(),
+    createdBy: row.created_by ?? undefined,
+    url: supabaseUrl ? `${supabaseUrl}/storage/v1/object/public/status-reports/${row.storage_path}` : undefined,
+  }
+}
+
 function dbRiskToStore(row: DbRisk): Risk {
   return {
     id: row.id,
@@ -270,7 +282,7 @@ function dbDelayLogToStore(row: DbDelayLog): DelayLogEntry {
 
 /** Reconstruct a full Project from all fetched DB rows. */
 export function dbProjectToStore(data: DbProjectFull): Project {
-  const { project, phases, entries, comments, delay_log, risks, open_points, meeting_logs, history, diary_comments } = data
+  const { project, phases, entries, comments, delay_log, risks, report_links, open_points, meeting_logs, history, diary_comments } = data
 
   const sortedPhases = [...phases].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
 
@@ -297,6 +309,7 @@ export function dbProjectToStore(data: DbProjectFull): Project {
     links: ((project.links as DbLink[] | null) ?? []).map(dbLinkToStore),
     phases: sortedPhases.map(ph => dbPhaseToStore(ph, entries, comments)),
     risks: risks.map(dbRiskToStore),
+    reportLinks: (report_links ?? []).map(dbReportLinkToStore),
     delayLog: delay_log.map(dbDelayLogToStore),
     openPoints: open_points.map(op => dbOpenPointToStore(op, diary_comments)),
     meetings: meeting_logs.map(m => dbMeetingLogToStore(m, diary_comments)),
@@ -429,6 +442,17 @@ function storePhaseToDb(phase: Phase, projectId: string): DbPhase {
   }
 }
 
+function storeReportLinkToDb(link: ReportLink, projectId: string, userId: string): DbReportLink {
+  return {
+    id: link.id,
+    project_id: projectId,
+    storage_path: link.storagePath,
+    label: link.label,
+    generated_at: link.generatedAt,
+    created_by: userId,
+  }
+}
+
 function storeRiskToDb(risk: Risk, projectId: string, userId: string): DbRisk {
   const now = new Date().toISOString()
   return {
@@ -536,7 +560,7 @@ export function storeProjectToDb(project: Project, userId: string): DbProjectFla
   return { project: projectRow, phases, entries, comments, delay_log, risks }
 }
 
-export { dbRiskToStore, dbDelayLogToStore, dbEntryToStore as dbEntryToStorePartial, storeRiskToDb, storeEntryToDb, storeDelayLogToDb }
+export { dbRiskToStore, dbDelayLogToStore, dbEntryToStore as dbEntryToStorePartial, storeRiskToDb, storeEntryToDb, storeDelayLogToDb, dbReportLinkToStore, storeReportLinkToDb }
 
 // ─── Clients (Carteira) ────────────────────────────────────────────────────
 

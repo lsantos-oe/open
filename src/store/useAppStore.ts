@@ -7,7 +7,7 @@ import {
   AppSettings, ProjectTemplate, IncidentTemplate, AppLanguage, EntryStatus, RiskFlag, Workdays,
   OpenPoint, MeetingLog, MeetingItem, HistoryEntry, HistoryEventType, DiaryComment, FileAttachment,
   Client, ClientContact, ClientCsAssignment, ClientStatus,
-  Incident, IncidentStatus, EntryOwner,
+  Incident, IncidentStatus, EntryOwner, ReportLink,
 } from '@/types'
 import { applyDateChange } from '@/utils/dateEngine'
 import { applyIsCritical } from '@/utils/criticalPath'
@@ -22,6 +22,7 @@ import {
   storeProjectToDb,
   storeEntryToDb,
   storeRiskToDb,
+  dbReportLinkToStore,
   storeDelayLogToDb,
   dbClientToStore,
   storeClientToDb,
@@ -196,7 +197,7 @@ interface AppStore {
   hideProject: (id: string) => Promise<void>
 
   // Projects
-  createProject: (data: Omit<Project, 'id' | 'phases' | 'risks' | 'delayLog' | 'team' | 'links' | 'status'>) => string
+  createProject: (data: Omit<Project, 'id' | 'phases' | 'risks' | 'reportLinks' | 'delayLog' | 'team' | 'links' | 'status'>) => string
   duplicateProject: (source: Project, overrides: { name: string; client: string; clientId?: string; pm: string; pmMemberId?: string; language: AppLanguage; devLead?: string; devLeadMemberId?: string; devType?: 'integration' | 'application'; devIntegration?: string }) => string
   updateProject: (id: string, patch: Partial<Project>) => void
   deleteProject: (id: string) => void
@@ -244,6 +245,15 @@ interface AppStore {
   addRisk: (projectId: string, risk: Omit<Risk, 'id'>) => void
   updateRisk: (projectId: string, riskId: string, patch: Partial<Risk>) => void
   deleteRisk: (projectId: string, riskId: string) => void
+
+  // Status report links (público, snapshot estático)
+  /** Uploads `html` to the public status-reports bucket and records it as a
+   *  report link. Pass `overwriteId` to re-upload onto an existing link's own
+   *  path (URL stays the same); otherwise creates a new one — rejected once
+   *  the project already has 3 links, since the cap is meant to force an
+   *  explicit choice (call site should offer "sobrescrever" first). */
+  generateReportLink: (projectId: string, html: string, label: string, overwriteId?: string) => Promise<void>
+  deleteReportLink: (projectId: string, linkId: string) => void
 
   // Action Tasks (on risks)
   addActionTask: (projectId: string, riskId: string, task: Omit<ActionTask, 'id'>) => void
@@ -590,11 +600,12 @@ export const useAppStore = create<AppStore>()(
 
           const ids = projectRows.map((p) => p.id)
 
-          const [phasesRes, entriesRes, commentsRes, risksRes, delayRes, openPointsRes, meetingLogsRes, historyRes, diaryCommentsRes] = await Promise.all([
+          const [phasesRes, entriesRes, commentsRes, risksRes, reportLinksRes, delayRes, openPointsRes, meetingLogsRes, historyRes, diaryCommentsRes] = await Promise.all([
             supabase.from('phases').select('*').in('project_id', ids),
             supabase.from('entries').select('*').in('project_id', ids),
             supabase.from('comments').select('*').in('project_id', ids),
             supabase.from('risks').select('*').in('project_id', ids),
+            supabase.from('status_report_links').select('*').in('project_id', ids),
             supabase.from('delay_log').select('*').in('project_id', ids),
             supabase.from('open_points').select('*').in('project_id', ids).order('created_at', { ascending: false }),
             supabase.from('meeting_logs').select('*').in('project_id', ids).order('date', { ascending: false }),
@@ -606,6 +617,7 @@ export const useAppStore = create<AppStore>()(
           const entries = entriesRes.data ?? []
           const comments = commentsRes.data ?? []
           const risks = risksRes.data ?? []
+          const report_links = reportLinksRes.data ?? []
           const delay_log = delayRes.data ?? []
           const open_points = openPointsRes.data ?? []
           const meeting_logs = meetingLogsRes.data ?? []
@@ -620,6 +632,7 @@ export const useAppStore = create<AppStore>()(
               comments: comments.filter((c) => c.project_id === project.id),
               delay_log: delay_log.filter((d) => d.project_id === project.id),
               risks: risks.filter((r) => r.project_id === project.id),
+              report_links: report_links.filter((r) => r.project_id === project.id),
               open_points: open_points.filter((op) => op.project_id === project.id),
               meeting_logs: meeting_logs.filter((m) => m.project_id === project.id),
               history: history.filter((h) => h.project_id === project.id),
@@ -912,11 +925,12 @@ export const useAppStore = create<AppStore>()(
             return
           }
           const ids = projectRows.map((p) => p.id)
-          const [phasesRes, entriesRes, commentsRes, risksRes, delayRes, openPointsRes, meetingLogsRes, historyRes, diaryCommentsRes] = await Promise.all([
+          const [phasesRes, entriesRes, commentsRes, risksRes, reportLinksRes, delayRes, openPointsRes, meetingLogsRes, historyRes, diaryCommentsRes] = await Promise.all([
             supabase.from('phases').select('*').in('project_id', ids),
             supabase.from('entries').select('*').in('project_id', ids),
             supabase.from('comments').select('*').in('project_id', ids),
             supabase.from('risks').select('*').in('project_id', ids),
+            supabase.from('status_report_links').select('*').in('project_id', ids),
             supabase.from('delay_log').select('*').in('project_id', ids),
             supabase.from('open_points').select('*').in('project_id', ids).order('created_at', { ascending: false }),
             supabase.from('meeting_logs').select('*').in('project_id', ids).order('date', { ascending: false }),
@@ -931,6 +945,7 @@ export const useAppStore = create<AppStore>()(
               comments: (commentsRes.data ?? []).filter((c) => c.project_id === project.id),
               delay_log: (delayRes.data ?? []).filter((d) => d.project_id === project.id),
               risks: (risksRes.data ?? []).filter((r) => r.project_id === project.id),
+              report_links: (reportLinksRes.data ?? []).filter((r) => r.project_id === project.id),
               open_points: (openPointsRes.data ?? []).filter((op) => op.project_id === project.id),
               meeting_logs: (meetingLogsRes.data ?? []).filter((m) => m.project_id === project.id),
               history: (historyRes.data ?? []).filter((h) => h.project_id === project.id),
@@ -1043,6 +1058,7 @@ export const useAppStore = create<AppStore>()(
           color,
           phases,
           risks: [],
+          reportLinks: [],
           delayLog: [],
           team: [],
           links: [],
@@ -1203,6 +1219,7 @@ export const useAppStore = create<AppStore>()(
               .map((t) => ({ ...t, id: uuid() })),
           })),
           delayLog: [],
+          reportLinks: [],
           team: source.team.map((m) => ({ ...m, id: uuid() })),
           links: source.links.map((l) => ({ ...l, id: uuid() })),
           charter: source.charter ? { ...source.charter } : undefined,
@@ -1990,6 +2007,74 @@ export const useAppStore = create<AppStore>()(
         }))
         sync(async () => {
           const { error } = await supabase.from('risks').delete().eq('id', riskId)
+          if (error) throw new Error(error.message)
+        }, () => set({ projects: prev }))
+      },
+
+      // ── Status report links ──────────────────────────────────────────────
+
+      async generateReportLink(projectId, html, label, overwriteId) {
+        const project = get().projects.find((p) => p.id === projectId)
+        if (!project) throw new Error('Projeto não encontrado')
+
+        const existing = overwriteId ? project.reportLinks.find((l) => l.id === overwriteId) : undefined
+        if (overwriteId && !existing) throw new Error('Link não encontrado')
+        if (!existing && project.reportLinks.length >= 3) {
+          throw new Error('Limite de 3 links por projeto — apague um antes de gerar outro.')
+        }
+
+        const userId = getUserId()
+        const storagePath = existing ? existing.storagePath : `${projectId}/${uuid()}.html`
+
+        const { error: uploadError } = await supabase.storage
+          .from('status-reports')
+          .upload(storagePath, new Blob([html], { type: 'text/html' }), { upsert: true, contentType: 'text/html' })
+        if (uploadError) throw new Error(uploadError.message)
+
+        const generatedAt = new Date().toISOString()
+
+        if (existing) {
+          const { error } = await supabase
+            .from('status_report_links')
+            .update({ label, generated_at: generatedAt, created_by: userId })
+            .eq('id', existing.id)
+          if (error) throw new Error(error.message)
+          set((s) => ({
+            projects: mutateProject(s.projects, projectId, (p) => ({
+              ...p,
+              reportLinks: p.reportLinks.map((l) => (l.id === existing.id ? { ...l, label, generatedAt } : l)),
+            })),
+          }))
+        } else {
+          const id = uuid()
+          const { error } = await supabase.from('status_report_links').insert({
+            id, project_id: projectId, storage_path: storagePath, label, generated_at: generatedAt, created_by: userId,
+          })
+          if (error) throw new Error(error.message)
+          const newLink: ReportLink = dbReportLinkToStore({
+            id, project_id: projectId, storage_path: storagePath, label, generated_at: generatedAt, created_by: userId,
+          })
+          set((s) => ({
+            projects: mutateProject(s.projects, projectId, (p) => ({
+              ...p,
+              reportLinks: [...p.reportLinks, newLink],
+            })),
+          }))
+        }
+      },
+
+      deleteReportLink(projectId, linkId) {
+        const prev = get().projects
+        const link = prev.find((p) => p.id === projectId)?.reportLinks.find((l) => l.id === linkId)
+        set((s) => ({
+          projects: mutateProject(s.projects, projectId, (p) => ({
+            ...p,
+            reportLinks: p.reportLinks.filter((l) => l.id !== linkId),
+          })),
+        }))
+        sync(async () => {
+          if (link) await supabase.storage.from('status-reports').remove([link.storagePath])
+          const { error } = await supabase.from('status_report_links').delete().eq('id', linkId)
           if (error) throw new Error(error.message)
         }, () => set({ projects: prev }))
       },
