@@ -53,7 +53,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className="flex flex-col min-h-screen shrink-0"
+      className="flex flex-col h-screen sticky top-0 shrink-0"
       style={{
         width: sidebarW,
         minWidth: sidebarW,
@@ -87,7 +87,7 @@ export function Sidebar() {
       </div>
 
       {/* Main nav */}
-      <nav style={{ padding: collapsed ? '8px 6px' : '8px 8px' }}>
+      <nav className="shrink-0" style={{ padding: collapsed ? '8px 6px' : '8px 8px' }}>
         <NavLink to="/" end className={navLinkCls} title={collapsed ? t('nav.home') : undefined}>
           <span className="shrink-0 w-4 h-4 flex items-center justify-center"><HomeIcon /></span>
           {!collapsed && <span>{t('nav.home')}</span>}
@@ -125,24 +125,28 @@ export function Sidebar() {
 
       {/* Divider */}
       {shortcutKind && (
-        <div style={{ height: '0.5px', background: 'var(--sidebar-border)', margin: '0 8px' }} />
+        <div className="shrink-0" style={{ height: '0.5px', background: 'var(--sidebar-border)', margin: '0 8px' }} />
       )}
 
       {/* Contextual shortcuts: Projetos (Portfólio) or Incidentes recentes (Sustentação) */}
       {shortcutKind && (
-        <div className="flex-1 overflow-y-auto" style={{ padding: collapsed ? '8px 6px' : '8px 8px' }}>
+        <div className="flex-1 flex flex-col min-h-0">
           {!collapsed && (
-            <p style={{
-              color: 'var(--sidebar-text-muted)',
-              fontSize: 10,
-              fontWeight: 500,
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
-              padding: '4px 8px 6px',
-            }}>
+            <p
+              className="shrink-0"
+              style={{
+                color: 'var(--sidebar-text-muted)',
+                fontSize: 10,
+                fontWeight: 500,
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                padding: '10px 8px 6px',
+              }}
+            >
               {shortcutKind === 'projects' ? t('nav.projects') : t('nav.recentIncidents')}
             </p>
           )}
+          <div className="flex-1 overflow-y-auto min-h-0" style={{ padding: collapsed ? '8px 6px' : '0 8px 8px' }}>
           {shortcutKind === 'projects'
             ? projects.map((project, i) => {
                 const color = projectColor(project, i)
@@ -175,6 +179,7 @@ export function Sidebar() {
                   </button>
                 )
               })}
+          </div>
         </div>
       )}
 
