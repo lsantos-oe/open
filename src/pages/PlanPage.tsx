@@ -77,6 +77,19 @@ function displayEnd(e: Entry): { iso?: string; isActual: boolean; editField: Pen
   return { iso: e.plannedDate, isActual: false, editField: 'plannedDate' }
 }
 
+/** Duration in workdays for the dates actually shown in the row (real when
+ *  present, planned otherwise) — matches displayStart/displayEnd so it never
+ *  contradicts what's on screen (e.g. planned start + real end mixed). */
+function computeDisplayDuration(e: Entry, holidays: string[]): number | undefined {
+  if (e.type !== 'task') return undefined
+  const start = displayStart(e).iso
+  const end = displayEnd(e).iso
+  if (!start || !end) return undefined
+  const hdates = parseHolidays(holidays)
+  if (end <= start) return 1
+  return workdaysBetween(parseISO(start), parseISO(end), hdates) + 1
+}
+
 function computeDisplayVariance(e: Entry, holidays: string[]): number | undefined {
   const hdates = parseHolidays(holidays)
   const blEnd = e.type === 'task' ? e.baselineEnd : e.baselineDate
@@ -1363,8 +1376,10 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
       header: () => <span>{t('plan.colDuration')}</span>,
       cell: ({ row }) => {
         const e = row.original
-        if (e.type === 'task' && e.durationDays)
-          return <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{e.durationDays}d</span>
+        if (e.type === 'task') {
+          const d = computeDisplayDuration(e, settings.holidays)
+          if (d !== undefined) return <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{d}d</span>
+        }
         if (e.type === 'meeting' && e.durationHours)
           return <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{e.durationHours}h</span>
         return <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>—</span>

@@ -12,7 +12,7 @@ import {
 import { applyDateChange } from '@/utils/dateEngine'
 import { applyIsCritical } from '@/utils/criticalPath'
 import { workdaysBetween, parseHolidays } from '@/utils/businessDays'
-import { applyAutoStatus } from '@/utils/statusCalc'
+import { applyAutoStatus, computeBaselineFields } from '@/utils/statusCalc'
 import { parseISO } from 'date-fns'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -1891,14 +1891,10 @@ export const useAppStore = create<AppStore>()(
               ...ph,
               entries: ph.entries.map((e) => ({
                 ...e,
-                baselineStart: e.plannedStart,
-                baselineEnd: e.plannedEnd,
-                baselineDate: e.plannedDate,
+                ...computeBaselineFields(e),
                 subtasks: e.subtasks.map((sub) => ({
                   ...sub,
-                  baselineStart: sub.plannedStart,
-                  baselineEnd: sub.plannedEnd,
-                  baselineDate: sub.plannedDate,
+                  ...computeBaselineFields(sub),
                 })),
               })),
             })),
