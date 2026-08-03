@@ -371,7 +371,7 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
                 <select
                   value={devLeadMemberId}
                   onChange={(e) => setDevLeadMemberId(e.target.value)}
-                  className="block w-full rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)]"
+                  className="block w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-input)] text-[var(--text-primary)] px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)]"
                 >
                   <option value="">{t('project.devLeadPlaceholder')}</option>
                   {teamMembers.map((m) => <option key={m.id} value={m.userId ?? ''}>{m.name}</option>)}
