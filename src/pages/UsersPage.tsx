@@ -73,7 +73,6 @@ export function UsersManagementPanel() {
                       value={p.role}
                       disabled={isSelf}
                       onChange={(e) => updateProfileRole(p.id, e.target.value as UserRole)}
-                      className="w-auto"
                     >
                       <option value="member">Membro</option>
                       <option value="admin">Admin</option>

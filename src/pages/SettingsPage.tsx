@@ -165,7 +165,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-8 max-w-3xl">
+    <div className="p-8 max-w-screen-xl mx-auto">
       <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-6">{t('nav.settings')}</h1>
 
       <div className="flex gap-0 border-b mb-6" style={{ borderColor: 'var(--border-default)' }}>
