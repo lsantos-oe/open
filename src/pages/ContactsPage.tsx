@@ -2,15 +2,27 @@ import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
 import { Button } from '@/components/ui/Button'
-import { Input, Field, Select } from '@/components/ui/Input'
+import { Input, Field } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SelectionBar } from '@/components/ui/SelectionBar'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { FilterMenu } from '@/components/ui/FilterMenu'
+import { ColumnsMenu } from '@/components/ui/ColumnsMenu'
+import { SortableHeader } from '@/components/ui/SortableHeader'
+import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { CappedBadgeList } from '@/components/ui/CappedBadgeList'
 import { PersonIcon } from '@/components/ui/icons'
+import { useSort } from '@/hooks/useSort'
+import { useColumnVisibility, ColumnDef } from '@/hooks/useColumnVisibility'
 import { ClientContact } from '@/types'
+
+const COLUMNS: ColumnDef[] = [
+  { key: 'name', label: 'Nome', locked: true },
+  { key: 'role', label: 'Cargo' },
+  { key: 'contact', label: 'Contato' },
+  { key: 'clients', label: 'Clientes vinculados' },
+]
 
 export default function ContactsPage() {
   const { t } = useTranslation()
@@ -36,7 +48,14 @@ export default function ContactsPage() {
     })
   }, [contacts, query, filterClientId])
 
-  const sorted = [...filtered].sort((a, b) => a.name.localeCompare(b.name))
+  const { sortField, sortDir, toggleSort, sortItems } = useSort<ClientContact>({
+    name: (c) => c.name,
+    role: (c) => c.role ?? '',
+    contact: (c) => c.email ?? c.phone ?? '',
+    clients: (c) => clientNames(c).length,
+  }, 'name')
+  const { isVisible, toggle: toggleColumn } = useColumnVisibility('contacts.columns', COLUMNS)
+  const sorted = sortItems(filtered)
 
   function toggleSelect(id: string) {
     setSelected((prev) => {
@@ -113,14 +132,15 @@ export default function ContactsPage() {
           placeholder={t('contacts.searchPlaceholder')}
         />
         <div className="flex-1" />
+        <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />
         <FilterMenu activeCount={filterClientId ? 1 : 0} onClear={() => setFilterClientId('')}>
           <Field label={t('contacts.linkedClient')}>
-            <Select value={filterClientId} onChange={(e) => setFilterClientId(e.target.value)}>
-              <option value="">{t('contacts.allClients')}</option>
-              {[...clients].sort((a, b) => a.name.localeCompare(b.name)).map((cl) => (
-                <option key={cl.id} value={cl.id}>{cl.name}</option>
-              ))}
-            </Select>
+            <SearchableSelect
+              value={filterClientId}
+              onChange={setFilterClientId}
+              emptyOptionLabel={t('contacts.allClients')}
+              options={[...clients].sort((a, b) => a.name.localeCompare(b.name)).map((cl) => ({ id: cl.id, label: cl.name }))}
+            />
           </Field>
         </FilterMenu>
       </div>
@@ -137,10 +157,24 @@ export default function ContactsPage() {
             <thead className="sticky top-0 z-10">
               <tr style={{ background: 'var(--surface-subtle)' }}>
                 <th className="px-4 py-2" style={{ width: 32 }} />
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('contacts.colName')}</th>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('contacts.colRole')}</th>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('contacts.colContact')}</th>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('contacts.linkedClients')}</th>
+                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                  <SortableHeader label={t('contacts.colName')} field="name" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                </th>
+                {isVisible('role') && (
+                  <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                    <SortableHeader label={t('contacts.colRole')} field="role" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                  </th>
+                )}
+                {isVisible('contact') && (
+                  <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                    <SortableHeader label={t('contacts.colContact')} field="contact" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                  </th>
+                )}
+                {isVisible('clients') && (
+                  <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                    <SortableHeader label={t('contacts.linkedClients')} field="clients" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
@@ -164,13 +198,19 @@ export default function ContactsPage() {
                       {c.name}
                     </span>
                   </td>
-                  <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{c.role ?? '—'}</td>
-                  <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>
-                    {[c.email, c.phone].filter(Boolean).join(' · ') || '—'}
-                  </td>
-                  <td className="px-4 py-3" style={{ maxWidth: 260 }}>
-                    <CappedBadgeList items={clientNames(c)} />
-                  </td>
+                  {isVisible('role') && (
+                    <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{c.role ?? '—'}</td>
+                  )}
+                  {isVisible('contact') && (
+                    <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>
+                      {[c.email, c.phone].filter(Boolean).join(' · ') || '—'}
+                    </td>
+                  )}
+                  {isVisible('clients') && (
+                    <td className="px-4 py-3" style={{ maxWidth: 260 }}>
+                      <CappedBadgeList items={clientNames(c)} />
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
