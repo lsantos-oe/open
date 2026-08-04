@@ -11,6 +11,9 @@ import OwnersField from '@/components/plan/OwnersField'
 import { StatusDot } from '@/components/ui/StatusDot'
 import { AvatarStack } from '@/components/ui/AvatarStack'
 import { FilterMenu } from '@/components/ui/FilterMenu'
+import { ColumnsMenu } from '@/components/ui/ColumnsMenu'
+import { SortableHeader } from '@/components/ui/SortableHeader'
+import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SelectionBar } from '@/components/ui/SelectionBar'
 import { SearchInput } from '@/components/ui/SearchInput'
@@ -20,7 +23,9 @@ import { ListIcon, KanbanIcon, FolderIcon } from '@/components/ui/icons'
 import { isClientMine } from '@/utils/involvement'
 import { findCountry } from '@/data/countries'
 import { exportClientsCsv } from '@/utils/exportListsCsv'
-import { ClientStatus, EntryOwner, TeamMember } from '@/types'
+import { useSort } from '@/hooks/useSort'
+import { useColumnVisibility, ColumnDef } from '@/hooks/useColumnVisibility'
+import { ClientStatus, EntryOwner, TeamMember, Client } from '@/types'
 
 const STATUS_COLOR: Record<ClientStatus, string> = {
   pre_venda: 'var(--color-info-text)',
@@ -29,6 +34,15 @@ const STATUS_COLOR: Record<ClientStatus, string> = {
 }
 
 const STATUSES: ClientStatus[] = ['pre_venda', 'implantacao', 'sustentacao_novos_projetos']
+
+const COLUMNS: ColumnDef[] = [
+  { key: 'client', label: 'Cliente', locked: true },
+  { key: 'country', label: 'País' },
+  { key: 'status', label: 'Status' },
+  { key: 'owner', label: 'Owner' },
+  { key: 'currentCs', label: 'CS atual' },
+  { key: 'projects', label: 'Projetos' },
+]
 
 export default function ClientsPage() {
   const { t } = useTranslation()
@@ -103,7 +117,16 @@ export default function ClientsPage() {
     setSelected(new Set())
   }
 
-  const sorted = [...filtered].sort((a, b) => a.name.localeCompare(b.name))
+  const { sortField, sortDir, toggleSort, sortItems } = useSort<Client>({
+    client: (c) => c.name,
+    country: (c) => findCountry(c.country)?.name ?? '',
+    status: (c) => c.status,
+    owner: (c) => c.owners[0]?.name ?? '',
+    currentCs: (c) => currentCs(c.id) ?? '',
+    projects: (c) => projectCount(c.id),
+  }, 'client')
+  const { isVisible, toggle: toggleColumn } = useColumnVisibility('wallet.columns', COLUMNS)
+  const sorted = sortItems(filtered)
 
   function projectCount(clientId: string): number {
     return projects.filter((p) => p.clientIds.includes(clientId)).length
@@ -153,23 +176,28 @@ export default function ClientsPage() {
         />
         <MineToggle active={onlyMine} onClick={() => setOnlyMine((v) => !v)} />
         <div className="flex-1" />
+        {view === 'list' && <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />}
         <FilterMenu
           activeCount={[countryFilter, ownerFilter].filter(Boolean).length}
           onClear={() => { setCountryFilter(''); setOwnerFilter('') }}
         >
           <Field label={t('wallet.country')}>
-            <Select value={countryFilter} onChange={(e) => setCountryFilter(e.target.value)}>
-              <option value="">{t('wallet.allCountries')}</option>
-              {countryOptions.sort((a, b) => (findCountry(a)?.name ?? a).localeCompare(findCountry(b)?.name ?? b)).map((code) => (
-                <option key={code} value={code}>{findCountry(code)?.name ?? code}</option>
-              ))}
-            </Select>
+            <SearchableSelect
+              value={countryFilter}
+              onChange={setCountryFilter}
+              emptyOptionLabel={t('wallet.allCountries')}
+              options={countryOptions
+                .sort((a, b) => (findCountry(a)?.name ?? a).localeCompare(findCountry(b)?.name ?? b))
+                .map((code) => ({ id: code, label: findCountry(code)?.name ?? code }))}
+            />
           </Field>
           <Field label={t('wallet.owner')}>
-            <Select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)}>
-              <option value="">{t('wallet.allOwners')}</option>
-              {directoryAsTeam.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-            </Select>
+            <SearchableSelect
+              value={ownerFilter}
+              onChange={setOwnerFilter}
+              emptyOptionLabel={t('wallet.allOwners')}
+              options={directoryAsTeam.map((m) => ({ id: m.id, label: m.name }))}
+            />
           </Field>
         </FilterMenu>
       </div>
@@ -186,12 +214,34 @@ export default function ClientsPage() {
             <thead className="sticky top-0 z-10">
               <tr style={{ background: 'var(--surface-subtle)' }}>
                 <th className="px-4 py-2" style={{ width: 32 }} />
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('wallet.colClient')}</th>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('wallet.colCountry')}</th>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('wallet.colStatus')}</th>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('wallet.colOwner')}</th>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('wallet.colCurrentCs')}</th>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('wallet.colProjects')}</th>
+                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                  <SortableHeader label={t('wallet.colClient')} field="client" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                </th>
+                {isVisible('country') && (
+                  <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                    <SortableHeader label={t('wallet.colCountry')} field="country" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                  </th>
+                )}
+                {isVisible('status') && (
+                  <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                    <SortableHeader label={t('wallet.colStatus')} field="status" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                  </th>
+                )}
+                {isVisible('owner') && (
+                  <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                    <SortableHeader label={t('wallet.colOwner')} field="owner" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                  </th>
+                )}
+                {isVisible('currentCs') && (
+                  <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                    <SortableHeader label={t('wallet.colCurrentCs')} field="currentCs" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                  </th>
+                )}
+                {isVisible('projects') && (
+                  <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                    <SortableHeader label={t('wallet.colProjects')} field="projects" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
@@ -211,11 +261,21 @@ export default function ClientsPage() {
                     <td className="px-4 py-3 font-medium" style={{ maxWidth: 220 }}>
                       <span className="block truncate" style={{ color: 'var(--text-primary)' }} title={c.name}>{c.name}</span>
                     </td>
-                    <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{findCountry(c.country)?.name ?? '—'}</td>
-                    <td className="px-4 py-3"><StatusDot color={STATUS_COLOR[c.status]} label={STATUS_LABEL[c.status]} /></td>
-                    <td className="px-4 py-3"><AvatarStack people={c.owners} size={20} /></td>
-                    <td className="px-4 py-3"><AvatarStack people={cs ? [{ name: cs }] : []} size={20} /></td>
-                    <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{projectCount(c.id)}</td>
+                    {isVisible('country') && (
+                      <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{findCountry(c.country)?.name ?? '—'}</td>
+                    )}
+                    {isVisible('status') && (
+                      <td className="px-4 py-3"><StatusDot color={STATUS_COLOR[c.status]} label={STATUS_LABEL[c.status]} /></td>
+                    )}
+                    {isVisible('owner') && (
+                      <td className="px-4 py-3"><AvatarStack people={c.owners} size={20} /></td>
+                    )}
+                    {isVisible('currentCs') && (
+                      <td className="px-4 py-3"><AvatarStack people={cs ? [{ name: cs }] : []} size={20} /></td>
+                    )}
+                    {isVisible('projects') && (
+                      <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{projectCount(c.id)}</td>
+                    )}
                   </tr>
                 )
               })}
