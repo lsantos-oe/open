@@ -329,8 +329,12 @@ export default function IncidentsPage() {
                   <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                     <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]" checked={selected.has(i.id)} onChange={() => toggleSelect(i.id)} />
                   </td>
-                  <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-primary)' }}>{i.title}</td>
-                  <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{clientNames(i.clientIds)}</td>
+                  <td className="px-4 py-3 font-medium" style={{ maxWidth: 260 }}>
+                    <span className="block truncate" style={{ color: 'var(--text-primary)' }} title={i.title}>{i.title}</span>
+                  </td>
+                  <td className="px-4 py-3" style={{ color: 'var(--text-secondary)', maxWidth: 200 }}>
+                    <span className="block truncate" title={clientNames(i.clientIds)}>{clientNames(i.clientIds)}</span>
+                  </td>
                   <td className="px-4 py-3">
                     <AvatarStack people={i.owner ? [{ name: i.owner.name }] : []} size={20} />
                   </td>

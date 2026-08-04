@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { Button } from '@/components/ui/Button'
@@ -21,12 +22,6 @@ import { findCountry } from '@/data/countries'
 import { exportClientsCsv } from '@/utils/exportListsCsv'
 import { ClientStatus, EntryOwner, TeamMember } from '@/types'
 
-const STATUS_LABEL: Record<ClientStatus, string> = {
-  pre_venda: 'Pré-venda',
-  implantacao: 'Implantação',
-  sustentacao_novos_projetos: 'Sustentação / Novos projetos',
-}
-
 const STATUS_COLOR: Record<ClientStatus, string> = {
   pre_venda: 'var(--color-info-text)',
   implantacao: 'var(--color-warning-text)',
@@ -36,6 +31,7 @@ const STATUS_COLOR: Record<ClientStatus, string> = {
 const STATUSES: ClientStatus[] = ['pre_venda', 'implantacao', 'sustentacao_novos_projetos']
 
 export default function ClientsPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { clients, teamDirectory, createClient, updateClient, archiveClient } = useAppStore()
   const { user } = useAuthStore()
@@ -61,6 +57,12 @@ export default function ClientsPage() {
   const [ploomesLink, setPloomesLink] = useState('')
   const [status, setStatus] = useState<ClientStatus>('pre_venda')
   const [owners, setOwners] = useState<EntryOwner[]>([])
+
+  const STATUS_LABEL: Record<ClientStatus, string> = {
+    pre_venda: t('wallet.statusPreVenda'),
+    implantacao: t('wallet.statusImplantacao'),
+    sustentacao_novos_projetos: t('wallet.statusSustentacao'),
+  }
 
   const directoryAsTeam: TeamMember[] = useMemo(
     () => teamDirectory.filter((p) => p.active).map((p) => ({ id: p.id, name: p.name ?? p.email ?? '', role: '', email: p.email ?? undefined, userId: p.id })),
@@ -129,43 +131,43 @@ export default function ClientsPage() {
     <div className="p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Carteira</h1>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{filtered.length} / {clients.length} cliente{clients.length !== 1 ? 's' : ''}</p>
+          <h1 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{t('nav.wallet')}</h1>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{filtered.length} / {clients.length} {clients.length !== 1 ? t('wallet.clients') : t('wallet.client')}</p>
         </div>
-        <Button onClick={openAdd}>+ Cliente</Button>
+        <Button onClick={openAdd}>+ {t('wallet.client')}</Button>
       </div>
 
       <div className="flex items-center gap-2 mb-4 flex-wrap">
         <SearchInput
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar cliente..."
+          placeholder={t('wallet.searchPlaceholder')}
         />
         <ViewToggle
           value={view}
           onChange={setView}
           options={[
-            { value: 'list', label: 'Lista', icon: <ListIcon className="w-3.5 h-3.5" /> },
-            { value: 'kanban', label: 'Kanban', icon: <KanbanIcon className="w-3.5 h-3.5" /> },
+            { value: 'list', label: t('project.viewList'), icon: <ListIcon className="w-3.5 h-3.5" /> },
+            { value: 'kanban', label: t('project.viewKanban'), icon: <KanbanIcon className="w-3.5 h-3.5" /> },
           ]}
         />
-        <MineToggle active={onlyMine} onClick={() => setOnlyMine((v) => !v)} label="Meus" />
+        <MineToggle active={onlyMine} onClick={() => setOnlyMine((v) => !v)} />
         <div className="flex-1" />
         <FilterMenu
           activeCount={[countryFilter, ownerFilter].filter(Boolean).length}
           onClear={() => { setCountryFilter(''); setOwnerFilter('') }}
         >
-          <Field label="País">
+          <Field label={t('wallet.country')}>
             <Select value={countryFilter} onChange={(e) => setCountryFilter(e.target.value)}>
-              <option value="">Todos os países</option>
+              <option value="">{t('wallet.allCountries')}</option>
               {countryOptions.sort((a, b) => (findCountry(a)?.name ?? a).localeCompare(findCountry(b)?.name ?? b)).map((code) => (
                 <option key={code} value={code}>{findCountry(code)?.name ?? code}</option>
               ))}
             </Select>
           </Field>
-          <Field label="Owner">
+          <Field label={t('wallet.owner')}>
             <Select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)}>
-              <option value="">Todos os owners</option>
+              <option value="">{t('wallet.allOwners')}</option>
               {directoryAsTeam.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
             </Select>
           </Field>
@@ -175,8 +177,8 @@ export default function ClientsPage() {
       {sorted.length === 0 ? (
         <EmptyState
           icon="🗂️"
-          title={clients.length === 0 ? 'Nenhum cliente cadastrado ainda.' : 'Nenhum cliente encontrado com esses filtros.'}
-          action={clients.length === 0 ? { label: '+ Criar primeiro cliente', onClick: openAdd } : undefined}
+          title={clients.length === 0 ? t('wallet.noClientsYet') : t('wallet.noClientsFiltered')}
+          action={clients.length === 0 ? { label: t('wallet.createFirst'), onClick: openAdd } : undefined}
         />
       ) : view === 'list' ? (
         <div className="rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
@@ -184,12 +186,12 @@ export default function ClientsPage() {
             <thead className="sticky top-0 z-10">
               <tr style={{ background: 'var(--surface-subtle)' }}>
                 <th className="px-4 py-2" style={{ width: 32 }} />
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>Cliente</th>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>País</th>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>Status</th>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>Owner</th>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>CS atual</th>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>Projetos</th>
+                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('wallet.colClient')}</th>
+                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('wallet.colCountry')}</th>
+                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('wallet.colStatus')}</th>
+                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('wallet.colOwner')}</th>
+                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('wallet.colCurrentCs')}</th>
+                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('wallet.colProjects')}</th>
               </tr>
             </thead>
             <tbody className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
@@ -206,7 +208,9 @@ export default function ClientsPage() {
                     <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]" checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} />
                     </td>
-                    <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-primary)' }}>{c.name}</td>
+                    <td className="px-4 py-3 font-medium" style={{ maxWidth: 220 }}>
+                      <span className="block truncate" style={{ color: 'var(--text-primary)' }} title={c.name}>{c.name}</span>
+                    </td>
                     <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{findCountry(c.country)?.name ?? '—'}</td>
                     <td className="px-4 py-3"><StatusDot color={STATUS_COLOR[c.status]} label={STATUS_LABEL[c.status]} /></td>
                     <td className="px-4 py-3"><AvatarStack people={c.owners} size={20} /></td>
@@ -260,32 +264,32 @@ export default function ClientsPage() {
 
       <Modal
         open={showAdd}
-        title="Novo Cliente"
+        title={t('wallet.newClientTitle')}
         onClose={() => setShowAdd(false)}
         size="sm"
         footer={
           <>
-            <Button variant="secondary" onClick={() => setShowAdd(false)}>Cancelar</Button>
-            <Button onClick={handleCreate} disabled={!name.trim()}>É basicamente isso</Button>
+            <Button variant="secondary" onClick={() => setShowAdd(false)}>{t('actions.cancel')}</Button>
+            <Button onClick={handleCreate} disabled={!name.trim()}>{t('actions.confirm')}</Button>
           </>
         }
       >
         <div className="space-y-4">
-          <Field label="Nome do cliente" required>
-            <Input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome da empresa" />
+          <Field label={t('wallet.clientName')} required>
+            <Input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder={t('wallet.companyNamePlaceholder')} />
           </Field>
-          <Field label="País">
+          <Field label={t('wallet.country')}>
             <CountrySelect value={country} onChange={setCountry} />
           </Field>
-          <Field label="Status">
+          <Field label={t('wallet.colStatus')}>
             <Select value={status} onChange={(e) => setStatus(e.target.value as ClientStatus)}>
               {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
             </Select>
           </Field>
-          <Field label="Owner">
+          <Field label={t('wallet.owner')}>
             <OwnersField owners={owners} onChange={setOwners} teamMembers={directoryAsTeam} />
           </Field>
-          <Field label="Link no Ploomes">
+          <Field label={t('wallet.ploomesLink')}>
             <Input value={ploomesLink} onChange={(e) => setPloomesLink(e.target.value)} placeholder="https://..." />
           </Field>
         </div>
@@ -300,7 +304,7 @@ export default function ClientsPage() {
             onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}
             onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-disabled)')}
           >
-            <span className="mr-1">↓</span>Exportar CSV
+            <span className="mr-1">↓</span>{t('exportCsv')}
           </button>
         </div>
       )}
@@ -311,26 +315,26 @@ export default function ClientsPage() {
           className="text-xs px-2 py-1 rounded-[var(--radius-md)]"
           style={{ background: 'rgba(255,255,255,0.15)' }}
         >
-          Alterar owner
+          {t('wallet.changeOwner')}
         </button>
         <button
           onClick={applyBulkArchive}
           className="text-xs px-2 py-1 rounded-[var(--radius-md)]"
           style={{ background: 'rgba(255,255,255,0.15)' }}
         >
-          Arquivar
+          {t('wallet.archive')}
         </button>
       </SelectionBar>
 
       <Modal
         open={bulkOwnersOpen}
-        title={`Alterar owner de ${selected.size} item(ns)`}
+        title={t('wallet.changeOwnerOf', { n: selected.size })}
         onClose={() => setBulkOwnersOpen(false)}
         size="sm"
         footer={
           <>
-            <Button variant="secondary" onClick={() => setBulkOwnersOpen(false)}>Cancelar</Button>
-            <Button onClick={applyBulkOwners} disabled={bulkOwners.length === 0}>É basicamente isso</Button>
+            <Button variant="secondary" onClick={() => setBulkOwnersOpen(false)}>{t('actions.cancel')}</Button>
+            <Button onClick={applyBulkOwners} disabled={bulkOwners.length === 0}>{t('actions.confirm')}</Button>
           </>
         }
       >

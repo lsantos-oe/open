@@ -203,17 +203,17 @@ function ListView({ projects, holidays, onOpen, selected, onToggle }: ListViewPr
                 <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                   <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]" checked={selected.has(p.id)} onChange={() => onToggle(p.id)} />
                 </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-[var(--text-primary)]">{p.name}</p>
+                <td className="px-4 py-3" style={{ maxWidth: 240 }}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <p className="font-medium text-[var(--text-primary)] truncate" title={p.name}>{p.name}</p>
                     {isArchived && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-[var(--radius-pill)] font-medium" style={{ background: 'var(--surface-subtle)', color: 'var(--text-tertiary)', border: '0.5px solid var(--border-default)' }}>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-[var(--radius-pill)] font-medium shrink-0" style={{ background: 'var(--surface-subtle)', color: 'var(--text-tertiary)', border: '0.5px solid var(--border-default)' }}>
                         {t('project.archived')}
                       </span>
                     )}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-[var(--text-secondary)]">{p.client}</td>
+                <td className="px-4 py-3 text-[var(--text-secondary)] truncate" style={{ maxWidth: 160 }} title={p.client}>{p.client}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <AvatarStack people={[{ name: p.pm }]} size={20} />

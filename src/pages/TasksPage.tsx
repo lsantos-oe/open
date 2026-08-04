@@ -11,7 +11,6 @@ import { useAuthStore } from '@/stores/useAuthStore'
 import { Entry, EntryOwner, EntryStatus, Project, Incident, Client, TeamMember } from '@/types'
 import EntryModal from '@/components/plan/EntryModal'
 import IncidentEntryModal from '@/components/plan/IncidentEntryModal'
-import StandaloneEntryModal from '@/components/plan/StandaloneEntryModal'
 import OwnersField from '@/components/plan/OwnersField'
 import { SelectionBar } from '@/components/ui/SelectionBar'
 import { StatusDot } from '@/components/ui/StatusDot'
@@ -307,7 +306,6 @@ export default function TasksPage() {
   const [onlyMine, setOnlyMine] = useState(false)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [newTaskOpen, setNewTaskOpen] = useState(false)
-  const [newStandaloneOpen, setNewStandaloneOpen] = useState(false)
   const [editCard, setEditCard] = useState<GlobalCard | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkOwnersOpen, setBulkOwnersOpen] = useState(false)
@@ -436,9 +434,6 @@ export default function TasksPage() {
           {t('tasks.title')}
         </span>
         <div className="flex items-center gap-2">
-          <Button variant="secondary" onClick={() => setNewStandaloneOpen(true)}>
-            + {t('tasks.standaloneTask' as any)}
-          </Button>
           <Button onClick={() => setNewTaskOpen(true)}>
             + {t('tasks.newTask')}
           </Button>
@@ -528,11 +523,11 @@ export default function TasksPage() {
                     <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                       <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]" checked={selected.has(card.id)} onChange={() => toggleSelect(card.id)} />
                     </td>
-                    <td className="px-3 py-2.5 cursor-pointer" onClick={() => setEditCard(card)}>
-                      <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{card.name}</span>
+                    <td className="px-3 py-2.5 cursor-pointer" onClick={() => setEditCard(card)} style={{ maxWidth: 260 }}>
+                      <span className="block truncate" style={{ color: 'var(--text-primary)', fontWeight: 500 }} title={card.name}>{card.name}</span>
                     </td>
-                    <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)' }}>
-                      {scopeLabel(card)}
+                    <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)', maxWidth: 180 }}>
+                      <span className="block truncate" title={scopeLabel(card)}>{scopeLabel(card)}</span>
                     </td>
                     <td className="px-3 py-2.5">
                       <AvatarStack people={entryOwners(card)} size={20} />
@@ -571,16 +566,12 @@ export default function TasksPage() {
         </div>
       )}
 
-      {/* New task modal */}
+      {/* New task modal — project field starts empty (standalone); pick a project to link it */}
       <EntryModal
         open={newTaskOpen}
         mode="create"
+        allowStandalone
         onClose={() => setNewTaskOpen(false)}
-      />
-      <StandaloneEntryModal
-        open={newStandaloneOpen}
-        mode="create"
-        onClose={() => setNewStandaloneOpen(false)}
       />
 
       {/* Edit task modal */}
@@ -600,14 +591,16 @@ export default function TasksPage() {
           entry={editCard}
           entryProjectId={editCard._scopeId}
           entryPhaseId={editCard._phaseId}
+          allowStandalone
           onClose={() => setEditCard(null)}
         />
       )}
       {editCard && editCard._scopeType === 'standalone' && (
-        <StandaloneEntryModal
+        <EntryModal
           open
           mode="edit"
           entry={editCard}
+          allowStandalone
           onClose={() => setEditCard(null)}
         />
       )}

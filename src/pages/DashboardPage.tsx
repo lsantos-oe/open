@@ -100,34 +100,34 @@ export default function DashboardPage() {
   return (
     <div className="p-8 max-w-5xl mx-auto">
       <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
-        Olá, {profile?.name?.split(' ')[0] ?? 'tudo bem'}
+        {t('dashboard.greeting', { name: profile?.name?.split(' ')[0] ?? t('dashboard.greetingFallback') })}
       </h1>
-      <p className="text-sm mb-6" style={{ color: 'var(--text-tertiary)' }}>Sua visão do que precisa de atenção.</p>
+      <p className="text-sm mb-6" style={{ color: 'var(--text-tertiary)' }}>{t('dashboard.subtitle')}</p>
 
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
           <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{myIncidents.length}</p>
-          <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>Incidentes meus, em aberto</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>{t('dashboard.myOpenIncidents')}</p>
         </div>
         <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
           <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{sortedTasks.length}</p>
-          <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>Tarefas minhas, pendentes</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>{t('dashboard.myPendingTasks')}</p>
         </div>
         <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
           <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{activeProjectsCount}</p>
-          <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>Projetos ativos</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>{t('dashboard.activeProjects')}</p>
         </div>
       </div>
 
       {dueSoon.length > 0 && (
         <div className="rounded-[var(--radius-lg)] border p-4 mb-6" style={{ borderColor: 'var(--color-warning-text)', background: 'var(--color-warning-bg)' }}>
-          <p className="text-sm font-semibold mb-2" style={{ color: 'var(--color-warning-text)' }}>Vencendo em até 7 dias</p>
+          <p className="text-sm font-semibold mb-2" style={{ color: 'var(--color-warning-text)' }}>{t('dashboard.dueSoon')}</p>
           <div className="space-y-1.5">
             {dueSoon.map((item, i) => (
               <button key={i} onClick={item.onClick} className="w-full flex items-center justify-between text-left text-sm py-1 hover:underline" style={{ color: 'var(--text-primary)' }}>
                 <span className="truncate">{item.label}</span>
                 <span className="shrink-0 ml-3 text-xs" style={{ color: 'var(--color-warning-text)' }}>
-                  {item.days < 0 ? `${-item.days}d atrasado` : item.days === 0 ? 'hoje' : `em ${item.days}d`}
+                  {item.days < 0 ? t('dashboard.overdueDays', { n: -item.days }) : item.days === 0 ? t('dashboard.today') : t('dashboard.inDays', { n: item.days })}
                 </span>
               </button>
             ))}
@@ -138,11 +138,11 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Minhas tarefas em aberto</p>
+            <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('dashboard.myOpenTasks')}</p>
             <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{sortedTasks.length}</span>
           </div>
           {sortedTasks.length === 0 ? (
-            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Nenhuma tarefa em aberto atribuída a você.</p>
+            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>{t('dashboard.noOpenTasks')}</p>
           ) : (
             <div className="space-y-1">
               {sortedTasks.slice(0, 8).map((task) => (
@@ -156,7 +156,7 @@ export default function DashboardPage() {
                 </button>
               ))}
               {sortedTasks.length > 8 && (
-                <p className="text-xs pt-1" style={{ color: 'var(--text-tertiary)' }}>+ {sortedTasks.length - 8} outras</p>
+                <p className="text-xs pt-1" style={{ color: 'var(--text-tertiary)' }}>{t('dashboard.moreOthersFem', { n: sortedTasks.length - 8 })}</p>
               )}
             </div>
           )}
@@ -164,11 +164,11 @@ export default function DashboardPage() {
 
         <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Meus incidentes</p>
+            <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('dashboard.myIncidentsCard')}</p>
             <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{myIncidents.length}</span>
           </div>
           {myIncidents.length === 0 ? (
-            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Nenhum incidente aberto com você.</p>
+            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>{t('dashboard.noMyIncidents')}</p>
           ) : (
             <div className="space-y-1">
               {myIncidents.slice(0, 8).map((i) => (
@@ -182,7 +182,7 @@ export default function DashboardPage() {
                 </button>
               ))}
               {myIncidents.length > 8 && (
-                <p className="text-xs pt-1" style={{ color: 'var(--text-tertiary)' }}>+ {myIncidents.length - 8} outros</p>
+                <p className="text-xs pt-1" style={{ color: 'var(--text-tertiary)' }}>{t('dashboard.moreOthersMasc', { n: myIncidents.length - 8 })}</p>
               )}
             </div>
           )}

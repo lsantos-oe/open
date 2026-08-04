@@ -112,14 +112,14 @@ export function UsersManagementPanel() {
               const isSelf = p.id === user?.id
               return (
                 <tr key={p.id}>
-                  <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-primary)' }}>
-                    <div className="flex items-center gap-2">
+                  <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-primary)', maxWidth: 220 }}>
+                    <div className="flex items-center gap-2 min-w-0">
                       <AvatarStack people={[{ name: p.name ?? p.email ?? '', avatarUrl: p.avatar_url ?? undefined }]} size={24} />
-                      {p.name ?? '—'}
-                      {isSelf && <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>(você)</span>}
+                      <span className="truncate" title={p.name ?? undefined}>{p.name ?? '—'}</span>
+                      {isSelf && <span className="text-xs shrink-0" style={{ color: 'var(--text-tertiary)' }}>(você)</span>}
                     </div>
                   </td>
-                  <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{p.email}</td>
+                  <td className="px-4 py-3 truncate" style={{ color: 'var(--text-secondary)', maxWidth: 200 }} title={p.email ?? undefined}>{p.email}</td>
                   <td className="px-4 py-3">
                     <Select
                       value={p.role}

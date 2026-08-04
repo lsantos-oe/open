@@ -4,7 +4,7 @@ import { useAppStore } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useToastStore } from '@/stores/useToastStore'
 import { Entry, EntryOwner, EntryType, EntryStatus, RiskFlag, Link, TeamMember } from '@/types'
-import { contactsForClients } from '@/utils/contacts'
+import { contactsForClients, contactsForClient } from '@/utils/contacts'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
@@ -24,6 +24,11 @@ interface EntryModalProps {
   defaultParentEntryId?: string
   defaultType?: EntryType
   lockProject?: boolean
+  /** Lets the Project field be cleared to "Nenhum", turning this into a
+   *  standalone task. Off by default so PlanPage/KanbanPage — which always
+   *  edit within one project's plan — can't accidentally drop a task out of
+   *  it; TasksPage's global list opts in. */
+  allowStandalone?: boolean
   onClose: () => void
   onRequestDateChange?: (
     entry: Entry,
@@ -174,6 +179,7 @@ export default function EntryModal({
   defaultParentId, defaultParentEntryId,
   defaultType = 'task',
   lockProject,
+  allowStandalone,
   onClose, onRequestDateChange,
 }: EntryModalProps) {
   const { t } = useTranslation()
@@ -181,6 +187,7 @@ export default function EntryModal({
     projects, clients, contacts, teamDirectory,
     addEntry, addUnassignedEntry, addSubtask, updateEntry, deleteEntry, moveEntryToPhase, moveEntryToUnassignedPhase,
     addComment, removeComment,
+    addStandaloneTask, updateStandaloneTask, deleteStandaloneTask, changeStandaloneTaskDate,
   } = useAppStore()
   const { profile } = useAuthStore()
   const { addToast } = useToastStore()
@@ -189,13 +196,15 @@ export default function EntryModal({
 
   const origProjectId = useMemo(() => {
     if (entryProjectId) return entryProjectId
-    if (!entry) return defaultProjectId ?? projects[0]?.id ?? ''
+    // No project is a real, resolvable state (a standalone task) — it's not a
+    // "couldn't figure it out" fallback, so this never defaults to projects[0].
+    if (!entry) return defaultProjectId ?? ''
     for (const p of projects) {
       for (const ph of p.phases) {
         if (ph.entries.some((e) => e.id === entry.id)) return p.id
       }
     }
-    return defaultProjectId ?? projects[0]?.id ?? ''
+    return defaultProjectId ?? ''
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
@@ -210,10 +219,13 @@ export default function EntryModal({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, origProjectId])
 
-  const origClientId = useMemo(
-    () => projects.find((p) => p.id === origProjectId)?.clientId ?? '',
+  const origClientId = useMemo(() => {
+    if (origProjectId) return projects.find((p) => p.id === origProjectId)?.clientId ?? ''
+    // Standalone task: there's no project to derive a client from, so its
+    // own clientId field IS the value.
+    return entry?.clientId ?? ''
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  [open, origProjectId])
+  }, [open, origProjectId])
 
   // ── form state ────────────────────────────────────────────────────────────
 
@@ -221,7 +233,7 @@ export default function EntryModal({
     if (mode === 'edit' && entry) {
       return entryToForm(entry, origProjectId, origPhaseId)
     }
-    const projId = defaultProjectId ?? projects[0]?.id ?? ''
+    const projId = defaultProjectId ?? ''
     const proj = projects.find((p) => p.id === projId)
     const phId = defaultPhaseId ?? proj?.phases[0]?.id ?? ''
     return emptyForm(defaultType, projId, phId, defaultParentEntryId, defaultParentId)
@@ -273,10 +285,11 @@ export default function EntryModal({
     () => teamDirectory.filter((p) => p.active).map((p) => ({ id: p.id, name: p.name ?? p.email ?? '', role: '', email: p.email ?? undefined, userId: p.id })),
     [teamDirectory],
   )
-  const selectedContacts = useMemo(
-    () => selectedProject?.clientIds.length ? contactsForClients(contacts, selectedProject.clientIds) : [],
-    [contacts, selectedProject?.clientIds],
-  )
+  const selectedContacts = useMemo(() => {
+    if (selectedProject?.clientIds.length) return contactsForClients(contacts, selectedProject.clientIds)
+    if (!form.projectId && clientFilter) return contactsForClient(contacts, clientFilter)
+    return []
+  }, [contacts, selectedProject?.clientIds, form.projectId, clientFilter])
 
   const origProject = useMemo(
     () => projects.find((p) => p.id === origProjectId),
@@ -290,6 +303,11 @@ export default function EntryModal({
   // ── handlers ──────────────────────────────────────────────────────────────
 
   function handleProjectChange(newProjectId: string) {
+    if (!newProjectId) {
+      // Standalone: no phases, no milestone/meeting concept, no plan visibility toggle.
+      setForm((f) => ({ ...f, projectId: '', phaseId: '', dependsOn: [], type: 'task', hiddenFromPlan: false }))
+      return
+    }
     const newProj = projects.find((p) => p.id === newProjectId)
     const newPhaseId = form.hiddenFromPlan ? '' : newProj?.phases.find((ph) => !ph.isUnassigned)?.id ?? ''
     setForm((f) => ({ ...f, projectId: newProjectId, phaseId: newPhaseId, dependsOn: [] }))
@@ -297,6 +315,8 @@ export default function EntryModal({
 
   function handleClientFilterChange(newClientId: string) {
     setClientFilter(newClientId)
+    // Standalone: this field IS the task's own client, not a project-list filter.
+    if (!form.projectId) return
     const stillValid = newClientId
       ? !!projects.find((p) => p.id === form.projectId)?.clientIds.includes(newClientId)
       : true
@@ -439,15 +459,46 @@ export default function EntryModal({
     }
   }
 
+  // A standalone task (no project, no incident) has none of the plan-specific
+  // concepts — phases, milestone/meeting type, dependencies — so it gets its
+  // own smaller base.
+  function buildStandaloneEntryBase() {
+    return {
+      type: 'task' as const,
+      name: form.name.trim(),
+      description: form.description.trim() || undefined,
+      clientId: clientFilter || undefined,
+      ...buildOwnerPatch(),
+      status: form.status,
+      riskFlag: form.riskFlag,
+      dependsOn: [],
+      order: 0,
+      plannedStart: form.plannedStart || undefined,
+      plannedEnd: form.plannedEnd || undefined,
+      durationDays: form.durationDays,
+      links: form.links,
+    }
+  }
+
   // ── save / delete ─────────────────────────────────────────────────────────
 
+  const phaseRequired = !!form.projectId && !form.hiddenFromPlan
+  const canSave = !!form.name.trim() && (!phaseRequired || !!form.phaseId) && form.owners.some((o) => o.kind === 'executor')
+
   function handleSaveCreate() {
-    if (!form.name.trim() || (!form.hiddenFromPlan && !form.phaseId) || !form.owners.some((o) => o.kind === 'executor')) return
-    if (form.type === 'task' && form.plannedStart && form.plannedEnd && form.plannedEnd < form.plannedStart) {
+    if (!canSave) return
+    if (form.plannedStart && form.plannedEnd && form.plannedEnd < form.plannedStart) {
       setEndDateError(t('errors.endBeforeStart'))
       return
     }
     setEndDateError('')
+
+    if (!form.projectId) {
+      addStandaloneTask(buildStandaloneEntryBase())
+      onClose()
+      return
+    }
+
     const base = buildEntryBase()
     const parentId = defaultParentId || form.subtaskOf || ''
     if (parentId) {
@@ -464,14 +515,43 @@ export default function EntryModal({
   }
 
   function handleSaveEdit() {
-    if (!entry || !form.name.trim() || (!form.hiddenFromPlan && !form.phaseId) || !form.owners.some((o) => o.kind === 'executor')) return
-    if (form.type === 'task' && form.plannedStart && form.plannedEnd && form.plannedEnd < form.plannedStart) {
+    if (!entry || !canSave) return
+    if (form.plannedStart && form.plannedEnd && form.plannedEnd < form.plannedStart) {
       setEndDateError(t('errors.endBeforeStart'))
       return
     }
     setEndDateError('')
 
-    if (projectChanged) {
+    const wasStandalone = !origProjectId
+    const isStandalone = !form.projectId
+
+    if (wasStandalone && isStandalone) {
+      // Still standalone: dates go through changeStandaloneTaskDate so the
+      // critical-path recompute stays consistent.
+      const executor = form.owners.find((o) => o.kind === 'executor')
+      updateStandaloneTask(entry.id, {
+        name: form.name.trim(),
+        description: form.description.trim() || undefined,
+        clientId: clientFilter || undefined,
+        owners: form.owners,
+        responsible: executor?.name ?? '',
+        status: form.status,
+        riskFlag: form.riskFlag,
+        durationDays: form.durationDays,
+        links: form.links,
+      })
+      if (form.plannedStart && form.plannedStart !== (entry.plannedStart ?? '')) changeStandaloneTaskDate(entry.id, 'plannedStart', form.plannedStart)
+      if (form.plannedEnd && form.plannedEnd !== (entry.plannedEnd ?? '')) changeStandaloneTaskDate(entry.id, 'plannedEnd', form.plannedEnd)
+    } else if (wasStandalone && !isStandalone) {
+      // Moved from standalone into a project.
+      deleteStandaloneTask(entry.id)
+      if (form.phaseId) addEntry(form.projectId, form.phaseId, buildEntryBase())
+      else addUnassignedEntry(form.projectId, buildEntryBase())
+    } else if (!wasStandalone && isStandalone) {
+      // Moved out of its project into standalone.
+      deleteEntry(origProjectId, origPhaseId, entry.id)
+      addStandaloneTask(buildStandaloneEntryBase())
+    } else if (projectChanged) {
       deleteEntry(origProjectId, origPhaseId, entry.id)
       if (form.phaseId) addEntry(form.projectId, form.phaseId, buildEntryBase())
       else addUnassignedEntry(form.projectId, buildEntryBase())
@@ -508,7 +588,8 @@ export default function EntryModal({
 
   function handleDelete() {
     if (!entry) return
-    deleteEntry(origProjectId, origPhaseId, entry.id)
+    if (!origProjectId) deleteStandaloneTask(entry.id)
+    else deleteEntry(origProjectId, origPhaseId, entry.id)
     onClose()
   }
 
@@ -563,7 +644,7 @@ export default function EntryModal({
       <Button variant="secondary" onClick={onClose}>{t('actions.cancel')}</Button>
       <Button
         onClick={mode === 'edit' ? handleSaveEdit : handleSaveCreate}
-        disabled={!form.name.trim() || (!form.hiddenFromPlan && !form.phaseId) || !form.owners.some((o) => o.kind === 'executor')}
+        disabled={!canSave}
       >
         {mode === 'edit' ? t('entry.saveChanges') : t('actions.confirm')}
       </Button>
@@ -579,8 +660,8 @@ export default function EntryModal({
         {/* ── LEFT COLUMN ── */}
         <div style={{ flex: 2, padding: 24, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-          {/* Type selector (create, not subtask, not forced meeting) */}
-          {mode === 'create' && !isSubtask && !defaultParentEntryId && (
+          {/* Type selector (create, not subtask, not forced meeting, not standalone) */}
+          {mode === 'create' && !isSubtask && !defaultParentEntryId && !!form.projectId && (
             <div style={{ display: 'flex', gap: 8 }}>
               {(['task', 'milestone', 'meeting'] as EntryType[]).map((type) => (
                 <button
@@ -816,12 +897,15 @@ export default function EntryModal({
             />
           </FieldBox>
 
-          {/* Project */}
+          {/* Project (optional — "Nenhum" makes this a standalone task) */}
           <FieldBox label={t('entry.project' as any)}>
             <SearchableSelect
               value={form.projectId}
               onChange={handleProjectChange}
-              options={visibleProjects.map(p => ({ id: p.id, label: p.name }))}
+              options={[
+                ...(allowStandalone ? [{ id: '', label: t('entry.noProject' as any) }] : []),
+                ...visibleProjects.map(p => ({ id: p.id, label: p.name })),
+              ]}
               disabled={lockProject && mode === 'create'}
               style={inputStyle}
             />
@@ -832,8 +916,8 @@ export default function EntryModal({
             )}
           </FieldBox>
 
-          {/* Phase */}
-          {!isSubtask && (
+          {/* Phase (project tasks only — standalone tasks have no plan/phase) */}
+          {!isSubtask && !!form.projectId && (
             <FieldBox label={t('plan.phase')}>
               <select
                 value={selectedProject?.phases.find(ph => ph.id === form.phaseId)?.isUnassigned ? '' : form.phaseId}
@@ -883,25 +967,27 @@ export default function EntryModal({
             </select>
           </FieldBox>
 
-          {/* Show in plan toggle — always visible */}
-          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={!form.hiddenFromPlan}
-              onChange={handleToggleHiddenFromPlan}
-              style={{ marginTop: 2, flexShrink: 0 }}
-            />
-            <div>
-              <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>
-                {t('entry.showInPlan')}
-              </span>
-              {form.hiddenFromPlan && (
-                <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>
-                  {t('entry.hiddenFromPlanHint')}
-                </p>
-              )}
-            </div>
-          </label>
+          {/* Show in plan toggle (project tasks only — a standalone task has no plan to show in) */}
+          {!!form.projectId && (
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={!form.hiddenFromPlan}
+                onChange={handleToggleHiddenFromPlan}
+                style={{ marginTop: 2, flexShrink: 0 }}
+              />
+              <div>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>
+                  {t('entry.showInPlan')}
+                </span>
+                {form.hiddenFromPlan && (
+                  <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>
+                    {t('entry.hiddenFromPlanHint')}
+                  </p>
+                )}
+              </div>
+            </label>
+          )}
 
           {/* Divider */}
           <div style={{ height: 1, background: 'var(--border-default)' }} />
@@ -968,8 +1054,8 @@ export default function EntryModal({
             </div>
           </div>
 
-          {/* Comments (edit mode) */}
-          {mode === 'edit' && entry && (
+          {/* Comments (edit mode, project tasks only — standalone tasks have no comment thread) */}
+          {mode === 'edit' && entry && !!origProjectId && (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
               <FieldLabel>{t('entry.comments')}</FieldLabel>
               {entry.comments.length === 0 ? (

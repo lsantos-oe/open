@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
 import { Button } from '@/components/ui/Button'
 import { Input, Field, Select } from '@/components/ui/Input'
@@ -11,6 +12,7 @@ import { CappedBadgeList } from '@/components/ui/CappedBadgeList'
 import { ClientContact } from '@/types'
 
 export default function ContactsPage() {
+  const { t } = useTranslation()
   const { contacts, clients, createContact, updateContact, deleteContact, linkContactToClient, unlinkContactFromClient } = useAppStore()
 
   const [query, setQuery] = useState('')
@@ -97,23 +99,23 @@ export default function ContactsPage() {
     <div className="p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Contatos</h1>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{filtered.length} / {contacts.length} contato{contacts.length !== 1 ? 's' : ''}</p>
+          <h1 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{t('nav.contacts')}</h1>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{filtered.length} / {contacts.length} {contacts.length !== 1 ? t('contacts.contacts') : t('contacts.contact')}</p>
         </div>
-        <Button onClick={openAdd}>+ Contato</Button>
+        <Button onClick={openAdd}>+ {t('contacts.contact')}</Button>
       </div>
 
       <div className="flex items-center gap-2 mb-4 flex-wrap">
         <SearchInput
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar contato..."
+          placeholder={t('contacts.searchPlaceholder')}
         />
         <div className="flex-1" />
         <FilterMenu activeCount={filterClientId ? 1 : 0} onClear={() => setFilterClientId('')}>
-          <Field label="Cliente vinculado">
+          <Field label={t('contacts.linkedClient')}>
             <Select value={filterClientId} onChange={(e) => setFilterClientId(e.target.value)}>
-              <option value="">Todos os clientes</option>
+              <option value="">{t('contacts.allClients')}</option>
               {[...clients].sort((a, b) => a.name.localeCompare(b.name)).map((cl) => (
                 <option key={cl.id} value={cl.id}>{cl.name}</option>
               ))}
@@ -125,8 +127,8 @@ export default function ContactsPage() {
       {sorted.length === 0 ? (
         <EmptyState
           icon="👤"
-          title={contacts.length === 0 ? 'Nenhum contato cadastrado ainda.' : 'Nenhum contato encontrado com esses filtros.'}
-          action={contacts.length === 0 ? { label: '+ Criar primeiro contato', onClick: openAdd } : undefined}
+          title={contacts.length === 0 ? t('contacts.noContactsYet') : t('contacts.noContactsFiltered')}
+          action={contacts.length === 0 ? { label: t('contacts.createFirst'), onClick: openAdd } : undefined}
         />
       ) : (
         <div className="rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
@@ -134,10 +136,10 @@ export default function ContactsPage() {
             <thead className="sticky top-0 z-10">
               <tr style={{ background: 'var(--surface-subtle)' }}>
                 <th className="px-4 py-2" style={{ width: 32 }} />
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>Nome</th>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>Cargo</th>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>Contato</th>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>Clientes vinculados</th>
+                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('contacts.colName')}</th>
+                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('contacts.colRole')}</th>
+                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('contacts.colContact')}</th>
+                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('contacts.linkedClients')}</th>
               </tr>
             </thead>
             <tbody className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
@@ -177,33 +179,33 @@ export default function ContactsPage() {
 
       <Modal
         open={showModal}
-        title={editContact ? 'Editar contato' : 'Novo contato'}
+        title={editContact ? t('contacts.editContact') : t('contacts.newContact')}
         onClose={() => setShowModal(false)}
         size="sm"
         footer={
           <>
-            <Button variant="secondary" onClick={() => setShowModal(false)}>Cancelar</Button>
-            <Button onClick={saveContact} disabled={!form.name.trim()}>É basicamente isso</Button>
+            <Button variant="secondary" onClick={() => setShowModal(false)}>{t('actions.cancel')}</Button>
+            <Button onClick={saveContact} disabled={!form.name.trim()}>{t('actions.confirm')}</Button>
           </>
         }
       >
         <div className="space-y-3">
-          <Field label="Nome" required>
+          <Field label={t('contacts.colName')} required>
             <Input autoFocus value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
           </Field>
-          <Field label="Cargo">
+          <Field label={t('contacts.colRole')}>
             <Input value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))} />
           </Field>
-          <Field label="E-mail">
+          <Field label={t('contacts.email')}>
             <Input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
           </Field>
-          <Field label="Telefone">
+          <Field label={t('contacts.phone')}>
             <Input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
           </Field>
-          <Field label="Clientes vinculados">
+          <Field label={t('contacts.linkedClients')}>
             <div className="space-y-1 max-h-40 overflow-y-auto rounded-[var(--radius-md)] border p-2" style={{ borderColor: 'var(--border-default)' }}>
               {clients.length === 0 ? (
-                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Nenhum cliente cadastrado.</p>
+                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{t('contacts.noClientsRegistered')}</p>
               ) : (
                 [...clients].sort((a, b) => a.name.localeCompare(b.name)).map((cl) => (
                   <label key={cl.id} className="flex items-center gap-2 text-sm px-1 py-0.5 cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
@@ -228,7 +230,7 @@ export default function ContactsPage() {
           className="text-xs px-2 py-1 rounded-[var(--radius-md)]"
           style={{ background: 'rgba(255,255,255,0.15)' }}
         >
-          Excluir
+          {t('actions.delete')}
         </button>
       </SelectionBar>
     </div>
