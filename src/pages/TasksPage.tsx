@@ -16,6 +16,9 @@ import { SelectionBar } from '@/components/ui/SelectionBar'
 import { StatusDot } from '@/components/ui/StatusDot'
 import { AvatarStack } from '@/components/ui/AvatarStack'
 import { FilterMenu } from '@/components/ui/FilterMenu'
+import { ColumnsMenu } from '@/components/ui/ColumnsMenu'
+import { SortableHeader } from '@/components/ui/SortableHeader'
+import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { EmptyState as SharedEmptyState } from '@/components/ui/EmptyState'
 import { Field } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -25,6 +28,8 @@ import { ViewToggle } from '@/components/ui/ViewToggle'
 import { ListIcon, KanbanIcon, CheckCircleIcon, ChatBubbleIcon, LinkIcon } from '@/components/ui/icons'
 import { isEntryMine } from '@/utils/involvement'
 import { contactsForClients } from '@/utils/contacts'
+import { useSort } from '@/hooks/useSort'
+import { useColumnVisibility, ColumnDef } from '@/hooks/useColumnVisibility'
 
 const ENTRY_STATUS_COLOR: Record<EntryStatus, string> = {
   pending: 'var(--text-tertiary)',
@@ -55,6 +60,14 @@ const COL_STYLE: Record<string, { header: string; bg: string }> = {
   blocked:     { header: 'var(--color-danger-text)',  bg: 'var(--color-danger-bg)' },
 }
 
+const COLUMNS: ColumnDef[] = [
+  { key: 'name', label: 'Nome', locked: true },
+  { key: 'scope', label: 'Origem' },
+  { key: 'owners', label: 'Responsáveis' },
+  { key: 'status', label: 'Status' },
+  { key: 'date', label: 'Data' },
+]
+
 // ─── types ────────────────────────────────────────────────────────────────────
 
 type GlobalCard = Entry & {
@@ -63,6 +76,7 @@ type GlobalCard = Entry & {
   _scopeName: string
   _scopeColor: string
   _phaseId?: string
+  _clientIds: string[]
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -79,6 +93,12 @@ function fmtDate(iso: string): string {
 function scopeLabel(card: GlobalCard): string {
   if (card._scopeType === 'standalone') return card._scopeName || 'Tarefa solta'
   return card._scopeName
+}
+
+function isCardOverdue(card: GlobalCard): boolean {
+  const today = new Date().toISOString().split('T')[0]
+  const endDate = card.type === 'task' ? card.plannedEnd : card.plannedDate
+  return !!endDate && endDate < today && card.status !== 'done'
 }
 
 function entryOwners(entry: Entry): EntryOwner[] {
@@ -98,12 +118,12 @@ function buildCards(projects: Project[], incidents: Incident[], standaloneTasks:
         // show in /tasks if it has owners (regardless of hiddenFromPlan)
         const owners = entryOwners(entry)
         if ((entry.type === 'task' || entry.type === 'meeting') && owners.length > 0) {
-          cards.push({ ...entry, _scopeType: 'project', _scopeId: proj.id, _scopeName: proj.name, _scopeColor: color, _phaseId: ph.id })
+          cards.push({ ...entry, _scopeType: 'project', _scopeId: proj.id, _scopeName: proj.name, _scopeColor: color, _phaseId: ph.id, _clientIds: proj.clientIds })
         }
         for (const sub of entry.subtasks) {
           const subOwners = entryOwners(sub)
           if ((sub.type === 'task' || sub.type === 'meeting') && subOwners.length > 0) {
-            cards.push({ ...sub, _scopeType: 'project', _scopeId: proj.id, _scopeName: proj.name, _scopeColor: color, _phaseId: ph.id })
+            cards.push({ ...sub, _scopeType: 'project', _scopeId: proj.id, _scopeName: proj.name, _scopeColor: color, _phaseId: ph.id, _clientIds: proj.clientIds })
           }
         }
       }
@@ -115,7 +135,7 @@ function buildCards(projects: Project[], incidents: Incident[], standaloneTasks:
     for (const entry of inc.entries) {
       const owners = entryOwners(entry)
       if ((entry.type === 'task' || entry.type === 'meeting') && owners.length > 0) {
-        cards.push({ ...entry, _scopeType: 'incident', _scopeId: inc.id, _scopeName: inc.title, _scopeColor: color })
+        cards.push({ ...entry, _scopeType: 'incident', _scopeId: inc.id, _scopeName: inc.title, _scopeColor: color, _clientIds: inc.clientIds })
       }
     }
   }
@@ -125,7 +145,7 @@ function buildCards(projects: Project[], incidents: Incident[], standaloneTasks:
     if (owners.length === 0) continue
     const clientName = entry.clientId ? clients.find((c) => c.id === entry.clientId)?.name : undefined
     const color = PALETTE[(projects.length + incidents.length + i) % PALETTE.length]
-    cards.push({ ...entry, _scopeType: 'standalone', _scopeId: entry.id, _scopeName: clientName ?? '', _scopeColor: color })
+    cards.push({ ...entry, _scopeType: 'standalone', _scopeId: entry.id, _scopeName: clientName ?? '', _scopeColor: color, _clientIds: entry.clientId ? [entry.clientId] : [] })
   }
   return cards
 }
@@ -264,24 +284,6 @@ function KanbanColumn({ status, labelKey, cards, onEdit }: {
   )
 }
 
-// ─── FilterSelect ─────────────────────────────────────────────────────────────
-
-function FilterSelect({ value, onChange, children }: {
-  value: string
-  onChange: (v: string) => void
-  children: React.ReactNode
-}) {
-  return (
-    <select
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      style={{ width: '100%', fontSize: 12, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '5px 8px', background: 'var(--surface-card)', color: 'var(--text-secondary)', outline: 'none' }}
-    >
-      {children}
-    </select>
-  )
-}
-
 // ─── TasksPage ────────────────────────────────────────────────────────────────
 
 export default function TasksPage() {
@@ -306,6 +308,8 @@ export default function TasksPage() {
   const [filterScope, setFilterScope] = useState('')
   const [filterMember, setFilterMember] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
+  const [filterClientId, setFilterClientId] = useState('')
+  const [onlyOverdue, setOnlyOverdue] = useState(false)
   const [onlyMine, setOnlyMine] = useState(false)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [newTaskOpen, setNewTaskOpen] = useState(false)
@@ -355,8 +359,10 @@ export default function TasksPage() {
   const filteredCards = useMemo(() => {
     return allCards.filter(c => {
       if (onlyMine && !isEntryMine(c, user?.id)) return false
+      if (onlyOverdue && !isCardOverdue(c)) return false
       if (search.trim() && !c.name.toLowerCase().includes(search.trim().toLowerCase())) return false
       if (filterScope && c._scopeId !== filterScope) return false
+      if (filterClientId && !c._clientIds.includes(filterClientId)) return false
       if (filterMember) {
         const owners = entryOwners(c)
         if (!owners.some(o => o.name === filterMember)) return false
@@ -364,7 +370,17 @@ export default function TasksPage() {
       if (filterStatus && c.status !== filterStatus) return false
       return true
     })
-  }, [allCards, onlyMine, user?.id, search, filterScope, filterMember, filterStatus])
+  }, [allCards, onlyMine, onlyOverdue, user?.id, search, filterScope, filterClientId, filterMember, filterStatus])
+
+  const { sortField, sortDir, toggleSort, sortItems } = useSort<GlobalCard>({
+    name: (c) => c.name,
+    scope: (c) => scopeLabel(c),
+    owners: (c) => entryOwners(c).map((o) => o.name).join(', '),
+    status: (c) => c.status,
+    date: (c) => (c.type === 'task' ? c.plannedEnd : c.plannedDate) ?? '',
+  }, 'name')
+  const { isVisible, toggle: toggleColumn } = useColumnVisibility('tasks.columns', COLUMNS)
+  const sortedCards = sortItems(filteredCards)
 
   function toggleSelect(id: string) {
     setSelected((prev) => {
@@ -449,37 +465,59 @@ export default function TasksPage() {
         <MineToggle active={onlyMine} onClick={() => setOnlyMine((v) => !v)} />
         <div style={{ flex: 1 }} />
 
+        {view === 'table' && <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />}
         <FilterMenu
-          activeCount={[filterScope, filterMember, filterStatus].filter(Boolean).length}
-          onClear={() => { setFilterScope(''); setFilterMember(''); setFilterStatus('') }}
+          activeCount={[filterScope, filterMember, filterStatus, filterClientId].filter(Boolean).length + (onlyOverdue ? 1 : 0)}
+          onClear={() => { setFilterScope(''); setFilterMember(''); setFilterStatus(''); setFilterClientId(''); setOnlyOverdue(false) }}
         >
           <Field label={t('tasks.filterProject')}>
-            <FilterSelect value={filterScope} onChange={setFilterScope}>
-              <option value="">{t('tasks.filterProject')}</option>
-              {projects.filter(p => !p.archived).map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-              {incidents.map(i => (
-                <option key={i.id} value={i.id}>{i.title}</option>
-              ))}
-            </FilterSelect>
+            <SearchableSelect
+              value={filterScope}
+              onChange={setFilterScope}
+              emptyOptionLabel={t('tasks.filterProject')}
+              options={[
+                ...projects.filter(p => !p.archived).map(p => ({ id: p.id, label: p.name })),
+                ...incidents.map(i => ({ id: i.id, label: i.title })),
+              ]}
+            />
+          </Field>
+
+          <Field label="Cliente">
+            <SearchableSelect
+              value={filterClientId}
+              onChange={setFilterClientId}
+              emptyOptionLabel="Todos os clientes"
+              options={[...clients].sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ id: c.id, label: c.name }))}
+            />
           </Field>
 
           <Field label={t('tasks.filterMember')}>
-            <FilterSelect value={filterMember} onChange={setFilterMember}>
-              <option value="">{t('tasks.filterMember')}</option>
-              {allMembers.map(m => <option key={m} value={m}>{m}</option>)}
-            </FilterSelect>
+            <SearchableSelect
+              value={filterMember}
+              onChange={setFilterMember}
+              emptyOptionLabel={t('tasks.filterMember')}
+              options={allMembers.map(m => ({ id: m, label: m }))}
+            />
           </Field>
 
           <Field label={t('tasks.filterStatus')}>
-            <FilterSelect value={filterStatus} onChange={setFilterStatus}>
-              <option value="">{t('tasks.filterStatus')}</option>
-              {KANBAN_COLS.map(col => (
-                <option key={col.status} value={col.status}>{t(col.labelKey as any)}</option>
-              ))}
-            </FilterSelect>
+            <SearchableSelect
+              value={filterStatus}
+              onChange={setFilterStatus}
+              emptyOptionLabel={t('tasks.filterStatus')}
+              options={KANBAN_COLS.map(col => ({ id: col.status, label: t(col.labelKey as any) }))}
+            />
           </Field>
+
+          <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+            <input
+              type="checkbox"
+              className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]"
+              checked={onlyOverdue}
+              onChange={(e) => setOnlyOverdue(e.target.checked)}
+            />
+            Somente atrasadas
+          </label>
         </FilterMenu>
       </div>
 
@@ -497,15 +535,33 @@ export default function TasksPage() {
             <thead className="sticky top-0 z-10">
               <tr style={{ background: 'var(--surface-subtle)' }}>
                 <th className="w-8 px-3 py-2" />
-                <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Nome</th>
-                <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Origem</th>
-                <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Responsáveis</th>
-                <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Status</th>
-                <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Data</th>
+                <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                  <SortableHeader label="Nome" field="name" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                </th>
+                {isVisible('scope') && (
+                  <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                    <SortableHeader label="Origem" field="scope" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                  </th>
+                )}
+                {isVisible('owners') && (
+                  <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                    <SortableHeader label="Responsáveis" field="owners" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                  </th>
+                )}
+                {isVisible('status') && (
+                  <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                    <SortableHeader label="Status" field="status" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                  </th>
+                )}
+                {isVisible('date') && (
+                  <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                    <SortableHeader label="Data" field="date" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
-              {filteredCards.map((card) => {
+              {sortedCards.map((card) => {
                 const endDate = card.type === 'task' ? card.plannedEnd : card.plannedDate
                 return (
                   <tr key={card.id} className="transition-colors">
@@ -515,14 +571,22 @@ export default function TasksPage() {
                     <td className="px-3 py-2.5 cursor-pointer" onClick={() => setEditCard(card)} style={{ maxWidth: 260 }}>
                       <span className="block truncate" style={{ color: 'var(--text-primary)', fontWeight: 500 }} title={card.name}>{card.name}</span>
                     </td>
-                    <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)', maxWidth: 180 }}>
-                      <span className="block truncate" title={scopeLabel(card)}>{scopeLabel(card)}</span>
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <AvatarStack people={entryOwners(card)} size={20} />
-                    </td>
-                    <td className="px-3 py-2.5"><StatusDot color={ENTRY_STATUS_COLOR[card.status]} label={t(`entry.${card.status}` as any)} /></td>
-                    <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)' }}>{endDate ? fmtDate(endDate) : '—'}</td>
+                    {isVisible('scope') && (
+                      <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)', maxWidth: 180 }}>
+                        <span className="block truncate" title={scopeLabel(card)}>{scopeLabel(card)}</span>
+                      </td>
+                    )}
+                    {isVisible('owners') && (
+                      <td className="px-3 py-2.5">
+                        <AvatarStack people={entryOwners(card)} size={20} />
+                      </td>
+                    )}
+                    {isVisible('status') && (
+                      <td className="px-3 py-2.5"><StatusDot color={ENTRY_STATUS_COLOR[card.status]} label={t(`entry.${card.status}` as any)} /></td>
+                    )}
+                    {isVisible('date') && (
+                      <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)' }}>{endDate ? fmtDate(endDate) : '—'}</td>
+                    )}
                   </tr>
                 )
               })}
@@ -542,7 +606,7 @@ export default function TasksPage() {
                 key={col.status}
                 status={col.status}
                 labelKey={col.labelKey}
-                cards={filteredCards.filter(c => c.status === col.status)}
+                cards={sortedCards.filter(c => c.status === col.status)}
                 onEdit={setEditCard}
               />
             ))}
