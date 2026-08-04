@@ -9,9 +9,21 @@ import { StatusDot } from '@/components/ui/StatusDot'
 import { AvatarStack } from '@/components/ui/AvatarStack'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { FilterMenu } from '@/components/ui/FilterMenu'
+import { ColumnsMenu } from '@/components/ui/ColumnsMenu'
+import { SortableHeader } from '@/components/ui/SortableHeader'
+import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { UsersGroupIcon } from '@/components/ui/icons'
-import type { UserRole } from '@/types/database'
+import { useSort } from '@/hooks/useSort'
+import { useColumnVisibility, ColumnDef } from '@/hooks/useColumnVisibility'
+import type { UserRole, DbProfile } from '@/types/database'
+
+const COLUMNS: ColumnDef[] = [
+  { key: 'name', label: 'Nome', locked: true },
+  { key: 'email', label: 'E-mail' },
+  { key: 'role', label: 'Papel' },
+  { key: 'status', label: 'Status' },
+]
 
 /** Full users management UI (active users table + pending invites + invite modal),
  *  reused as-is by the standalone /users route and by the "Usuários" tab in Configurações. */
@@ -28,7 +40,7 @@ export function UsersManagementPanel() {
   const [roleFilter, setRoleFilter] = useState<'' | UserRole>('')
   const [statusFilter, setStatusFilter] = useState<'' | 'active' | 'revoked'>('')
 
-  const filteredUsers = useMemo(() => {
+  const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     return teamDirectory.filter((p) => {
       if (roleFilter && p.role !== roleFilter) return false
@@ -38,6 +50,15 @@ export function UsersManagementPanel() {
       return (p.name ?? '').toLowerCase().includes(q) || (p.email ?? '').toLowerCase().includes(q)
     })
   }, [teamDirectory, query, roleFilter, statusFilter])
+
+  const { sortField, sortDir, toggleSort, sortItems } = useSort<DbProfile>({
+    name: (p) => p.name ?? p.email ?? '',
+    email: (p) => p.email ?? '',
+    role: (p) => p.role,
+    status: (p) => (p.active ? 0 : 1),
+  }, 'name')
+  const { isVisible, toggle: toggleColumn } = useColumnVisibility('users.columns', COLUMNS)
+  const filteredUsers = sortItems(filtered)
 
   function openInvite() {
     setInviteEmail(''); setInviteName(''); setInviteRole('member')
@@ -69,23 +90,26 @@ export function UsersManagementPanel() {
           placeholder="Buscar por nome ou e-mail..."
         />
         <div className="flex-1" />
+        <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />
         <FilterMenu
           activeCount={[roleFilter, statusFilter].filter(Boolean).length}
           onClear={() => { setRoleFilter(''); setStatusFilter('') }}
         >
           <Field label="Papel">
-            <Select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value as '' | UserRole)}>
-              <option value="">Todos os papéis</option>
-              <option value="member">Membro</option>
-              <option value="admin">Admin</option>
-            </Select>
+            <SearchableSelect
+              value={roleFilter}
+              onChange={(v) => setRoleFilter(v as '' | UserRole)}
+              emptyOptionLabel="Todos os papéis"
+              options={[{ id: 'member', label: 'Membro' }, { id: 'admin', label: 'Admin' }]}
+            />
           </Field>
           <Field label="Status">
-            <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as '' | 'active' | 'revoked')}>
-              <option value="">Todos os status</option>
-              <option value="active">Ativo</option>
-              <option value="revoked">Revogado</option>
-            </Select>
+            <SearchableSelect
+              value={statusFilter}
+              onChange={(v) => setStatusFilter(v as '' | 'active' | 'revoked')}
+              emptyOptionLabel="Todos os status"
+              options={[{ id: 'active', label: 'Ativo' }, { id: 'revoked', label: 'Revogado' }]}
+            />
           </Field>
         </FilterMenu>
       </div>
@@ -101,10 +125,24 @@ export function UsersManagementPanel() {
         <table className="w-full text-sm">
           <thead className="sticky top-0 z-10">
             <tr style={{ background: 'var(--surface-subtle)' }}>
-              <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>Nome</th>
-              <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>E-mail</th>
-              <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>Papel</th>
-              <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>Status</th>
+              <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                <SortableHeader label="Nome" field="name" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+              </th>
+              {isVisible('email') && (
+                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                  <SortableHeader label="E-mail" field="email" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                </th>
+              )}
+              {isVisible('role') && (
+                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                  <SortableHeader label="Papel" field="role" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                </th>
+              )}
+              {isVisible('status') && (
+                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                  <SortableHeader label="Status" field="status" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                </th>
+              )}
               <th className="px-4 py-2" />
             </tr>
           </thead>
@@ -120,20 +158,26 @@ export function UsersManagementPanel() {
                       {isSelf && <span className="text-xs shrink-0" style={{ color: 'var(--text-tertiary)' }}>(você)</span>}
                     </div>
                   </td>
-                  <td className="px-4 py-3 truncate" style={{ color: 'var(--text-secondary)', maxWidth: 200 }} title={p.email ?? undefined}>{p.email}</td>
-                  <td className="px-4 py-3">
-                    <Select
-                      value={p.role}
-                      disabled={isSelf}
-                      onChange={(e) => updateProfileRole(p.id, e.target.value as UserRole)}
-                    >
-                      <option value="member">Membro</option>
-                      <option value="admin">Admin</option>
-                    </Select>
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusDot color={p.active ? 'var(--color-success-text)' : 'var(--color-danger-text)'} label={p.active ? 'Ativo' : 'Revogado'} />
-                  </td>
+                  {isVisible('email') && (
+                    <td className="px-4 py-3 truncate" style={{ color: 'var(--text-secondary)', maxWidth: 200 }} title={p.email ?? undefined}>{p.email}</td>
+                  )}
+                  {isVisible('role') && (
+                    <td className="px-4 py-3">
+                      <Select
+                        value={p.role}
+                        disabled={isSelf}
+                        onChange={(e) => updateProfileRole(p.id, e.target.value as UserRole)}
+                      >
+                        <option value="member">Membro</option>
+                        <option value="admin">Admin</option>
+                      </Select>
+                    </td>
+                  )}
+                  {isVisible('status') && (
+                    <td className="px-4 py-3">
+                      <StatusDot color={p.active ? 'var(--color-success-text)' : 'var(--color-danger-text)'} label={p.active ? 'Ativo' : 'Revogado'} />
+                    </td>
+                  )}
                   <td className="px-4 py-3 text-right">
                     <button
                       onClick={() => setProfileActive(p.id, !p.active)}
