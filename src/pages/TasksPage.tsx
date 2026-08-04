@@ -421,33 +421,19 @@ export default function TasksPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', background: 'var(--surface-page)' }}>
-      {/* Header */}
-      <div
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px',
-          background: 'var(--surface-card)', borderBottom: '0.5px solid var(--border-default)',
-          flexShrink: 0,
-        }}
-      >
-        <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' }}>
-          {t('tasks.title')}
-        </span>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => setNewTaskOpen(true)}>
-            + {t('tasks.newTask')}
-          </Button>
+    <div className="p-8 max-w-screen-xl mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{t('tasks.title')}</h1>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{filteredCards.length} / {allCards.length}</p>
         </div>
+        <Button onClick={() => setNewTaskOpen(true)}>
+          + {t('tasks.newTask')}
+        </Button>
       </div>
 
       {/* Toolbar */}
-      <div
-        className="flex items-center gap-2 flex-wrap"
-        style={{
-          padding: '10px 20px', background: 'var(--surface-card)',
-          borderBottom: '0.5px solid var(--border-default)', flexShrink: 0,
-        }}
-      >
+      <div className="flex items-center gap-2 mb-5 flex-wrap">
         <SearchInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar tarefa..." />
         <ViewToggle
           value={view}
@@ -503,8 +489,8 @@ export default function TasksPage() {
           action={{ label: t('tasks.newTask'), onClick: () => setNewTaskOpen(true) }}
         />
       ) : view === 'table' ? (
-        <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
-          <table className="w-full text-sm rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
+        <div className="rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
+          <table className="w-full text-sm">
             <thead className="sticky top-0 z-10">
               <tr style={{ background: 'var(--surface-subtle)' }}>
                 <th className="w-8 px-3 py-2" />
@@ -541,29 +527,27 @@ export default function TasksPage() {
           </table>
         </div>
       ) : (
-        <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
-          <DndContext
-            sensors={sensors}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            onDragCancel={() => setActiveId(null)}
-          >
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
-              {KANBAN_COLS.map(col => (
-                <KanbanColumn
-                  key={col.status}
-                  status={col.status}
-                  labelKey={col.labelKey}
-                  cards={filteredCards.filter(c => c.status === col.status)}
-                  onEdit={setEditCard}
-                />
-              ))}
-            </div>
-            <DragOverlay>
-              {activeCard && <TaskCard card={activeCard} ghost />}
-            </DragOverlay>
-          </DndContext>
-        </div>
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragCancel={() => setActiveId(null)}
+        >
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
+            {KANBAN_COLS.map(col => (
+              <KanbanColumn
+                key={col.status}
+                status={col.status}
+                labelKey={col.labelKey}
+                cards={filteredCards.filter(c => c.status === col.status)}
+                onEdit={setEditCard}
+              />
+            ))}
+          </div>
+          <DragOverlay>
+            {activeCard && <TaskCard card={activeCard} ghost />}
+          </DragOverlay>
+        </DndContext>
       )}
 
       {/* New task modal — project field starts empty (standalone); pick a project to link it */}
