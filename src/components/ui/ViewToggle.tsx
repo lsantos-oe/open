@@ -16,7 +16,7 @@ interface ViewToggleProps<T extends string> {
  *  always paired (icon-only reads ambiguous), same active color everywhere. */
 export function ViewToggle<T extends string>({ value, onChange, options }: ViewToggleProps<T>) {
   return (
-    <div className="flex rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
+    <div className="flex rounded-[var(--radius-md)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
       {options.map((opt) => (
         <button
           key={opt.value}

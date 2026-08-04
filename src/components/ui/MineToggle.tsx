@@ -13,7 +13,7 @@ export function MineToggle({ active, onClick, label }: MineToggleProps) {
     <button
       type="button"
       onClick={onClick}
-      className="px-3 py-1.5 text-xs font-medium rounded-[var(--radius-pill)] border transition-colors whitespace-nowrap"
+      className="px-3 py-1.5 text-xs font-medium rounded-[var(--radius-md)] border transition-colors whitespace-nowrap"
       style={active
         ? { background: 'var(--oe-primary)', color: 'white', borderColor: 'var(--oe-primary)' }
         : { background: 'var(--surface-card)', color: 'var(--text-secondary)', borderColor: 'var(--border-default)' }}
