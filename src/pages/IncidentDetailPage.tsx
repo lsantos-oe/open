@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
-import { Entry, EntryOwner, EntryStatus, IncidentStatus, Probability } from '@/types'
+import { Entry, EntryOwner, EntryStatus, IncidentStatus, Probability, TeamMember } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Input, Select, Field } from '@/components/ui/Input'
@@ -11,6 +11,7 @@ import OpenPointsTab from '@/pages/tabs/diary/OpenPointsTab'
 import HistoryTab from '@/pages/tabs/diary/HistoryTab'
 import EntryBoard, { BoardCard } from '@/components/plan/EntryBoard'
 import IncidentEntryModal from '@/components/plan/IncidentEntryModal'
+import OwnersField from '@/components/plan/OwnersField'
 import { AnchorNav } from '@/components/ui/AnchorNav'
 import { StatusDot } from '@/components/ui/StatusDot'
 import { AvatarStack } from '@/components/ui/AvatarStack'
@@ -49,12 +50,19 @@ export default function IncidentDetailPage() {
   const navigate = useNavigate()
   const {
     incidents, clients, projects, teamDirectory, contacts,
-    updateIncident, deleteIncident, updateIncidentStatus,
+    updateIncident, deleteIncident, updateIncidentStatus, renameIncident,
     linkIncidentClient, unlinkIncidentClient, linkIncidentProject, unlinkIncidentProject,
     addIncidentStakeholder, removeIncidentStakeholder, updateIncidentEntryStatus, createContact,
   } = useAppStore()
 
+  const directoryAsTeam: TeamMember[] = useMemo(
+    () => teamDirectory.filter((p) => p.active).map((p) => ({ id: p.id, name: p.name ?? p.email ?? '', role: '', email: p.email ?? undefined, userId: p.id })),
+    [teamDirectory],
+  )
+
   const [activeTab, setActiveTab] = useState<Tab>('overview')
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [titleDraft, setTitleDraft] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showLinkClient, setShowLinkClient] = useState(false)
   const [showLinkProject, setShowLinkProject] = useState(false)
@@ -101,6 +109,16 @@ export default function IncidentDetailPage() {
     ? differenceInCalendarDays(new Date(incident.resolvedAt ?? incident.createdAt), new Date(incident.createdAt))
     : differenceInCalendarDays(today, new Date(incident.createdAt))
   const daysInStatus = differenceInCalendarDays(today, new Date(incident.statusChangedAt))
+
+  function startEditTitle() {
+    setTitleDraft(incident!.title)
+    setEditingTitle(true)
+  }
+
+  function saveTitle() {
+    renameIncident(incident!.id, titleDraft)
+    setEditingTitle(false)
+  }
 
   function openAddStakeholder() {
     setStakeholderMode('member'); setStakeholderUserId(''); setStakeholderContactKey(''); setStakeholderName('')
@@ -164,7 +182,28 @@ export default function IncidentDetailPage() {
       <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'var(--border-default)' }}>
         <div className="flex items-center gap-3 min-w-0">
           <Link to="/support" className="text-sm shrink-0" style={{ color: 'var(--text-tertiary)' }}>← {t('incident.title')}</Link>
-          <h1 className="text-base font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{incident.title}</h1>
+          {editingTitle ? (
+            <input
+              autoFocus
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              onBlur={saveTitle}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') e.currentTarget.blur()
+                if (e.key === 'Escape') setEditingTitle(false)
+              }}
+              className="text-base font-semibold bg-transparent outline-none border-b min-w-0"
+              style={{ color: 'var(--text-primary)', borderColor: 'var(--oe-primary)' }}
+            />
+          ) : (
+            <h1
+              onClick={startEditTitle}
+              className="text-base font-semibold truncate cursor-text hover:opacity-70 transition-opacity"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              {incident.title}
+            </h1>
+          )}
           <Badge variant={STATUS_VARIANT[incident.status]}>{t(`incident.status_${incident.status}`)}</Badge>
         </div>
         <Button variant="secondary" size="sm" onClick={() => setShowDeleteConfirm(true)}>{t('incident.delete')}</Button>
@@ -188,7 +227,16 @@ export default function IncidentDetailPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              <Field label={t('entry.responsible')}>
+                <OwnersField
+                  owners={incident.owner ? [incident.owner] : []}
+                  onChange={(owners) => updateIncident(incident.id, { owner: owners[0] })}
+                  teamMembers={directoryAsTeam}
+                  contacts={allContacts}
+                  max={1}
+                />
+              </Field>
               <Field label={t('incident.colStatus')}>
                 <Select value={incident.status} onChange={(e) => updateIncidentStatus(incident.id, e.target.value as IncidentStatus)}>
                   {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{t(`incident.status_${s}`)}</option>)}

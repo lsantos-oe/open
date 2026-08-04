@@ -43,7 +43,7 @@ function summarizeEntry(e: Entry) {
 
 export const listTasksTool: AiTool = {
   name: 'list_tasks',
-  description: 'Lista as tarefas/marcos/reuniões (com id de cada uma, e de cada subtarefa) de um projeto (todas as fases, ou uma fase específica) ou de um incidente. Use sempre que só tiver os nomes (ex: vindos de um relatório) e precisar do id real pra chamar update_task, convert_to_subtask, promote_subtask etc.',
+  description: 'Lista as tarefas/marcos/reuniões (com id de cada uma, e de cada subtarefa) de um projeto (todas as fases, ou uma fase específica), de um incidente, ou as tarefas soltas (sem projeto/incidente) se nenhum dos dois for informado. Use sempre que só tiver os nomes (ex: vindos de um relatório) e precisar do id real pra chamar update_task, convert_to_subtask, promote_subtask etc.',
   input_schema: {
     type: 'object',
     properties: {
@@ -72,13 +72,13 @@ export const listTasksTool: AiTool = {
         })),
       }
     }
-    return { error: 'É necessário informar projectId ou incidentId.' }
+    return { tasks: store.standaloneTasks.map(summarizeEntry) }
   },
 }
 
 export const createTaskTool: AiTool = {
   name: 'create_task',
-  description: 'Cria uma nova tarefa, marco ou reunião em um projeto ou em um incidente. Toda tarefa precisa de um Executor; o Validador é opcional. Datas/duração são opcionais — se omitidas, o item entra sem agendamento e pode ser agendado depois com update_task. Sempre requer confirmação do usuário antes de executar.',
+  description: 'Cria uma nova tarefa, marco ou reunião em um projeto, em um incidente, ou "solta" (sem projeto nem incidente, opcionalmente vinculada a um cliente). Toda tarefa precisa de um Executor; o Validador é opcional. Datas/duração são opcionais — se omitidas, o item entra sem agendamento e pode ser agendado depois com update_task. Sempre requer confirmação do usuário antes de executar.',
   input_schema: {
     type: 'object',
     properties: {
@@ -88,6 +88,7 @@ export const createTaskTool: AiTool = {
       projectId: { type: 'string', description: 'Id do projeto (obtido via find_project) — obrigatório se o item é de um projeto' },
       phaseId: { type: 'string', description: 'Id da fase do projeto (obtido via list_phases) — se omitido, usa a primeira fase existente' },
       incidentId: { type: 'string', description: 'Id do incidente (obtido via find_incident) — obrigatório se o item é de um incidente' },
+      clientId: { type: 'string', description: 'Id do cliente (obtido via find_client) — só faz sentido pra uma tarefa solta (sem projectId nem incidentId), é opcional mesmo nesse caso' },
       executorName: { type: 'string', description: 'Nome do responsável executor (obrigatório)' },
       validatorName: { type: 'string', description: 'Nome do validador (opcional)' },
       plannedStart: { type: 'string', description: 'Data de início planejada (YYYY-MM-DD) — só pra type=task' },
@@ -95,13 +96,13 @@ export const createTaskTool: AiTool = {
       durationDays: { type: 'number', description: 'Duração em dias úteis — só pra type=task' },
       plannedDate: { type: 'string', description: 'Data (YYYY-MM-DD) — só pra type=milestone ou meeting' },
       durationHours: { type: 'number', description: 'Duração em horas — só pra type=meeting' },
-      dependsOn: { type: 'array', items: { type: 'string' }, description: 'Ids de outras tarefas das quais esta depende (obtidos previamente)' },
+      dependsOn: { type: 'array', items: { type: 'string' }, description: 'Ids de outras tarefas das quais esta depende (obtidos previamente) — só válido dentro do mesmo projeto/incidente' },
     },
     required: ['name', 'executorName'],
   },
   isWrite: true,
   describe(input) {
-    const scope = input.incidentId ? 'no incidente' : 'no projeto'
+    const scope = input.incidentId ? 'no incidente' : input.projectId ? 'no projeto' : 'solta (sem projeto/incidente)'
     const validatorText = input.validatorName ? `, validador ${input.validatorName}` : ''
     const dateText = input.plannedStart && input.plannedEnd
       ? `, de ${input.plannedStart} a ${input.plannedEnd}`
@@ -148,13 +149,16 @@ export const createTaskTool: AiTool = {
       const createdEntryId = phase?.entries[phase.entries.length - 1]?.id
       return { success: true, scope: 'project', projectId: input.projectId, phaseId, createdEntryId }
     }
-    return { error: 'É necessário informar projectId ou incidentId.' }
+    // No projectId/incidentId — standalone task, optionally scoped to a client.
+    store.addStandaloneTask({ ...base, clientId: input.clientId ? String(input.clientId) : undefined })
+    const createdEntryId = useAppStore.getState().standaloneTasks.at(-1)?.id
+    return { success: true, scope: 'standalone', createdEntryId }
   },
 }
 
 export const updateTaskTool: AiTool = {
   name: 'update_task',
-  description: 'Edita uma tarefa/marco/reunião já existente (nome, descrição, executor, validador, status, datas, duração, dependências) e/ou move ela para outra fase do mesmo projeto. Sempre requer confirmação do usuário antes de executar.',
+  description: 'Edita uma tarefa/marco/reunião já existente (nome, descrição, executor, validador, status, datas, duração, dependências) e/ou move ela para outra fase do mesmo projeto. Se o item for uma tarefa solta (sem projectId nem incidentId), também dá pra trocar o cliente vinculado. Sempre requer confirmação do usuário antes de executar.',
   input_schema: {
     type: 'object',
     properties: {
@@ -162,6 +166,7 @@ export const updateTaskTool: AiTool = {
       entryName: { type: 'string', description: 'Nome atual do item, só pro resumo de confirmação' },
       projectId: { type: 'string', description: 'Obrigatório se o item é de um projeto' },
       incidentId: { type: 'string', description: 'Obrigatório se o item é de um incidente' },
+      clientId: { type: 'string', description: 'Novo cliente vinculado (opcional) — só pra tarefa solta (sem projectId nem incidentId); passe string vazia pra remover' },
       name: { type: 'string', description: 'Novo nome (opcional)' },
       description: { type: 'string', description: 'Nova descrição (opcional)' },
       executorName: { type: 'string', description: 'Novo executor (opcional)' },
@@ -207,11 +212,14 @@ export const updateTaskTool: AiTool = {
     if (typeof input.durationDays === 'number') patch.durationDays = input.durationDays
     if (typeof input.durationHours === 'number') patch.durationHours = input.durationHours
     if (Array.isArray(input.dependsOn)) patch.dependsOn = input.dependsOn
+    if (!input.projectId && !input.incidentId && input.clientId !== undefined) patch.clientId = String(input.clientId) || undefined
 
     if (input.executorName || input.validatorName !== undefined) {
       const existing = input.incidentId
         ? findEntry(store.incidents.find((i) => i.id === input.incidentId)?.entries ?? [], entryId)
-        : findEntry(store.projects.find((p) => p.id === input.projectId)?.phases.flatMap((ph) => ph.entries) ?? [], entryId)
+        : input.projectId
+          ? findEntry(store.projects.find((p) => p.id === input.projectId)?.phases.flatMap((ph) => ph.entries) ?? [], entryId)
+          : findEntry(store.standaloneTasks, entryId)
       if (!existing) return { error: 'Tarefa não encontrada.' }
       const owners: EntryOwner[] = (existing.owners ?? []).filter((o) => o.kind !== 'executor' && o.kind !== 'validator')
       const executor = input.executorName ? resolveOwnerByName(String(input.executorName), teamMembers, 'executor') : existing.owners?.find((o) => o.kind === 'executor')
@@ -236,7 +244,8 @@ export const updateTaskTool: AiTool = {
       }
       return { success: true, scope: 'project', projectId: input.projectId, entryId }
     }
-    return { error: 'É necessário informar projectId ou incidentId.' }
+    store.updateStandaloneTask(entryId, patch)
+    return { success: true, scope: 'standalone', entryId }
   },
 }
 

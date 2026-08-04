@@ -1,6 +1,6 @@
 import { useAppStore } from '@/store/useAppStore'
 import { AiTool } from '@/types/ai'
-import { findByName } from './helpers'
+import { findByName, resolveOwnerByName, teamDirectoryAsTeamMembers } from './helpers'
 
 export const findIncidentTool: AiTool = {
   name: 'find_incident',
@@ -82,5 +82,52 @@ export const createIncidentTool: AiTool = {
       clientIds: Array.isArray(input.clientIds) ? (input.clientIds as string[]) : undefined,
     })
     return { createdIncidentId: id }
+  },
+}
+
+export const updateIncidentTool: AiTool = {
+  name: 'update_incident',
+  description: 'Edita um incidente já existente (título, responsável, prioridade, impacto, prazo, descrição). Sempre requer confirmação do usuário antes de executar.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      incidentId: { type: 'string', description: 'Id do incidente (obtido via find_incident)' },
+      incidentTitle: { type: 'string', description: 'Título atual do incidente, só pro resumo de confirmação' },
+      title: { type: 'string', description: 'Novo título (opcional)' },
+      ownerName: { type: 'string', description: 'Novo responsável do incidente (opcional) — precisa ser um usuário cadastrado no sistema' },
+      priority: { type: 'string', enum: ['low', 'medium', 'high'] },
+      impact: { type: 'string', enum: ['low', 'medium', 'high'] },
+      deadline: { type: 'string', description: 'Novo prazo (YYYY-MM-DD, opcional) — passe string vazia pra remover' },
+      description: { type: 'string', description: 'Nova descrição (opcional)' },
+    },
+    required: ['incidentId', 'incidentTitle'],
+  },
+  isWrite: true,
+  describe(input) {
+    const changes: string[] = []
+    if (input.title) changes.push(`título → "${input.title}"`)
+    if (input.ownerName) changes.push(`responsável → ${input.ownerName}`)
+    if (input.priority) changes.push(`prioridade → ${input.priority}`)
+    if (input.impact) changes.push(`impacto → ${input.impact}`)
+    if (input.deadline !== undefined) changes.push(`prazo → ${input.deadline || '(removido)'}`)
+    if (input.description !== undefined) changes.push('descrição atualizada')
+    return `Estou prestes a editar o incidente "${input.incidentTitle}". O resultado final ficará assim: ${changes.join(', ') || '(nenhuma alteração informada)'}. É basicamente isso?`
+  },
+  async execute(input) {
+    const store = useAppStore.getState()
+    const id = String(input.incidentId)
+    if (input.title) store.renameIncident(id, String(input.title))
+
+    const patch: Record<string, unknown> = {}
+    if (input.priority) patch.priority = input.priority
+    if (input.impact) patch.impact = input.impact
+    if (input.deadline !== undefined) patch.deadline = String(input.deadline) || undefined
+    if (input.description !== undefined) patch.description = String(input.description) || undefined
+    if (input.ownerName) {
+      const teamMembers = teamDirectoryAsTeamMembers(store.teamDirectory)
+      patch.owner = resolveOwnerByName(String(input.ownerName), teamMembers)
+    }
+    if (Object.keys(patch).length > 0) store.updateIncident(id, patch as never)
+    return { success: true, incidentId: id }
   },
 }

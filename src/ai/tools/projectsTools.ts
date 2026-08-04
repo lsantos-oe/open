@@ -13,9 +13,12 @@ export const findProjectTool: AiTool = {
   },
   isWrite: false,
   async execute(input) {
-    const { projects } = useAppStore.getState()
+    const { projects, clients } = useAppStore.getState()
     const matches = findByName(projects.filter((p) => !p.archived), String(input.name), (p) => p.name)
-      .map((p) => ({ id: p.id, name: p.name, client: p.client, status: p.status }))
+      .map((p) => ({
+        id: p.id, name: p.name, status: p.status,
+        clients: p.clientIds.map((id) => clients.find((c) => c.id === id)?.name).filter(Boolean),
+      }))
     if (matches.length === 1) return { match: matches[0] }
     if (matches.length === 0) return { matches: [] }
     return { matches }
@@ -32,14 +35,16 @@ export const getProjectOverviewTool: AiTool = {
   },
   isWrite: false,
   async execute(input) {
-    const { projects, settings } = useAppStore.getState()
+    const { projects, clients, settings } = useAppStore.getState()
     const project = projects.find((p) => p.id === input.projectId)
     if (!project) return { error: 'Projeto não encontrado.' }
     const duration = projectDurationDays(project, settings.holidays)
     const variance = projectEndVariance(project, settings.holidays)
     const delayed = isProjectDelayed(project, settings.holidays)
     return {
-      name: project.name, client: project.client, pm: project.pm, status: project.status,
+      name: project.name,
+      clients: project.clientIds.map((id) => clients.find((c) => c.id === id)?.name).filter(Boolean),
+      pm: project.pm, status: project.status,
       delayed, durationDays: duration, varianceDays: variance,
       phaseCount: project.phases.length,
       openRisks: project.risks.filter((r) => r.status !== 'resolved' && r.status !== 'mitigated').length,
@@ -60,33 +65,43 @@ export const listProjectsTool: AiTool = {
   },
   isWrite: false,
   async execute(input) {
-    const { projects } = useAppStore.getState()
+    const { projects, clients } = useAppStore.getState()
     let list = projects.filter((p) => !p.archived)
-    if (input.clientName) list = list.filter((p) => p.client.toLowerCase().includes(String(input.clientName).toLowerCase()))
+    if (input.clientName) {
+      const q = String(input.clientName).toLowerCase()
+      list = list.filter((p) => p.clientIds.some((id) => clients.find((c) => c.id === id)?.name.toLowerCase().includes(q)))
+    }
     if (input.pmName) list = list.filter((p) => p.pm.toLowerCase().includes(String(input.pmName).toLowerCase()))
     if (input.status) list = list.filter((p) => p.status === input.status)
-    return { projects: list.map((p) => ({ id: p.id, name: p.name, client: p.client, pm: p.pm, status: p.status })) }
+    return {
+      projects: list.map((p) => ({
+        id: p.id, name: p.name, pm: p.pm, status: p.status,
+        clients: p.clientIds.map((id) => clients.find((c) => c.id === id)?.name).filter(Boolean),
+      })),
+    }
   },
 }
 
 export const createProjectTool: AiTool = {
   name: 'create_project',
-  description: 'Cria um novo projeto para um cliente. Sempre requer confirmação do usuário antes de executar.',
+  description: 'Cria um novo projeto, opcionalmente vinculado a um ou mais clientes (um projeto pode ter múltiplos clientes). Sempre requer confirmação do usuário antes de executar.',
   input_schema: {
     type: 'object',
     properties: {
       name: { type: 'string', description: 'Nome do projeto' },
-      clientId: { type: 'string', description: 'Id do cliente (obtido via find_client)' },
-      clientName: { type: 'string', description: 'Nome do cliente (usado no campo legado de exibição)' },
+      clientIds: { type: 'array', items: { type: 'string' }, description: 'Ids dos clientes vinculados (obtidos via find_client) — um projeto pode ter mais de um' },
+      clientNames: { type: 'array', items: { type: 'string' }, description: 'Nomes dos clientes vinculados, só pro resumo de confirmação' },
       pmName: { type: 'string', description: 'Nome do líder do projeto — precisa ser um usuário cadastrado no sistema' },
       type: { type: 'string', enum: ['nova_conta', 'novo_projeto'] },
       language: { type: 'string', enum: ['pt', 'en', 'es'], description: 'Idioma do projeto, padrão pt' },
     },
-    required: ['name', 'clientId', 'clientName', 'pmName', 'type'],
+    required: ['name', 'pmName', 'type'],
   },
   isWrite: true,
   describe(input) {
-    return `Estou prestes a criar um novo projeto no cliente "${input.clientName}". O resultado final ficará assim: projeto "${input.name}" (${input.type === 'nova_conta' ? 'Nova Conta' : 'Novo Projeto'}), líder ${input.pmName}. É basicamente isso?`
+    const clientsText = Array.isArray(input.clientNames) && input.clientNames.length
+      ? ` no(s) cliente(s) ${(input.clientNames as string[]).join(', ')}` : ''
+    return `Estou prestes a criar um novo projeto${clientsText}. O resultado final ficará assim: projeto "${input.name}" (${input.type === 'nova_conta' ? 'Nova Conta' : 'Novo Projeto'}), líder ${input.pmName}. É basicamente isso?`
   },
   async execute(input) {
     const store = useAppStore.getState()
@@ -94,7 +109,7 @@ export const createProjectTool: AiTool = {
     const pmMember = teamMembers.find((m) => m.name.toLowerCase() === String(input.pmName).toLowerCase())
     const id = store.createProject({
       name: String(input.name),
-      clientIds: input.clientId ? [String(input.clientId)] : [],
+      clientIds: Array.isArray(input.clientIds) ? (input.clientIds as string[]) : [],
       pm: pmMember?.name ?? String(input.pmName),
       pmMemberId: pmMember?.userId,
       type: (input.type as 'nova_conta' | 'novo_projeto') ?? 'novo_projeto',
@@ -106,7 +121,7 @@ export const createProjectTool: AiTool = {
 
 export const updateProjectTool: AiTool = {
   name: 'update_project',
-  description: 'Edita um projeto já existente (nome, líder, dev lead, status, visão geral/notas). Sempre requer confirmação do usuário antes de executar.',
+  description: 'Edita um projeto já existente (nome, líder, dev lead, status, visão geral/notas, clientes vinculados). Sempre requer confirmação do usuário antes de executar.',
   input_schema: {
     type: 'object',
     properties: {
@@ -117,6 +132,10 @@ export const updateProjectTool: AiTool = {
       devLead: { type: 'string', description: 'Novo dev lead (opcional)' },
       status: { type: 'string', enum: ['backlog', 'planning', 'in_progress', 'done'] },
       overview: { type: 'string', description: 'Novo texto de notas/visão geral (opcional)' },
+      addClientIds: { type: 'array', items: { type: 'string' }, description: 'Ids de clientes a vincular ao projeto (obtidos via find_client) — um projeto pode ter mais de um cliente' },
+      addClientNames: { type: 'array', items: { type: 'string' }, description: 'Nomes desses clientes, só pro resumo de confirmação' },
+      removeClientIds: { type: 'array', items: { type: 'string' }, description: 'Ids de clientes a desvincular do projeto' },
+      removeClientNames: { type: 'array', items: { type: 'string' }, description: 'Nomes desses clientes, só pro resumo de confirmação' },
     },
     required: ['projectId', 'projectName'],
   },
@@ -124,6 +143,8 @@ export const updateProjectTool: AiTool = {
   describe(input) {
     const changes: string[] = []
     if (input.name) changes.push(`nome → "${input.name}"`)
+    if (Array.isArray(input.addClientNames) && input.addClientNames.length) changes.push(`+ cliente(s) ${(input.addClientNames as string[]).join(', ')}`)
+    if (Array.isArray(input.removeClientNames) && input.removeClientNames.length) changes.push(`− cliente(s) ${(input.removeClientNames as string[]).join(', ')}`)
     if (input.pmName) changes.push(`líder → ${input.pmName}`)
     if (input.devLead) changes.push(`dev lead → ${input.devLead}`)
     if (input.status) changes.push(`status → ${input.status}`)
@@ -143,7 +164,13 @@ export const updateProjectTool: AiTool = {
       patch.pm = pmMember?.name ?? String(input.pmName)
       patch.pmMemberId = pmMember?.userId
     }
-    store.updateProject(String(input.projectId), patch as never)
+    if (Object.keys(patch).length > 0) store.updateProject(String(input.projectId), patch as never)
+    if (Array.isArray(input.addClientIds)) {
+      for (const clientId of input.addClientIds as string[]) store.linkProjectClient(String(input.projectId), clientId)
+    }
+    if (Array.isArray(input.removeClientIds)) {
+      for (const clientId of input.removeClientIds as string[]) store.unlinkProjectClient(String(input.projectId), clientId)
+    }
     return { success: true, projectId: input.projectId }
   },
 }
@@ -176,7 +203,7 @@ export const updateEntityStatusTool: AiTool = {
     } else if (input.entityType === 'task') {
       if (input.incidentId) store.updateIncidentEntryStatus(String(input.incidentId), String(input.entityId), input.status as never)
       else if (input.projectId) store.updateEntryStatus(String(input.projectId), String(input.entityId), input.status as never)
-      else return { error: 'projectId ou incidentId é obrigatório pra atualizar status de tarefa.' }
+      else store.updateStandaloneTaskStatus(String(input.entityId), input.status as never)
     }
     return { success: true }
   },

@@ -180,6 +180,7 @@ interface AppStore {
   updateIncident: (id: string, patch: Partial<Incident>) => void
   deleteIncident: (id: string) => void
   updateIncidentStatus: (id: string, status: IncidentStatus) => void
+  renameIncident: (id: string, title: string) => void
   linkIncidentClient: (incidentId: string, clientId: string) => void
   unlinkIncidentClient: (incidentId: string, clientId: string) => void
   linkIncidentProject: (incidentId: string, projectId: string) => void
@@ -3244,6 +3245,24 @@ export const useAppStore = create<AppStore>()(
             notifyUser(memberId, `Incidente "${current.title}" mudou para ${statusLabel[status]}`, `/support/${id}`)
           }
         }
+      },
+
+      renameIncident(id, title) {
+        const prev = get().incidents
+        const oldTitle = prev.find((i) => i.id === id)?.title
+        const trimmed = title.trim()
+        if (!trimmed || trimmed === oldTitle) return
+        set((s) => ({
+          incidents: mutateIncident(s.incidents, id, (i) => ({ ...i, title: trimmed })),
+        }))
+        get().addHistoryEntry({ type: 'incident', id }, { event: 'name_changed', title: trimmed, detail: oldTitle })
+        sync(async () => {
+          const { error } = await supabase
+            .from('incidents')
+            .update({ title: trimmed, updated_at: new Date().toISOString(), updated_by: getUserId() })
+            .eq('id', id)
+          if (error) throw new Error(error.message)
+        }, () => set({ incidents: prev }))
       },
 
       linkIncidentClient(incidentId, clientId) {

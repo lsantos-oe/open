@@ -1,7 +1,7 @@
 import { AiTool } from '@/types/ai'
 import { findProjectTool, getProjectOverviewTool, listProjectsTool, createProjectTool, updateProjectTool, updateEntityStatusTool } from './projectsTools'
 import { findClientTool, createClientTool, updateClientTool, findContactTool, createContactTool, updateContactTool } from './clientsTools'
-import { findIncidentTool, listIncidentsTool, createIncidentTool } from './incidentsTools'
+import { findIncidentTool, listIncidentsTool, createIncidentTool, updateIncidentTool } from './incidentsTools'
 import { findUserTool, bulkReassignProjectsTool } from './usersTools'
 import { listPhasesTool, listTasksTool, createTaskTool, updateTaskTool, reorderTaskTool, convertToSubtaskTool, promoteSubtaskTool } from './tasksTools'
 import { generateStatusReportMarkdownTool } from './reportTools'
@@ -23,6 +23,7 @@ export const ALL_TOOLS: AiTool[] = [
   findIncidentTool,
   listIncidentsTool,
   createIncidentTool,
+  updateIncidentTool,
   findUserTool,
   bulkReassignProjectsTool,
   listPhasesTool,
