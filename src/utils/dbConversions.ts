@@ -3,7 +3,6 @@
  * Zustand store types (camelCase).
  */
 
-import { supabaseUrl } from '@/lib/supabase'
 import type {
   Project, Phase, Entry, EntryComment, EntryOwner, Link, Risk, ActionTask, ReportLink,
   DelayLogEntry, TeamMember, ProjectCharter, EntryType, EntryStatus,
@@ -172,14 +171,24 @@ function dbCharterToStore(db: DbCharter): ProjectCharter {
   }
 }
 
+/** Same-domain, permanent public URL for a report link — the browser fetches
+ *  the HTML from Supabase Storage via JS (PublicReportPage) and renders it
+ *  itself, rather than navigating straight to the storage host. This avoids
+ *  depending on how Supabase Storage serves the file's Content-Type/
+ *  Content-Disposition for direct navigation, and keeps the link on our own
+ *  origin so it stays valid regardless of which Supabase project backs it. */
 function dbReportLinkToStore(row: DbReportLink): ReportLink {
+  const fileId = row.storage_path.split('/').pop()?.replace(/\.html$/i, '')
+  const url = row.project_id && fileId
+    ? `${window.location.origin}/report/${row.project_id}/${fileId}`
+    : undefined
   return {
     id: row.id,
     storagePath: row.storage_path,
     label: row.label,
     generatedAt: row.generated_at ?? new Date().toISOString(),
     createdBy: row.created_by ?? undefined,
-    url: supabaseUrl ? `${supabaseUrl}/storage/v1/object/public/status-reports/${row.storage_path}` : undefined,
+    url,
   }
 }
 

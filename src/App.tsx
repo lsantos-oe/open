@@ -22,6 +22,7 @@ import UsersPage from '@/pages/UsersPage'
 import GuidePage from '@/pages/GuidePage'
 import LoginPage from '@/pages/LoginPage'
 import AuthCallback from '@/pages/AuthCallback'
+import PublicReportPage from '@/pages/PublicReportPage'
 
 export default function App() {
   const defaultLanguage = useAppStore((s) => s.settings.defaultLanguage)
@@ -73,6 +74,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/report/:projectId/:fileId" element={<PublicReportPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
