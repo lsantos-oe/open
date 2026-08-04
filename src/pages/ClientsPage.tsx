@@ -16,7 +16,7 @@ import { SelectionBar } from '@/components/ui/SelectionBar'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { MineToggle } from '@/components/ui/MineToggle'
 import { ViewToggle } from '@/components/ui/ViewToggle'
-import { ListIcon, KanbanIcon } from '@/components/ui/icons'
+import { ListIcon, KanbanIcon, FolderIcon } from '@/components/ui/icons'
 import { isClientMine } from '@/utils/involvement'
 import { findCountry } from '@/data/countries'
 import { exportClientsCsv } from '@/utils/exportListsCsv'
@@ -176,7 +176,7 @@ export default function ClientsPage() {
 
       {sorted.length === 0 ? (
         <EmptyState
-          icon="🗂️"
+          icon={<FolderIcon className="w-9 h-9" />}
           title={clients.length === 0 ? t('wallet.noClientsYet') : t('wallet.noClientsFiltered')}
           action={clients.length === 0 ? { label: t('wallet.createFirst'), onClick: openAdd } : undefined}
         />

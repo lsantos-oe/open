@@ -14,7 +14,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { MineToggle } from '@/components/ui/MineToggle'
 import { ViewToggle } from '@/components/ui/ViewToggle'
-import { ListIcon, KanbanIcon } from '@/components/ui/icons'
+import { ListIcon, KanbanIcon, SupportIcon } from '@/components/ui/icons'
 import { isIncidentMine } from '@/utils/involvement'
 import { contactsForClients } from '@/utils/contacts'
 import OwnersField from '@/components/plan/OwnersField'
@@ -266,9 +266,9 @@ export default function IncidentsPage() {
       )}
 
       {incidents.length === 0 ? (
-        <EmptyState icon="🛠️" title={t('incident.noIncidents')} action={{ label: t('incident.createFirst'), onClick: openAdd }} />
+        <EmptyState icon={<SupportIcon className="w-9 h-9" />} title={t('incident.noIncidents')} action={{ label: t('incident.createFirst'), onClick: openAdd }} />
       ) : filtered.length === 0 ? (
-        <EmptyState icon="🛠️" title="Nenhum incidente encontrado com esses filtros." />
+        <EmptyState icon={<SupportIcon className="w-9 h-9" />} title="Nenhum incidente encontrado com esses filtros." />
       ) : view === 'kanban' ? (
         <div className="grid grid-cols-5 gap-4">
           {KANBAN_STATUSES.map((status) => {

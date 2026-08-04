@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, CSSProperties } from 'react'
+import { useState, useMemo, useEffect, CSSProperties, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -8,6 +8,7 @@ import { contactsForClients, contactsForClient } from '@/utils/contacts'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
+import { CheckCircleIcon, FlagIcon, CalendarIcon } from '@/components/ui/icons'
 import OwnersField from '@/components/plan/OwnersField'
 
 // ─── types ────────────────────────────────────────────────────────────────────
@@ -60,7 +61,11 @@ type Form = {
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-const TYPE_ICONS: Record<EntryType, string> = { task: '✅', milestone: '🏁', meeting: '📅' }
+const TYPE_ICONS: Record<EntryType, ReactNode> = {
+  task: <CheckCircleIcon className="w-4 h-4" />,
+  milestone: <FlagIcon className="w-4 h-4" />,
+  meeting: <CalendarIcon className="w-4 h-4" />,
+}
 
 function avatarInitials(name: string): string {
   const parts = name.trim().split(/\s+/)

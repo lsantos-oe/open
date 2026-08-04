@@ -10,6 +10,7 @@ import { AvatarStack } from '@/components/ui/AvatarStack'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { FilterMenu } from '@/components/ui/FilterMenu'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { UsersGroupIcon } from '@/components/ui/icons'
 import type { UserRole } from '@/types/database'
 
 /** Full users management UI (active users table + pending invites + invite modal),
@@ -92,7 +93,7 @@ export function UsersManagementPanel() {
       {/* Active users */}
       {filteredUsers.length === 0 ? (
         <EmptyState
-          icon="👥"
+          icon={<UsersGroupIcon className="w-9 h-9" />}
           title={teamDirectory.length === 0 ? 'Nenhum usuário ainda.' : 'Nenhum usuário encontrado com esses filtros.'}
         />
       ) : (

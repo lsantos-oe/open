@@ -7,6 +7,7 @@ import {
 } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { Entry, EntryOwner, EntryStatus } from '@/types'
+import { ChatBubbleIcon, LinkIcon } from '@/components/ui/icons'
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -138,10 +139,14 @@ function BoardEntryCard({ card, onClick, ghost = false }: {
           </span>
         )}
         {hasComments && (
-          <span style={{ fontSize: 10, color: 'var(--text-disabled)' }}>💬{card.comments.length}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 10, color: 'var(--text-disabled)' }}>
+            <ChatBubbleIcon className="w-3 h-3" />{card.comments.length}
+          </span>
         )}
         {hasLinks && (
-          <span style={{ fontSize: 10, color: 'var(--text-disabled)' }}>🔗{card.links.length}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 10, color: 'var(--text-disabled)' }}>
+            <LinkIcon className="w-3 h-3" />{card.links.length}
+          </span>
         )}
         {card.riskFlag !== 'none' && (
           <span style={{

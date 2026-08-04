@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/Button'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { MineToggle } from '@/components/ui/MineToggle'
 import { ViewToggle } from '@/components/ui/ViewToggle'
-import { ListIcon, KanbanIcon } from '@/components/ui/icons'
+import { ListIcon, KanbanIcon, CheckCircleIcon, ChatBubbleIcon, LinkIcon } from '@/components/ui/icons'
 import { isEntryMine } from '@/utils/involvement'
 import { contactsForClients } from '@/utils/contacts'
 
@@ -77,8 +77,7 @@ function fmtDate(iso: string): string {
 }
 
 function scopeLabel(card: GlobalCard): string {
-  if (card._scopeType === 'incident') return `🛠️ ${card._scopeName}`
-  if (card._scopeType === 'standalone') return card._scopeName ? `📌 ${card._scopeName}` : '📌 Tarefa solta'
+  if (card._scopeType === 'standalone') return card._scopeName || 'Tarefa solta'
   return card._scopeName
 }
 
@@ -167,10 +166,14 @@ function TaskCard({ card, onClick, ghost = false }: {
           {scopeLabel(card)}
         </span>
         {hasComments && (
-          <span style={{ fontSize: 10, color: 'var(--text-disabled)' }}>💬{card.comments.length}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 10, color: 'var(--text-disabled)' }}>
+            <ChatBubbleIcon className="w-3 h-3" />{card.comments.length}
+          </span>
         )}
         {hasLinks && (
-          <span style={{ fontSize: 10, color: 'var(--text-disabled)' }}>🔗{card.links.length}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 10, color: 'var(--text-disabled)' }}>
+            <LinkIcon className="w-3 h-3" />{card.links.length}
+          </span>
         )}
         {card.riskFlag !== 'none' && (
           <span style={{
@@ -457,7 +460,7 @@ export default function TasksPage() {
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
               {incidents.map(i => (
-                <option key={i.id} value={i.id}>🛠️ {i.title}</option>
+                <option key={i.id} value={i.id}>{i.title}</option>
               ))}
             </FilterSelect>
           </Field>
@@ -483,7 +486,7 @@ export default function TasksPage() {
       {/* Content */}
       {allCards.length === 0 ? (
         <SharedEmptyState
-          icon="✅"
+          icon={<CheckCircleIcon className="w-9 h-9" />}
           title={t('tasks.emptyTitle')}
           description={t('tasks.emptySubtitle')}
           action={{ label: t('tasks.newTask'), onClick: () => setNewTaskOpen(true) }}

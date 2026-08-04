@@ -7,6 +7,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input, Select, Field } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { PinIcon } from '@/components/ui/icons'
 import OwnersField from '@/components/plan/OwnersField'
 import DiaryComments from '@/components/diary/DiaryComments'
 import FileAttachments from '@/components/diary/FileAttachments'
@@ -236,7 +237,7 @@ export default function OpenPointsTab({ scope, openPoints, phases }: Props) {
 
       {/* Table */}
       {filtered.length === 0 ? (
-        <EmptyState icon="📌" title={t('diary.noOpenPoints')} />
+        <EmptyState icon={<PinIcon className="w-9 h-9" />} title={t('diary.noOpenPoints')} />
       ) : (
         <div className="border rounded-[var(--radius-lg)] overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
           <table className="w-full text-sm">

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { ChatBubbleIcon } from '@/components/ui/icons'
 import { useOverlayStore } from '@/stores/useOverlayStore'
 import { Entry, EntryComment } from '@/types'
 import { Button } from '@/components/ui/Button'
@@ -135,7 +136,7 @@ export default function CommentsPanel({ projectId, entry, onClose }: Props) {
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
         {entry.comments.length === 0 && (
           <div className="text-center py-12 text-[var(--text-tertiary)]">
-            <div className="text-3xl mb-2">💬</div>
+            <div className="flex justify-center mb-2"><ChatBubbleIcon className="w-7 h-7" /></div>
             <p className="text-sm">Nenhum comentário ainda.</p>
           </div>
         )}

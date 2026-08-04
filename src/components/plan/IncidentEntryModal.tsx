@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo, CSSProperties } from 'react'
+import { useState, useEffect, useMemo, CSSProperties, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
 import { Entry, EntryOwner, EntryType, EntryStatus, RiskFlag, Link, TeamMember } from '@/types'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
+import { CheckCircleIcon, FlagIcon, CalendarIcon } from '@/components/ui/icons'
 import OwnersField from '@/components/plan/OwnersField'
 import { contactsForClients } from '@/utils/contacts'
 
@@ -31,7 +32,11 @@ type Form = {
   links: Link[]
 }
 
-const TYPE_ICONS: Record<EntryType, string> = { task: '✅', milestone: '🏁', meeting: '📅' }
+const TYPE_ICONS: Record<EntryType, ReactNode> = {
+  task: <CheckCircleIcon className="w-4 h-4" />,
+  milestone: <FlagIcon className="w-4 h-4" />,
+  meeting: <CalendarIcon className="w-4 h-4" />,
+}
 
 const inputStyle: CSSProperties = {
   width: '100%', fontSize: 13, border: '1px solid var(--border-default)',

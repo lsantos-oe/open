@@ -29,6 +29,7 @@ import { workdaysBetween, parseHolidays } from '@/utils/businessDays'
 import { exportProjectCsv } from '@/utils/exportCsv'
 import { computeAutoStatus } from '@/utils/statusCalc'
 import { contactsForClients } from '@/utils/contacts'
+import { PinIcon, CalendarIcon } from '@/components/ui/icons'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -1416,9 +1417,9 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
               <button
                 onClick={() => resetStatusOverride(projectId, e.id)}
                 title={t('status.manualOverride')}
-                className="text-amber-500 hover:text-amber-700 text-sm shrink-0"
+                className="text-amber-500 hover:text-amber-700 shrink-0"
               >
-                📌
+                <PinIcon className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
@@ -1452,7 +1453,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
                 onMouseEnter={ev => { ev.currentTarget.style.color = '#7C3AED'; ev.currentTarget.style.background = '#EDE9FE' }}
                 onMouseLeave={ev => { ev.currentTarget.style.color = 'var(--text-tertiary)'; ev.currentTarget.style.background = '' }}
                 title={t('plan.addChildMeeting')}
-              >📅</button>
+              ><CalendarIcon className="w-3 h-3" /></button>
             )}
             <button
               onClick={() => deleteEntry(projectId, phaseId, e.id)}

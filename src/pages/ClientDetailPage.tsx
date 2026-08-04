@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, ReactNode } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAppStore } from '@/store/useAppStore'
 import { ClientContact, ClientCsAssignment, ClientStatus, EntryOwner, TeamMember } from '@/types'
@@ -9,6 +9,10 @@ import CountrySelect from '@/components/ui/CountrySelect'
 import OwnersField from '@/components/plan/OwnersField'
 import { AnchorNav } from '@/components/ui/AnchorNav'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
+import {
+  RocketIcon, RefreshIcon, PinIcon, WarningIcon, ClockIcon,
+  PersonIcon, CalendarIcon, CheckCircleIcon, NoteIcon,
+} from '@/components/ui/icons'
 import { contactsForClient } from '@/utils/contacts'
 import { findCountry } from '@/data/countries'
 import { formatDistanceToNow } from 'date-fns'
@@ -24,9 +28,16 @@ const STATUSES: ClientStatus[] = ['pre_venda', 'implantacao', 'sustentacao_novos
 
 type Tab = 'overview' | 'contacts' | 'csHistory' | 'timeline'
 
-const EVENT_ICONS: Record<string, string> = {
-  project_created: '🚀', status_changed: '🔄', baseline_set: '📌', risk_added: '⚠️',
-  delay_logged: '⏱️', member_added: '👤', meeting_held: '📅', open_point_resolved: '✅', note: '📝',
+const EVENT_ICONS: Record<string, ReactNode> = {
+  project_created: <RocketIcon className="w-4 h-4" />,
+  status_changed: <RefreshIcon className="w-4 h-4" />,
+  baseline_set: <PinIcon className="w-4 h-4" />,
+  risk_added: <WarningIcon className="w-4 h-4" />,
+  delay_logged: <ClockIcon className="w-4 h-4" />,
+  member_added: <PersonIcon className="w-4 h-4" />,
+  meeting_held: <CalendarIcon className="w-4 h-4" />,
+  open_point_resolved: <CheckCircleIcon className="w-4 h-4" />,
+  note: <NoteIcon className="w-4 h-4" />,
 }
 
 export default function ClientDetailPage() {

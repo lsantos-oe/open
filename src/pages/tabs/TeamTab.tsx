@@ -6,6 +6,7 @@ import { contactsForClients } from '@/utils/contacts'
 import { Button } from '@/components/ui/Button'
 import { Input, Field } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
+import { UsersGroupIcon } from '@/components/ui/icons'
 import OwnersField from '@/components/plan/OwnersField'
 
 interface Props { project: Project }
@@ -93,7 +94,7 @@ export default function TeamTab({ project }: Props) {
 
       {project.team.length === 0 ? (
         <div className="text-center py-10 text-[var(--text-tertiary)]">
-          <div className="text-3xl mb-2">👥</div>
+          <div className="flex justify-center mb-2"><UsersGroupIcon className="w-7 h-7" /></div>
           <p className="text-sm">{t('team.noMembers')}</p>
           <Button size="sm" className="mt-3" variant="secondary" onClick={openAdd}>{t('team.add')}</Button>
         </div>

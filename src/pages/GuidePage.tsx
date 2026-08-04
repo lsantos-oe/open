@@ -1,10 +1,15 @@
 import { useState, ReactNode } from 'react'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
+import { AnchorNav } from '@/components/ui/AnchorNav'
+import {
+  WalletIcon, PortfolioIcon, FolderIcon, SupportIcon, TasksIcon, GearIcon, UsersGroupIcon, GuideIcon,
+} from '@/components/ui/icons'
 
 interface Section {
   id: string
   title: string
-  icon: string
+  summary: string
+  icon: ReactNode
   content: ReactNode
 }
 
@@ -12,7 +17,8 @@ const SECTIONS: Section[] = [
   {
     id: 'wallet',
     title: 'Carteira (clientes)',
-    icon: '🗂️',
+    summary: 'Base de clientes: contatos, país e histórico de CS.',
+    icon: <WalletIcon className="w-5 h-5" />,
     content: (
       <>
         <p>É a base de clientes da empresa — nome, país, link do card no Ploomes, contatos e histórico de troca de CS.</p>
@@ -23,7 +29,8 @@ const SECTIONS: Section[] = [
   {
     id: 'portfolio',
     title: 'Portfólio (projetos)',
-    icon: '📋',
+    summary: 'Lista de projetos em lista ou kanban, com edição em massa.',
+    icon: <PortfolioIcon className="w-5 h-5" />,
     content: (
       <>
         <p>Lista todos os projetos, em visão de <strong>lista</strong> ou <strong>kanban</strong> (alternando no topo).</p>
@@ -36,7 +43,8 @@ const SECTIONS: Section[] = [
   {
     id: 'project',
     title: 'Página de um projeto',
-    icon: '📁',
+    summary: 'Overview, Plano, Kanban e Diário — e qual aba abre primeiro.',
+    icon: <FolderIcon className="w-5 h-5" />,
     content: (
       <>
         <p>A aba <strong>Overview</strong> concentra: botões de acesso rápido à Proposta e ao Negócio no Ploomes, notas do projeto, links externos, o Charter (sponsor, orçamento, escopo, critérios de sucesso) e os metadados básicos.</p>
@@ -47,7 +55,8 @@ const SECTIONS: Section[] = [
   {
     id: 'support',
     title: 'Sustentação (incidentes)',
-    icon: '🛠️',
+    summary: 'Chamados com prioridade, prazo e responsável.',
+    icon: <SupportIcon className="w-5 h-5" />,
     content: (
       <>
         <p>Gestão de chamados/incidentes ligados a um ou mais clientes, com prioridade, impacto, prazo e responsável.</p>
@@ -60,10 +69,12 @@ const SECTIONS: Section[] = [
   {
     id: 'tasks',
     title: 'Tarefas',
-    icon: '✅',
+    summary: 'Visão cruzada de tarefas de projetos e incidentes.',
+    icon: <TasksIcon className="w-5 h-5" />,
     content: (
       <>
-        <p>Visão cruzada de todas as tarefas — tanto de projetos quanto de incidentes — em <strong>kanban</strong> ou <strong>tabela</strong>.</p>
+        <p>Visão cruzada de todas as tarefas — de projetos, de incidentes, ou soltas (sem projeto/incidente vinculado) — em <strong>kanban</strong> ou <strong>tabela</strong>.</p>
+        <p>Uma tarefa solta usa o mesmo modal de criação/edição das demais — o campo de projeto simplesmente aceita "Nenhum".</p>
         <p>Seleção em massa permite trocar responsável ou status de várias tarefas de uma vez, e o filtro <strong>Meus</strong> mostra só as tarefas onde você é responsável.</p>
       </>
     ),
@@ -71,7 +82,8 @@ const SECTIONS: Section[] = [
   {
     id: 'settings',
     title: 'Configurações',
-    icon: '⚙️',
+    summary: 'Idioma, feriados, templates e preferências pessoais.',
+    icon: <GearIcon className="w-5 h-5" />,
     content: (
       <>
         <p>Idioma, formato de data, dias úteis, feriados, templates de projeto e a lista de projetos arquivados (com opção de desarquivar ou excluir da lista).</p>
@@ -82,7 +94,8 @@ const SECTIONS: Section[] = [
   {
     id: 'users',
     title: 'Usuários (administradores)',
-    icon: '👥',
+    summary: 'Papéis, convites e revogação de acesso.',
+    icon: <UsersGroupIcon className="w-5 h-5" />,
     content: (
       <>
         <p>Visível só pra quem tem papel de <strong>admin</strong>. Mostra todo mundo que já entrou no sistema, com opção de trocar o papel (admin/membro) ou revogar o acesso de alguém.</p>
@@ -105,22 +118,49 @@ export default function GuidePage() {
   }
 
   return (
-    <div className="p-8 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Guia do open</h1>
-      <p className="text-sm mb-4" style={{ color: 'var(--text-tertiary)' }}>
-        Um resumo rápido de cada área do sistema e como usá-la.
-      </p>
+    <div className="max-w-3xl mx-auto">
+      <div className="px-8 pt-8 pb-4">
+        <div className="flex items-center gap-2.5 mb-1.5">
+          <span
+            className="w-8 h-8 rounded-[var(--radius-md)] flex items-center justify-center shrink-0"
+            style={{ background: 'var(--oe-primary-light)', color: 'var(--oe-primary)' }}
+          >
+            <GuideIcon className="w-4 h-4" />
+          </span>
+          <h1 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>Guia do open</h1>
+        </div>
+        <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+          Um resumo rápido de cada área do sistema e como usá-la.
+        </p>
+      </div>
 
-      <div className="mt-4">
+      <div className="px-8">
+        <AnchorNav
+          items={SECTIONS.map((s) => ({ id: s.id, label: s.title }))}
+          onNavigate={(id) => setOpenIds((prev) => new Set(prev).add(id))}
+        />
+      </div>
+
+      <div className="px-8 pb-8">
         {SECTIONS.map((s) => (
           <CollapsibleSection
             key={s.id}
             id={s.id}
-            title={`${s.icon} ${s.title}`}
+            title={
+              <span className="flex items-center gap-2.5">
+                <span className="shrink-0" style={{ color: 'var(--text-tertiary)' }}>{s.icon}</span>
+                <span className="flex flex-col">
+                  <span>{s.title}</span>
+                  {!openIds.has(s.id) && (
+                    <span className="text-xs font-normal mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{s.summary}</span>
+                  )}
+                </span>
+              </span>
+            }
             open={openIds.has(s.id)}
             onToggle={() => toggle(s.id)}
           >
-            <div className="text-sm space-y-2" style={{ color: 'var(--text-secondary)' }}>
+            <div className="text-sm space-y-2.5 leading-relaxed pl-[30px]" style={{ color: 'var(--text-secondary)' }}>
               {s.content}
             </div>
           </CollapsibleSection>

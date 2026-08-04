@@ -7,6 +7,7 @@ import { useAiChatStore } from '@/stores/useAiChatStore'
 import { useOverlayStore } from '@/stores/useOverlayStore'
 import { runConversation, approveConfirmation, rejectConfirmation } from '@/ai/runConversation'
 import type { ChatContentBlock, PendingAttachment } from '@/types/ai'
+import { ImageIcon, FileIcon } from '@/components/ui/icons'
 
 const MARKDOWN_COMPONENTS = {
   p: ({ children }: { children?: React.ReactNode }) => <p style={{ margin: '0 0 6px' }}>{children}</p>,
@@ -274,7 +275,7 @@ export function ChatPanel() {
               key={a.id}
               style={{ fontSize: 11, padding: '3px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--surface-subtle)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}
             >
-              {a.kind === 'image' ? '🖼️' : '📄'} {a.name ?? a.kind}
+              {a.kind === 'image' ? <ImageIcon className="w-3 h-3" /> : <FileIcon className="w-3 h-3" />} {a.name ?? a.kind}
               <button onClick={() => removeAttachment(a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 12, lineHeight: 1 }}>×</button>
             </span>
           ))}

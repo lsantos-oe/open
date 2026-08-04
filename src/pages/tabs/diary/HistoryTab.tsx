@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input, Field } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ClockIcon } from '@/components/ui/icons'
 import DiaryComments from '@/components/diary/DiaryComments'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR, enUS, es, type Locale } from 'date-fns/locale'
@@ -90,7 +91,7 @@ export default function HistoryTab({ scope, history }: Props) {
       </div>
 
       {sorted.length === 0 ? (
-        <EmptyState icon="🕓" title={t('diary.noHistory')} />
+        <EmptyState icon={<ClockIcon className="w-9 h-9" />} title={t('diary.noHistory')} />
       ) : (
         <div className="relative">
           {/* Timeline line */}

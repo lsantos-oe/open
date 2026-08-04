@@ -17,7 +17,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { MineToggle } from '@/components/ui/MineToggle'
 import { ViewToggle } from '@/components/ui/ViewToggle'
-import { ListIcon, KanbanIcon } from '@/components/ui/icons'
+import { ListIcon, KanbanIcon, SearchIcon, FolderIcon } from '@/components/ui/icons'
 import { TableSkeleton } from '@/components/ui/TableSkeleton'
 import { isProjectMine } from '@/utils/involvement'
 import { Project, ProjectStatus, ProjectType, ProjectTemplate, Client, ClientStatus, TeamMember } from '@/types'
@@ -330,7 +330,7 @@ function KanbanView({ projects, holidays, onOpen, selected, onToggle }: KanbanVi
 
 function EmptyFiltered() {
   const { t } = useTranslation()
-  return <EmptyState icon="📋" title={t('project.filterNoResults')} />
+  return <EmptyState icon={<SearchIcon className="w-9 h-9" />} title={t('project.filterNoResults')} />
 }
 
 // ─── NewProjectModal ──────────────────────────────────────────────────────────
@@ -1022,7 +1022,7 @@ export default function ProjectsPage() {
           <MineToggle active={onlyMine} onClick={() => setOnlyMine((v) => !v)} />
           <button
             onClick={() => setOnlyDelayed((v) => !v)}
-            className="px-3 py-1.5 text-xs font-medium rounded-[var(--radius-pill)] border transition-colors whitespace-nowrap"
+            className="px-3 py-1.5 text-xs font-medium rounded-[var(--radius-md)] border transition-colors whitespace-nowrap"
             style={{
               background: onlyDelayed ? 'var(--color-danger-text)' : 'var(--surface-card)',
               color: onlyDelayed ? 'white' : 'var(--text-secondary)',
@@ -1041,7 +1041,7 @@ export default function ProjectsPage() {
         <TableSkeleton columns={8} rows={5} />
       ) : projects.length === 0 ? (
         <EmptyState
-          icon="🗂️"
+          icon={<FolderIcon className="w-9 h-9" />}
           title={t('project.noProjectsTitle')}
           description={t('project.noProjectsDesc')}
           action={{ label: t('project.createFirst'), onClick: () => setModalOpen(true) }}

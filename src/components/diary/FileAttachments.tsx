@@ -1,8 +1,9 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '@/lib/supabase'
 import { FileAttachment } from '@/types'
 import { useToastStore } from '@/stores/useToastStore'
+import { ImageIcon, FileIcon, NoteIcon, SpreadsheetIcon, ArchiveIcon, PaperclipIcon } from '@/components/ui/icons'
 
 const BUCKET = 'project-files'
 
@@ -21,14 +22,15 @@ function formatBytes(bytes?: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function fileIcon(name: string): string {
+function fileIcon(name: string): ReactNode {
   const ext = name.split('.').pop()?.toLowerCase()
-  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext ?? '')) return '🖼️'
-  if (['pdf'].includes(ext ?? '')) return '📄'
-  if (['doc', 'docx'].includes(ext ?? '')) return '📝'
-  if (['xls', 'xlsx', 'csv'].includes(ext ?? '')) return '📊'
-  if (['zip', 'rar', '7z'].includes(ext ?? '')) return '🗜️'
-  return '📎'
+  const cls = 'w-4 h-4'
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext ?? '')) return <ImageIcon className={cls} />
+  if (['pdf'].includes(ext ?? '')) return <FileIcon className={cls} />
+  if (['doc', 'docx'].includes(ext ?? '')) return <NoteIcon className={cls} />
+  if (['xls', 'xlsx', 'csv'].includes(ext ?? '')) return <SpreadsheetIcon className={cls} />
+  if (['zip', 'rar', '7z'].includes(ext ?? '')) return <ArchiveIcon className={cls} />
+  return <PaperclipIcon className={cls} />
 }
 
 export default function FileAttachments({ scopeId, parentId, attachments, onAdd, onRemove }: Props) {

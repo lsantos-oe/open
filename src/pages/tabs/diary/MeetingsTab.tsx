@@ -7,6 +7,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input, Select, Field } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { CalendarIcon } from '@/components/ui/icons'
 import DiaryComments from '@/components/diary/DiaryComments'
 import FileAttachments from '@/components/diary/FileAttachments'
 import OwnersField from '@/components/plan/OwnersField'
@@ -146,7 +147,7 @@ export default function MeetingsTab({ projectId, meetings, phases, teamMembers }
       </div>
 
       {sortedMeetings.length === 0 ? (
-        <EmptyState icon="📅" title={t('diary.noMeetings')} />
+        <EmptyState icon={<CalendarIcon className="w-9 h-9" />} title={t('diary.noMeetings')} />
       ) : (
         <div className="space-y-3">
           {sortedMeetings.map((m) => {

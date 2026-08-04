@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate } from 'react-router-dom'
 import { v4 as uuid } from 'uuid'
@@ -14,10 +14,15 @@ import { TemplatePhase, TemplateEntry, EntryType } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Input, Select, Field } from '@/components/ui/Input'
+import { CheckCircleIcon, FlagIcon, CalendarIcon } from '@/components/ui/icons'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-const TYPE_ICON: Record<EntryType, string> = { task: '✅', milestone: '🏁', meeting: '📅' }
+const TYPE_ICON: Record<EntryType, ReactNode> = {
+  task: <CheckCircleIcon className="w-4 h-4" />,
+  milestone: <FlagIcon className="w-4 h-4" />,
+  meeting: <CalendarIcon className="w-4 h-4" />,
+}
 const TYPE_LABEL: Record<EntryType, string> = { task: 'Tarefa', milestone: 'Marco', meeting: 'Reunião' }
 
 function allEntries(phases: TemplatePhase[]): { id: string; name: string; phaseId: string; phaseName: string }[] {

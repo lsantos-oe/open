@@ -9,6 +9,7 @@ import { SelectionBar } from '@/components/ui/SelectionBar'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { FilterMenu } from '@/components/ui/FilterMenu'
 import { CappedBadgeList } from '@/components/ui/CappedBadgeList'
+import { PersonIcon } from '@/components/ui/icons'
 import { ClientContact } from '@/types'
 
 export default function ContactsPage() {
@@ -126,7 +127,7 @@ export default function ContactsPage() {
 
       {sorted.length === 0 ? (
         <EmptyState
-          icon="👤"
+          icon={<PersonIcon className="w-9 h-9" />}
           title={contacts.length === 0 ? t('contacts.noContactsYet') : t('contacts.noContactsFiltered')}
           action={contacts.length === 0 ? { label: t('contacts.createFirst'), onClick: openAdd } : undefined}
         />

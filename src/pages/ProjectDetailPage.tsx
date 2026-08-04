@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Input, Field } from '@/components/ui/Input'
 import StatusBadge from '@/components/StatusBadge'
+import { SearchIcon } from '@/components/ui/icons'
 import { ProjectStatus, Project, Entry, AppLanguage, TeamMember } from '@/types'
 import { generateStatusReport, ReportConfig } from '@/utils/statusReport'
 import { useSmartPosition } from '@/hooks/useSmartPosition'
@@ -459,7 +460,7 @@ export default function ProjectDetailPage() {
   if (!project) {
     return (
       <div className="p-8 text-center py-24" style={{ color: 'var(--text-tertiary)' }}>
-        <div className="text-4xl mb-3">🔍</div>
+        <div className="flex justify-center mb-3"><SearchIcon className="w-9 h-9" /></div>
         <p className="text-[13px]">{t('project.notFound')}</p>
         <Button className="mt-4" variant="secondary" onClick={() => navigate('/portfolio')}>← {t('nav.portfolio')}</Button>
       </div>

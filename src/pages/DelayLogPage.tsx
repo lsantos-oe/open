@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { Input, Select, Textarea, Field } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ClipboardIcon } from '@/components/ui/icons'
 
 const RESPONSIBILITY_KEYS: DelayResponsibility[] = ['internal', 'client_business', 'client_it', 'client_provider']
 const TYPE_KEYS: DelayType[] = ['execution', 'definition', 'planning']
@@ -284,7 +285,7 @@ export default function DelayLogPage({ projectId }: DelayLogPageProps) {
 
       {/* Table */}
       {log.length === 0 ? (
-        <EmptyState icon="📋" title={t('delay.noEntries')} />
+        <EmptyState icon={<ClipboardIcon className="w-9 h-9" />} title={t('delay.noEntries')} />
       ) : (
         <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--border-default)] shadow-[var(--shadow-sm)] bg-[var(--surface-card)]">
           <table className="w-full text-sm">
