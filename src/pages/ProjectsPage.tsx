@@ -13,6 +13,9 @@ import { SelectionBar } from '@/components/ui/SelectionBar'
 import { StatusDot } from '@/components/ui/StatusDot'
 import { AvatarStack } from '@/components/ui/AvatarStack'
 import { FilterMenu } from '@/components/ui/FilterMenu'
+import { ColumnsMenu } from '@/components/ui/ColumnsMenu'
+import { SortableHeader } from '@/components/ui/SortableHeader'
+import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { MineToggle } from '@/components/ui/MineToggle'
@@ -20,6 +23,8 @@ import { ViewToggle } from '@/components/ui/ViewToggle'
 import { ListIcon, KanbanIcon, SearchIcon, FolderIcon } from '@/components/ui/icons'
 import { TableSkeleton } from '@/components/ui/TableSkeleton'
 import { isProjectMine } from '@/utils/involvement'
+import { useSort, SortDir } from '@/hooks/useSort'
+import { useColumnVisibility, ColumnDef } from '@/hooks/useColumnVisibility'
 import { Project, ProjectStatus, ProjectType, ProjectTemplate, Client, ClientStatus, TeamMember } from '@/types'
 import {
   projectDurationDays,
@@ -47,6 +52,17 @@ const KANBAN_BG: Record<ProjectStatus, string> = {
   in_progress: 'bg-[var(--color-info-bg)] border-[var(--border-default)]',
   done: 'bg-[var(--color-success-bg)] border-[var(--border-default)]',
 }
+
+const COLUMNS: ColumnDef[] = [
+  { key: 'project', label: 'Projeto', locked: true },
+  { key: 'client', label: 'Cliente' },
+  { key: 'pm', label: 'PM' },
+  { key: 'type', label: 'Tipo' },
+  { key: 'dev', label: 'Dev' },
+  { key: 'duration', label: 'Duração' },
+  { key: 'status', label: 'Status' },
+  { key: 'variance', label: 'Variação' },
+]
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -97,25 +113,21 @@ function FilterBar({ filters, setFilters, clients, pms }: FilterBarProps) {
   return (
     <FilterMenu activeCount={activeCount} onClear={() => setFilters({ client: '', pm: '', type: '', dev: '' })}>
       <Field label={t('portfolio.colClient')}>
-        <select
+        <SearchableSelect
           value={filters.client}
-          onChange={(e) => setFilters({ ...filters, client: e.target.value })}
-          className="block w-full text-sm border border-[var(--border-default)] rounded-[var(--radius-md)] px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] bg-[var(--surface-card)]"
-        >
-          <option value="">{t('project.allClients')}</option>
-          {clients.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
+          onChange={(v) => setFilters({ ...filters, client: v })}
+          emptyOptionLabel={t('project.allClients')}
+          options={clients.map((c) => ({ id: c, label: c }))}
+        />
       </Field>
 
       <Field label={t('project.pm')}>
-        <select
+        <SearchableSelect
           value={filters.pm}
-          onChange={(e) => setFilters({ ...filters, pm: e.target.value })}
-          className="block w-full text-sm border border-[var(--border-default)] rounded-[var(--radius-md)] px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] bg-[var(--surface-card)]"
-        >
-          <option value="">{t('project.allPMs')}</option>
-          {pms.map((p) => <option key={p} value={p}>{p}</option>)}
-        </select>
+          onChange={(v) => setFilters({ ...filters, pm: v })}
+          emptyOptionLabel={t('project.allPMs')}
+          options={pms.map((p) => ({ id: p, label: p }))}
+        />
       </Field>
 
       <Field label={t('portfolio.colType')}>
@@ -158,35 +170,59 @@ function FilterBar({ filters, setFilters, clients, pms }: FilterBarProps) {
 interface ListViewProps {
   projects: Project[]; holidays: string[]; onOpen: (id: string) => void
   selected: Set<string>; onToggle: (id: string) => void
+  sortField?: string; sortDir: SortDir; onSort: (field: string) => void
+  isVisible: (key: string) => boolean
 }
 
-function ListView({ projects, holidays, onOpen, selected, onToggle }: ListViewProps) {
+function ListView({ projects, holidays, onOpen, selected, onToggle, sortField, sortDir, onSort, isVisible }: ListViewProps) {
   const { t } = useTranslation()
 
   if (projects.length === 0) return <EmptyFiltered />
-
-  const COLS = [
-    '',
-    t('portfolio.colProject'),
-    t('portfolio.colClient'),
-    t('portfolio.colPM'),
-    t('portfolio.colType'),
-    t('portfolio.colDev'),
-    t('portfolio.colDuration'),
-    t('portfolio.colStatus'),
-    t('portfolio.colVariance'),
-  ]
 
   return (
     <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--border-default)] shadow-sm bg-[var(--surface-card)]">
       <table className="w-full text-sm">
         <thead className="sticky top-0 z-10 bg-[var(--surface-subtle)] border-b border-[var(--border-default)]">
           <tr>
-            {COLS.map((h) => (
-              <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wide whitespace-nowrap">
-                {h}
+            <th className="px-4 py-3" style={{ width: 32 }} />
+            <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wide whitespace-nowrap">
+              <SortableHeader label={t('portfolio.colProject')} field="project" sortField={sortField} sortDir={sortDir} onSort={onSort} />
+            </th>
+            {isVisible('client') && (
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wide whitespace-nowrap">
+                <SortableHeader label={t('portfolio.colClient')} field="client" sortField={sortField} sortDir={sortDir} onSort={onSort} />
               </th>
-            ))}
+            )}
+            {isVisible('pm') && (
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wide whitespace-nowrap">
+                <SortableHeader label={t('portfolio.colPM')} field="pm" sortField={sortField} sortDir={sortDir} onSort={onSort} />
+              </th>
+            )}
+            {isVisible('type') && (
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wide whitespace-nowrap">
+                <SortableHeader label={t('portfolio.colType')} field="type" sortField={sortField} sortDir={sortDir} onSort={onSort} />
+              </th>
+            )}
+            {isVisible('dev') && (
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wide whitespace-nowrap">
+                {t('portfolio.colDev')}
+              </th>
+            )}
+            {isVisible('duration') && (
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wide whitespace-nowrap">
+                <SortableHeader label={t('portfolio.colDuration')} field="duration" sortField={sortField} sortDir={sortDir} onSort={onSort} />
+              </th>
+            )}
+            {isVisible('status') && (
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wide whitespace-nowrap">
+                <SortableHeader label={t('portfolio.colStatus')} field="status" sortField={sortField} sortDir={sortDir} onSort={onSort} />
+              </th>
+            )}
+            {isVisible('variance') && (
+              <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wide whitespace-nowrap">
+                <SortableHeader label={t('portfolio.colVariance')} field="variance" sortField={sortField} sortDir={sortDir} onSort={onSort} />
+              </th>
+            )}
           </tr>
         </thead>
         <tbody className="divide-y divide-[var(--border-default)]">
@@ -213,35 +249,49 @@ function ListView({ projects, holidays, onOpen, selected, onToggle }: ListViewPr
                     )}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-[var(--text-secondary)] truncate" style={{ maxWidth: 160 }} title={p.client}>{p.client}</td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <AvatarStack people={[{ name: p.pm }]} size={20} />
-                    <span className="text-[var(--text-secondary)]">{p.pm}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <Badge variant={p.type === 'nova_conta' ? 'blue' : 'purple'}>
-                    {t(`project.${p.type}`)}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3 text-xs text-[var(--text-tertiary)]">
-                  {p.devType
-                    ? <><span className="font-medium">{t(`project.${p.devType}`)}</span>{p.devIntegration ? ` · ${p.devIntegration}` : ''}</>
-                    : <span className="text-[var(--text-disabled)]">—</span>}
-                </td>
-                <td className="px-4 py-3 text-[var(--text-secondary)] whitespace-nowrap">
-                  {dur !== undefined ? `${dur}${t('project.workingDays')}` : '—'}
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-1.5">
-                    <StatusDot color={STATUS_COLOR[p.status]} label={t(`project.${p.status}`)} />
-                    {isProjectDelayed(p, holidays) && <Badge variant="red">{t('project.delayed')}</Badge>}
-                  </div>
-                </td>
-                <td className={`px-4 py-3 whitespace-nowrap ${varianceClass(variance)}`}>
-                  {fmtVariance(variance)}
-                </td>
+                {isVisible('client') && (
+                  <td className="px-4 py-3 text-[var(--text-secondary)] truncate" style={{ maxWidth: 160 }} title={p.client}>{p.client}</td>
+                )}
+                {isVisible('pm') && (
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <AvatarStack people={[{ name: p.pm }]} size={20} />
+                      <span className="text-[var(--text-secondary)]">{p.pm}</span>
+                    </div>
+                  </td>
+                )}
+                {isVisible('type') && (
+                  <td className="px-4 py-3">
+                    <Badge variant={p.type === 'nova_conta' ? 'blue' : 'purple'}>
+                      {t(`project.${p.type}`)}
+                    </Badge>
+                  </td>
+                )}
+                {isVisible('dev') && (
+                  <td className="px-4 py-3 text-xs text-[var(--text-tertiary)]">
+                    {p.devType
+                      ? <><span className="font-medium">{t(`project.${p.devType}`)}</span>{p.devIntegration ? ` · ${p.devIntegration}` : ''}</>
+                      : <span className="text-[var(--text-disabled)]">—</span>}
+                  </td>
+                )}
+                {isVisible('duration') && (
+                  <td className="px-4 py-3 text-[var(--text-secondary)] whitespace-nowrap">
+                    {dur !== undefined ? `${dur}${t('project.workingDays')}` : '—'}
+                  </td>
+                )}
+                {isVisible('status') && (
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1.5">
+                      <StatusDot color={STATUS_COLOR[p.status]} label={t(`project.${p.status}`)} />
+                      {isProjectDelayed(p, holidays) && <Badge variant="red">{t('project.delayed')}</Badge>}
+                    </div>
+                  </td>
+                )}
+                {isVisible('variance') && (
+                  <td className={`px-4 py-3 whitespace-nowrap ${varianceClass(variance)}`}>
+                    {fmtVariance(variance)}
+                  </td>
+                )}
               </tr>
             )
           })}
@@ -916,6 +966,18 @@ export default function ProjectsPage() {
     return applyFilters(bySearch, filters)
   }, [projects, filters, onlyMine, onlyDelayed, settings.holidays, user, search])
 
+  const { sortField, sortDir, toggleSort, sortItems } = useSort<Project>({
+    project: (p) => p.name,
+    client: (p) => p.client,
+    pm: (p) => p.pm,
+    type: (p) => p.type,
+    duration: (p) => projectDurationDays(p, settings.holidays) ?? -1,
+    status: (p) => p.status,
+    variance: (p) => projectEndVariance(p, settings.holidays) ?? -Infinity,
+  }, 'project')
+  const { isVisible, toggle: toggleColumn } = useColumnVisibility('portfolio.columns', COLUMNS)
+  const sorted = sortItems(filtered)
+
   function toggleSelect(id: string) {
     setSelected((prev) => {
       const next = new Set(prev)
@@ -1032,6 +1094,7 @@ export default function ProjectsPage() {
             {t('project.delayed')}
           </button>
           <div className="flex-1" />
+          {view === 'list' && <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />}
           <FilterBar filters={filters} setFilters={setFilters} clients={clientNames} pms={pms} />
         </div>
       )}
@@ -1049,11 +1112,15 @@ export default function ProjectsPage() {
       ) : view === 'list' ? (
         <>
           <ListView
-            projects={showArchived ? [...filtered, ...archivedProjects] : filtered}
+            projects={showArchived ? sortItems([...filtered, ...archivedProjects]) : sorted}
             holidays={settings.holidays}
             onOpen={(id) => navigate(`/projects/${id}`)}
             selected={selected}
             onToggle={toggleSelect}
+            sortField={sortField}
+            sortDir={sortDir}
+            onSort={toggleSort}
+            isVisible={isVisible}
           />
           <div className="mt-3 flex justify-center">
             <button
@@ -1070,7 +1137,7 @@ export default function ProjectsPage() {
           </div>
         </>
       ) : (
-        <KanbanView projects={filtered} holidays={settings.holidays} onOpen={(id) => navigate(`/projects/${id}`)} selected={selected} onToggle={toggleSelect} />
+        <KanbanView projects={sorted} holidays={settings.holidays} onOpen={(id) => navigate(`/projects/${id}`)} selected={selected} onToggle={toggleSelect} />
       )}
 
       <NewProjectModal
