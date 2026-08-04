@@ -10,6 +10,9 @@ import { SelectionBar } from '@/components/ui/SelectionBar'
 import { StatusDot } from '@/components/ui/StatusDot'
 import { AvatarStack } from '@/components/ui/AvatarStack'
 import { FilterMenu } from '@/components/ui/FilterMenu'
+import { ColumnsMenu } from '@/components/ui/ColumnsMenu'
+import { SortableHeader } from '@/components/ui/SortableHeader'
+import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { MineToggle } from '@/components/ui/MineToggle'
@@ -18,8 +21,19 @@ import { ListIcon, KanbanIcon, SupportIcon } from '@/components/ui/icons'
 import { isIncidentMine } from '@/utils/involvement'
 import { contactsForClients } from '@/utils/contacts'
 import OwnersField from '@/components/plan/OwnersField'
-import { IncidentStatus, Probability, EntryOwner, TeamMember } from '@/types'
+import { useSort } from '@/hooks/useSort'
+import { useColumnVisibility, ColumnDef } from '@/hooks/useColumnVisibility'
+import { Incident, IncidentStatus, Probability, EntryOwner, TeamMember } from '@/types'
 import { exportIncidentsCsv } from '@/utils/exportListsCsv'
+
+const COLUMNS: ColumnDef[] = [
+  { key: 'title', label: 'Título', locked: true },
+  { key: 'clients', label: 'Clientes' },
+  { key: 'owner', label: 'Responsável' },
+  { key: 'status', label: 'Status' },
+  { key: 'priority', label: 'Prioridade' },
+  { key: 'deadline', label: 'Prazo' },
+]
 
 function suggestDeadline(priority: Probability): string {
   const days = priority === 'high' ? 2 : priority === 'medium' ? 5 : 10
@@ -99,6 +113,17 @@ export default function IncidentsPage() {
       return true
     })
   }, [incidents, search, statusFilter, priorityFilter, onlyMine, user])
+
+  const { sortField, sortDir, toggleSort, sortItems } = useSort<Incident>({
+    title: (i) => i.title,
+    clients: (i) => clientNames(i.clientIds),
+    owner: (i) => i.owner?.name ?? '',
+    status: (i) => i.status,
+    priority: (i) => i.priority,
+    deadline: (i) => i.deadline ?? '',
+  }, 'title')
+  const { isVisible, toggle: toggleColumn } = useColumnVisibility('support.columns', COLUMNS)
+  const sorted = sortItems(filtered)
 
   function openAdd() {
     setTitle(''); setNewClientIds([]); setNewProjectIds([]); setNewStakeholders([]); setClientSearch(''); setProjectSearch('')
@@ -241,25 +266,30 @@ export default function IncidentsPage() {
           />
           <MineToggle active={onlyMine} onClick={() => setOnlyMine((v) => !v)} />
           <div className="flex-1" />
+          {view === 'list' && <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />}
           <FilterMenu
             activeCount={[statusFilter, priorityFilter].filter(Boolean).length}
             onClear={() => { setStatusFilter(''); setPriorityFilter('') }}
           >
             <Field label={t('incident.colStatus')}>
-              <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                <option value="">{t('incident.filterAllStatus')}</option>
-                {(['open', 'in_progress', 'waiting_on_client', 'resolved', 'closed'] as IncidentStatus[]).map((s) => (
-                  <option key={s} value={s}>{t(`incident.status_${s}`)}</option>
-                ))}
-              </Select>
+              <SearchableSelect
+                value={statusFilter}
+                onChange={setStatusFilter}
+                emptyOptionLabel={t('incident.filterAllStatus')}
+                options={(['open', 'in_progress', 'waiting_on_client', 'resolved', 'closed'] as IncidentStatus[]).map((s) => ({ id: s, label: t(`incident.status_${s}`) }))}
+              />
             </Field>
             <Field label={t('incident.colPriority')}>
-              <Select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
-                <option value="">{t('incident.filterAllPriority')}</option>
-                <option value="low">{t('risk.low')}</option>
-                <option value="medium">{t('risk.medium')}</option>
-                <option value="high">{t('risk.high')}</option>
-              </Select>
+              <SearchableSelect
+                value={priorityFilter}
+                onChange={setPriorityFilter}
+                emptyOptionLabel={t('incident.filterAllPriority')}
+                options={[
+                  { id: 'low', label: t('risk.low') },
+                  { id: 'medium', label: t('risk.medium') },
+                  { id: 'high', label: t('risk.high') },
+                ]}
+              />
             </Field>
           </FilterMenu>
         </div>
@@ -272,7 +302,7 @@ export default function IncidentsPage() {
       ) : view === 'kanban' ? (
         <div className="grid grid-cols-5 gap-4">
           {KANBAN_STATUSES.map((status) => {
-            const cards = filtered.filter((i) => i.status === status)
+            const cards = sorted.filter((i) => i.status === status)
             return (
               <div key={status} className="border rounded-[var(--radius-lg)] p-3 min-h-[300px]" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-subtle)' }}>
                 <div className="flex items-center justify-between mb-3">
@@ -309,16 +339,38 @@ export default function IncidentsPage() {
             <thead className="sticky top-0 z-10">
               <tr style={{ background: 'var(--surface-subtle)' }}>
                 <th className="px-4 py-2" style={{ width: 32 }} />
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('incident.colTitle')}</th>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('incident.colClients')}</th>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>Responsável</th>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('incident.colStatus')}</th>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('incident.colPriority')}</th>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('incident.colDeadline')}</th>
+                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                  <SortableHeader label={t('incident.colTitle')} field="title" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                </th>
+                {isVisible('clients') && (
+                  <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                    <SortableHeader label={t('incident.colClients')} field="clients" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                  </th>
+                )}
+                {isVisible('owner') && (
+                  <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                    <SortableHeader label="Responsável" field="owner" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                  </th>
+                )}
+                {isVisible('status') && (
+                  <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                    <SortableHeader label={t('incident.colStatus')} field="status" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                  </th>
+                )}
+                {isVisible('priority') && (
+                  <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                    <SortableHeader label={t('incident.colPriority')} field="priority" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                  </th>
+                )}
+                {isVisible('deadline') && (
+                  <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                    <SortableHeader label={t('incident.colDeadline')} field="deadline" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
-              {filtered.map((i) => (
+              {sorted.map((i) => (
                 <tr
                   key={i.id}
                   onClick={() => navigate(`/support/${i.id}`)}
@@ -332,15 +384,25 @@ export default function IncidentsPage() {
                   <td className="px-4 py-3 font-medium" style={{ maxWidth: 260 }}>
                     <span className="block truncate" style={{ color: 'var(--text-primary)' }} title={i.title}>{i.title}</span>
                   </td>
-                  <td className="px-4 py-3" style={{ color: 'var(--text-secondary)', maxWidth: 200 }}>
-                    <span className="block truncate" title={clientNames(i.clientIds)}>{clientNames(i.clientIds)}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <AvatarStack people={i.owner ? [{ name: i.owner.name }] : []} size={20} />
-                  </td>
-                  <td className="px-4 py-3"><StatusDot color={STATUS_COLOR[i.status]} label={t(`incident.status_${i.status}`)} /></td>
-                  <td className="px-4 py-3"><StatusDot color={PRIORITY_COLOR[i.priority]} label={t(`risk.${i.priority}`)} /></td>
-                  <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{i.deadline ?? '—'}</td>
+                  {isVisible('clients') && (
+                    <td className="px-4 py-3" style={{ color: 'var(--text-secondary)', maxWidth: 200 }}>
+                      <span className="block truncate" title={clientNames(i.clientIds)}>{clientNames(i.clientIds)}</span>
+                    </td>
+                  )}
+                  {isVisible('owner') && (
+                    <td className="px-4 py-3">
+                      <AvatarStack people={i.owner ? [{ name: i.owner.name }] : []} size={20} />
+                    </td>
+                  )}
+                  {isVisible('status') && (
+                    <td className="px-4 py-3"><StatusDot color={STATUS_COLOR[i.status]} label={t(`incident.status_${i.status}`)} /></td>
+                  )}
+                  {isVisible('priority') && (
+                    <td className="px-4 py-3"><StatusDot color={PRIORITY_COLOR[i.priority]} label={t(`risk.${i.priority}`)} /></td>
+                  )}
+                  {isVisible('deadline') && (
+                    <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{i.deadline ?? '—'}</td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -533,7 +595,7 @@ export default function IncidentsPage() {
       {incidents.length > 0 && (
         <div className="mt-8 flex justify-center">
           <button
-            onClick={() => exportIncidentsCsv(filtered, clients)}
+            onClick={() => exportIncidentsCsv(sorted, clients)}
             className="text-xs transition-colors"
             style={{ color: 'var(--text-disabled)' }}
             onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}
