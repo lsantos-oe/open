@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -130,6 +130,15 @@ export default function IncidentsPage() {
     setNewOwners([]); setPriority('medium'); setImpact('medium'); setDeadline(''); setTemplateId('')
     setShowAdd(true)
   }
+
+  const [searchParams, setSearchParams] = useSearchParams()
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      openAdd()
+      setSearchParams({}, { replace: true })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   function toggleNewClient(clientId: string) {
     setNewClientIds((prev) => {

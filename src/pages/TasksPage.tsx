@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   DndContext, DragEndEvent, DragStartEvent, DragOverlay,
@@ -319,6 +320,14 @@ export default function TasksPage() {
   const [bulkOwners, setBulkOwners] = useState<EntryOwner[]>([])
 
   useEffect(() => { localStorage.setItem('pb-tasks-view', view) }, [view])
+
+  const [searchParams, setSearchParams] = useSearchParams()
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      setNewTaskOpen(true)
+      setSearchParams({}, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),

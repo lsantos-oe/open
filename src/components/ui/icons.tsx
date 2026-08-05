@@ -23,6 +23,14 @@ export function SearchIcon({ className = 'w-3.5 h-3.5' }: { className?: string }
   )
 }
 
+export function PlusIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.25}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+    </svg>
+  )
+}
+
 // ─── nav / domain icons (shared by Sidebar and GuidePage — one icon per area) ──
 
 export function HomeIcon({ className = 'w-4 h-4' }: { className?: string }) {

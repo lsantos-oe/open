@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import ImportJsonModal from '@/components/import/ImportJsonModal'
 import { exportAllProjectsToJson } from '@/utils/exportJson'
 import { useTranslation } from 'react-i18next'
@@ -939,6 +939,14 @@ export default function ProjectsPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
+
+  const [searchParams, setSearchParams] = useSearchParams()
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      setModalOpen(true)
+      setSearchParams({}, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkPmOpen, setBulkPmOpen] = useState(false)

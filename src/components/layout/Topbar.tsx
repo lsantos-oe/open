@@ -1,19 +1,32 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useCommandPaletteStore } from '@/stores/useCommandPaletteStore'
 import { NotificationBell } from './NotificationBell'
 import { EditProfileModal } from './EditProfileModal'
+import { PlusIcon, TasksIcon, SupportIcon, PortfolioIcon, ContactsIcon, WalletIcon } from '@/components/ui/icons'
+
+const QUICK_CREATE = [
+  { to: '/tasks', label: 'Nova tarefa', Icon: TasksIcon },
+  { to: '/support', label: 'Novo incidente', Icon: SupportIcon },
+  { to: '/portfolio', label: 'Novo projeto', Icon: PortfolioIcon },
+  { to: '/contacts', label: 'Novo contato', Icon: ContactsIcon },
+  { to: '/wallet', label: 'Novo cliente', Icon: WalletIcon },
+]
 
 function getInitials(name: string): string {
   return name.split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'U'
 }
 
 export function Topbar() {
+  const navigate = useNavigate()
   const { user, profile, signOut } = useAuthStore()
   const toggleCommandPalette = useCommandPaletteStore((s) => s.toggle)
   const [showMenu, setShowMenu] = useState(false)
   const [showEditProfile, setShowEditProfile] = useState(false)
+  const [showQuickCreate, setShowQuickCreate] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const quickCreateRef = useRef<HTMLDivElement>(null)
 
   const displayName = profile?.name ?? user?.email ?? 'Usuário'
   const avatarUrl = profile?.avatar_url ?? null
@@ -27,6 +40,20 @@ export function Topbar() {
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [showMenu])
+
+  useEffect(() => {
+    if (!showQuickCreate) return
+    function handler(e: MouseEvent) {
+      if (quickCreateRef.current && !quickCreateRef.current.contains(e.target as Node)) setShowQuickCreate(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showQuickCreate])
+
+  function goCreate(to: string) {
+    setShowQuickCreate(false)
+    navigate(`${to}?new=1`)
+  }
 
   return (
     <>
@@ -53,6 +80,44 @@ export function Topbar() {
         </button>
 
         <div className="flex-1" />
+
+        <div ref={quickCreateRef} style={{ position: 'relative' }}>
+          <button
+            onClick={() => setShowQuickCreate((v) => !v)}
+            title="Criar novo"
+            className="flex items-center justify-center transition-colors"
+            style={{
+              width: 28, height: 28, borderRadius: 'var(--radius-md)',
+              background: showQuickCreate ? 'var(--oe-primary)' : 'var(--surface-subtle)',
+              color: showQuickCreate ? 'white' : 'var(--text-secondary)',
+              border: '1px solid var(--border-default)',
+            }}
+          >
+            <PlusIcon className="w-4 h-4" />
+          </button>
+
+          {showQuickCreate && (
+            <div style={{
+              position: 'absolute', top: 34, right: 0, minWidth: 190,
+              background: 'var(--surface-card)', border: '0.5px solid var(--border-default)',
+              borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', zIndex: 100, overflow: 'hidden', padding: 4,
+            }}>
+              {QUICK_CREATE.map(({ to, label, Icon }) => (
+                <button
+                  key={to}
+                  onClick={() => goCreate(to)}
+                  className="w-full text-left flex items-center gap-2.5 rounded-[var(--radius-md)]"
+                  style={{ padding: '7px 8px', fontSize: 12.5, color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                >
+                  <span className="shrink-0" style={{ color: 'var(--text-tertiary)' }}><Icon className="w-4 h-4" /></span>
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <NotificationBell />
 
