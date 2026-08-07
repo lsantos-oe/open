@@ -82,6 +82,7 @@ export function SearchableSelect({ value, onChange, options, placeholder, emptyO
       {open && !disabled && createPortal(
         <div
           ref={popoverRef as React.RefObject<HTMLDivElement>}
+          data-oe-nested-popover="searchable-select"
           style={{
             position: 'fixed', ...position, width,
             zIndex: 2000, maxHeight: 240, overflowY: 'auto',

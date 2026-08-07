@@ -18,9 +18,11 @@ export function ColumnsMenu({ columns, isVisible, onToggle }: Props) {
   useEffect(() => {
     if (!open) return
     function handler(e: MouseEvent) {
+      const target = e.target as HTMLElement
+      if (target.closest('[data-oe-nested-popover]')) return
       if (
-        popoverRef.current && !(popoverRef.current as HTMLElement).contains(e.target as Node) &&
-        triggerRef.current && !(triggerRef.current as HTMLElement).contains(e.target as Node)
+        popoverRef.current && !(popoverRef.current as HTMLElement).contains(target) &&
+        triggerRef.current && !(triggerRef.current as HTMLElement).contains(target)
       ) setOpen(false)
     }
     document.addEventListener('mousedown', handler)

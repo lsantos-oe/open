@@ -16,9 +16,15 @@ export function FilterMenu({ activeCount, onClear, children }: Props) {
   useEffect(() => {
     if (!open) return
     function handler(e: MouseEvent) {
+      const target = e.target as HTMLElement
+      // A field inside this popover (e.g. SearchableSelect) can portal its own
+      // dropdown straight to document.body — that click lands outside
+      // popoverRef by DOM structure even though it's logically part of this
+      // menu. Bail out so we don't close (and unmount) mid-click.
+      if (target.closest('[data-oe-nested-popover]')) return
       if (
-        popoverRef.current && !(popoverRef.current as HTMLElement).contains(e.target as Node) &&
-        triggerRef.current && !(triggerRef.current as HTMLElement).contains(e.target as Node)
+        popoverRef.current && !(popoverRef.current as HTMLElement).contains(target) &&
+        triggerRef.current && !(triggerRef.current as HTMLElement).contains(target)
       ) setOpen(false)
     }
     document.addEventListener('mousedown', handler)
