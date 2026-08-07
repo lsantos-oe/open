@@ -16,6 +16,7 @@ import { FilterMenu } from '@/components/ui/FilterMenu'
 import { ColumnsMenu } from '@/components/ui/ColumnsMenu'
 import { SortableHeader } from '@/components/ui/SortableHeader'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
+import { MultiSelect } from '@/components/ui/MultiSelect'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { MineToggle } from '@/components/ui/MineToggle'
@@ -79,21 +80,21 @@ function varianceClass(v: number | undefined): string {
 // ─── filters ──────────────────────────────────────────────────────────────────
 
 interface Filters {
-  clientId: string
-  pm: string
+  clientIds: string[]
+  pms: string[]
   type: string
   dev: string
-  status: string
+  statuses: string[]
 }
 
 function applyFilters(projects: Project[], f: Filters): Project[] {
   return projects.filter((p) => {
-    if (f.clientId && !p.clientIds.includes(f.clientId)) return false
-    if (f.pm && p.pm !== f.pm) return false
+    if (f.clientIds.length > 0 && !f.clientIds.some((id) => p.clientIds.includes(id))) return false
+    if (f.pms.length > 0 && !f.pms.includes(p.pm)) return false
     if (f.type && p.type !== f.type) return false
     if (f.dev === 'with' && !p.devType) return false
     if (f.dev === 'without' && p.devType) return false
-    if (f.status && p.status !== f.status) return false
+    if (f.statuses.length > 0 && !f.statuses.includes(p.status)) return false
     return true
   })
 }
@@ -109,33 +110,34 @@ interface FilterBarProps {
 
 function FilterBar({ filters, setFilters, clients, pms }: FilterBarProps) {
   const { t } = useTranslation()
-  const activeCount = Object.values(filters).filter(Boolean).length
+  const activeCount = filters.clientIds.length + filters.pms.length + filters.statuses.length
+    + (filters.type ? 1 : 0) + (filters.dev ? 1 : 0)
 
   return (
-    <FilterMenu activeCount={activeCount} onClear={() => setFilters({ clientId: '', pm: '', type: '', dev: '', status: '' })}>
+    <FilterMenu activeCount={activeCount} onClear={() => setFilters({ clientIds: [], pms: [], type: '', dev: '', statuses: [] })}>
       <Field label={t('portfolio.colClient')}>
-        <SearchableSelect
-          value={filters.clientId}
-          onChange={(v) => setFilters({ ...filters, clientId: v })}
-          emptyOptionLabel={t('project.allClients')}
+        <MultiSelect
+          values={filters.clientIds}
+          onChange={(v) => setFilters({ ...filters, clientIds: v })}
+          placeholder={t('project.allClients')}
           options={[...clients].sort((a, b) => a.name.localeCompare(b.name)).map((c) => ({ id: c.id, label: c.name }))}
         />
       </Field>
 
       <Field label={t('project.pm')}>
-        <SearchableSelect
-          value={filters.pm}
-          onChange={(v) => setFilters({ ...filters, pm: v })}
-          emptyOptionLabel={t('project.allPMs')}
+        <MultiSelect
+          values={filters.pms}
+          onChange={(v) => setFilters({ ...filters, pms: v })}
+          placeholder={t('project.allPMs')}
           options={pms.map((p) => ({ id: p, label: p }))}
         />
       </Field>
 
       <Field label={t('portfolio.colStatus')}>
-        <SearchableSelect
-          value={filters.status}
-          onChange={(v) => setFilters({ ...filters, status: v })}
-          emptyOptionLabel={t('project.filterAll')}
+        <MultiSelect
+          values={filters.statuses}
+          onChange={(v) => setFilters({ ...filters, statuses: v })}
+          placeholder={t('project.filterAll')}
           options={KANBAN_STATUSES.map((s) => ({ id: s, label: t(`project.${s}`) }))}
         />
       </Field>
@@ -943,7 +945,7 @@ export default function ProjectsPage() {
     (localStorage.getItem('pb-portfolio-view') as 'list' | 'kanban') ?? 'list',
   )
   const [search, setSearch] = useState('')
-  const [filters, setFilters] = useState<Filters>({ clientId: '', pm: '', type: '', dev: '', status: '' })
+  const [filters, setFilters] = useState<Filters>({ clientIds: [], pms: [], type: '', dev: '', statuses: [] })
   const [onlyMine, setOnlyMine] = useState(false)
   const [onlyDelayed, setOnlyDelayed] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)

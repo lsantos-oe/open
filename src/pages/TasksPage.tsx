@@ -19,7 +19,7 @@ import { AvatarStack } from '@/components/ui/AvatarStack'
 import { FilterMenu } from '@/components/ui/FilterMenu'
 import { ColumnsMenu } from '@/components/ui/ColumnsMenu'
 import { SortableHeader } from '@/components/ui/SortableHeader'
-import { SearchableSelect } from '@/components/ui/SearchableSelect'
+import { MultiSelect } from '@/components/ui/MultiSelect'
 import { EmptyState as SharedEmptyState } from '@/components/ui/EmptyState'
 import { Field } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -306,10 +306,10 @@ export default function TasksPage() {
     (localStorage.getItem('pb-tasks-view') as 'kanban' | 'table') ?? 'kanban',
   )
   const [search, setSearch] = useState('')
-  const [filterScope, setFilterScope] = useState('')
-  const [filterMember, setFilterMember] = useState('')
-  const [filterStatus, setFilterStatus] = useState('')
-  const [filterClientId, setFilterClientId] = useState('')
+  const [filterScope, setFilterScope] = useState<string[]>([])
+  const [filterMember, setFilterMember] = useState<string[]>([])
+  const [filterStatus, setFilterStatus] = useState<string[]>([])
+  const [filterClientId, setFilterClientId] = useState<string[]>([])
   const [onlyOverdue, setOnlyOverdue] = useState(false)
   const [onlyMine, setOnlyMine] = useState(false)
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -372,13 +372,13 @@ export default function TasksPage() {
       if (onlyMine && !isEntryMine(c, user?.id)) return false
       if (onlyOverdue && !isCardOverdue(c)) return false
       if (search.trim() && !c.name.toLowerCase().includes(search.trim().toLowerCase())) return false
-      if (filterScope && c._scopeId !== filterScope) return false
-      if (filterClientId && !c._clientIds.includes(filterClientId)) return false
-      if (filterMember) {
+      if (filterScope.length > 0 && !filterScope.includes(c._scopeId)) return false
+      if (filterClientId.length > 0 && !filterClientId.some((id) => c._clientIds.includes(id))) return false
+      if (filterMember.length > 0) {
         const owners = entryOwners(c)
-        if (!owners.some(o => ownerKey(o) === filterMember)) return false
+        if (!owners.some(o => filterMember.includes(ownerKey(o)))) return false
       }
-      if (filterStatus && c.status !== filterStatus) return false
+      if (filterStatus.length > 0 && !filterStatus.includes(c.status)) return false
       return true
     })
   }, [allCards, onlyMine, onlyOverdue, user?.id, search, filterScope, filterClientId, filterMember, filterStatus])
@@ -478,14 +478,14 @@ export default function TasksPage() {
 
         {view === 'table' && <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />}
         <FilterMenu
-          activeCount={[filterScope, filterMember, filterStatus, filterClientId].filter(Boolean).length + (onlyOverdue ? 1 : 0)}
-          onClear={() => { setFilterScope(''); setFilterMember(''); setFilterStatus(''); setFilterClientId(''); setOnlyOverdue(false) }}
+          activeCount={filterScope.length + filterMember.length + filterStatus.length + filterClientId.length + (onlyOverdue ? 1 : 0)}
+          onClear={() => { setFilterScope([]); setFilterMember([]); setFilterStatus([]); setFilterClientId([]); setOnlyOverdue(false) }}
         >
           <Field label={t('tasks.filterProject')}>
-            <SearchableSelect
-              value={filterScope}
+            <MultiSelect
+              values={filterScope}
               onChange={setFilterScope}
-              emptyOptionLabel={t('tasks.filterProject')}
+              placeholder={t('tasks.filterProject')}
               options={[
                 ...projects.filter(p => !p.archived).map(p => ({ id: p.id, label: p.name })),
                 ...incidents.map(i => ({ id: i.id, label: i.title })),
@@ -494,28 +494,28 @@ export default function TasksPage() {
           </Field>
 
           <Field label="Cliente">
-            <SearchableSelect
-              value={filterClientId}
+            <MultiSelect
+              values={filterClientId}
               onChange={setFilterClientId}
-              emptyOptionLabel="Todos os clientes"
+              placeholder="Todos os clientes"
               options={[...clients].sort((a, b) => a.name.localeCompare(b.name)).map(c => ({ id: c.id, label: c.name }))}
             />
           </Field>
 
           <Field label={t('tasks.filterMember')}>
-            <SearchableSelect
-              value={filterMember}
+            <MultiSelect
+              values={filterMember}
               onChange={setFilterMember}
-              emptyOptionLabel={t('tasks.filterMember')}
+              placeholder={t('tasks.filterMember')}
               options={allMemberOptions}
             />
           </Field>
 
           <Field label={t('tasks.filterStatus')}>
-            <SearchableSelect
-              value={filterStatus}
+            <MultiSelect
+              values={filterStatus}
               onChange={setFilterStatus}
-              emptyOptionLabel={t('tasks.filterStatus')}
+              placeholder={t('tasks.filterStatus')}
               options={KANBAN_COLS.map(col => ({ id: col.status, label: t(col.labelKey as any) }))}
             />
           </Field>

@@ -11,7 +11,7 @@ import { SearchInput } from '@/components/ui/SearchInput'
 import { FilterMenu } from '@/components/ui/FilterMenu'
 import { ColumnsMenu } from '@/components/ui/ColumnsMenu'
 import { SortableHeader } from '@/components/ui/SortableHeader'
-import { SearchableSelect } from '@/components/ui/SearchableSelect'
+import { MultiSelect } from '@/components/ui/MultiSelect'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { UsersGroupIcon } from '@/components/ui/icons'
 import { useSort } from '@/hooks/useSort'
@@ -37,15 +37,17 @@ export function UsersManagementPanel() {
   const [inviteRole, setInviteRole] = useState<UserRole>('member')
 
   const [query, setQuery] = useState('')
-  const [roleFilter, setRoleFilter] = useState<'' | UserRole>('')
-  const [statusFilter, setStatusFilter] = useState<'' | 'active' | 'revoked'>('')
+  const [roleFilter, setRoleFilter] = useState<UserRole[]>([])
+  const [statusFilter, setStatusFilter] = useState<('active' | 'revoked')[]>([])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     return teamDirectory.filter((p) => {
-      if (roleFilter && p.role !== roleFilter) return false
-      if (statusFilter === 'active' && !p.active) return false
-      if (statusFilter === 'revoked' && p.active) return false
+      if (roleFilter.length > 0 && !roleFilter.includes(p.role)) return false
+      if (statusFilter.length > 0) {
+        const status = p.active ? 'active' : 'revoked'
+        if (!statusFilter.includes(status)) return false
+      }
       if (!q) return true
       return (p.name ?? '').toLowerCase().includes(q) || (p.email ?? '').toLowerCase().includes(q)
     })
@@ -92,22 +94,22 @@ export function UsersManagementPanel() {
         <div className="flex-1" />
         <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />
         <FilterMenu
-          activeCount={[roleFilter, statusFilter].filter(Boolean).length}
-          onClear={() => { setRoleFilter(''); setStatusFilter('') }}
+          activeCount={roleFilter.length + statusFilter.length}
+          onClear={() => { setRoleFilter([]); setStatusFilter([]) }}
         >
           <Field label="Papel">
-            <SearchableSelect
-              value={roleFilter}
-              onChange={(v) => setRoleFilter(v as '' | UserRole)}
-              emptyOptionLabel="Todos os papéis"
+            <MultiSelect
+              values={roleFilter}
+              onChange={(v) => setRoleFilter(v as UserRole[])}
+              placeholder="Todos os papéis"
               options={[{ id: 'member', label: 'Membro' }, { id: 'admin', label: 'Admin' }]}
             />
           </Field>
           <Field label="Status">
-            <SearchableSelect
-              value={statusFilter}
-              onChange={(v) => setStatusFilter(v as '' | 'active' | 'revoked')}
-              emptyOptionLabel="Todos os status"
+            <MultiSelect
+              values={statusFilter}
+              onChange={(v) => setStatusFilter(v as ('active' | 'revoked')[])}
+              placeholder="Todos os status"
               options={[{ id: 'active', label: 'Ativo' }, { id: 'revoked', label: 'Revogado' }]}
             />
           </Field>

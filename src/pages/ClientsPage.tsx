@@ -13,7 +13,7 @@ import { AvatarStack } from '@/components/ui/AvatarStack'
 import { FilterMenu } from '@/components/ui/FilterMenu'
 import { ColumnsMenu } from '@/components/ui/ColumnsMenu'
 import { SortableHeader } from '@/components/ui/SortableHeader'
-import { SearchableSelect } from '@/components/ui/SearchableSelect'
+import { MultiSelect } from '@/components/ui/MultiSelect'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SelectionBar } from '@/components/ui/SelectionBar'
 import { SearchInput } from '@/components/ui/SearchInput'
@@ -58,8 +58,8 @@ export default function ClientsPage() {
 
   const [showAdd, setShowAdd] = useState(false)
   const [query, setQuery] = useState('')
-  const [countryFilter, setCountryFilter] = useState('')
-  const [ownerFilter, setOwnerFilter] = useState('')
+  const [countryFilter, setCountryFilter] = useState<string[]>([])
+  const [ownerFilter, setOwnerFilter] = useState<string[]>([])
   const [onlyMine, setOnlyMine] = useState(false)
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -92,8 +92,8 @@ export default function ClientsPage() {
     return clients.filter((c) => {
       if (onlyMine && !isClientMine(c, user?.id)) return false
       if (query.trim() && !c.name.toLowerCase().includes(query.trim().toLowerCase())) return false
-      if (countryFilter && c.country !== countryFilter) return false
-      if (ownerFilter && !c.owners.some((o) => o.memberId === ownerFilter)) return false
+      if (countryFilter.length > 0 && !countryFilter.includes(c.country ?? '')) return false
+      if (ownerFilter.length > 0 && !c.owners.some((o) => o.memberId && ownerFilter.includes(o.memberId))) return false
       return true
     })
   }, [clients, query, countryFilter, ownerFilter, onlyMine, user])
@@ -187,24 +187,24 @@ export default function ClientsPage() {
         <div className="flex-1" />
         {view === 'list' && <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />}
         <FilterMenu
-          activeCount={[countryFilter, ownerFilter].filter(Boolean).length}
-          onClear={() => { setCountryFilter(''); setOwnerFilter('') }}
+          activeCount={countryFilter.length + ownerFilter.length}
+          onClear={() => { setCountryFilter([]); setOwnerFilter([]) }}
         >
           <Field label={t('wallet.country')}>
-            <SearchableSelect
-              value={countryFilter}
+            <MultiSelect
+              values={countryFilter}
               onChange={setCountryFilter}
-              emptyOptionLabel={t('wallet.allCountries')}
+              placeholder={t('wallet.allCountries')}
               options={countryOptions
                 .sort((a, b) => (findCountry(a)?.name ?? a).localeCompare(findCountry(b)?.name ?? b))
                 .map((code) => ({ id: code, label: findCountry(code)?.name ?? code }))}
             />
           </Field>
           <Field label={t('wallet.owner')}>
-            <SearchableSelect
-              value={ownerFilter}
+            <MultiSelect
+              values={ownerFilter}
               onChange={setOwnerFilter}
-              emptyOptionLabel={t('wallet.allOwners')}
+              placeholder={t('wallet.allOwners')}
               options={directoryAsTeam.map((m) => ({ id: m.id, label: m.name }))}
             />
           </Field>

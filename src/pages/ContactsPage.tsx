@@ -11,7 +11,7 @@ import { SearchInput } from '@/components/ui/SearchInput'
 import { FilterMenu } from '@/components/ui/FilterMenu'
 import { ColumnsMenu } from '@/components/ui/ColumnsMenu'
 import { SortableHeader } from '@/components/ui/SortableHeader'
-import { SearchableSelect } from '@/components/ui/SearchableSelect'
+import { MultiSelect } from '@/components/ui/MultiSelect'
 import { CappedBadgeList } from '@/components/ui/CappedBadgeList'
 import { PersonIcon } from '@/components/ui/icons'
 import { useSort } from '@/hooks/useSort'
@@ -30,7 +30,7 @@ export default function ContactsPage() {
   const { contacts, clients, createContact, updateContact, deleteContact, linkContactToClient, unlinkContactFromClient } = useAppStore()
 
   const [query, setQuery] = useState('')
-  const [filterClientId, setFilterClientId] = useState('')
+  const [filterClientId, setFilterClientId] = useState<string[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
   const [showModal, setShowModal] = useState(false)
@@ -41,7 +41,7 @@ export default function ContactsPage() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     return contacts.filter((c) => {
-      if (filterClientId && !c.clientIds.includes(filterClientId)) return false
+      if (filterClientId.length > 0 && !filterClientId.some((id) => c.clientIds.includes(id))) return false
       if (!q) return true
       return c.name.toLowerCase().includes(q) ||
         (c.role ?? '').toLowerCase().includes(q) ||
@@ -143,12 +143,12 @@ export default function ContactsPage() {
         />
         <div className="flex-1" />
         <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />
-        <FilterMenu activeCount={filterClientId ? 1 : 0} onClear={() => setFilterClientId('')}>
+        <FilterMenu activeCount={filterClientId.length} onClear={() => setFilterClientId([])}>
           <Field label={t('contacts.linkedClient')}>
-            <SearchableSelect
-              value={filterClientId}
+            <MultiSelect
+              values={filterClientId}
               onChange={setFilterClientId}
-              emptyOptionLabel={t('contacts.allClients')}
+              placeholder={t('contacts.allClients')}
               options={[...clients].sort((a, b) => a.name.localeCompare(b.name)).map((cl) => ({ id: cl.id, label: cl.name }))}
             />
           </Field>

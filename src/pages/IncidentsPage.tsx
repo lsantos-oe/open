@@ -12,7 +12,7 @@ import { AvatarStack } from '@/components/ui/AvatarStack'
 import { FilterMenu } from '@/components/ui/FilterMenu'
 import { ColumnsMenu } from '@/components/ui/ColumnsMenu'
 import { SortableHeader } from '@/components/ui/SortableHeader'
-import { SearchableSelect } from '@/components/ui/SearchableSelect'
+import { MultiSelect } from '@/components/ui/MultiSelect'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { MineToggle } from '@/components/ui/MineToggle'
@@ -68,10 +68,10 @@ export default function IncidentsPage() {
     (localStorage.getItem('pb-support-view') as 'list' | 'kanban') ?? 'list',
   )
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
-  const [priorityFilter, setPriorityFilter] = useState('')
-  const [clientFilter, setClientFilter] = useState('')
-  const [ownerFilter, setOwnerFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string[]>([])
+  const [priorityFilter, setPriorityFilter] = useState<string[]>([])
+  const [clientFilter, setClientFilter] = useState<string[]>([])
+  const [ownerFilter, setOwnerFilter] = useState<string[]>([])
   const [onlyMine, setOnlyMine] = useState(false)
 
   useEffect(() => { localStorage.setItem('pb-support-view', view) }, [view])
@@ -118,10 +118,10 @@ export default function IncidentsPage() {
         const haystack = (i.title + ' ' + clientNames(i.clientIds)).toLowerCase()
         if (!haystack.includes(search.trim().toLowerCase())) return false
       }
-      if (statusFilter && i.status !== statusFilter) return false
-      if (priorityFilter && i.priority !== priorityFilter) return false
-      if (clientFilter && !i.clientIds.includes(clientFilter)) return false
-      if (ownerFilter && (!i.owner || ownerKey(i.owner) !== ownerFilter)) return false
+      if (statusFilter.length > 0 && !statusFilter.includes(i.status)) return false
+      if (priorityFilter.length > 0 && !priorityFilter.includes(i.priority)) return false
+      if (clientFilter.length > 0 && !clientFilter.some((id) => i.clientIds.includes(id))) return false
+      if (ownerFilter.length > 0 && (!i.owner || !ownerFilter.includes(ownerKey(i.owner)))) return false
       return true
     })
   }, [incidents, search, statusFilter, priorityFilter, clientFilter, ownerFilter, onlyMine, user])
@@ -289,38 +289,38 @@ export default function IncidentsPage() {
           <div className="flex-1" />
           {view === 'list' && <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />}
           <FilterMenu
-            activeCount={[statusFilter, priorityFilter, clientFilter, ownerFilter].filter(Boolean).length}
-            onClear={() => { setStatusFilter(''); setPriorityFilter(''); setClientFilter(''); setOwnerFilter('') }}
+            activeCount={statusFilter.length + priorityFilter.length + clientFilter.length + ownerFilter.length}
+            onClear={() => { setStatusFilter([]); setPriorityFilter([]); setClientFilter([]); setOwnerFilter([]) }}
           >
             <Field label={t('incident.colClients')}>
-              <SearchableSelect
-                value={clientFilter}
+              <MultiSelect
+                values={clientFilter}
                 onChange={setClientFilter}
-                emptyOptionLabel={t('project.allClients')}
+                placeholder={t('project.allClients')}
                 options={[...clients].sort((a, b) => a.name.localeCompare(b.name)).map((c) => ({ id: c.id, label: c.name }))}
               />
             </Field>
             <Field label="Responsável">
-              <SearchableSelect
-                value={ownerFilter}
+              <MultiSelect
+                values={ownerFilter}
                 onChange={setOwnerFilter}
-                emptyOptionLabel="Todos os responsáveis"
+                placeholder="Todos os responsáveis"
                 options={ownerOptions}
               />
             </Field>
             <Field label={t('incident.colStatus')}>
-              <SearchableSelect
-                value={statusFilter}
+              <MultiSelect
+                values={statusFilter}
                 onChange={setStatusFilter}
-                emptyOptionLabel={t('incident.filterAllStatus')}
+                placeholder={t('incident.filterAllStatus')}
                 options={(['open', 'in_progress', 'waiting_on_client', 'resolved', 'closed'] as IncidentStatus[]).map((s) => ({ id: s, label: t(`incident.status_${s}`) }))}
               />
             </Field>
             <Field label={t('incident.colPriority')}>
-              <SearchableSelect
-                value={priorityFilter}
+              <MultiSelect
+                values={priorityFilter}
                 onChange={setPriorityFilter}
-                emptyOptionLabel={t('incident.filterAllPriority')}
+                placeholder={t('incident.filterAllPriority')}
                 options={[
                   { id: 'low', label: t('risk.low') },
                   { id: 'medium', label: t('risk.medium') },

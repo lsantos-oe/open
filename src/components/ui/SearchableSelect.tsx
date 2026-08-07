@@ -91,7 +91,13 @@ export function SearchableSelect({ value, onChange, options, placeholder, emptyO
           }}
         >
           {emptyOptionLabel && (
-            <button type="button" onClick={() => select('')} style={optionStyle(value === '')}>
+            <button
+              type="button"
+              onClick={() => select('')}
+              style={optionStyle(value === '')}
+              onMouseEnter={(e) => { if (value !== '') e.currentTarget.style.background = 'var(--surface-subtle)' }}
+              onMouseLeave={(e) => { if (value !== '') e.currentTarget.style.background = 'transparent' }}
+            >
               {emptyOptionLabel}
             </button>
           )}
@@ -99,7 +105,14 @@ export function SearchableSelect({ value, onChange, options, placeholder, emptyO
             <p style={{ fontSize: 12, color: 'var(--text-tertiary)', padding: '6px 8px' }}>Nada encontrado.</p>
           ) : (
             filtered.map((o) => (
-              <button key={o.id} type="button" onClick={() => select(o.id)} style={optionStyle(o.id === value)}>
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => select(o.id)}
+                style={optionStyle(o.id === value)}
+                onMouseEnter={(e) => { if (o.id !== value) e.currentTarget.style.background = 'var(--surface-subtle)' }}
+                onMouseLeave={(e) => { if (o.id !== value) e.currentTarget.style.background = 'transparent' }}
+              >
                 {o.label}
                 {o.sublabel && <span style={{ fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 6 }}>{o.sublabel}</span>}
               </button>
