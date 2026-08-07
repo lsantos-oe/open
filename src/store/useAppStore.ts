@@ -1224,23 +1224,37 @@ export const useAppStore = create<AppStore>()(
       },
 
       linkProjectClient(projectId, clientId) {
+        const allClients = get().clients
         set((s) => ({
-          projects: mutateProject(s.projects, projectId, (p) =>
-            p.clientIds.includes(clientId) ? p : { ...p, clientIds: [...p.clientIds, clientId] }),
+          projects: mutateProject(s.projects, projectId, (p) => {
+            if (p.clientIds.includes(clientId)) return p
+            const clientIds = [...p.clientIds, clientId]
+            const primary = allClients.find((c) => c.id === clientIds[0])
+            return { ...p, clientIds, clientId: clientIds[0], client: primary?.name ?? '' }
+          }),
         }))
         sync(async () => {
           const { error } = await supabase.from('project_clients').insert({ project_id: projectId, client_id: clientId })
           if (error) throw new Error(error.message)
+          const project = get().projects.find((p) => p.id === projectId)
+          if (project) await dbSyncProjectRow(project, getUserId())
         })
       },
 
       unlinkProjectClient(projectId, clientId) {
+        const allClients = get().clients
         set((s) => ({
-          projects: mutateProject(s.projects, projectId, (p) => ({ ...p, clientIds: p.clientIds.filter((id) => id !== clientId) })),
+          projects: mutateProject(s.projects, projectId, (p) => {
+            const clientIds = p.clientIds.filter((id) => id !== clientId)
+            const primary = allClients.find((c) => c.id === clientIds[0])
+            return { ...p, clientIds, clientId: clientIds[0], client: primary?.name ?? '' }
+          }),
         }))
         sync(async () => {
           const { error } = await supabase.from('project_clients').delete().eq('project_id', projectId).eq('client_id', clientId)
           if (error) throw new Error(error.message)
+          const project = get().projects.find((p) => p.id === projectId)
+          if (project) await dbSyncProjectRow(project, getUserId())
         })
       },
 

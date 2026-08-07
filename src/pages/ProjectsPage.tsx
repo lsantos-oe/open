@@ -30,7 +30,6 @@ import {
   projectDurationDays,
   projectEndVariance,
   isProjectDelayed,
-  uniqueClients,
   uniquePMs,
   findGoLiveDate,
 } from '@/utils/projectStats'
@@ -80,19 +79,21 @@ function varianceClass(v: number | undefined): string {
 // ─── filters ──────────────────────────────────────────────────────────────────
 
 interface Filters {
-  client: string
+  clientId: string
   pm: string
   type: string
   dev: string
+  status: string
 }
 
 function applyFilters(projects: Project[], f: Filters): Project[] {
   return projects.filter((p) => {
-    if (f.client && p.client !== f.client) return false
+    if (f.clientId && !p.clientIds.includes(f.clientId)) return false
     if (f.pm && p.pm !== f.pm) return false
     if (f.type && p.type !== f.type) return false
     if (f.dev === 'with' && !p.devType) return false
     if (f.dev === 'without' && p.devType) return false
+    if (f.status && p.status !== f.status) return false
     return true
   })
 }
@@ -102,7 +103,7 @@ function applyFilters(projects: Project[], f: Filters): Project[] {
 interface FilterBarProps {
   filters: Filters
   setFilters: (f: Filters) => void
-  clients: string[]
+  clients: Client[]
   pms: string[]
 }
 
@@ -111,13 +112,13 @@ function FilterBar({ filters, setFilters, clients, pms }: FilterBarProps) {
   const activeCount = Object.values(filters).filter(Boolean).length
 
   return (
-    <FilterMenu activeCount={activeCount} onClear={() => setFilters({ client: '', pm: '', type: '', dev: '' })}>
+    <FilterMenu activeCount={activeCount} onClear={() => setFilters({ clientId: '', pm: '', type: '', dev: '', status: '' })}>
       <Field label={t('portfolio.colClient')}>
         <SearchableSelect
-          value={filters.client}
-          onChange={(v) => setFilters({ ...filters, client: v })}
+          value={filters.clientId}
+          onChange={(v) => setFilters({ ...filters, clientId: v })}
           emptyOptionLabel={t('project.allClients')}
-          options={clients.map((c) => ({ id: c, label: c }))}
+          options={[...clients].sort((a, b) => a.name.localeCompare(b.name)).map((c) => ({ id: c.id, label: c.name }))}
         />
       </Field>
 
@@ -127,6 +128,15 @@ function FilterBar({ filters, setFilters, clients, pms }: FilterBarProps) {
           onChange={(v) => setFilters({ ...filters, pm: v })}
           emptyOptionLabel={t('project.allPMs')}
           options={pms.map((p) => ({ id: p, label: p }))}
+        />
+      </Field>
+
+      <Field label={t('portfolio.colStatus')}>
+        <SearchableSelect
+          value={filters.status}
+          onChange={(v) => setFilters({ ...filters, status: v })}
+          emptyOptionLabel={t('project.filterAll')}
+          options={KANBAN_STATUSES.map((s) => ({ id: s, label: t(`project.${s}`) }))}
         />
       </Field>
 
@@ -933,7 +943,7 @@ export default function ProjectsPage() {
     (localStorage.getItem('pb-portfolio-view') as 'list' | 'kanban') ?? 'list',
   )
   const [search, setSearch] = useState('')
-  const [filters, setFilters] = useState<Filters>({ client: '', pm: '', type: '', dev: '' })
+  const [filters, setFilters] = useState<Filters>({ clientId: '', pm: '', type: '', dev: '', status: '' })
   const [onlyMine, setOnlyMine] = useState(false)
   const [onlyDelayed, setOnlyDelayed] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
@@ -956,10 +966,6 @@ export default function ProjectsPage() {
 
   useEffect(() => { localStorage.setItem('pb-portfolio-view', view) }, [view])
 
-  const clientNames = useMemo(
-    () => [...new Set([...storeClients.map((c) => c.name), ...uniqueClients(projects)])].sort(),
-    [projects, storeClients],
-  )
   const pms = useMemo(() => uniquePMs(projects), [projects])
   const teamMembers: TeamMember[] = useMemo(
     () => teamDirectory.filter((p) => p.active).map((p) => ({ id: p.id, name: p.name ?? p.email ?? '', role: '', email: p.email ?? undefined, userId: p.id })),
@@ -1103,7 +1109,7 @@ export default function ProjectsPage() {
           </button>
           <div className="flex-1" />
           {view === 'list' && <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />}
-          <FilterBar filters={filters} setFilters={setFilters} clients={clientNames} pms={pms} />
+          <FilterBar filters={filters} setFilters={setFilters} clients={storeClients} pms={pms} />
         </div>
       )}
 

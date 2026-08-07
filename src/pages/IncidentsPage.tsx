@@ -18,7 +18,7 @@ import { SearchInput } from '@/components/ui/SearchInput'
 import { MineToggle } from '@/components/ui/MineToggle'
 import { ViewToggle } from '@/components/ui/ViewToggle'
 import { ListIcon, KanbanIcon, SupportIcon } from '@/components/ui/icons'
-import { isIncidentMine } from '@/utils/involvement'
+import { isIncidentMine, ownerKey } from '@/utils/involvement'
 import { contactsForClients } from '@/utils/contacts'
 import OwnersField from '@/components/plan/OwnersField'
 import { useSort } from '@/hooks/useSort'
@@ -70,6 +70,8 @@ export default function IncidentsPage() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [priorityFilter, setPriorityFilter] = useState('')
+  const [clientFilter, setClientFilter] = useState('')
+  const [ownerFilter, setOwnerFilter] = useState('')
   const [onlyMine, setOnlyMine] = useState(false)
 
   useEffect(() => { localStorage.setItem('pb-support-view', view) }, [view])
@@ -97,6 +99,14 @@ export default function IncidentsPage() {
     [teamDirectory],
   )
 
+  // Options come from owners actually assigned on incidents (not just the
+  // registered-user directory) so contact/free-text responsáveis are filterable too.
+  const ownerOptions = useMemo(() => {
+    const seen = new Map<string, string>()
+    for (const i of incidents) if (i.owner) seen.set(ownerKey(i.owner), i.owner.name)
+    return [...seen.entries()].map(([id, name]) => ({ id, label: name })).sort((a, b) => a.label.localeCompare(b.label))
+  }, [incidents])
+
   function clientNames(clientIds: string[]): string {
     return clientIds.map((id) => clients.find((c) => c.id === id)?.name).filter(Boolean).join(', ') || '—'
   }
@@ -110,9 +120,11 @@ export default function IncidentsPage() {
       }
       if (statusFilter && i.status !== statusFilter) return false
       if (priorityFilter && i.priority !== priorityFilter) return false
+      if (clientFilter && !i.clientIds.includes(clientFilter)) return false
+      if (ownerFilter && (!i.owner || ownerKey(i.owner) !== ownerFilter)) return false
       return true
     })
-  }, [incidents, search, statusFilter, priorityFilter, onlyMine, user])
+  }, [incidents, search, statusFilter, priorityFilter, clientFilter, ownerFilter, onlyMine, user])
 
   const { sortField, sortDir, toggleSort, sortItems } = useSort<Incident>({
     title: (i) => i.title,
@@ -277,9 +289,25 @@ export default function IncidentsPage() {
           <div className="flex-1" />
           {view === 'list' && <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />}
           <FilterMenu
-            activeCount={[statusFilter, priorityFilter].filter(Boolean).length}
-            onClear={() => { setStatusFilter(''); setPriorityFilter('') }}
+            activeCount={[statusFilter, priorityFilter, clientFilter, ownerFilter].filter(Boolean).length}
+            onClear={() => { setStatusFilter(''); setPriorityFilter(''); setClientFilter(''); setOwnerFilter('') }}
           >
+            <Field label={t('incident.colClients')}>
+              <SearchableSelect
+                value={clientFilter}
+                onChange={setClientFilter}
+                emptyOptionLabel={t('project.allClients')}
+                options={[...clients].sort((a, b) => a.name.localeCompare(b.name)).map((c) => ({ id: c.id, label: c.name }))}
+              />
+            </Field>
+            <Field label="Responsável">
+              <SearchableSelect
+                value={ownerFilter}
+                onChange={setOwnerFilter}
+                emptyOptionLabel="Todos os responsáveis"
+                options={ownerOptions}
+              />
+            </Field>
             <Field label={t('incident.colStatus')}>
               <SearchableSelect
                 value={statusFilter}

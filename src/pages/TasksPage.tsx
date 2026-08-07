@@ -27,7 +27,7 @@ import { SearchInput } from '@/components/ui/SearchInput'
 import { MineToggle } from '@/components/ui/MineToggle'
 import { ViewToggle } from '@/components/ui/ViewToggle'
 import { ListIcon, KanbanIcon, CheckCircleIcon, ChatBubbleIcon, LinkIcon } from '@/components/ui/icons'
-import { isEntryMine } from '@/utils/involvement'
+import { isEntryMine, ownerKey } from '@/utils/involvement'
 import { contactsForClients } from '@/utils/contacts'
 import { useSort } from '@/hooks/useSort'
 import { useColumnVisibility, ColumnDef } from '@/hooks/useColumnVisibility'
@@ -357,13 +357,15 @@ export default function TasksPage() {
     return clientIds.size > 0 ? contactsForClients(contacts, [...clientIds]) : []
   }, [allCards, selected, projects, incidents, contacts])
 
-  const allMembers = useMemo(() => {
-    const names = new Set<string>()
-    for (const proj of projects) {
-      for (const m of proj.team) names.add(m.name)
+  // Options come from owners actually assigned on cards (project + incident +
+  // standalone) — a project's own team roster misses incident/standalone owners.
+  const allMemberOptions = useMemo(() => {
+    const seen = new Map<string, string>()
+    for (const c of allCards) {
+      for (const o of entryOwners(c)) seen.set(ownerKey(o), o.name)
     }
-    return Array.from(names).sort()
-  }, [projects])
+    return [...seen.entries()].map(([id, name]) => ({ id, label: name })).sort((a, b) => a.label.localeCompare(b.label))
+  }, [allCards])
 
   const filteredCards = useMemo(() => {
     return allCards.filter(c => {
@@ -374,7 +376,7 @@ export default function TasksPage() {
       if (filterClientId && !c._clientIds.includes(filterClientId)) return false
       if (filterMember) {
         const owners = entryOwners(c)
-        if (!owners.some(o => o.name === filterMember)) return false
+        if (!owners.some(o => ownerKey(o) === filterMember)) return false
       }
       if (filterStatus && c.status !== filterStatus) return false
       return true
@@ -505,7 +507,7 @@ export default function TasksPage() {
               value={filterMember}
               onChange={setFilterMember}
               emptyOptionLabel={t('tasks.filterMember')}
-              options={allMembers.map(m => ({ id: m, label: m }))}
+              options={allMemberOptions}
             />
           </Field>
 
