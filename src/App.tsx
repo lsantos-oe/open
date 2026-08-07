@@ -32,7 +32,10 @@ export default function App() {
   }, [defaultLanguage])
 
   useEffect(() => {
-    // 1. Explicit session check on mount — reliable, doesn't wait for onAuthStateChange
+    let cancelled = false
+    let unsubscribe: (() => void) | undefined
+
+    // 1. Explicit session check on mount — reliable, doesn't wait for onAuthStateChange.
     useAuthStore.getState().initialize().then(() => {
       const user = useAuthStore.getState().user
       if (user) {
@@ -47,27 +50,33 @@ export default function App() {
         useAppStore.getState().loadStandaloneTasks()
         useAiStore.getState().loadHasKey()
       }
+
+      if (cancelled) return
+
+      // 2. Watch for subsequent auth events (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED).
+      // Registered only after the initial getSession() above has fully resolved —
+      // subscribing earlier lets a SIGNED_IN event fired mid-exchange (e.g. the
+      // OAuth callback landing here) race that same call for gotrue-js's session lock.
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (session?.user) {
+          useAuthStore.getState().loadProfile().then(() => {
+            useAppStore.getState().loadProjects()
+            useAppStore.getState().loadSettings()
+            useAppStore.getState().loadTeamDirectory()
+            useAppStore.getState().loadInvitedUsers()
+            useAppStore.getState().loadNotifications()
+          })
+        } else {
+          useAuthStore.setState({ user: null, profile: null, loading: false })
+        }
+      })
+      unsubscribe = () => subscription.unsubscribe()
     })
 
-    // 2. Watch for subsequent auth events (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // Skip INITIAL_SESSION — already handled by initialize() above
-      if (event === 'INITIAL_SESSION') return
-
-      if (session?.user) {
-        useAuthStore.getState().loadProfile().then(() => {
-          useAppStore.getState().loadProjects()
-          useAppStore.getState().loadSettings()
-          useAppStore.getState().loadTeamDirectory()
-        useAppStore.getState().loadInvitedUsers()
-        useAppStore.getState().loadNotifications()
-        })
-      } else {
-        useAuthStore.setState({ user: null, profile: null, loading: false })
-      }
-    })
-
-    return () => subscription.unsubscribe()
+    return () => {
+      cancelled = true
+      unsubscribe?.()
+    }
   }, [])
 
   return (
