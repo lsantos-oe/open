@@ -1,43 +1,48 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { useAuthStore } from '@/stores/useAuthStore'
 
 export default function AuthCallback() {
   const navigate = useNavigate()
+  const { user, loading } = useAuthStore()
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error || !session) {
-        navigate('/login?error=failed', { replace: true })
-        return
-      }
+    // Reuse the session App.tsx's initialize() already resolved — calling
+    // supabase.auth.getSession() again here races it for the same browser
+    // lock and can leave this page stuck on the spinner forever.
+    if (loading) return
 
-      const email = session.user.email ?? ''
-      const allowedDomain = (import.meta as any).env?.VITE_ALLOWED_EMAIL_DOMAIN as string | undefined
+    if (!user) {
+      navigate('/login?error=failed', { replace: true })
+      return
+    }
 
-      if (allowedDomain && !email.endsWith('@' + allowedDomain)) {
-        supabase.auth.signOut().then(() =>
-          navigate('/login?error=unauthorized', { replace: true }),
-        )
-        return
-      }
+    const email = user.email ?? ''
+    const allowedDomain = (import.meta as any).env?.VITE_ALLOWED_EMAIL_DOMAIN as string | undefined
 
-      supabase
-        .from('profiles')
-        .select('active')
-        .eq('id', session.user.id)
-        .single()
-        .then(({ data: profile }) => {
-          if (profile && profile.active === false) {
-            supabase.auth.signOut().then(() =>
-              navigate('/login?error=revoked', { replace: true }),
-            )
-            return
-          }
-          navigate('/', { replace: true })
-        })
-    })
-  }, [navigate])
+    if (allowedDomain && !email.endsWith('@' + allowedDomain)) {
+      supabase.auth.signOut().then(() =>
+        navigate('/login?error=unauthorized', { replace: true }),
+      )
+      return
+    }
+
+    supabase
+      .from('profiles')
+      .select('active')
+      .eq('id', user.id)
+      .single()
+      .then(({ data: profile }) => {
+        if (profile && profile.active === false) {
+          supabase.auth.signOut().then(() =>
+            navigate('/login?error=revoked', { replace: true }),
+          )
+          return
+        }
+        navigate('/', { replace: true })
+      })
+  }, [user, loading, navigate])
 
   return (
     <div style={{
