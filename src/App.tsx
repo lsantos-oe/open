@@ -36,19 +36,25 @@ export default function App() {
     let unsubscribe: (() => void) | undefined
 
     // 1. Explicit session check on mount — reliable, doesn't wait for onAuthStateChange.
-    useAuthStore.getState().initialize().then(() => {
+    useAuthStore.getState().initialize().then(async () => {
       const user = useAuthStore.getState().user
       if (user) {
-        useAppStore.getState().loadProjects()
-        useAppStore.getState().loadSettings()
-        useAppStore.getState().loadTeamDirectory()
-        useAppStore.getState().loadInvitedUsers()
-        useAppStore.getState().loadNotifications()
-        useAppStore.getState().loadClients()
-        useAppStore.getState().loadIncidents()
-        useAppStore.getState().loadContacts()
-        useAppStore.getState().loadStandaloneTasks()
-        useAiStore.getState().loadHasKey()
+        // Sequential, not Promise.all: every supabase.from() call re-derives its
+        // auth header via auth.getSession(), which goes through gotrue-js's
+        // session lock (see @supabase/auth-js lib/locks.js). Firing all of these
+        // at once makes multiple calls race to acquire that lock in the same
+        // tick, which is exactly what trips its "lock stolen by another
+        // request" failure mode and can make every load below reject.
+        await useAppStore.getState().loadProjects()
+        await useAppStore.getState().loadSettings()
+        await useAppStore.getState().loadTeamDirectory()
+        await useAppStore.getState().loadInvitedUsers()
+        await useAppStore.getState().loadNotifications()
+        await useAppStore.getState().loadClients()
+        await useAppStore.getState().loadIncidents()
+        await useAppStore.getState().loadContacts()
+        await useAppStore.getState().loadStandaloneTasks()
+        await useAiStore.getState().loadHasKey()
       }
 
       if (cancelled) return
@@ -59,12 +65,15 @@ export default function App() {
       // OAuth callback landing here) race that same call for gotrue-js's session lock.
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
         if (session?.user) {
-          useAuthStore.getState().loadProfile().then(() => {
-            useAppStore.getState().loadProjects()
-            useAppStore.getState().loadSettings()
-            useAppStore.getState().loadTeamDirectory()
-            useAppStore.getState().loadInvitedUsers()
-            useAppStore.getState().loadNotifications()
+          useAuthStore.getState().loadProfile().then(async () => {
+            // Sequential for the same reason as the initial load above — avoid
+            // a stampede of concurrent auth.getSession() calls fighting over
+            // gotrue-js's session lock.
+            await useAppStore.getState().loadProjects()
+            await useAppStore.getState().loadSettings()
+            await useAppStore.getState().loadTeamDirectory()
+            await useAppStore.getState().loadInvitedUsers()
+            await useAppStore.getState().loadNotifications()
           })
         } else {
           useAuthStore.setState({ user: null, profile: null, loading: false })
