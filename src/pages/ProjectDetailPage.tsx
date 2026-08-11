@@ -11,6 +11,7 @@ import StatusBadge from '@/components/StatusBadge'
 import { SearchIcon } from '@/components/ui/icons'
 import { ProjectStatus, Project, Entry, AppLanguage, TeamMember } from '@/types'
 import { generateStatusReport, ReportConfig } from '@/utils/statusReport'
+import { CopyLinkButton } from '@/components/ui/CopyLinkButton'
 import { useSmartPosition } from '@/hooks/useSmartPosition'
 import ReportConfigModal from '@/components/report/ReportConfigModal'
 import ReportLinkModal from '@/components/report/ReportLinkModal'
@@ -543,6 +544,9 @@ export default function ProjectDetailPage() {
             { value: 'done', label: t('status.done') },
           ]}
         />
+
+        {/* Copy shareable link */}
+        <CopyLinkButton url={`${window.location.origin}/projects/${project.id}`} size="xs" />
 
         {/* Export report */}
         <GhostBtn onClick={() => setShowReportModal(true)} disabled={exportingReport}>

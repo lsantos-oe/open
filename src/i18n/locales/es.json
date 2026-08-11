@@ -279,7 +279,10 @@
     "dependenciesRemoved": "Dependencias eliminadas al mover entre proyectos.",
     "comments": "Comentarios",
     "noComments": "Aún no hay comentarios.",
-    "commentPlaceholder": "Agregar comentario..."
+    "commentPlaceholder": "Agregar comentario...",
+    "viewProject": "Ver proyecto",
+    "viewIncident": "Ver incidente",
+    "viewClient": "Ver cliente"
   },
   "plan": {
     "addTask": "+ Tarea",

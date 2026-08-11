@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo, CSSProperties, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/store/useAppStore'
 import { Entry, EntryOwner, EntryType, EntryStatus, RiskFlag, Link, TeamMember } from '@/types'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
-import { CheckCircleIcon, FlagIcon, CalendarIcon } from '@/components/ui/icons'
+import { CopyLinkButton } from '@/components/ui/CopyLinkButton'
+import { CheckCircleIcon, FlagIcon, CalendarIcon, ExternalLinkIcon } from '@/components/ui/icons'
 import OwnersField from '@/components/plan/OwnersField'
 import { contactsForClients } from '@/utils/contacts'
 
@@ -90,7 +92,8 @@ function entryToForm(entry: Entry): Form {
 
 export default function IncidentEntryModal({ open, mode, incidentId, entry, onClose }: Props) {
   const { t } = useTranslation()
-  const { incidents, teamDirectory, contacts, addIncidentEntry, updateIncidentEntry, deleteIncidentEntry, changeIncidentEntryDate } = useAppStore()
+  const navigate = useNavigate()
+  const { incidents, projects, clients, teamDirectory, contacts, addIncidentEntry, updateIncidentEntry, deleteIncidentEntry, changeIncidentEntryDate } = useAppStore()
   const incident = incidents.find((i) => i.id === incidentId)
 
   // OwnersField expects TeamMember[] — map the global registered-user directory into that shape
@@ -235,6 +238,32 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, onCl
   return (
     <Modal open={open} title={title} onClose={onClose} size="lg" noPadding footer={footer}>
       <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {mode === 'edit' && entry && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+            <CopyLinkButton url={`${window.location.origin}/tasks?entry=${entry.id}`} size="xs" />
+            <Button variant="ghost" size="xs" onClick={() => { onClose(); navigate(`/support/${incidentId}`) }}>
+              <ExternalLinkIcon className="w-3.5 h-3.5" /> {t('entry.viewIncident')}
+            </Button>
+            {(incident?.projectIds ?? []).map((pid) => {
+              const project = projects.find((p) => p.id === pid)
+              if (!project) return null
+              return (
+                <Button key={pid} variant="ghost" size="xs" onClick={() => { onClose(); navigate(`/projects/${pid}`) }}>
+                  <ExternalLinkIcon className="w-3.5 h-3.5" /> {t('entry.viewProject')}: {project.name}
+                </Button>
+              )
+            })}
+            {(incident?.clientIds ?? []).map((cid) => {
+              const client = clients.find((c) => c.id === cid)
+              if (!client) return null
+              return (
+                <Button key={cid} variant="ghost" size="xs" onClick={() => { onClose(); navigate(`/wallet/${cid}`) }}>
+                  <ExternalLinkIcon className="w-3.5 h-3.5" /> {t('entry.viewClient')}: {client.name}
+                </Button>
+              )
+            })}
+          </div>
+        )}
         {mode === 'create' && (
           <div style={{ display: 'flex', gap: 8 }}>
             {(['task', 'milestone', 'meeting'] as EntryType[]).map((type) => (

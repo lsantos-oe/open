@@ -338,6 +338,19 @@ export default function TasksPage() {
     [projects, incidents, standaloneTasks, clients],
   )
 
+  // Deep link from a copied task link (?entry=<id>) — wait for allCards to be
+  // populated before clearing the param, so a link opened cold (before data
+  // finishes loading) doesn't get wiped before it has a chance to resolve.
+  useEffect(() => {
+    const entryId = searchParams.get('entry')
+    if (!entryId) return
+    const card = allCards.find((c) => c.id === entryId)
+    if (card) {
+      setEditCard(card)
+      setSearchParams({}, { replace: true })
+    }
+  }, [searchParams, setSearchParams, allCards])
+
   // Selected cards can span different projects/incidents — union their clients
   // so the bulk owner picker's "Contato" tab covers everyone relevant.
   const bulkOwnerContacts = useMemo(() => {

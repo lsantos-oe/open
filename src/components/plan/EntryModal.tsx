@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, CSSProperties, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useToastStore } from '@/stores/useToastStore'
@@ -8,7 +9,8 @@ import { contactsForClients, contactsForClient } from '@/utils/contacts'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
-import { CheckCircleIcon, FlagIcon, CalendarIcon } from '@/components/ui/icons'
+import { CopyLinkButton } from '@/components/ui/CopyLinkButton'
+import { CheckCircleIcon, FlagIcon, CalendarIcon, ExternalLinkIcon } from '@/components/ui/icons'
 import OwnersField from '@/components/plan/OwnersField'
 
 // ─── types ────────────────────────────────────────────────────────────────────
@@ -196,6 +198,7 @@ export default function EntryModal({
   } = useAppStore()
   const { profile } = useAuthStore()
   const { addToast } = useToastStore()
+  const navigate = useNavigate()
 
   // ── derive original project/phase ids (stable across re-renders) ──────────
 
@@ -664,6 +667,27 @@ export default function EntryModal({
 
         {/* ── LEFT COLUMN ── */}
         <div style={{ flex: 2, padding: 24, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+          {/* Copy link + related entities (edit mode only — nothing to link to before it's saved) */}
+          {mode === 'edit' && entry && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', marginBottom: -8 }}>
+              <CopyLinkButton url={`${window.location.origin}/tasks?entry=${entry.id}`} size="xs" />
+              {origProjectId && (
+                <Button variant="ghost" size="xs" onClick={() => { onClose(); navigate(`/projects/${origProjectId}`) }}>
+                  <ExternalLinkIcon className="w-3.5 h-3.5" /> {t('entry.viewProject')}
+                </Button>
+              )}
+              {(origProject?.clientIds ?? (entry.clientId ? [entry.clientId] : [])).map((cid) => {
+                const client = clients.find((c) => c.id === cid)
+                if (!client) return null
+                return (
+                  <Button key={cid} variant="ghost" size="xs" onClick={() => { onClose(); navigate(`/wallet/${cid}`) }}>
+                    <ExternalLinkIcon className="w-3.5 h-3.5" /> {t('entry.viewClient')}: {client.name}
+                  </Button>
+                )
+              })}
+            </div>
+          )}
 
           {/* Type selector (create, not subtask, not forced meeting, not standalone) */}
           {mode === 'create' && !isSubtask && !defaultParentEntryId && !!form.projectId && (

@@ -16,6 +16,7 @@ import { AnchorNav } from '@/components/ui/AnchorNav'
 import { StatusDot } from '@/components/ui/StatusDot'
 import { AvatarStack } from '@/components/ui/AvatarStack'
 import { contactsForClients } from '@/utils/contacts'
+import { CopyLinkButton } from '@/components/ui/CopyLinkButton'
 import { differenceInCalendarDays } from 'date-fns'
 
 type Tab = 'overview' | 'tasks' | 'openPoints' | 'history'
@@ -206,7 +207,10 @@ export default function IncidentDetailPage() {
           )}
           <Badge variant={STATUS_VARIANT[incident.status]}>{t(`incident.status_${incident.status}`)}</Badge>
         </div>
-        <Button variant="secondary" size="sm" onClick={() => setShowDeleteConfirm(true)}>{t('incident.delete')}</Button>
+        <div className="flex items-center gap-1 shrink-0">
+          <CopyLinkButton url={`${window.location.origin}/support/${incident.id}`} size="sm" />
+          <Button variant="secondary" size="sm" onClick={() => setShowDeleteConfirm(true)}>{t('incident.delete')}</Button>
+        </div>
       </div>
 
       <div className="px-6 pt-3">
