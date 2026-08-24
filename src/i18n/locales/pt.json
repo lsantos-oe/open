@@ -219,6 +219,7 @@
     "validation": "Validação/Teste",
     "done": "Concluído",
     "blocked": "Bloqueado",
+    "overdue": "Atrasado",
     "none": "OK",
     "warning": "Atenção",
     "critical": "Crítico",
