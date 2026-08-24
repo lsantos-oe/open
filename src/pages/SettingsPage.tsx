@@ -231,20 +231,20 @@ export default function SettingsPage() {
           </Section>
 
           {isAdmin && (
-            <Section title="Assistente de IA" description="Chave da API da Anthropic (Claude) compartilhada por todo o time — não é por usuário.">
+            <Section title="Assistente de IA" description="Chave da API do OpenRouter compartilhada por todo o time — não é por usuário.">
               {hasKey ? (
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm" style={{ color: 'var(--color-success-text)' }}>Chave configurada ✓</span>
                   <Button variant="secondary" size="sm" onClick={handleRemoveAiKey} disabled={savingAiKey}>Remover chave</Button>
                 </div>
               ) : (
-                <Field label="API key da Anthropic">
+                <Field label="API key do OpenRouter">
                   <div className="flex gap-2">
                     <Input
                       type="password"
                       value={aiApiKey}
                       onChange={(e) => setAiApiKey(e.target.value)}
-                      placeholder="sk-ant-..."
+                      placeholder="sk-or-v1-..."
                       className="flex-1"
                     />
                     <Button size="sm" onClick={handleSaveAiKey} disabled={!aiApiKey.trim() || savingAiKey}>

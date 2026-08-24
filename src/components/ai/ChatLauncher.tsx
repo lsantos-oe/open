@@ -4,7 +4,7 @@ import { useOverlayStore } from '@/stores/useOverlayStore'
 import { ChatPanel } from './ChatPanel'
 
 /** Floating action button that opens the AI chat panel — only rendered once
- *  an admin has configured the workspace's shared Anthropic key (Configurações
+ *  an admin has configured the workspace's shared OpenRouter key (Configurações
  *  → Geral). Sits in the same bottom-right corner as Toaster.tsx, just under
  *  it in z-index so a toast always renders on top if the two ever overlap.
  *  Full-height right-side drawers (CommentsPanel, RiskPanel) occupy that same

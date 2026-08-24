@@ -1,12 +1,20 @@
-// Edge Function: proxies a single Claude conversation turn to Anthropic using
+// Edge Function: proxies a single Claude conversation turn to OpenRouter's
+// Anthropic-Messages-API-compatible endpoint (POST /api/v1/messages) using
 // the workspace's shared key — which lives only here, decrypted server-side
 // via the service role. The browser never sees the key, not even encrypted;
 // it only ever sends {system, messages, tools} and receives streamed text +
 // the final assembled message back as newline-delimited JSON (NDJSON).
 //
+// The @anthropic-ai/sdk client still works unmodified against OpenRouter:
+// pointing `baseURL` at OpenRouter and authenticating with `authToken`
+// (Bearer, instead of `apiKey`'s x-api-key header) is enough, because
+// OpenRouter's /messages "skin" mirrors Anthropic's request/response/SSE
+// shapes 1:1 — streaming, tool_use blocks and stop_reason all behave the
+// same, only the model id gets an OpenRouter-style "anthropic/..." prefix.
+//
 // Tool EXECUTION still happens entirely client-side (src/ai/runConversation.ts)
 // against the user's own authenticated Supabase session — this function does
-// nothing but the one round-trip to Anthropic. That keeps the app's existing
+// nothing but the one round-trip to OpenRouter. That keeps the app's existing
 // "no backend, RLS does the access control" model intact for everything
 // except this one credential.
 //
@@ -17,7 +25,8 @@
 import Anthropic from 'npm:@anthropic-ai/sdk@0.115.0'
 import { createClient } from 'npm:@supabase/supabase-js@2.104.1'
 
-const AI_MODEL = 'claude-sonnet-5'
+const AI_MODEL = 'anthropic/claude-sonnet-5'
+const OPENROUTER_BASE_URL = 'https://openrouter.ai/api'
 const MAX_TOKENS = 8192
 
 const CORS_HEADERS = {
@@ -51,13 +60,15 @@ Deno.serve(async (req: Request) => {
   )
   const { data: apiKey, error: keyError } = await supabaseAdmin.rpc('ai_get_key')
   if (keyError || !apiKey) {
-    return new Response(JSON.stringify({ error: 'Nenhuma chave da API do Claude configurada.' }), {
+    return new Response(JSON.stringify({ error: 'Nenhuma chave do OpenRouter configurada.' }), {
       status: 400,
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
     })
   }
 
-  const anthropic = new Anthropic({ apiKey: apiKey as string })
+  // authToken (not apiKey) sends `Authorization: Bearer <key>` instead of
+  // `x-api-key` — the auth scheme OpenRouter's /messages endpoint expects.
+  const anthropic = new Anthropic({ authToken: apiKey as string, baseURL: OPENROUTER_BASE_URL })
   const anthropicStream = anthropic.messages.stream({
     model: AI_MODEL,
     max_tokens: MAX_TOKENS,

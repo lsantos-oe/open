@@ -1,7 +1,7 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { supabase, supabaseUrl, supabaseAnonKey } from '@/lib/supabase'
 
-export const AI_MODEL = 'claude-sonnet-5'
+export const AI_MODEL = 'anthropic/claude-sonnet-5'
 
 /** Carries Anthropic's original HTTP status (when the Edge Function forwards
  *  one) so callers can still tell an auth/billing failure apart from a
@@ -22,7 +22,7 @@ interface StreamChatParams {
 }
 
 /** Sends one conversation turn to the `ai-chat` Edge Function and streams the
- *  reply back. The Anthropic key never reaches the browser — it's decrypted
+ *  reply back. The OpenRouter key never reaches the browser — it's decrypted
  *  and used entirely server-side (see supabase/functions/ai-chat/index.ts and
  *  20260802_ai_get_key_service_only.sql). This function only ever sees
  *  {system, messages, tools} going out and text/final-message events coming

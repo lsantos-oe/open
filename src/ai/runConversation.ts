@@ -38,7 +38,7 @@ function newMessage(role: 'user' | 'assistant', content: ChatContentBlock[]): Ch
 }
 
 function friendlyKeyError(): void {
-  useToastStore.getState().addToast('Sua chave da API do Claude é inválida ou expirou. Verifique suas configurações.')
+  useToastStore.getState().addToast('Sua chave do OpenRouter é inválida ou expirou. Verifique suas configurações.')
 }
 
 function handleAnthropicError(err: unknown): void {
