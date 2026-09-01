@@ -17,6 +17,7 @@ import { StatusDot } from '@/components/ui/StatusDot'
 import { AvatarStack } from '@/components/ui/AvatarStack'
 import { contactsForClients } from '@/utils/contacts'
 import { CopyLinkButton } from '@/components/ui/CopyLinkButton'
+import { EntityAttachments } from '@/components/ui/EntityAttachments'
 import { differenceInCalendarDays } from 'date-fns'
 
 type Tab = 'overview' | 'tasks' | 'openPoints' | 'history'
@@ -273,6 +274,10 @@ export default function IncidentDetailPage() {
                 className="block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:outline-none focus:ring-1"
                 style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)', resize: 'none' }}
               />
+            </Field>
+
+            <Field label="Anexos">
+              <EntityAttachments entityType="incident" entityId={incident.id} />
             </Field>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

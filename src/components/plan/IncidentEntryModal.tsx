@@ -6,6 +6,7 @@ import { Entry, EntryOwner, EntryType, EntryStatus, RiskFlag, Link, TeamMember }
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { CopyLinkButton } from '@/components/ui/CopyLinkButton'
+import { EntityAttachments } from '@/components/ui/EntityAttachments'
 import { CheckCircleIcon, FlagIcon, CalendarIcon, ExternalLinkIcon } from '@/components/ui/icons'
 import OwnersField from '@/components/plan/OwnersField'
 import { contactsForClients } from '@/utils/contacts'
@@ -410,6 +411,10 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, onCl
             </button>
           </div>
         </div>
+
+        {mode === 'edit' && entry && (
+          <EntityAttachments entityType="entry" entityId={entry.id} />
+        )}
       </div>
     </Modal>
   )

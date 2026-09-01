@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { Input, Textarea, Field } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
+import { EntityAttachments } from '@/components/ui/EntityAttachments'
 import OwnersField from '@/components/plan/OwnersField'
 import TeamTab from './TeamTab'
 
@@ -560,6 +561,10 @@ export default function OverviewTab({ project }: Props) {
         open={openSections.has('team')} onToggle={() => toggleSection('team')}
       >
         <TeamTab project={project} />
+      </CollapsibleSection>
+
+      <CollapsibleSection id="attachments" title="Anexos" open={openSections.has('attachments')} onToggle={() => toggleSection('attachments')}>
+        <EntityAttachments entityType="project" entityId={project.id} />
       </CollapsibleSection>
 
       <CollapsibleSection id="charter" title={t('charter.title')} open={openSections.has('charter')} onToggle={() => toggleSection('charter')}>

@@ -10,6 +10,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { CopyLinkButton } from '@/components/ui/CopyLinkButton'
+import { EntityAttachments } from '@/components/ui/EntityAttachments'
 import { CheckCircleIcon, FlagIcon, CalendarIcon, ExternalLinkIcon } from '@/components/ui/icons'
 import OwnersField from '@/components/plan/OwnersField'
 
@@ -1082,6 +1083,11 @@ export default function EntryModal({
               </div>
             </div>
           </div>
+
+          {/* Attachments (edit mode only — nothing to attach files to before it's saved) */}
+          {mode === 'edit' && entry && (
+            <EntityAttachments entityType="entry" entityId={entry.id} />
+          )}
 
           {/* Comments (edit mode, project tasks only — standalone tasks have no comment thread) */}
           {mode === 'edit' && entry && !!origProjectId && (

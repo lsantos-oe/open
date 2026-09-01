@@ -32,3 +32,6 @@ yarn-error.log*
 
 # misc
 .cache/
+
+# Supabase CLI local state (project link, cached versions) — machine-specific
+supabase/.temp/
