@@ -27,6 +27,7 @@ import { SearchInput } from '@/components/ui/SearchInput'
 import { MineToggle } from '@/components/ui/MineToggle'
 import { ViewToggle } from '@/components/ui/ViewToggle'
 import { ListIcon, KanbanIcon, CheckCircleIcon, ChatBubbleIcon, LinkIcon } from '@/components/ui/icons'
+import { SignalBadges, signalRowTint } from '@/components/ui/SignalBadges'
 import { isEntryMine, ownerKey } from '@/utils/involvement'
 import { contactsForClients } from '@/utils/contacts'
 import { useSort } from '@/hooks/useSort'
@@ -67,6 +68,7 @@ const COLUMNS: ColumnDef[] = [
   { key: 'owners', label: 'Responsáveis' },
   { key: 'status', label: 'Status' },
   { key: 'date', label: 'Data' },
+  { key: 'signal', label: 'Sinal' },
 ]
 
 // ─── types ────────────────────────────────────────────────────────────────────
@@ -205,9 +207,11 @@ function TaskCard({ card, onClick, ghost = false }: {
       </div>
 
       {/* Name */}
-      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.4, marginBottom: 10, overflowWrap: 'anywhere' }}>
+      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.4, marginBottom: 6, overflowWrap: 'anywhere' }}>
         {card.name}
       </p>
+
+      <SignalBadges entry={card} today={today} className="mb-2" />
 
       {/* Footer: owner avatars + hidden badge + date */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
@@ -582,13 +586,16 @@ export default function TasksPage() {
                     <SortableHeader label="Data" field="date" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
                   </th>
                 )}
+                {isVisible('signal') && (
+                  <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Sinal</th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
               {sortedCards.map((card) => {
                 const endDate = card.type === 'task' ? card.plannedEnd : card.plannedDate
                 return (
-                  <tr key={card.id} className="transition-colors">
+                  <tr key={card.id} className="transition-colors" style={{ background: signalRowTint(card) }}>
                     <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                       <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]" checked={selected.has(card.id)} onChange={() => toggleSelect(card.id)} />
                     </td>
@@ -610,6 +617,9 @@ export default function TasksPage() {
                     )}
                     {isVisible('date') && (
                       <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)' }}>{endDate ? fmtDate(endDate) : '—'}</td>
+                    )}
+                    {isVisible('signal') && (
+                      <td className="px-3 py-2.5"><SignalBadges entry={card} /></td>
                     )}
                   </tr>
                 )

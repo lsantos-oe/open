@@ -18,6 +18,7 @@ import { AvatarStack } from '@/components/ui/AvatarStack'
 import { contactsForClients } from '@/utils/contacts'
 import { CopyLinkButton } from '@/components/ui/CopyLinkButton'
 import { EntityAttachments } from '@/components/ui/EntityAttachments'
+import { SignalBadges, signalRowTint } from '@/components/ui/SignalBadges'
 import { differenceInCalendarDays } from 'date-fns'
 
 type Tab = 'overview' | 'tasks' | 'openPoints' | 'history'
@@ -391,17 +392,19 @@ export default function IncidentDetailPage() {
                     <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('entry.responsible')}</th>
                     <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('entry.status')}</th>
                     <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>{t('plan.colEnd')}</th>
+                    <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Sinal</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
                   {filteredBoardCards.map((card) => {
                     const endDate = card.type === 'task' ? card.plannedEnd : card.plannedDate
                     return (
-                      <tr key={card.id} className="cursor-pointer transition-colors" onClick={() => setTaskModal({ mode: 'edit', entry: card })}>
+                      <tr key={card.id} className="cursor-pointer transition-colors" onClick={() => setTaskModal({ mode: 'edit', entry: card })} style={{ background: signalRowTint(card) }}>
                         <td className="px-3 py-2.5" style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{card.name}</td>
                         <td className="px-3 py-2.5"><AvatarStack people={entryOwners(card)} size={20} /></td>
                         <td className="px-3 py-2.5"><StatusDot color={ENTRY_STATUS_COLOR[card.status]} label={t(`entry.${card.status}` as any)} /></td>
                         <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)' }}>{endDate ? fmtEntryDate(endDate) : '—'}</td>
+                        <td className="px-3 py-2.5"><SignalBadges entry={card} /></td>
                       </tr>
                     )
                   })}

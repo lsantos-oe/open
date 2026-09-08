@@ -1,6 +1,9 @@
 export type EntryType = 'task' | 'milestone' | 'meeting'
 export type RiskFlag = 'none' | 'warning' | 'critical'
 export type EntryStatus = 'pending' | 'in_progress' | 'validation' | 'done' | 'blocked' | 'overdue'
+/** Tracking signal, always computed live (never read from the `status` column
+ *  — see utils/signals.ts). Independent of and can coexist with EntryStatus. */
+export type EntrySignal = 'overdue' | 'stalled' | 'blocked'
 export type ProjectStatus = 'backlog' | 'planning' | 'in_progress' | 'done'
 export type ProjectType = 'nova_conta' | 'novo_projeto'
 export type AppLanguage = 'pt' | 'en' | 'es'
@@ -73,6 +76,11 @@ export interface Entry {
   updatedAt?: string
   createdById?: string
   updatedById?: string
+  /** Last time something that counts as real activity happened on this entry
+   *  (status/owner/date/description change, or a comment) — set explicitly by
+   *  the store actions that represent that activity, never by a blanket
+   *  "any write" trigger. Powers the "parado" (stalled) signal. */
+  lastActivityAt?: string
 }
 
 export interface Phase {

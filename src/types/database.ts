@@ -186,6 +186,7 @@ export interface DbEntry {
   created_by: string | null
   updated_at: string | null
   updated_by: string | null
+  last_activity_at: string | null
 }
 
 export interface DbComment {

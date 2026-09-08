@@ -140,6 +140,7 @@ function dbEntryToStore(row: DbEntry, comments: DbComment[]): Entry {
     updatedAt: row.updated_at ?? undefined,
     createdById: row.created_by ?? undefined,
     updatedById: row.updated_by ?? undefined,
+    lastActivityAt: row.last_activity_at ?? undefined,
   }
 }
 
@@ -440,6 +441,12 @@ function storeEntryToDb(entry: Entry, phaseId: string | null, projectId: string 
     created_by: userId,
     updated_at: now,
     updated_by: userId,
+    // Mirrors whatever's already in memory — never defaults to "now" here.
+    // Only the store actions that represent real activity (status/owner/date/
+    // description change, a comment) set entry.lastActivityAt before this
+    // runs; every other write (reorder, move phase, cascade-shifted
+    // dependents) must leave an untouched entry's last_activity_at alone.
+    last_activity_at: entry.lastActivityAt ?? null,
   }
 }
 

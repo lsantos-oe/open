@@ -8,6 +8,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { Entry, EntryOwner, EntryStatus } from '@/types'
 import { ChatBubbleIcon, LinkIcon } from '@/components/ui/icons'
+import { SignalBadges } from '@/components/ui/SignalBadges'
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -157,9 +158,11 @@ function BoardEntryCard({ card, onClick, ghost = false }: {
       </div>
 
       {/* Title */}
-      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.4, marginBottom: 10, overflowWrap: 'anywhere' }}>
+      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.4, marginBottom: 6, overflowWrap: 'anywhere' }}>
         {card.name}
       </p>
+
+      <SignalBadges entry={card} today={today} className="mb-2" />
 
       {/* Footer: owners + date + hidden badge */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>

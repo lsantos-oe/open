@@ -368,6 +368,30 @@ function refreshCriticalPath(project: Project): Project {
   return { ...project, phases: applyIsCritical(project.phases) }
 }
 
+/** Tracking-upgrade side effects (see docs/FUNCTIONAL_OVERVIEW.md §Fundação) for
+ *  any patch that changes an entry's status, regardless of which UI path
+ *  produced it (status-cell click, Kanban drag, or the full edit modal's
+ *  dropdown — all of these end up going through `updateEntry`/
+ *  `updateEntryStatus`-family actions with a `status` field in the patch):
+ *  - First transition into `in_progress` captures `actualStart` = today.
+ *  - First transition into `done` captures `actualEnd` = today.
+ *  - Leaving `done` (reopening) clears both, so the next completion
+ *    recaptures real dates instead of keeping stale ones.
+ *  Never overrides a date the caller explicitly set in the same patch (e.g. a
+ *  manual correction) — only fills in what the patch left unspecified. */
+function applyStatusTransitionDates(prev: Entry, patch: Partial<Entry>): Partial<Entry> {
+  if (!patch.status || patch.status === prev.status) return {}
+  const today = new Date().toISOString().split('T')[0]
+  const extra: Partial<Entry> = {}
+  if (patch.status === 'in_progress' && !prev.actualStart && patch.actualStart === undefined) extra.actualStart = today
+  if (patch.status === 'done' && !prev.actualEnd && patch.actualEnd === undefined) extra.actualEnd = today
+  if (prev.status === 'done' && patch.status !== 'done' && patch.actualStart === undefined && patch.actualEnd === undefined) {
+    extra.actualStart = undefined
+    extra.actualEnd = undefined
+  }
+  return extra
+}
+
 // ─── DB sync helpers ──────────────────────────────────────────────────────────
 
 function getUserId(): string {
@@ -1687,10 +1711,10 @@ export const useAppStore = create<AppStore>()(
               phases: p.phases.map((ph) => ({
                 ...ph,
                 entries: ph.entries.map((e) => {
-                  if (e.id === entryId) return { ...e, ...patch }
+                  if (e.id === entryId) return { ...e, ...patch, ...applyStatusTransitionDates(e, patch), lastActivityAt: new Date().toISOString() }
                   const hasSub = e.subtasks.some((sub) => sub.id === entryId)
                   if (!hasSub) return e
-                  return { ...e, subtasks: e.subtasks.map((sub) => (sub.id === entryId ? { ...sub, ...patch } : sub)) }
+                  return { ...e, subtasks: e.subtasks.map((sub) => (sub.id === entryId ? { ...sub, ...patch, ...applyStatusTransitionDates(sub, patch) } : sub)) }
                 }),
               })),
             }),
@@ -1886,7 +1910,7 @@ export const useAppStore = create<AppStore>()(
       },
 
       updateEntryStatus(projectId, entryId, status) {
-        const now = new Date().toISOString().split('T')[0]
+        const nowTs = new Date().toISOString()
         const prev = get().projects
         const prevEntry = findEntryDeep(prev.find((p) => p.id === projectId)?.phases ?? [], entryId)
         set((s) => ({
@@ -1896,10 +1920,8 @@ export const useAppStore = create<AppStore>()(
               ...ph,
               entries: ph.entries.map((e) => {
                 const update = (entry: Entry): Entry => {
-                  const patch: Partial<Entry> = { status, statusOverride: true }
-                  if (status === 'in_progress' && !entry.actualStart) patch.actualStart = now
-                  if (status === 'done' && !entry.actualEnd) patch.actualEnd = now
-                  return { ...entry, ...patch }
+                  const patch: Partial<Entry> = { status, statusOverride: true, lastActivityAt: nowTs }
+                  return { ...entry, ...patch, ...applyStatusTransitionDates(entry, patch) }
                 }
                 if (e.id === entryId) return update(e)
                 return { ...e, subtasks: e.subtasks.map((sub) => (sub.id === entryId ? update(sub) : sub)) }
@@ -2016,12 +2038,20 @@ export const useAppStore = create<AppStore>()(
         }
 
         const today = new Date().toISOString().split('T')[0]
+        // Only the entry the user directly edited counts as "activity" here —
+        // a dependent shifted by the cascade wasn't itself worked on, so its
+        // lastActivityAt is left untouched.
+        const nowTs = new Date().toISOString()
         const phasesWithAutoStatus = newPhases.map((ph) => ({
           ...ph,
-          entries: ph.entries.map((e) => ({
-            ...applyAutoStatus(e, today),
-            subtasks: e.subtasks.map((sub) => applyAutoStatus(sub, today)),
-          })),
+          entries: ph.entries.map((e) => {
+            const withStatus = { ...applyAutoStatus(e, today), subtasks: e.subtasks.map((sub) => applyAutoStatus(sub, today)) }
+            if (withStatus.id === entryId) return { ...withStatus, lastActivityAt: nowTs }
+            if (withStatus.subtasks.some((sub) => sub.id === entryId)) {
+              return { ...withStatus, subtasks: withStatus.subtasks.map((sub) => (sub.id === entryId ? { ...sub, lastActivityAt: nowTs } : sub)) }
+            }
+            return withStatus
+          }),
         }))
 
         set((s) => ({
@@ -2506,13 +2536,14 @@ export const useAppStore = create<AppStore>()(
         const id = uuid()
         const newComment: EntryComment = { ...comment, id }
         const prev = get().projects
+        const nowTs = new Date().toISOString()
         set((s) => ({
           projects: mutateProject(s.projects, projectId, (p) => ({
             ...p,
             phases: p.phases.map((ph) => ({
               ...ph,
               entries: ph.entries.map((e) => {
-                if (e.id === entryId) return { ...e, comments: [...e.comments, newComment] }
+                if (e.id === entryId) return { ...e, comments: [...e.comments, newComment], lastActivityAt: nowTs }
                 const hasSub = e.subtasks.some((sub) => sub.id === entryId)
                 if (!hasSub) return e
                 return { ...e, subtasks: e.subtasks.map((sub) => sub.id === entryId ? { ...sub, comments: [...sub.comments, newComment] } : sub) }
@@ -2532,6 +2563,10 @@ export const useAppStore = create<AppStore>()(
             created_at: newComment.createdAt,
           })
           if (error) throw new Error(error.message)
+          // Comments live in their own table — bumping last_activity_at needs
+          // a separate targeted write to the entry's own row.
+          const project = get().projects.find((p) => p.id === projectId)
+          if (project) await dbSyncEntry(project, entryId, getUserId())
         }, () => set({ projects: prev }))
       },
 
@@ -3375,7 +3410,9 @@ export const useAppStore = create<AppStore>()(
           incidents: mutateIncident(s.incidents, incidentId, (i) =>
             refreshIncidentCriticalPath({
               ...i,
-              entries: i.entries.map((e) => e.id === entryId ? { ...e, ...patch } : e),
+              entries: i.entries.map((e) => e.id === entryId
+                ? { ...e, ...patch, ...applyStatusTransitionDates(e, patch), lastActivityAt: new Date().toISOString() }
+                : e),
             }),
           ),
         }))
@@ -3408,7 +3445,7 @@ export const useAppStore = create<AppStore>()(
       },
 
       updateIncidentEntryStatus(incidentId, entryId, status) {
-        const now = new Date().toISOString().split('T')[0]
+        const nowTs = new Date().toISOString()
         const prev = get().incidents
         const prevEntry = prev.find((i) => i.id === incidentId)?.entries.find((e) => e.id === entryId)
         set((s) => ({
@@ -3416,10 +3453,8 @@ export const useAppStore = create<AppStore>()(
             ...i,
             entries: i.entries.map((e) => {
               if (e.id !== entryId) return e
-              const patch: Partial<Entry> = { status, statusOverride: true }
-              if (status === 'in_progress' && !e.actualStart) patch.actualStart = now
-              if (status === 'done' && !e.actualEnd) patch.actualEnd = now
-              return { ...e, ...patch }
+              const patch: Partial<Entry> = { status, statusOverride: true, lastActivityAt: nowTs }
+              return { ...e, ...patch, ...applyStatusTransitionDates(e, patch) }
             }),
           })),
         }))
@@ -3441,7 +3476,13 @@ export const useAppStore = create<AppStore>()(
           applyDateChange({ phases: [{ id: '_incident', name: '', order: 0, entries: incident.entries }] }, entryId, field, value, settings.holidays),
         )
         const today = new Date().toISOString().split('T')[0]
-        const updatedEntries = (newPhases[0]?.entries ?? []).map((e) => applyAutoStatus(e, today))
+        const nowTs = new Date().toISOString()
+        // Only the directly-edited entry counts as activity — cascade-shifted
+        // dependents keep their own lastActivityAt untouched.
+        const updatedEntries = (newPhases[0]?.entries ?? []).map((e) => {
+          const withStatus = applyAutoStatus(e, today)
+          return withStatus.id === entryId ? { ...withStatus, lastActivityAt: nowTs } : withStatus
+        })
 
         set((s) => ({
           incidents: mutateIncident(s.incidents, incidentId, (i) => ({ ...i, entries: updatedEntries })),
@@ -3471,7 +3512,9 @@ export const useAppStore = create<AppStore>()(
         const prev = get().standaloneTasks
         set({
           standaloneTasks: refreshStandaloneCriticalPath(
-            prev.map((e) => (e.id === entryId ? { ...e, ...patch } : e)),
+            prev.map((e) => (e.id === entryId
+              ? { ...e, ...patch, ...applyStatusTransitionDates(e, patch), lastActivityAt: new Date().toISOString() }
+              : e)),
           ),
         })
         sync(async () => {
@@ -3489,15 +3532,13 @@ export const useAppStore = create<AppStore>()(
       },
 
       updateStandaloneTaskStatus(entryId, status) {
-        const now = new Date().toISOString().split('T')[0]
+        const nowTs = new Date().toISOString()
         const prev = get().standaloneTasks
         set({
           standaloneTasks: prev.map((e) => {
             if (e.id !== entryId) return e
-            const patch: Partial<Entry> = { status, statusOverride: true }
-            if (status === 'in_progress' && !e.actualStart) patch.actualStart = now
-            if (status === 'done' && !e.actualEnd) patch.actualEnd = now
-            return { ...e, ...patch }
+            const patch: Partial<Entry> = { status, statusOverride: true, lastActivityAt: nowTs }
+            return { ...e, ...patch, ...applyStatusTransitionDates(e, patch) }
           }),
         })
         sync(async () => {
@@ -3513,7 +3554,11 @@ export const useAppStore = create<AppStore>()(
           applyDateChange({ phases: [{ id: '_standalone', name: '', order: 0, entries: prev }] }, entryId, field, value, settings.holidays),
         )
         const today = new Date().toISOString().split('T')[0]
-        const updatedEntries = (newPhases[0]?.entries ?? []).map((e) => applyAutoStatus(e, today))
+        const nowTs = new Date().toISOString()
+        const updatedEntries = (newPhases[0]?.entries ?? []).map((e) => {
+          const withStatus = applyAutoStatus(e, today)
+          return withStatus.id === entryId ? { ...withStatus, lastActivityAt: nowTs } : withStatus
+        })
 
         set({ standaloneTasks: updatedEntries })
         sync(async () => {
