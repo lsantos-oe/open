@@ -237,6 +237,7 @@
     "duration": "Duração (dias)",
     "durationHours": "Duração (horas)",
     "variance": "Variação",
+    "signal": "Sinal",
     "isCritical": "Crítico",
     "riskFlag": "Risco",
     "addEntry": "Adicionar entrada",

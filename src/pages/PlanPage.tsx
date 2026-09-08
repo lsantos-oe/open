@@ -30,6 +30,7 @@ import { exportProjectCsv } from '@/utils/exportCsv'
 import { computeAutoStatus } from '@/utils/statusCalc'
 import { contactsForClients } from '@/utils/contacts'
 import { PinIcon, CalendarIcon } from '@/components/ui/icons'
+import { SignalBadges } from '@/components/ui/SignalBadges'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -64,6 +65,7 @@ const TOGGLEABLE_COLS = [
   { id: 'variance',  key: 'entry.variance' },
   { id: 'duration',  key: 'plan.colDuration' },
   { id: 'status',    key: 'entry.status' },
+  { id: 'signal',    key: 'entry.signal' },
 ] as const
 
 /** For done entries show actual, otherwise planned */
@@ -1425,6 +1427,14 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
           </div>
         )
       },
+    },
+    // Signal — read-only, reuses the exact same computation as /tasks and the
+    // Incident board (SignalBadges) so the three screens can't disagree about
+    // whether a task is overdue/stalled/blocked. No edit path touches this.
+    {
+      id: 'signal', size: 140,
+      header: () => <span>{t('entry.signal')}</span>,
+      cell: ({ row }) => <SignalBadges entry={row.original} today={today} />,
     },
     // Actions
     {
