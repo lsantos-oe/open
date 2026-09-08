@@ -292,7 +292,7 @@ export default function TasksPage() {
     updateEntry, updateIncidentEntry, teamDirectory, contacts, clients,
     standaloneTasks, updateStandaloneTask, updateStandaloneTaskStatus,
     changeEntryDate, changeIncidentEntryDate, changeStandaloneTaskDate,
-    addStandaloneTask,
+    addStandaloneTask, moveEntryToPhase,
   } = useAppStore()
   const { user, profile } = useAuthStore()
   const { addToast } = useToastStore()
@@ -324,7 +324,7 @@ export default function TasksPage() {
   const [groupBy, setGroupBy] = useState<'responsible' | 'origin' | 'none'>('responsible')
   const [responsibleRole, setResponsibleRole] = useState<'executor' | 'validator' | 'both'>('executor')
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
-  const [editingCell, setEditingCell] = useState<{ id: string; field: 'name' | 'planned' | 'actual' } | null>(null)
+  const [editingCell, setEditingCell] = useState<{ id: string; field: 'name' | 'planned' | 'actual' | 'origin' } | null>(null)
   const [quickCreateName, setQuickCreateName] = useState('')
 
   useEffect(() => { localStorage.setItem('pb-tasks-view', view) }, [view])
@@ -610,6 +610,10 @@ export default function TasksPage() {
   function TaskRow({ card }: { card: GlobalCard }) {
     const endDate = card.type === 'task' ? card.plannedEnd : card.plannedDate
     const isEditableType = card.type === 'task'
+    const phaseName = card._scopeType === 'project'
+      ? projects.find((p) => p.id === card._scopeId)?.phases.find((ph) => ph.id === card._phaseId)?.name
+      : undefined
+    const originLabel = phaseName ? `${scopeLabel(card)} · ${phaseName}` : (scopeLabel(card) || (card._scopeType === 'standalone' ? 'Sem cliente' : ''))
     return (
       <tr className="transition-colors group" style={{ background: signalRowTint(card, today) }}>
         <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
@@ -650,8 +654,48 @@ export default function TasksPage() {
           )}
         </td>
         {isVisible('scope') && (
-          <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)', maxWidth: 180 }}>
-            <span className="block truncate" title={scopeLabel(card)}>{scopeLabel(card)}</span>
+          <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)', maxWidth: 180 }} onClick={(e) => e.stopPropagation()}>
+            {!isEditableType || card._scopeType === 'incident' ? (
+              <span className="block truncate" title={scopeLabel(card)}>{scopeLabel(card)}</span>
+            ) : editingCell?.id === card.id && editingCell.field === 'origin' ? (
+              card._scopeType === 'project' ? (
+                <select
+                  autoFocus
+                  defaultValue={card._phaseId}
+                  onChange={(e) => { moveEntryToPhase(card._scopeId, card._phaseId!, e.target.value, card.id); setEditingCell(null) }}
+                  onBlur={() => setEditingCell(null)}
+                  className="text-xs rounded px-1 py-0.5 border max-w-[160px]"
+                  style={{ borderColor: 'var(--oe-primary)' }}
+                >
+                  {(projects.find((p) => p.id === card._scopeId)?.phases ?? [])
+                    .filter((ph) => !ph.isUnassigned)
+                    .map((ph) => <option key={ph.id} value={ph.id}>{ph.name}</option>)}
+                </select>
+              ) : (
+                <select
+                  autoFocus
+                  defaultValue={card.clientId ?? ''}
+                  onChange={(e) => { updateStandaloneTask(card.id, { clientId: e.target.value || undefined }); setEditingCell(null) }}
+                  onBlur={() => setEditingCell(null)}
+                  className="text-xs rounded px-1 py-0.5 border max-w-[160px]"
+                  style={{ borderColor: 'var(--oe-primary)' }}
+                >
+                  <option value="">— Sem cliente —</option>
+                  {[...clients].sort((a, b) => a.name.localeCompare(b.name)).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              )
+            ) : (
+              <span
+                className="block truncate cursor-pointer"
+                style={{ borderBottom: '1px dashed transparent' }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderBottomColor = 'var(--border-strong)')}
+                onMouseLeave={(e) => (e.currentTarget.style.borderBottomColor = 'transparent')}
+                title={card._scopeType === 'project' ? `${originLabel} — clique pra mudar de fase` : `${originLabel} — clique pra mudar o cliente`}
+                onClick={() => setEditingCell({ id: card.id, field: 'origin' })}
+              >
+                {originLabel}
+              </span>
+            )}
           </td>
         )}
         {isVisible('owners') && (
