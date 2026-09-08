@@ -9,12 +9,13 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { useAppStore } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useToastStore } from '@/stores/useToastStore'
 import { Entry, EntryOwner, EntryStatus, Project, Incident, Client, TeamMember } from '@/types'
 import EntryModal from '@/components/plan/EntryModal'
 import IncidentEntryModal from '@/components/plan/IncidentEntryModal'
 import OwnersField from '@/components/plan/OwnersField'
+import StatusBadge from '@/components/StatusBadge'
 import { SelectionBar } from '@/components/ui/SelectionBar'
-import { StatusDot } from '@/components/ui/StatusDot'
 import { AvatarStack } from '@/components/ui/AvatarStack'
 import { FilterMenu } from '@/components/ui/FilterMenu'
 import { ColumnsMenu } from '@/components/ui/ColumnsMenu'
@@ -26,21 +27,13 @@ import { Button } from '@/components/ui/Button'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { MineToggle } from '@/components/ui/MineToggle'
 import { ViewToggle } from '@/components/ui/ViewToggle'
-import { ListIcon, KanbanIcon, CheckCircleIcon, ChatBubbleIcon, LinkIcon } from '@/components/ui/icons'
+import { ListIcon, KanbanIcon, CheckCircleIcon, ChatBubbleIcon, LinkIcon, ExternalLinkIcon } from '@/components/ui/icons'
 import { SignalBadges, signalRowTint } from '@/components/ui/SignalBadges'
+import { computeEntrySignals } from '@/utils/signals'
 import { isEntryMine, ownerKey } from '@/utils/involvement'
 import { contactsForClients } from '@/utils/contacts'
 import { useSort } from '@/hooks/useSort'
 import { useColumnVisibility, ColumnDef } from '@/hooks/useColumnVisibility'
-
-const ENTRY_STATUS_COLOR: Record<EntryStatus, string> = {
-  pending: 'var(--text-tertiary)',
-  in_progress: 'var(--color-info-text)',
-  validation: 'var(--color-warning-text)',
-  done: 'var(--color-success-text)',
-  blocked: 'var(--color-danger-text)',
-  overdue: 'var(--color-warning-text)',
-}
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -67,7 +60,8 @@ const COLUMNS: ColumnDef[] = [
   { key: 'scope', label: 'Origem' },
   { key: 'owners', label: 'Responsáveis' },
   { key: 'status', label: 'Status' },
-  { key: 'date', label: 'Data' },
+  { key: 'date', label: 'Previsto' },
+  { key: 'actual', label: 'Duração real' },
   { key: 'signal', label: 'Sinal' },
 ]
 
@@ -297,8 +291,11 @@ export default function TasksPage() {
     projects, incidents, updateEntryStatus, updateIncidentEntryStatus,
     updateEntry, updateIncidentEntry, teamDirectory, contacts, clients,
     standaloneTasks, updateStandaloneTask, updateStandaloneTaskStatus,
+    changeEntryDate, changeIncidentEntryDate, changeStandaloneTaskDate,
+    addStandaloneTask,
   } = useAppStore()
-  const { user } = useAuthStore()
+  const { user, profile } = useAuthStore()
+  const { addToast } = useToastStore()
 
   // OwnersField expects TeamMember[] — map the global registered-user directory into that shape
   const directoryAsTeam: TeamMember[] = useMemo(
@@ -322,6 +319,13 @@ export default function TasksPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkOwnersOpen, setBulkOwnersOpen] = useState(false)
   const [bulkOwners, setBulkOwners] = useState<EntryOwner[]>([])
+
+  // ── Tracking table: grouping + inline edit (table view only) ─────────────
+  const [groupBy, setGroupBy] = useState<'responsible' | 'origin' | 'none'>('responsible')
+  const [responsibleRole, setResponsibleRole] = useState<'executor' | 'validator' | 'both'>('executor')
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
+  const [editingCell, setEditingCell] = useState<{ id: string; field: 'name' | 'planned' | 'actual' } | null>(null)
+  const [quickCreateName, setQuickCreateName] = useState('')
 
   useEffect(() => { localStorage.setItem('pb-tasks-view', view) }, [view])
 
@@ -467,6 +471,265 @@ export default function TasksPage() {
     }
   }
 
+  // ── Per-scope dispatch — same store actions Plano/Kanban/Incident already
+  // use, so cascade, critical-path and status-transition tracking (§Fundação)
+  // all fire identically regardless of which screen triggered the edit. ──────
+  function patchCard(card: GlobalCard, patch: Partial<Entry>) {
+    if (card._scopeType === 'incident') updateIncidentEntry(card._scopeId, card.id, patch)
+    else if (card._scopeType === 'standalone') updateStandaloneTask(card.id, patch)
+    else updateEntry(card._scopeId, card.id, patch)
+  }
+  function setCardStatus(card: GlobalCard, status: EntryStatus) {
+    if (card._scopeType === 'incident') updateIncidentEntryStatus(card._scopeId, card.id, status)
+    else if (card._scopeType === 'standalone') updateStandaloneTaskStatus(card.id, status)
+    else updateEntryStatus(card._scopeId, card.id, status)
+  }
+  function changeCardDate(card: GlobalCard, field: 'plannedEnd' | 'actualStart' | 'actualEnd', value: string) {
+    if (card._scopeType === 'project') {
+      // Editing a project task's date from here cascades exactly like the
+      // Plano tab (same action) — but /tasks is usually filtered, so warn
+      // when the cascade touched sibling tasks the user can't see right now.
+      const before = new Map(
+        (projects.find((p) => p.id === card._scopeId)?.phases ?? [])
+          .flatMap((ph) => ph.entries.flatMap((e) => [e, ...e.subtasks]))
+          .map((e) => [e.id, `${e.plannedStart ?? ''}|${e.plannedEnd ?? ''}`]),
+      )
+      changeEntryDate(card._scopeId, card.id, field, value)
+      const after = projects.find((p) => p.id === card._scopeId)
+      if (after) {
+        const visibleIds = new Set(filteredCards.map((c) => c.id))
+        let affected = 0
+        for (const ph of after.phases) {
+          for (const e of [...ph.entries, ...ph.entries.flatMap((en) => en.subtasks)]) {
+            if (e.id === card.id) continue
+            const prevKey = before.get(e.id)
+            const newKey = `${e.plannedStart ?? ''}|${e.plannedEnd ?? ''}`
+            if (prevKey !== undefined && prevKey !== newKey && !visibleIds.has(e.id)) affected++
+          }
+        }
+        if (affected > 0) addToast(`${affected} outra${affected > 1 ? 's' : ''} tarefa${affected > 1 ? 's' : ''} do projeto foi${affected > 1 ? 'ram' : ''} reagendada${affected > 1 ? 's' : ''} por causa dessa mudança.`, 'info')
+      }
+    } else if (card._scopeType === 'incident') {
+      changeIncidentEntryDate(card._scopeId, card.id, field, value)
+    } else {
+      changeStandaloneTaskDate(card.id, field, value)
+    }
+  }
+
+  function toggleGroup(key: string) {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key); else next.add(key)
+      return next
+    })
+  }
+
+  function handleQuickCreate() {
+    const name = quickCreateName.trim()
+    if (!name || !user) return
+    const creatorOwner: EntryOwner = {
+      id: crypto.randomUUID(), type: 'member', memberId: user.id,
+      name: profile?.name ?? profile?.email ?? 'Você', kind: 'executor',
+    }
+    addStandaloneTask({
+      type: 'task', name, responsible: creatorOwner.name, dependsOn: [],
+      status: 'pending', riskFlag: 'none', order: 0, owners: [creatorOwner],
+    })
+    setQuickCreateName('')
+  }
+
+  const today = new Date().toISOString().split('T')[0]
+  const STATUS_OPTIONS = KANBAN_COLS.map((c) => ({ value: c.status, label: t(c.labelKey as any) }))
+
+  function contactsForCard(card: GlobalCard) {
+    return card._clientIds.length > 0 ? contactsForClients(contacts, card._clientIds) : []
+  }
+
+  type TaskGroup = { key: string; label: string; cards: GlobalCard[] }
+
+  function withinGroupOrder(cards: GlobalCard[]): GlobalCard[] {
+    return [...cards].sort((a, b) => {
+      const aDone = a.status === 'done', bDone = b.status === 'done'
+      if (aDone !== bDone) return aDone ? 1 : -1
+      const aProblem = computeEntrySignals(a, today).length > 0
+      const bProblem = computeEntrySignals(b, today).length > 0
+      if (aProblem !== bProblem) return aProblem ? -1 : 1
+      return a.name.localeCompare(b.name)
+    })
+  }
+
+  const taskGroups: TaskGroup[] = useMemo(() => {
+    if (groupBy === 'none') return [{ key: 'all', label: '', cards: sortedCards }]
+
+    if (groupBy === 'origin') {
+      const map = new Map<string, TaskGroup>()
+      for (const c of filteredCards) {
+        if (!map.has(c._scopeId)) map.set(c._scopeId, { key: c._scopeId, label: scopeLabel(c), cards: [] })
+        map.get(c._scopeId)!.cards.push(c)
+      }
+      return [...map.values()]
+        .map((g) => ({ ...g, cards: withinGroupOrder(g.cards) }))
+        .sort((a, b) => a.label.localeCompare(b.label))
+    }
+
+    // groupBy === 'responsible' — a card can land in more than one group when
+    // responsibleRole is 'both' and it has both an executor and a validator.
+    const NONE_KEY = '__none__'
+    const map = new Map<string, TaskGroup>()
+    for (const c of filteredCards) {
+      const owners = entryOwners(c)
+      const roles = responsibleRole === 'both'
+        ? owners.filter((o) => o.kind === 'executor' || o.kind === 'validator')
+        : owners.filter((o) => o.kind === responsibleRole)
+      if (roles.length === 0) {
+        if (!map.has(NONE_KEY)) map.set(NONE_KEY, { key: NONE_KEY, label: 'Sem responsável', cards: [] })
+        map.get(NONE_KEY)!.cards.push(c)
+        continue
+      }
+      for (const o of roles) {
+        const key = ownerKey(o)
+        if (!map.has(key)) map.set(key, { key, label: o.name, cards: [] })
+        map.get(key)!.cards.push(c)
+      }
+    }
+    const result = [...map.values()].map((g) => ({ ...g, cards: withinGroupOrder(g.cards) }))
+    result.sort((a, b) => {
+      if (a.key === NONE_KEY) return 1
+      if (b.key === NONE_KEY) return -1
+      const aActive = a.cards.filter((c) => c.status !== 'done').length
+      const bActive = b.cards.filter((c) => c.status !== 'done').length
+      return bActive - aActive
+    })
+    return result
+  }, [groupBy, responsibleRole, filteredCards, sortedCards, today])
+
+  // ── One row of the tracking table — inline-editable per §4 of the proposal.
+  // Nome/Previsto/Duração real are simple controlled-on-blur inputs gated by
+  // `editingCell` (only one open at a time); Responsável/Status reuse
+  // OwnersField/StatusBadge, which already manage their own popover. ────────
+  function TaskRow({ card }: { card: GlobalCard }) {
+    const endDate = card.type === 'task' ? card.plannedEnd : card.plannedDate
+    const isEditableType = card.type === 'task'
+    return (
+      <tr className="transition-colors group" style={{ background: signalRowTint(card, today) }}>
+        <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+          <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]" checked={selected.has(card.id)} onChange={() => toggleSelect(card.id)} />
+        </td>
+        <td className="px-3 py-2.5" style={{ maxWidth: 260, position: 'sticky', left: 0, background: 'inherit' }}>
+          {editingCell?.id === card.id && editingCell.field === 'name' ? (
+            <input
+              autoFocus
+              defaultValue={card.name}
+              onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== card.name) patchCard(card, { name: v }); setEditingCell(null) }}
+              onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setEditingCell(null) }}
+              className="w-full text-sm rounded px-1.5 py-1 border"
+              style={{ borderColor: 'var(--oe-primary)', background: 'var(--surface-input)', color: 'var(--text-primary)' }}
+            />
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <span
+                className="truncate cursor-pointer"
+                style={{ color: 'var(--text-primary)', fontWeight: 500, borderBottom: '1px dashed transparent' }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderBottomColor = 'var(--border-strong)')}
+                onMouseLeave={(e) => (e.currentTarget.style.borderBottomColor = 'transparent')}
+                onClick={() => setEditingCell({ id: card.id, field: 'name' })}
+                title={card.name}
+              >
+                {card.name}
+              </span>
+              <button
+                onClick={() => setEditCard(card)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                title="Abrir tarefa completa"
+                aria-label="Abrir tarefa completa"
+              >
+                <ExternalLinkIcon className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+        </td>
+        {isVisible('scope') && (
+          <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)', maxWidth: 180 }}>
+            <span className="block truncate" title={scopeLabel(card)}>{scopeLabel(card)}</span>
+          </td>
+        )}
+        {isVisible('owners') && (
+          <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+            {isEditableType ? (
+              <OwnersField
+                owners={entryOwners(card).filter((o) => o.kind === 'executor')}
+                onChange={(next) => patchCard(card, { owners: [...next, ...entryOwners(card).filter((o) => o.kind !== 'executor')] })}
+                teamMembers={directoryAsTeam}
+                contacts={contactsForCard(card)}
+                kind="executor"
+                max={1}
+              />
+            ) : (
+              <AvatarStack people={entryOwners(card)} size={20} />
+            )}
+          </td>
+        )}
+        {isVisible('status') && (
+          <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+            {isEditableType ? (
+              <StatusBadge value={card.status} onChange={(v) => setCardStatus(card, v as EntryStatus)} options={STATUS_OPTIONS} />
+            ) : (
+              <span style={{ color: 'var(--text-secondary)' }}>{t(`entry.${card.status}` as any)}</span>
+            )}
+          </td>
+        )}
+        {isVisible('date') && (
+          <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)' }} onClick={(e) => e.stopPropagation()}>
+            {!isEditableType ? (
+              endDate ? fmtDate(endDate) : '—'
+            ) : editingCell?.id === card.id && editingCell.field === 'planned' ? (
+              <input
+                type="date"
+                autoFocus
+                defaultValue={card.plannedEnd ?? ''}
+                onBlur={(e) => { if (e.target.value) changeCardDate(card, 'plannedEnd', e.target.value); setEditingCell(null) }}
+                className="text-xs rounded px-1 py-0.5 border"
+                style={{ borderColor: 'var(--oe-primary)' }}
+              />
+            ) : (
+              <span
+                className="cursor-pointer"
+                style={{ borderBottom: '1px dashed var(--border-default)' }}
+                onClick={() => setEditingCell({ id: card.id, field: 'planned' })}
+              >
+                {endDate ? fmtDate(endDate) : 'Definir data'}
+              </span>
+            )}
+          </td>
+        )}
+        {isVisible('actual') && (
+          <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)' }} onClick={(e) => e.stopPropagation()}>
+            {!isEditableType ? '—' : editingCell?.id === card.id && editingCell.field === 'actual' ? (
+              <div className="flex items-center gap-1">
+                <input type="date" defaultValue={card.actualStart ?? ''} onBlur={(e) => { if (e.target.value) changeCardDate(card, 'actualStart', e.target.value) }} className="text-xs rounded px-1 py-0.5 border" style={{ borderColor: 'var(--oe-primary)', width: 112 }} title="Início real" />
+                <span style={{ color: 'var(--text-disabled)' }}>→</span>
+                <input type="date" defaultValue={card.actualEnd ?? ''} onBlur={(e) => { if (e.target.value) changeCardDate(card, 'actualEnd', e.target.value) }} className="text-xs rounded px-1 py-0.5 border" style={{ borderColor: 'var(--oe-primary)', width: 112 }} title="Fim real" />
+                <button onClick={() => setEditingCell(null)} style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }} aria-label="Concluir edição">×</button>
+              </div>
+            ) : (
+              <span className="cursor-pointer" style={{ borderBottom: '1px dashed var(--border-default)' }} onClick={() => setEditingCell({ id: card.id, field: 'actual' })}>
+                {card.actualStart && card.actualEnd ? `${fmtDate(card.actualStart)} → ${fmtDate(card.actualEnd)}`
+                  : card.actualStart ? `Iniciado ${fmtDate(card.actualStart)}`
+                  : '—'}
+              </span>
+            )}
+          </td>
+        )}
+        {isVisible('signal') && (
+          <td className="px-3 py-2.5"><SignalBadges entry={card} today={today} /></td>
+        )}
+      </tr>
+    )
+  }
+
+  const visibleColCount = 2 + COLUMNS.filter((c) => c.key !== 'name' && isVisible(c.key)).length
+
   return (
     <div className="p-8 max-w-screen-xl mx-auto">
       <div className="flex items-center justify-between mb-6">
@@ -493,7 +756,35 @@ export default function TasksPage() {
         <MineToggle active={onlyMine} onClick={() => setOnlyMine((v) => !v)} />
         <div style={{ flex: 1 }} />
 
-        {view === 'table' && <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />}
+        {view === 'table' && (
+          <>
+            <select
+              value={groupBy}
+              onChange={(e) => setGroupBy(e.target.value as typeof groupBy)}
+              className="text-xs rounded-[var(--radius-md)] px-2 py-1.5 border"
+              style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)', color: 'var(--text-secondary)' }}
+              aria-label="Agrupar por"
+            >
+              <option value="responsible">Agrupar por responsável</option>
+              <option value="origin">Agrupar por origem</option>
+              <option value="none">Sem agrupamento</option>
+            </select>
+            {groupBy === 'responsible' && (
+              <select
+                value={responsibleRole}
+                onChange={(e) => setResponsibleRole(e.target.value as typeof responsibleRole)}
+                className="text-xs rounded-[var(--radius-md)] px-2 py-1.5 border"
+                style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)', color: 'var(--text-secondary)' }}
+                aria-label="Papel considerado no agrupamento"
+              >
+                <option value="executor">Executor</option>
+                <option value="validator">Validador</option>
+                <option value="both">Ambos</option>
+              </select>
+            )}
+            <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />
+          </>
+        )}
         <FilterMenu
           activeCount={filterScope.length + filterMember.length + filterStatus.length + filterClientId.length + (onlyOverdue ? 1 : 0)}
           onClear={() => { setFilterScope([]); setFilterMember([]); setFilterStatus([]); setFilterClientId([]); setOnlyOverdue(false) }}
@@ -549,6 +840,19 @@ export default function TasksPage() {
         </FilterMenu>
       </div>
 
+      {view === 'table' && (
+        <div className="flex items-center gap-2 mb-3">
+          <input
+            value={quickCreateName}
+            onChange={(e) => setQuickCreateName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleQuickCreate() }}
+            placeholder="+ Criar tarefa solta rápida — Enter pra salvar (você vira o responsável)"
+            className="flex-1 text-sm rounded-[var(--radius-md)] px-3 py-2 border"
+            style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)', color: 'var(--text-primary)' }}
+          />
+        </div>
+      )}
+
       {/* Content */}
       {allCards.length === 0 ? (
         <SharedEmptyState
@@ -558,73 +862,64 @@ export default function TasksPage() {
           action={{ label: t('tasks.newTask'), onClick: () => setNewTaskOpen(true) }}
         />
       ) : view === 'table' ? (
-        <div className="rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
+        <div className="rounded-[var(--radius-lg)] border overflow-hidden overflow-x-auto" style={{ borderColor: 'var(--border-default)' }}>
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10">
               <tr style={{ background: 'var(--surface-subtle)' }}>
                 <th className="w-8 px-3 py-2" />
-                <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                  <SortableHeader label="Nome" field="name" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)', position: 'sticky', left: 0, background: 'var(--surface-subtle)' }}>
+                  {groupBy === 'none' ? (
+                    <SortableHeader label="Nome" field="name" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
+                  ) : 'Nome'}
                 </th>
                 {isVisible('scope') && (
-                  <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                    <SortableHeader label="Origem" field="scope" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
-                  </th>
+                  <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Origem</th>
                 )}
                 {isVisible('owners') && (
-                  <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                    <SortableHeader label="Responsáveis" field="owners" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
-                  </th>
+                  <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Responsáveis</th>
                 )}
                 {isVisible('status') && (
-                  <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                    <SortableHeader label="Status" field="status" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
-                  </th>
+                  <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Status</th>
                 )}
                 {isVisible('date') && (
-                  <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                    <SortableHeader label="Data" field="date" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
-                  </th>
+                  <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Previsto</th>
+                )}
+                {isVisible('actual') && (
+                  <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Duração real</th>
                 )}
                 {isVisible('signal') && (
                   <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Sinal</th>
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
-              {sortedCards.map((card) => {
-                const endDate = card.type === 'task' ? card.plannedEnd : card.plannedDate
-                return (
-                  <tr key={card.id} className="transition-colors" style={{ background: signalRowTint(card) }}>
-                    <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
-                      <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]" checked={selected.has(card.id)} onChange={() => toggleSelect(card.id)} />
-                    </td>
-                    <td className="px-3 py-2.5 cursor-pointer" onClick={() => setEditCard(card)} style={{ maxWidth: 260 }}>
-                      <span className="block truncate" style={{ color: 'var(--text-primary)', fontWeight: 500 }} title={card.name}>{card.name}</span>
-                    </td>
-                    {isVisible('scope') && (
-                      <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)', maxWidth: 180 }}>
-                        <span className="block truncate" title={scopeLabel(card)}>{scopeLabel(card)}</span>
+            {taskGroups.map((group) => {
+              const collapsed = collapsedGroups.has(group.key)
+              const activeCount = group.cards.filter((c) => c.status !== 'done').length
+              return (
+                <tbody key={group.key} className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
+                  {groupBy !== 'none' && (
+                    <tr>
+                      <td colSpan={visibleColCount} className="px-3 py-2" style={{ background: 'var(--surface-subtle)', borderTop: '1px solid var(--border-default)' }}>
+                        <button
+                          onClick={() => toggleGroup(group.key)}
+                          aria-expanded={!collapsed}
+                          aria-label={`${collapsed ? 'Expandir' : 'Recolher'} grupo ${group.label}`}
+                          className="flex items-center gap-2 text-xs font-medium"
+                          style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                        >
+                          <span aria-hidden="true">{collapsed ? '▸' : '▾'}</span>
+                          {group.label}
+                          <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>
+                            {activeCount} ativa{activeCount !== 1 ? 's' : ''} · {group.cards.length} no total
+                          </span>
+                        </button>
                       </td>
-                    )}
-                    {isVisible('owners') && (
-                      <td className="px-3 py-2.5">
-                        <AvatarStack people={entryOwners(card)} size={20} />
-                      </td>
-                    )}
-                    {isVisible('status') && (
-                      <td className="px-3 py-2.5"><StatusDot color={ENTRY_STATUS_COLOR[card.status]} label={t(`entry.${card.status}` as any)} /></td>
-                    )}
-                    {isVisible('date') && (
-                      <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)' }}>{endDate ? fmtDate(endDate) : '—'}</td>
-                    )}
-                    {isVisible('signal') && (
-                      <td className="px-3 py-2.5"><SignalBadges entry={card} /></td>
-                    )}
-                  </tr>
-                )
-              })}
-            </tbody>
+                    </tr>
+                  )}
+                  {!collapsed && group.cards.map((card) => <TaskRow key={`${group.key}:${card.id}`} card={card} />)}
+                </tbody>
+              )
+            })}
           </table>
         </div>
       ) : (
