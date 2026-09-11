@@ -1408,6 +1408,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
               onChange={(v) => updateEntryStatus(projectId, e.id, v as EntryStatus)}
               options={[
                 { value: 'pending', label: t('status.pending') },
+                { value: 'todo', label: t('status.todo') },
                 { value: 'in_progress', label: t('status.in_progress') },
                 { value: 'validation', label: t('status.validation') },
                 { value: 'done', label: t('status.done') },
@@ -1759,6 +1760,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
         >
           <option value="" disabled>Alterar status...</option>
           <option value="pending">{t('status.pending')}</option>
+          <option value="todo">{t('status.todo')}</option>
           <option value="in_progress">{t('status.in_progress')}</option>
           <option value="validation">{t('status.validation')}</option>
           <option value="done">{t('status.done')}</option>

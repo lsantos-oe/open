@@ -21,7 +21,10 @@ export function computeEntrySignals(entry: Entry, today: string): EntrySignal[] 
   const end = entry.type === 'task' ? entry.plannedEnd : entry.plannedDate
   if (end && end < today && entry.status !== 'done') signals.push('overdue')
 
-  if (entry.status !== 'done' && entry.status !== 'blocked') {
+  // Backlog is expected to sit untouched for a while — that's what a backlog
+  // is — so it's excluded from "parado" (unlike 'todo', which represents
+  // this week's prioritized pull and SHOULD flag if nobody starts it).
+  if (entry.status !== 'done' && entry.status !== 'blocked' && entry.status !== 'pending') {
     // Falls back to createdAt for an entry that's never had a tracked
     // activity event (e.g. predates this feature) — skips the signal
     // entirely rather than guessing if neither is available.

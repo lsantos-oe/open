@@ -1,6 +1,6 @@
 export type EntryType = 'task' | 'milestone' | 'meeting'
 export type RiskFlag = 'none' | 'warning' | 'critical'
-export type EntryStatus = 'pending' | 'in_progress' | 'validation' | 'done' | 'blocked' | 'overdue'
+export type EntryStatus = 'pending' | 'todo' | 'in_progress' | 'validation' | 'done' | 'blocked' | 'overdue'
 /** Tracking signal, always computed live (never read from the `status` column
  *  — see utils/signals.ts). Independent of and can coexist with EntryStatus. */
 export type EntrySignal = 'overdue' | 'stalled' | 'blocked'

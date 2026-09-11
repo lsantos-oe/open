@@ -214,7 +214,8 @@
     "task": "Task",
     "milestone": "Milestone",
     "meeting": "Meeting",
-    "pending": "Pending",
+    "pending": "Backlog",
+    "todo": "To Do",
     "in_progress": "In Progress",
     "validation": "Validation/Testing",
     "done": "Done",
@@ -385,7 +386,8 @@
     "tooltipCritical": "Critical"
   },
   "status": {
-    "pending": "Pending",
+    "pending": "Backlog",
+    "todo": "To Do",
     "in_progress": "In Progress",
     "validation": "Validation/Testing",
     "done": "Done",

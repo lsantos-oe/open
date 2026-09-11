@@ -29,6 +29,7 @@ const STATUS_VARIANT: Record<IncidentStatus, 'gray' | 'primary' | 'orange' | 'gr
 }
 const ENTRY_STATUS_COLOR: Record<EntryStatus, string> = {
   pending: 'var(--text-tertiary)',
+  todo: 'var(--color-violet-text)',
   in_progress: 'var(--color-info-text)',
   validation: 'var(--color-warning-text)',
   done: 'var(--color-success-text)',
@@ -357,6 +358,7 @@ export default function IncidentDetailPage() {
                   >
                     <option value="">{t('tasks.filterStatus')}</option>
                     <option value="pending">{t('entry.pending')}</option>
+                    <option value="todo">{t('entry.todo')}</option>
                     <option value="in_progress">{t('entry.in_progress')}</option>
                     <option value="validation">{t('entry.validation')}</option>
                     <option value="done">{t('entry.done')}</option>

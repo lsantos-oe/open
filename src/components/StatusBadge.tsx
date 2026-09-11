@@ -7,6 +7,7 @@ export function getStatusStyle(status: string): { background: string; color: str
     case 'done':        return { background: 'var(--color-success-bg)', color: 'var(--color-success-text)' }
     case 'in_progress': return { background: 'var(--color-warning-bg)', color: 'var(--color-warning-text)' }
     case 'pending':     return { background: 'var(--surface-subtle)',   color: 'var(--text-tertiary)' }
+    case 'todo':        return { background: 'var(--color-violet-bg)',  color: 'var(--color-violet-text)' }
     case 'blocked':
     case 'overdue':
     case 'delayed':     return { background: 'var(--color-danger-bg)',  color: 'var(--color-danger-text)' }

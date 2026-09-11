@@ -363,6 +363,7 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, onCl
           <FieldBox label={t('entry.status')}>
             <select value={form.status} onChange={(e) => set('status', e.target.value as EntryStatus)} style={{ ...inputStyle, cursor: 'pointer' }}>
               <option value="pending">{t('entry.pending')}</option>
+              <option value="todo">{t('entry.todo')}</option>
               <option value="in_progress">{t('entry.in_progress')}</option>
               <option value="validation">{t('entry.validation')}</option>
               <option value="done">{t('entry.done')}</option>

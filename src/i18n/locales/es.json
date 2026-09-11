@@ -214,7 +214,8 @@
     "task": "Tarea",
     "milestone": "Hito",
     "meeting": "Reunión",
-    "pending": "Pendiente",
+    "pending": "Backlog",
+    "todo": "To Do",
     "in_progress": "En Progreso",
     "validation": "Validación/Pruebas",
     "done": "Completado",
@@ -385,7 +386,8 @@
     "tooltipCritical": "Crítico"
   },
   "status": {
-    "pending": "Pendiente",
+    "pending": "Backlog",
+    "todo": "To Do",
     "in_progress": "En Progreso",
     "validation": "Validación/Pruebas",
     "done": "Completado",

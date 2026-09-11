@@ -42,6 +42,7 @@ const PALETTE = ['#E8590C', '#7443F6', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444
 
 const KANBAN_COLS: { status: EntryStatus; labelKey: string }[] = [
   { status: 'pending',     labelKey: 'entry.pending' },
+  { status: 'todo',        labelKey: 'entry.todo' },
   { status: 'in_progress', labelKey: 'entry.in_progress' },
   { status: 'validation',  labelKey: 'entry.validation' },
   { status: 'done',        labelKey: 'entry.done' },
@@ -50,6 +51,7 @@ const KANBAN_COLS: { status: EntryStatus; labelKey: string }[] = [
 
 const COL_STYLE: Record<string, { header: string; bg: string }> = {
   pending:     { header: 'var(--text-secondary)',     bg: 'var(--surface-subtle)' },
+  todo:        { header: 'var(--color-violet-text)',  bg: 'var(--color-violet-bg)' },
   in_progress: { header: 'var(--oe-primary)',         bg: 'var(--oe-primary-light)' },
   validation:  { header: 'var(--color-warning-text)', bg: 'var(--color-warning-bg)' },
   done:        { header: 'var(--color-success-text)', bg: 'var(--color-success-bg)' },
@@ -1051,7 +1053,7 @@ export default function TasksPage() {
           onDragEnd={handleDragEnd}
           onDragCancel={() => setActiveId(null)}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${KANBAN_COLS.length}, 1fr)`, gap: 12 }}>
             {KANBAN_COLS.map(col => (
               <KanbanColumn
                 key={col.status}
