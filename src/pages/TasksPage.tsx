@@ -31,6 +31,7 @@ import { ViewToggle } from '@/components/ui/ViewToggle'
 import { ListIcon, KanbanIcon, CheckCircleIcon, ChatBubbleIcon, LinkIcon, ExternalLinkIcon, UsersGroupIcon } from '@/components/ui/icons'
 import { SignalBadges, signalRowTint } from '@/components/ui/SignalBadges'
 import { computeEntrySignals } from '@/utils/signals'
+import { findGoLiveDate } from '@/utils/projectStats'
 import { isEntryMine, ownerKey } from '@/utils/involvement'
 import { contactsForClients } from '@/utils/contacts'
 import { useSort } from '@/hooks/useSort'
@@ -329,6 +330,7 @@ export default function TasksPage() {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
   const [editingCell, setEditingCell] = useState<{ id: string; field: 'name' | 'planned' | 'actual' | 'origin' } | null>(null)
   const [quickCreateName, setQuickCreateName] = useState('')
+  const [dateSortMode, setDateSortMode] = useState<'none' | 'task' | 'parent'>('none')
 
   useEffect(() => { localStorage.setItem('pb-tasks-view', view) }, [view])
 
@@ -550,7 +552,37 @@ export default function TasksPage() {
 
   type TaskGroup = { key: string; label: string; cards: GlobalCard[] }
 
+  // ── Sort by date (task's own vs. the parent project's go-live / incident's
+  // deadline) — a second, independent axis from groupBy, applied both here
+  // (table) and in the Kanban column lists below. Standalone tasks have no
+  // "parent" date, so they always sink to the undated bucket in that mode. ──
+  function cardSortDate(card: GlobalCard, mode: 'task' | 'parent'): string | undefined {
+    if (mode === 'task') return card.type === 'task' ? card.plannedEnd : card.plannedDate
+    if (card._scopeType === 'project') {
+      const project = projects.find((p) => p.id === card._scopeId)
+      return project ? findGoLiveDate(project) : undefined
+    }
+    if (card._scopeType === 'incident') {
+      return incidents.find((i) => i.id === card._scopeId)?.deadline
+    }
+    return undefined
+  }
+
+  function applyDateOrder(cards: GlobalCard[]): GlobalCard[] {
+    return [...cards].sort((a, b) => {
+      const aDone = a.status === 'done', bDone = b.status === 'done'
+      if (aDone !== bDone) return aDone ? 1 : -1
+      const da = cardSortDate(a, dateSortMode as 'task' | 'parent')
+      const db = cardSortDate(b, dateSortMode as 'task' | 'parent')
+      if (!da && !db) return a.name.localeCompare(b.name)
+      if (!da) return 1
+      if (!db) return -1
+      return da < db ? -1 : da > db ? 1 : 0
+    })
+  }
+
   function withinGroupOrder(cards: GlobalCard[]): GlobalCard[] {
+    if (dateSortMode !== 'none') return applyDateOrder(cards)
     return [...cards].sort((a, b) => {
       const aDone = a.status === 'done', bDone = b.status === 'done'
       if (aDone !== bDone) return aDone ? 1 : -1
@@ -562,7 +594,9 @@ export default function TasksPage() {
   }
 
   const taskGroups: TaskGroup[] = useMemo(() => {
-    if (groupBy === 'none') return [{ key: 'all', label: '', cards: sortedCards }]
+    if (groupBy === 'none') {
+      return [{ key: 'all', label: '', cards: dateSortMode !== 'none' ? applyDateOrder(sortedCards) : sortedCards }]
+    }
 
     if (groupBy === 'origin') {
       const map = new Map<string, TaskGroup>()
@@ -604,7 +638,7 @@ export default function TasksPage() {
       return bActive - aActive
     })
     return result
-  }, [groupBy, responsibleRole, filteredCards, sortedCards, today])
+  }, [groupBy, responsibleRole, filteredCards, sortedCards, today, dateSortMode, projects, incidents])
 
   // ── Resource management (§3 of the proposal) — per-executor active load,
   // split into "has a date this week or earlier" (probably freeing up soon)
@@ -834,6 +868,19 @@ export default function TasksPage() {
           ]}
         />
         <MineToggle active={onlyMine} onClick={() => setOnlyMine((v) => !v)} />
+        {view !== 'capacity' && (
+          <select
+            value={dateSortMode}
+            onChange={(e) => setDateSortMode(e.target.value as typeof dateSortMode)}
+            className="text-xs rounded-[var(--radius-md)] px-2 py-1.5 border"
+            style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)', color: 'var(--text-secondary)' }}
+            aria-label="Ordenar por data"
+          >
+            <option value="none">Sem ordenar por data</option>
+            <option value="task">Ordenar por data da tarefa</option>
+            <option value="parent">Ordenar por data do projeto/incidente</option>
+          </select>
+        )}
         <div style={{ flex: 1 }} />
 
         {view === 'table' && (
@@ -1059,7 +1106,10 @@ export default function TasksPage() {
                 key={col.status}
                 status={col.status}
                 labelKey={col.labelKey}
-                cards={sortedCards.filter(c => c.status === col.status)}
+                cards={(() => {
+                  const inCol = sortedCards.filter(c => c.status === col.status)
+                  return dateSortMode !== 'none' ? applyDateOrder(inCol) : inCol
+                })()}
                 onEdit={setEditCard}
               />
             ))}
