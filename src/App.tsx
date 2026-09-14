@@ -20,6 +20,7 @@ import IncidentsPage from '@/pages/IncidentsPage'
 import IncidentDetailPage from '@/pages/IncidentDetailPage'
 import UsersPage from '@/pages/UsersPage'
 import GuidePage from '@/pages/GuidePage'
+import ImportPage from '@/pages/ImportPage'
 import LoginPage from '@/pages/LoginPage'
 import AuthCallback from '@/pages/AuthCallback'
 import PublicReportPage from '@/pages/PublicReportPage'
@@ -106,6 +107,7 @@ export default function App() {
           <Route path="/tasks" element={<TasksPage />} />
           <Route path="/projects/:id" element={<ProjectDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/import" element={<ImportPage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/guide" element={<GuidePage />} />
           <Route path="/settings/templates/:templateId" element={<TemplateEditorPage />} />

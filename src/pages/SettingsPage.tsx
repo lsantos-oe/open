@@ -230,6 +230,10 @@ export default function SettingsPage() {
             />
           </Section>
 
+          <Section title="Importação em massa" description="Suba uma planilha de staging (Projetos/Incidentes/Tarefas) para revisar e importar em lote.">
+            <Button variant="secondary" size="sm" onClick={() => navigate('/import')}>Abrir importação →</Button>
+          </Section>
+
           {isAdmin && (
             <Section title="Assistente de IA" description="Chave da API do OpenRouter compartilhada por todo o time — não é por usuário.">
               {hasKey ? (
