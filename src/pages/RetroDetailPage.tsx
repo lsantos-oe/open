@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/Button'
 import { ExternalLinkIcon } from '@/components/ui/icons'
 import RetroFormModal from '@/components/retro/RetroFormModal'
 import RetroPhaseBadge from '@/components/retro/RetroPhaseBadge'
+import RetroBoard from '@/components/retro/RetroBoard'
+import { useRetroBoardStore } from '@/stores/useRetroBoardStore'
 
 function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -33,6 +35,12 @@ export default function RetroDetailPage() {
   const [advancing, setAdvancing] = useState(false)
 
   useEffect(() => { if (!loaded) loadRetros() }, [loaded, loadRetros])
+
+  const retroExists = retros.some((r) => r.id === id)
+  useEffect(() => {
+    if (!id || !retroExists) return
+    return useRetroBoardStore.getState().open(id)
+  }, [id, retroExists])
 
   const retro = retros.find((r) => r.id === id)
   const isAdmin = profile?.role === 'admin'
@@ -125,6 +133,10 @@ export default function RetroDetailPage() {
         </div>
       </section>
 
+      <div className="mb-6">
+        <RetroBoard retro={retro} userId={user?.id} nameOf={nameOf} />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
         <div>
           <section className="mb-6">
@@ -173,12 +185,6 @@ export default function RetroDetailPage() {
             </InfoRow>
           </section>
 
-          <div
-            className="p-6 text-center text-sm rounded-[var(--radius-lg)] border border-dashed"
-            style={{ borderColor: 'var(--border-strong)', color: 'var(--text-tertiary)' }}
-          >
-            {t('retro.boardSoon')}
-          </div>
         </div>
 
         <aside>

@@ -33,3 +33,13 @@ export interface RetroInput {
   previousRetroId?: string
   participantIds: string[]
 }
+
+export type RetroCardKind = 'good' | 'bad' | 'action'
+
+export interface RetroCard {
+  id: string
+  retroId: string
+  kind: RetroCardKind
+  text: string
+  createdAt: string
+}

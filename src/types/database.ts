@@ -437,3 +437,16 @@ export interface DbRetroParticipant {
   retro_id: string
   user_id: string
 }
+
+export interface DbRetroCard {
+  id: string
+  retro_id: string
+  kind: 'good' | 'bad' | 'action'
+  text: string
+  created_at: string
+}
+
+export interface DbRetroCardAuthor {
+  card_id: string
+  author_id: string
+}

@@ -15,6 +15,9 @@ interface RetroStore {
   updateRetro: (id: string, input: RetroInput) => Promise<boolean>
   advancePhase: (id: string) => Promise<boolean>
   deleteRetro: (id: string) => Promise<boolean>
+  /** Aplica uma mudança de retros vinda do Realtime (ex.: o condutor avançou a fase). */
+  applyRemoteRetro: (row: DbRetro) => void
+  reloadParticipants: (retroId: string) => Promise<void>
 }
 
 function dbToRetro(row: DbRetro, participantIds: string[]): Retro {
@@ -142,6 +145,21 @@ export const useRetroStore = create<RetroStore>((set, get) => ({
     if (error || !data) { toastError(writeErrorMessage(error, 'Não foi possível avançar a fase.')); return false }
     set((s) => ({ retros: s.retros.map((r) => (r.id === id ? dbToRetro(data as DbRetro, r.participantIds) : r)) }))
     return true
+  },
+
+  applyRemoteRetro(row) {
+    set((s) => {
+      const exists = s.retros.some((r) => r.id === row.id)
+      if (!exists) return { retros: [dbToRetro(row, []), ...s.retros] }
+      return { retros: s.retros.map((r) => (r.id === row.id ? dbToRetro(row, r.participantIds) : r)) }
+    })
+  },
+
+  async reloadParticipants(retroId) {
+    const { data, error } = await supabase.from('retro_participants').select('user_id').eq('retro_id', retroId)
+    if (error) return
+    const ids = (data ?? []).map((p) => p.user_id as string)
+    set((s) => ({ retros: s.retros.map((r) => (r.id === retroId ? { ...r, participantIds: ids } : r)) }))
   },
 
   async deleteRetro(id) {
