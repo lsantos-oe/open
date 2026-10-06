@@ -2,7 +2,7 @@ import { NavLink, useNavigate, useMatch, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
 import { Project, Incident } from '@/types'
-import { HomeIcon, WalletIcon, ContactsIcon, SupportIcon, PortfolioIcon, TasksIcon, GuideIcon, GearIcon } from '@/components/ui/icons'
+import { HomeIcon, WalletIcon, ContactsIcon, SupportIcon, PortfolioIcon, TasksIcon, GuideIcon, GearIcon, RetroIcon } from '@/components/ui/icons'
 
 const INCIDENT_STATUS_COLOR: Record<Incident['status'], string> = {
   open: 'var(--text-tertiary)',
@@ -114,6 +114,10 @@ export function Sidebar() {
           {!collapsed && <span>{t('nav.tasks')}</span>}
         </NavLink>
         <div style={{ height: '0.5px', background: 'var(--sidebar-border)', margin: '6px 4px' }} />
+        <NavLink to="/retros" className={navLinkCls} title={collapsed ? t('nav.retros') : undefined}>
+          <span className="shrink-0 w-4 h-4 flex items-center justify-center"><RetroIcon /></span>
+          {!collapsed && <span>{t('nav.retros')}</span>}
+        </NavLink>
         <NavLink to="/settings" className={navLinkCls} title={collapsed ? t('nav.settings') : undefined}>
           <span className="shrink-0 w-4 h-4 flex items-center justify-center"><GearIcon /></span>
           {!collapsed && <span>{t('nav.settings')}</span>}

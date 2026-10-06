@@ -291,3 +291,13 @@ export function NoteIcon({ className = 'w-4 h-4' }: { className?: string }) {
     </svg>
   )
 }
+
+export function RetroIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9" />
+      <path d="M13.8 2.2v2.6h-2.6" />
+      <path d="M5.8 8.2l1.5 1.5 3-3.1" />
+    </svg>
+  )
+}

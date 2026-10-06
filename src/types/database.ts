@@ -414,3 +414,26 @@ export interface DbProjectFlat {
   delay_log: DbDelayLog[]
   risks: DbRisk[]
 }
+
+export interface DbRetro {
+  id: string
+  title: string
+  retro_date: string
+  period_start: string | null
+  period_end: string | null
+  recording_link: string | null
+  conductor_id: string | null
+  phase: 'draft' | 'collecting' | 'revealed' | 'discussing' | 'closed'
+  anonymous: boolean
+  votes_per_person: number
+  previous_retro_id: string | null
+  revealed_at: string | null
+  closed_at: string | null
+  created_by: string
+  created_at: string
+}
+
+export interface DbRetroParticipant {
+  retro_id: string
+  user_id: string
+}
