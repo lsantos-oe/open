@@ -3,16 +3,20 @@ import { supabase } from '@/lib/supabase'
 import { useToastStore } from '@/stores/useToastStore'
 import { useRetroStore } from '@/stores/useRetroStore'
 import { useAuthStore } from '@/stores/useAuthStore'
-import type { DbRetro, DbRetroCard, DbRetroCardAuthor, DbRetroCardLink } from '@/types/database'
-import { RetroCard, RetroCardKind, RetroCardLink, RetroLinkRef } from '@/types/retro'
-import { RETRO_PHASES } from '@/types/retro'
+import type {
+  DbRetro, DbRetroCard, DbRetroCardAuthor, DbRetroCardLink, DbRetroComment, DbRetroVote,
+} from '@/types/database'
+import {
+  RetroActionPatch, RetroCard, RetroCardKind, RetroCardLink, RetroComment, RetroLinkRef, RetroVote, RETRO_PHASES,
+} from '@/types/retro'
 
 /** Quadro da retro aberta na tela (só uma por vez).
  *
- *  Quem pode ver o quê é decidido pelo banco (RLS): antes da revelação o
- *  SELECT devolve só os cards do próprio usuário (ou todos, para o condutor);
- *  em retro anônima, `authors` só traz a autoria dos cards do próprio usuário.
- *  Aqui nada disso é filtrado de novo — a tela mostra o que o banco entregou. */
+ *  Quem pode ver o quê é decidido pelo banco (RLS): cards ainda sigilosos só
+ *  chegam ao autor e ao condutor; em retro anônima, `authors` só traz a autoria
+ *  dos cards do próprio usuário. Votos, comentários e vínculos herdam a
+ *  visibilidade do card. Aqui nada disso é filtrado de novo — a tela mostra o
+ *  que o banco entregou. */
 interface RetroBoardStore {
   retroId: string | null
   cards: RetroCard[]
@@ -20,6 +24,8 @@ interface RetroBoardStore {
   authors: Record<string, string>
   /** Vínculos com projetos/incidentes/clientes — visíveis só quando o card é visível. */
   links: RetroCardLink[]
+  votes: RetroVote[]
+  comments: RetroComment[]
   loading: boolean
   open: (retroId: string) => () => void
   addCard: (retroId: string, kind: RetroCardKind, text: string, links?: RetroLinkRef[]) => Promise<boolean>
@@ -27,10 +33,40 @@ interface RetroBoardStore {
   /** Reconcilia os vínculos do card com `next`: insere os novos e remove os que saíram. */
   setCardLinks: (cardId: string, retroId: string, next: RetroLinkRef[]) => Promise<boolean>
   deleteCard: (id: string) => Promise<boolean>
+  /** Alterna o voto/apoio do usuário num card. */
+  toggleVote: (cardId: string) => Promise<boolean>
+  /** Cria uma ação (parentId = card que ela endereça, ou ação pai no caso de sub-ação). Devolve o id. */
+  addAction: (retroId: string, text: string, parentId?: string, links?: RetroLinkRef[]) => Promise<string | null>
+  updateAction: (id: string, patch: RetroActionPatch) => Promise<boolean>
+  addComment: (cardId: string, retroId: string, text: string) => Promise<boolean>
+  deleteComment: (id: string) => Promise<boolean>
 }
 
+const CARD_COLUMNS =
+  'id, retro_id, kind, text, created_at, revealed_at, parent_card_id, description, owners, involved, ' +
+  'success_metric, success_target, success_result, due_date, action_status, resolution_note, resolved_at'
+const LINK_COLUMNS = 'id, card_id, retro_id, project_id, incident_id, client_id'
+
 function dbToCard(row: DbRetroCard): RetroCard {
-  return { id: row.id, retroId: row.retro_id, kind: row.kind, text: row.text, createdAt: row.created_at, revealedAt: row.revealed_at ?? undefined }
+  return {
+    id: row.id,
+    retroId: row.retro_id,
+    kind: row.kind,
+    text: row.text,
+    createdAt: row.created_at,
+    revealedAt: row.revealed_at ?? undefined,
+    parentCardId: row.parent_card_id ?? undefined,
+    description: row.description ?? undefined,
+    owners: row.owners ?? [],
+    involved: row.involved ?? [],
+    successMetric: row.success_metric ?? undefined,
+    successTarget: row.success_target ?? undefined,
+    successResult: row.success_result ?? undefined,
+    dueDate: row.due_date ?? undefined,
+    actionStatus: row.action_status ?? 'open',
+    resolutionNote: row.resolution_note ?? undefined,
+    resolvedAt: row.resolved_at ?? undefined,
+  }
 }
 
 function dbToLink(row: DbRetroCardLink): RetroCardLink | null {
@@ -40,14 +76,50 @@ function dbToLink(row: DbRetroCardLink): RetroCardLink | null {
   return null
 }
 
+function dbToComment(row: DbRetroComment): RetroComment {
+  return { id: row.id, cardId: row.card_id, authorId: row.author_id, text: row.text, createdAt: row.created_at }
+}
+
 function refToColumn(ref: RetroLinkRef): Record<string, string> {
   return { [`${ref.type}_id`]: ref.id }
 }
 
+/** Patch da tela → colunas do banco. Texto opcional vazio vira null. */
+function actionPatchToDb(patch: RetroActionPatch): Record<string, unknown> {
+  const blank = (v: string | undefined) => (v === undefined ? undefined : v.trim() || null)
+  const out: Record<string, unknown> = {
+    text: patch.text?.trim(),
+    description: blank(patch.description),
+    owners: patch.owners,
+    involved: patch.involved,
+    success_metric: blank(patch.successMetric),
+    success_target: blank(patch.successTarget),
+    success_result: blank(patch.successResult),
+    due_date: patch.dueDate === undefined ? undefined : patch.dueDate || null,
+    action_status: patch.actionStatus,
+    resolution_note: blank(patch.resolutionNote),
+  }
+  return Object.fromEntries(Object.entries(out).filter(([, v]) => v !== undefined))
+}
+
 const byCreatedAt = (a: RetroCard, b: RetroCard) => a.createdAt.localeCompare(b.createdAt)
+const voteKey = (v: RetroVote) => `${v.cardId}:${v.userId}`
 
 function toastError(message: string) {
   useToastStore.getState().addToast(message)
+}
+
+/** Ids de um card e de todos os seus descendentes (apagar uma ação apaga as sub-ações em cascata). */
+function withDescendants(cards: RetroCard[], rootId: string): Set<string> {
+  const ids = new Set([rootId])
+  let grew = true
+  while (grew) {
+    grew = false
+    for (const c of cards) {
+      if (c.parentCardId && ids.has(c.parentCardId) && !ids.has(c.id)) { ids.add(c.id); grew = true }
+    }
+  }
+  return ids
 }
 
 export const useRetroBoardStore = create<RetroBoardStore>((set, get) => {
@@ -55,17 +127,23 @@ export const useRetroBoardStore = create<RetroBoardStore>((set, get) => {
   async function loadBoard(retroId: string) {
     set({ loading: true })
     try {
-      const { data: cards, error } = await supabase.from('retro_cards').select('id, retro_id, kind, text, created_at, revealed_at').eq('retro_id', retroId)
+      const { data: cards, error } = await supabase.from('retro_cards').select(CARD_COLUMNS).eq('retro_id', retroId)
       if (error) throw new Error(error.message)
       const { data: authors, error: ae } = await supabase.from('retro_card_authors').select('card_id, author_id').eq('retro_id', retroId)
       if (ae) throw new Error(ae.message)
-      const { data: links, error: le } = await supabase.from('retro_card_links').select('id, card_id, retro_id, project_id, incident_id, client_id').eq('retro_id', retroId)
+      const { data: links, error: le } = await supabase.from('retro_card_links').select(LINK_COLUMNS).eq('retro_id', retroId)
       if (le) throw new Error(le.message)
+      const { data: votes, error: ve } = await supabase.from('retro_votes').select('card_id, user_id').eq('retro_id', retroId)
+      if (ve) throw new Error(ve.message)
+      const { data: comments, error: ce } = await supabase.from('retro_comments').select('id, card_id, author_id, text, created_at').eq('retro_id', retroId).order('created_at', { ascending: true })
+      if (ce) throw new Error(ce.message)
       if (get().retroId !== retroId) return // o usuário já saiu desta retro
       set({
-        cards: ((cards ?? []) as DbRetroCard[]).map(dbToCard).sort(byCreatedAt),
+        cards: ((cards ?? []) as unknown as DbRetroCard[]).map(dbToCard).sort(byCreatedAt),
         authors: Object.fromEntries(((authors ?? []) as DbRetroCardAuthor[]).map((a) => [a.card_id, a.author_id])),
         links: ((links ?? []) as DbRetroCardLink[]).map(dbToLink).filter((l): l is RetroCardLink => !!l),
+        votes: ((votes ?? []) as DbRetroVote[]).map((v) => ({ cardId: v.card_id, userId: v.user_id })),
+        comments: ((comments ?? []) as DbRetroComment[]).map(dbToComment),
       })
     } catch (err) {
       toastError(err instanceof Error ? err.message : 'Erro ao carregar o quadro')
@@ -82,15 +160,53 @@ export const useRetroBoardStore = create<RetroBoardStore>((set, get) => {
     }))
   }
 
+  function addVoteLocal(v: RetroVote) {
+    set((s) => (s.votes.some((x) => voteKey(x) === voteKey(v)) ? s : { votes: [...s.votes, v] }))
+  }
+
+  function removeVoteLocal(v: RetroVote) {
+    set((s) => ({ votes: s.votes.filter((x) => voteKey(x) !== voteKey(v)) }))
+  }
+
+  function upsertComment(c: RetroComment) {
+    set((s) => ({
+      comments: s.comments.some((x) => x.id === c.id) ? s.comments.map((x) => (x.id === c.id ? c : x)) : [...s.comments, c],
+    }))
+  }
+
+  /** Cria o card via RPC (valida fase e participação no banco) e já o põe na tela. */
+  async function createCard(retroId: string, kind: RetroCardKind, text: string, links: RetroLinkRef[], parentId?: string): Promise<string | null> {
+    const { data, error } = await supabase.rpc('retro_add_card', { p_retro: retroId, p_kind: kind, p_text: text, p_parent: parentId ?? null, p_links: links })
+    if (error || !data) { toastError(error?.message ?? 'Não foi possível enviar o card.'); return null }
+    const id = data as string
+    const userId = useAuthStore.getState().user?.id
+    const now = new Date().toISOString()
+    upsertCard({
+      id, retroId, kind, text: text.trim(), createdAt: now,
+      revealedAt: kind === 'action' ? now : undefined, // ações já nascem reveladas
+      parentCardId: parentId, owners: [], involved: [], actionStatus: 'open',
+    })
+    if (links.length > 0) {
+      // Os vínculos nasceram junto com o card (mesma RPC); busca os ids reais das linhas.
+      const { data: rows } = await supabase.from('retro_card_links').select(LINK_COLUMNS).eq('card_id', id)
+      const fresh = ((rows ?? []) as DbRetroCardLink[]).map(dbToLink).filter((l): l is RetroCardLink => !!l)
+      set((s) => ({ links: [...s.links.filter((l) => l.cardId !== id), ...fresh] }))
+    }
+    if (userId) set((s) => ({ authors: { ...s.authors, [id]: userId } }))
+    return id
+  }
+
   return {
     retroId: null,
     cards: [],
     authors: {},
     links: [],
+    votes: [],
+    comments: [],
     loading: false,
 
     open(retroId) {
-      set({ retroId, cards: [], authors: {}, links: [] })
+      set({ retroId, cards: [], authors: {}, links: [], votes: [], comments: [] })
       loadBoard(retroId)
 
       // O Realtime respeita o RLS do assinante: durante a coleta só chegam os
@@ -103,7 +219,16 @@ export const useRetroBoardStore = create<RetroBoardStore>((set, get) => {
         })
         .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'retro_cards' }, (payload) => {
           const id = (payload.old as { id?: string }).id
-          if (id) set((s) => ({ cards: s.cards.filter((c) => c.id !== id), links: s.links.filter((l) => l.cardId !== id) }))
+          if (!id) return
+          set((s) => {
+            const gone = withDescendants(s.cards, id)
+            return {
+              cards: s.cards.filter((c) => !gone.has(c.id)),
+              links: s.links.filter((l) => !gone.has(l.cardId)),
+              votes: s.votes.filter((v) => !gone.has(v.cardId)),
+              comments: s.comments.filter((c) => !gone.has(c.cardId)),
+            }
+          })
         })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'retro_card_links', filter: `retro_id=eq.${retroId}` }, (payload) => {
           const link = dbToLink(payload.new as DbRetroCardLink)
@@ -112,6 +237,24 @@ export const useRetroBoardStore = create<RetroBoardStore>((set, get) => {
         .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'retro_card_links' }, (payload) => {
           const id = (payload.old as { id?: string }).id
           if (id) set((s) => ({ links: s.links.filter((l) => l.linkId !== id) }))
+        })
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'retro_votes', filter: `retro_id=eq.${retroId}` }, (payload) => {
+          const v = payload.new as DbRetroVote
+          addVoteLocal({ cardId: v.card_id, userId: v.user_id })
+        })
+        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'retro_votes' }, (payload) => {
+          const v = payload.old as Partial<DbRetroVote>
+          if (v.card_id && v.user_id) removeVoteLocal({ cardId: v.card_id, userId: v.user_id })
+        })
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'retro_comments', filter: `retro_id=eq.${retroId}` }, (payload) => {
+          upsertComment(dbToComment(payload.new as DbRetroComment))
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'retro_comments', filter: `retro_id=eq.${retroId}` }, (payload) => {
+          upsertComment(dbToComment(payload.new as DbRetroComment))
+        })
+        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'retro_comments' }, (payload) => {
+          const id = (payload.old as { id?: string }).id
+          if (id) set((s) => ({ comments: s.comments.filter((c) => c.id !== id) }))
         })
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'retros', filter: `id=eq.${retroId}` }, (payload) => {
           const row = payload.new as DbRetro
@@ -129,30 +272,33 @@ export const useRetroBoardStore = create<RetroBoardStore>((set, get) => {
 
       return () => {
         supabase.removeChannel(channel)
-        if (get().retroId === retroId) set({ retroId: null, cards: [], authors: {}, links: [] })
+        if (get().retroId === retroId) set({ retroId: null, cards: [], authors: {}, links: [], votes: [], comments: [] })
       }
     },
 
     async addCard(retroId, kind, text, links = []) {
-      const { data, error } = await supabase.rpc('retro_add_card', { p_retro: retroId, p_kind: kind, p_text: text, p_links: links })
-      if (error || !data) { toastError(error?.message ?? 'Não foi possível enviar o card.'); return false }
-      const userId = useAuthStore.getState().user?.id
-      upsertCard({ id: data as string, retroId, kind, text: text.trim(), createdAt: new Date().toISOString() })
-      if (links.length > 0) {
-        // Os vínculos nasceram junto com o card (mesma RPC); busca os ids reais das linhas.
-        const { data: rows } = await supabase.from('retro_card_links').select('id, card_id, retro_id, project_id, incident_id, client_id').eq('card_id', data as string)
-        const fresh = ((rows ?? []) as DbRetroCardLink[]).map(dbToLink).filter((l): l is RetroCardLink => !!l)
-        set((s) => ({ links: [...s.links.filter((l) => l.cardId !== data), ...fresh] }))
-      }
-      if (userId) set((s) => ({ authors: { ...s.authors, [data as string]: userId } }))
-      return true
+      return !!(await createCard(retroId, kind, text, links))
+    },
+
+    async addAction(retroId, text, parentId, links = []) {
+      return createCard(retroId, 'action', text, links, parentId)
     },
 
     async updateCard(id, text) {
-      const { data, error } = await supabase.from('retro_cards').update({ text: text.trim() }).eq('id', id).select('id, retro_id, kind, text, created_at, revealed_at')
+      const { data, error } = await supabase.from('retro_cards').update({ text: text.trim() }).eq('id', id).select(CARD_COLUMNS)
       if (error) { toastError(error.message); return false }
       if (!data || data.length === 0) { toastError('Você não pode mais editar este card.'); return false }
-      upsertCard(dbToCard(data[0] as DbRetroCard))
+      upsertCard(dbToCard(data[0] as unknown as DbRetroCard))
+      return true
+    },
+
+    async updateAction(id, patch) {
+      const dbPatch = actionPatchToDb(patch)
+      if (Object.keys(dbPatch).length === 0) return true
+      const { data, error } = await supabase.from('retro_cards').update(dbPatch).eq('id', id).select(CARD_COLUMNS)
+      if (error) { toastError(error.message); return false }
+      if (!data || data.length === 0) { toastError('Você não tem permissão para alterar esta ação.'); return false }
+      upsertCard(dbToCard(data[0] as unknown as DbRetroCard))
       return true
     },
 
@@ -175,7 +321,7 @@ export const useRetroBoardStore = create<RetroBoardStore>((set, get) => {
         const { data, error } = await supabase
           .from('retro_card_links')
           .insert(toAdd.map((r) => ({ card_id: cardId, retro_id: retroId, ...refToColumn(r) })))
-          .select('id, card_id, retro_id, project_id, incident_id, client_id')
+          .select(LINK_COLUMNS)
         if (error) { toastError(error.message); return false }
         const created = ((data ?? []) as DbRetroCardLink[]).map(dbToLink).filter((l): l is RetroCardLink => !!l)
         set((s) => ({ links: [...s.links, ...created.filter((c) => !s.links.some((l) => l.linkId === c.linkId))] }))
@@ -186,8 +332,45 @@ export const useRetroBoardStore = create<RetroBoardStore>((set, get) => {
     async deleteCard(id) {
       const { data, error } = await supabase.from('retro_cards').delete().eq('id', id).select('id')
       if (error) { toastError(error.message); return false }
-      if (!data || data.length === 0) { toastError('Você não pode mais excluir este card.'); return false }
-      set((s) => ({ cards: s.cards.filter((c) => c.id !== id), links: s.links.filter((l) => l.cardId !== id) }))
+      if (!data || data.length === 0) { toastError('Você não pode excluir este card.'); return false }
+      set((s) => {
+        const gone = withDescendants(s.cards, id)
+        return {
+          cards: s.cards.filter((c) => !gone.has(c.id)),
+          links: s.links.filter((l) => !gone.has(l.cardId)),
+          votes: s.votes.filter((v) => !gone.has(v.cardId)),
+          comments: s.comments.filter((c) => !gone.has(c.cardId)),
+        }
+      })
+      return true
+    },
+
+    async toggleVote(cardId) {
+      const userId = useAuthStore.getState().user?.id
+      const { data, error } = await supabase.rpc('retro_toggle_vote', { p_card: cardId })
+      if (error) { toastError(error.message); return false }
+      if (userId) (data ? addVoteLocal : removeVoteLocal)({ cardId, userId })
+      return true
+    },
+
+    async addComment(cardId, retroId, text) {
+      const userId = useAuthStore.getState().user?.id
+      if (!userId || !text.trim()) return false
+      const { data, error } = await supabase
+        .from('retro_comments')
+        .insert({ card_id: cardId, retro_id: retroId, author_id: userId, text: text.trim() })
+        .select('id, card_id, author_id, text, created_at')
+        .single()
+      if (error || !data) { toastError(error?.message ?? 'Não foi possível comentar.'); return false }
+      upsertComment(dbToComment(data as DbRetroComment))
+      return true
+    },
+
+    async deleteComment(id) {
+      const { data, error } = await supabase.from('retro_comments').delete().eq('id', id).select('id')
+      if (error) { toastError(error.message); return false }
+      if (!data || data.length === 0) { toastError('Você não pode excluir este comentário.'); return false }
+      set((s) => ({ comments: s.comments.filter((c) => c.id !== id) }))
       return true
     },
   }

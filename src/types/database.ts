@@ -6,7 +6,7 @@
 
 import type {
   EntryType, EntryStatus, RiskFlag, ProjectStatus, ProjectType,
-  AppLanguage, DelayResponsibility, DelayType, Probability, Impact,
+  AppLanguage, DelayResponsibility, DelayType, Probability, Impact, EntryOwner,
 } from '@/types'
 
 // ─── JSON column shapes ───────────────────────────────────────────────────────
@@ -445,6 +445,30 @@ export interface DbRetroCard {
   text: string
   created_at: string
   revealed_at: string | null
+  parent_card_id: string | null
+  description: string | null
+  owners: EntryOwner[] | null
+  involved: EntryOwner[] | null
+  success_metric: string | null
+  success_target: string | null
+  success_result: string | null
+  due_date: string | null
+  action_status: 'open' | 'in_progress' | 'done' | 'dropped'
+  resolution_note: string | null
+  resolved_at: string | null
+}
+
+export interface DbRetroVote {
+  card_id: string
+  user_id: string
+}
+
+export interface DbRetroComment {
+  id: string
+  card_id: string
+  author_id: string
+  text: string
+  created_at: string
 }
 
 export interface DbRetroCardAuthor {

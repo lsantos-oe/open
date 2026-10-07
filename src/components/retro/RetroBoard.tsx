@@ -1,12 +1,16 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Retro, RetroCardKind, RetroLinkRef, RETRO_PHASES } from '@/types/retro'
+import { Retro, RetroCard, RetroCardKind, RetroLinkRef, RETRO_PHASES } from '@/types/retro'
 import { isRetroConductor } from '@/utils/retro'
+import { sortByVotes, voteCounts, votesUsed } from '@/utils/retroBoard'
+import { useAuthStore } from '@/stores/useAuthStore'
 import { useRetroBoardStore } from '@/stores/useRetroBoardStore'
 import { Button } from '@/components/ui/Button'
-import { Textarea } from '@/components/ui/Input'
+import { Input, Textarea } from '@/components/ui/Input'
 import RetroCardItem, { CARD_MAX_LENGTH } from './RetroCardItem'
 import { EntityLinksPicker } from './EntityLinks'
+import RetroActionCard from './RetroActionCard'
+import RetroActionModal from './RetroActionModal'
 
 interface Props {
   retro: Retro
@@ -55,13 +59,18 @@ function AddCardForm({ retroId, kind }: { retroId: string; kind: 'good' | 'bad' 
 
 export default function RetroBoard({ retro, userId, nameOf }: Props) {
   const { t } = useTranslation()
-  const { cards, authors, links, loading } = useRetroBoardStore()
+  const { cards, authors, links, votes, comments, loading, toggleVote, addAction } = useRetroBoardStore()
+  const isAdmin = useAuthStore((s) => s.profile?.role === 'admin')
+  const [openActionId, setOpenActionId] = useState<string | null>(null)
+  const [newAction, setNewAction] = useState('')
 
   const revealed = RETRO_PHASES.indexOf(retro.phase) >= 2
   const collecting = retro.phase === 'collecting'
   const conductor = isRetroConductor(retro, userId)
   const participant = conductor || (!!userId && retro.participantIds.includes(userId))
   const canWrite = collecting && participant
+  // Votar e criar ações só com a urna fechada/em discussão (o banco também exige isso).
+  const interactionOpen = participant && (retro.phase === 'revealed' || retro.phase === 'discussing')
 
   if (retro.phase === 'draft') {
     return <Banner>{t('retro.board_draft')}</Banner>
@@ -80,13 +89,44 @@ export default function RetroBoard({ retro, userId, nameOf }: Props) {
         : participant ? t('retro.board_collecting_participant') : t('retro.board_collecting_viewer')
     : null
 
+  const counts = voteCounts(votes)
+  const votesLeft = Math.max(0, retro.votesPerPerson - votesUsed(votes, cards, userId))
+  const voteFor = (card: RetroCard) => {
+    const voted = votes.some((v) => v.cardId === card.id && v.userId === userId)
+    const noVotesLeft = card.kind !== 'action' && !voted && votesLeft <= 0
+    return {
+      count: counts.get(card.id) ?? 0,
+      voted,
+      disabled: !interactionOpen || noVotesLeft,
+      title: !interactionOpen ? t('retro.voteClosed') : noVotesLeft ? t('retro.voteLimitReached') : voted ? t('retro.voteRemove') : t('retro.voteBtn'),
+      onToggle: () => toggleVote(card.id),
+    }
+  }
+
+  const actions = cards.filter((c) => c.kind === 'action')
+  const parentOf = (c: RetroCard) => (c.parentCardId ? cards.find((x) => x.id === c.parentCardId) : undefined)
+  // Ação "de topo": endereça um card bom/ruim ou nada. Sub-ação: filha de outra ação.
+  const topActions = sortByVotes(actions.filter((a) => parentOf(a)?.kind !== 'action'), counts)
+
+  async function createTopAction() {
+    if (!newAction.trim()) return
+    const id = await addAction(retro.id, newAction)
+    if (id) { setNewAction(''); setOpenActionId(id) }
+  }
+
   return (
     <div>
       {banner && <Banner>{banner}</Banner>}
+      {interactionOpen && retro.votesPerPerson > 0 && (
+        <p className="text-xs mb-3" style={{ color: votesLeft === 0 ? 'var(--color-warning-text)' : 'var(--text-tertiary)' }}>
+          {votesLeft === 0 ? t('retro.votesNone', { max: retro.votesPerPerson }) : t('retro.votesLeft', { n: votesLeft, max: retro.votesPerPerson })}
+        </p>
+      )}
       <div className={`grid grid-cols-1 gap-4 ${showActions ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
         {kinds.map((kind) => {
-          const laneCards = cards.filter((c) => c.kind === kind)
+          const laneCards = kind === 'action' ? [] : sortByVotes(cards.filter((c) => c.kind === kind), counts)
           const style = LANE_STYLE[kind]
+          const laneCount = kind === 'action' ? topActions.length : laneCards.length
           return (
             <section key={kind} className="min-w-0">
               <div
@@ -94,12 +134,42 @@ export default function RetroBoard({ retro, userId, nameOf }: Props) {
                 style={{ background: style.bg, color: style.fg, borderRadius: 'var(--radius-md)' }}
               >
                 <span>{t(`retro.lane_${kind}`)}</span>
-                {(revealed || conductor || reopened) && <span className="font-normal">{laneCards.length}</span>}
+                {(revealed || conductor || reopened) && <span className="font-normal">{laneCount}</span>}
               </div>
               <div className="space-y-2">
                 {canWrite && kind !== 'action' && <AddCardForm retroId={retro.id} kind={kind} />}
+
                 {kind === 'action' ? (
-                  <p className="text-xs p-3 text-center" style={{ color: 'var(--text-tertiary)' }}>{t('retro.actionsSoon')}</p>
+                  <>
+                    {interactionOpen && (
+                      <div className="flex gap-1.5">
+                        <Input
+                          value={newAction}
+                          maxLength={CARD_MAX_LENGTH}
+                          placeholder={t('retro.newActionPlaceholder')}
+                          onChange={(e) => setNewAction(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') createTopAction() }}
+                        />
+                        <Button size="xs" onClick={createTopAction} disabled={!newAction.trim()}>{t('retro.createAction')}</Button>
+                      </div>
+                    )}
+                    {topActions.length === 0 ? (
+                      !loading && <p className="text-xs px-1 py-2" style={{ color: 'var(--text-tertiary)' }}>{interactionOpen ? t('retro.actionsLaneHint') : t('retro.actionsEmpty')}</p>
+                    ) : (
+                      topActions.map((a) => (
+                        <RetroActionCard
+                          key={a.id}
+                          card={a}
+                          subActions={actions.filter((x) => x.parentCardId === a.id)}
+                          links={links.filter((l) => l.cardId === a.id)}
+                          addresses={parentOf(a)?.text}
+                          commentCount={comments.filter((c) => c.cardId === a.id).length}
+                          vote={voteFor(a)}
+                          onOpen={setOpenActionId}
+                        />
+                      ))
+                    )}
+                  </>
                 ) : laneCards.length === 0 ? (
                   !loading && (
                     <p className="text-xs px-1 py-2" style={{ color: 'var(--text-tertiary)' }}>
@@ -120,6 +190,12 @@ export default function RetroBoard({ retro, userId, nameOf }: Props) {
                         links={links.filter((l) => l.cardId === card.id)}
                         authorName={!!card.revealedAt && !retro.anonymous && authorId ? nameOf(authorId) : undefined}
                         secret={!card.revealedAt && !mine}
+                        vote={card.revealedAt ? voteFor(card) : undefined}
+                        actions={card.revealedAt ? {
+                          count: actions.filter((a) => a.parentCardId === card.id).length,
+                          canAdd: interactionOpen,
+                          onCreate: async (text) => { const id = await addAction(retro.id, text, card.id); if (id) setOpenActionId(id) },
+                        } : undefined}
                       />
                     )
                   })
@@ -129,6 +205,20 @@ export default function RetroBoard({ retro, userId, nameOf }: Props) {
           )
         })}
       </div>
+
+      {openActionId && (
+        <RetroActionModal
+          key={openActionId}
+          retro={retro}
+          cardId={openActionId}
+          userId={userId}
+          isAdmin={isAdmin}
+          nameOf={nameOf}
+          interactionOpen={interactionOpen}
+          onOpenAction={setOpenActionId}
+          onClose={() => setOpenActionId(null)}
+        />
+      )}
     </div>
   )
 }

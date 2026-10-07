@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { RetroCard, RetroCardLink, RetroLinkRef } from '@/types/retro'
 import { useRetroBoardStore } from '@/stores/useRetroBoardStore'
 import { Button } from '@/components/ui/Button'
-import { Textarea } from '@/components/ui/Input'
+import { Input, Textarea } from '@/components/ui/Input'
 import { EntityLinkChips, EntityLinksPicker } from './EntityLinks'
+import VoteButton from './VoteButton'
 
 export const CARD_MAX_LENGTH = 500
 
@@ -20,12 +21,16 @@ interface Props {
   authorName?: string
   /** O condutor vendo, antes da revelação, o card de outra pessoa. */
   secret?: boolean
+  /** Voto/apoio — só depois da revelação. */
+  vote?: { count: number; voted: boolean; disabled: boolean; title?: string; onToggle: () => Promise<unknown> }
+  /** Ações que endereçam este card + criação rápida de uma nova. */
+  actions?: { count: number; canAdd: boolean; onCreate: (text: string) => Promise<void> }
 }
 
 const sameRefs = (a: RetroLinkRef[], b: RetroLinkRef[]) =>
   a.length === b.length && a.every((x) => b.some((y) => y.type === x.type && y.id === x.id))
 
-export default function RetroCardItem({ card, mine, canEditText, canLink, links, authorName, secret }: Props) {
+export default function RetroCardItem({ card, mine, canEditText, canLink, links, authorName, secret, vote, actions }: Props) {
   const { t } = useTranslation()
   const { updateCard, deleteCard, setCardLinks } = useRetroBoardStore()
   const [editing, setEditing] = useState(false)
@@ -33,6 +38,17 @@ export default function RetroCardItem({ card, mine, canEditText, canLink, links,
   const currentRefs = useMemo<RetroLinkRef[]>(() => links.map((l) => ({ type: l.type, id: l.id })), [links])
   const [draftLinks, setDraftLinks] = useState<RetroLinkRef[]>(currentRefs)
   const [busy, setBusy] = useState(false)
+  const [addingAction, setAddingAction] = useState(false)
+  const [actionText, setActionText] = useState('')
+
+  async function createAction() {
+    if (!actionText.trim() || !actions) return
+    setBusy(true)
+    await actions.onCreate(actionText)
+    setBusy(false)
+    setActionText('')
+    setAddingAction(false)
+  }
 
   function startEditing() {
     setDraft(card.text)
@@ -79,6 +95,34 @@ export default function RetroCardItem({ card, mine, canEditText, canLink, links,
         <>
           <p className="whitespace-pre-wrap break-words">{card.text}</p>
           <EntityLinkChips links={currentRefs} />
+          {(vote || actions) && (
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              {vote && <VoteButton {...vote} />}
+              {actions && actions.count > 0 && (
+                <span className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+                  {actions.count === 1 ? t('retro.actionsCountOne') : t('retro.actionsCount', { n: actions.count })}
+                </span>
+              )}
+              {actions?.canAdd && !addingAction && (
+                <button type="button" onClick={() => setAddingAction(true)} className="text-[11px] hover:underline" style={{ color: 'var(--oe-primary)' }}>
+                  {t('retro.addAction')}
+                </button>
+              )}
+            </div>
+          )}
+          {addingAction && (
+            <div className="flex gap-1.5 mt-2">
+              <Input
+                autoFocus
+                value={actionText}
+                maxLength={CARD_MAX_LENGTH}
+                placeholder={t('retro.newActionFor')}
+                onChange={(e) => setActionText(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') createAction(); if (e.key === 'Escape') setAddingAction(false) }}
+              />
+              <Button size="xs" onClick={createAction} disabled={!actionText.trim() || busy}>{t('retro.createAction')}</Button>
+            </div>
+          )}
           <div className="flex items-center justify-between gap-2 mt-1.5 min-h-[18px]">
             <span className="text-[10.5px]" style={{ color: 'var(--text-tertiary)' }}>
               {authorName ?? (mine ? t('retro.mineBadge') : secret ? t('retro.secretBadge') : '')}

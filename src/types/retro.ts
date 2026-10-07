@@ -1,3 +1,5 @@
+import type { EntryOwner } from '@/types'
+
 export type RetroPhase = 'draft' | 'collecting' | 'revealed' | 'discussing' | 'closed'
 
 export const RETRO_PHASES: RetroPhase[] = ['draft', 'collecting', 'revealed', 'discussing', 'closed']
@@ -36,6 +38,8 @@ export interface RetroInput {
 
 export type RetroCardKind = 'good' | 'bad' | 'action'
 
+export type RetroActionStatus = 'open' | 'in_progress' | 'done' | 'dropped'
+
 export interface RetroCard {
   id: string
   retroId: string
@@ -44,6 +48,48 @@ export interface RetroCard {
   createdAt: string
   /** Preenchido quando o condutor fecha a urna. Sem isso, o card ainda é sigiloso (só autor e condutor veem). */
   revealedAt?: string
+  /** Ação → card que ela endereça; sub-ação → ação pai. */
+  parentCardId?: string
+  // ── só para kind === 'action' ──
+  description?: string
+  owners: EntryOwner[]
+  involved: EntryOwner[]
+  /** Indicador: como saberemos que deu certo. */
+  successMetric?: string
+  successTarget?: string
+  /** Resultado medido (preenchido no follow-up). */
+  successResult?: string
+  dueDate?: string
+  actionStatus: RetroActionStatus
+  resolutionNote?: string
+  resolvedAt?: string
+}
+
+/** Campos de uma ação que a tela pode alterar. */
+export interface RetroActionPatch {
+  text?: string
+  description?: string
+  owners?: EntryOwner[]
+  involved?: EntryOwner[]
+  successMetric?: string
+  successTarget?: string
+  successResult?: string
+  dueDate?: string
+  actionStatus?: RetroActionStatus
+  resolutionNote?: string
+}
+
+export interface RetroVote {
+  cardId: string
+  userId: string
+}
+
+export interface RetroComment {
+  id: string
+  cardId: string
+  authorId: string
+  text: string
+  createdAt: string
 }
 
 export type RetroLinkType = 'project' | 'incident' | 'client'
