@@ -42,6 +42,8 @@ export interface RetroCard {
   kind: RetroCardKind
   text: string
   createdAt: string
+  /** Preenchido quando o condutor fecha a urna. Sem isso, o card ainda é sigiloso (só autor e condutor veem). */
+  revealedAt?: string
 }
 
 export type RetroLinkType = 'project' | 'incident' | 'client'

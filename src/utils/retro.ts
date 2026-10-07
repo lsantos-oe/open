@@ -37,3 +37,18 @@ export const RETRO_PHASE_STYLE: Record<RetroPhase, { background: string; color: 
   discussing: { background: 'var(--color-violet-bg)', color: 'var(--color-violet-text)' },
   closed: { background: 'var(--color-success-bg)', color: 'var(--color-success-text)' },
 }
+
+/** Hoje (YYYY-MM-DD) no fuso de São Paulo — o mesmo que o banco usa para decidir se a data da retro já passou. */
+export function todayInSaoPaulo(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+}
+
+export function retroDatePassed(retro: Retro): boolean {
+  return retro.retroDate < todayInSaoPaulo()
+}
+
+/** Dá para reabrir a urna? Condutor/admin, retro fechada ou em discussão (nunca encerrada).
+ *  A data da retro ter passado NÃO esconde o botão: ele aparece desabilitado explicando o motivo. */
+export function canReopenUrn(retro: Retro, userId?: string, isAdmin?: boolean): boolean {
+  return (retro.phase === 'revealed' || retro.phase === 'discussing') && canAdvanceRetroPhase(retro, userId, isAdmin)
+}

@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/useAuthStore'
 import { useRetroStore } from '@/stores/useRetroStore'
 import { RETRO_PHASES } from '@/types/retro'
 import {
-  canAdvanceRetroPhase, canManageRetro, formatRetroDate, nextRetroPhase, RETRO_PHASE_STYLE,
+  canAdvanceRetroPhase, canManageRetro, canReopenUrn, formatRetroDate, nextRetroPhase, retroDatePassed, RETRO_PHASE_STYLE,
 } from '@/utils/retro'
 import { Button } from '@/components/ui/Button'
 import { ExternalLinkIcon } from '@/components/ui/icons'
@@ -30,7 +30,7 @@ export default function RetroDetailPage() {
   const navigate = useNavigate()
   const { teamDirectory, settings } = useAppStore()
   const { user, profile } = useAuthStore()
-  const { retros, loaded, loadRetros, advancePhase, deleteRetro } = useRetroStore()
+  const { retros, loaded, loadRetros, advancePhase, reopenUrn, deleteRetro } = useRetroStore()
   const [editing, setEditing] = useState(false)
   const [advancing, setAdvancing] = useState(false)
 
@@ -61,6 +61,8 @@ export default function RetroDetailPage() {
   const followUps = retros.filter((r) => r.previousRetroId === retro.id)
   const canManage = canManageRetro(retro, user?.id, isAdmin)
   const canAdvance = canAdvanceRetroPhase(retro, user?.id, isAdmin)
+  const canReopen = canReopenUrn(retro, user?.id, isAdmin)
+  const datePassed = retroDatePassed(retro)
   const next = nextRetroPhase(retro.phase)
   const conductorId = retro.conductorId ?? retro.createdBy
 
@@ -68,6 +70,13 @@ export default function RetroDetailPage() {
     if (!next || !window.confirm(t(`retro.confirm_${retro!.phase}`))) return
     setAdvancing(true)
     await advancePhase(retro!.id)
+    setAdvancing(false)
+  }
+
+  async function handleReopen() {
+    if (!window.confirm(t('retro.confirm_reopen'))) return
+    setAdvancing(true)
+    await reopenUrn(retro!.id)
     setAdvancing(false)
   }
 
@@ -127,10 +136,20 @@ export default function RetroDetailPage() {
         </ol>
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{t(`retro.hint_${retro.phase}`)}</p>
-          {canAdvance && next && (
-            <Button size="sm" onClick={handleAdvance} disabled={advancing}>{t(`retro.advance_${retro.phase}`)}</Button>
-          )}
+          <div className="flex items-center gap-2">
+            {canReopen && (
+              <Button variant="secondary" size="sm" onClick={handleReopen} disabled={advancing || datePassed} title={datePassed ? t('retro.reopenDatePassed') : undefined}>
+                {t('retro.reopen')}
+              </Button>
+            )}
+            {canAdvance && next && (
+              <Button size="sm" onClick={handleAdvance} disabled={advancing}>{t(`retro.advance_${retro.phase}`)}</Button>
+            )}
+          </div>
         </div>
+        {canReopen && datePassed && (
+          <p className="text-xs mt-2" style={{ color: 'var(--color-warning-text)' }}>{t('retro.reopenDatePassed')}</p>
+        )}
       </section>
 
       <div className="mb-6">

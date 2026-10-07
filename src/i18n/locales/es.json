@@ -639,7 +639,7 @@
     "advance_revealed": "Iniciar discusión",
     "advance_discussing": "Cerrar retro",
     "confirm_draft": "¿Abrir la urna? Los participantes podrán enviar tarjetas.",
-    "confirm_collecting": "¿Cerrar la urna? Todas las tarjetas serán visibles para todos y no se podrán enviar nuevas. No se puede deshacer.",
+    "confirm_collecting": "¿Cerrar la urna? Todas las tarjetas serán visibles para todos y no se podrán enviar nuevas. Se puede reabrir mientras la retro no esté cerrada y su fecha no haya pasado.",
     "confirm_revealed": "¿Iniciar la discusión y la creación de acciones?",
     "confirm_discussing": "¿Cerrar la retro? Las acciones se pueden seguir en la próxima retro.",
     "hint_draft": "Configura los participantes y abre la urna cuando todo esté listo.",
@@ -672,7 +672,11 @@
     "linkType_project": "Proyecto",
     "linkType_incident": "Incidente",
     "linkType_client": "Cliente",
-    "editLinks": "Vínculos"
+    "editLinks": "Vínculos",
+    "reopen": "Reabrir la urna",
+    "confirm_reopen": "¿Reabrir la urna? Las tarjetas ya reveladas siguen visibles para todos; las nuevas quedan secretas hasta que cierres la urna otra vez.",
+    "reopenDatePassed": "La fecha de la retro ya pasó. Edita la retro y pon una fecha futura para poder reabrir la urna.",
+    "board_reopened": "Urna reabierta. Las tarjetas ya reveladas siguen visibles; las nuevas quedan secretas (solo autor y facilitador las ven) hasta que el facilitador cierre la urna otra vez."
   },
   "import": {
     "title": "Importar JSON",

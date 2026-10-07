@@ -30,7 +30,7 @@ interface RetroBoardStore {
 }
 
 function dbToCard(row: DbRetroCard): RetroCard {
-  return { id: row.id, retroId: row.retro_id, kind: row.kind, text: row.text, createdAt: row.created_at }
+  return { id: row.id, retroId: row.retro_id, kind: row.kind, text: row.text, createdAt: row.created_at, revealedAt: row.revealed_at ?? undefined }
 }
 
 function dbToLink(row: DbRetroCardLink): RetroCardLink | null {
@@ -55,7 +55,7 @@ export const useRetroBoardStore = create<RetroBoardStore>((set, get) => {
   async function loadBoard(retroId: string) {
     set({ loading: true })
     try {
-      const { data: cards, error } = await supabase.from('retro_cards').select('id, retro_id, kind, text, created_at').eq('retro_id', retroId)
+      const { data: cards, error } = await supabase.from('retro_cards').select('id, retro_id, kind, text, created_at, revealed_at').eq('retro_id', retroId)
       if (error) throw new Error(error.message)
       const { data: authors, error: ae } = await supabase.from('retro_card_authors').select('card_id, author_id').eq('retro_id', retroId)
       if (ae) throw new Error(ae.message)
@@ -149,7 +149,7 @@ export const useRetroBoardStore = create<RetroBoardStore>((set, get) => {
     },
 
     async updateCard(id, text) {
-      const { data, error } = await supabase.from('retro_cards').update({ text: text.trim() }).eq('id', id).select('id, retro_id, kind, text, created_at')
+      const { data, error } = await supabase.from('retro_cards').update({ text: text.trim() }).eq('id', id).select('id, retro_id, kind, text, created_at, revealed_at')
       if (error) { toastError(error.message); return false }
       if (!data || data.length === 0) { toastError('Você não pode mais editar este card.'); return false }
       upsertCard(dbToCard(data[0] as DbRetroCard))

@@ -67,17 +67,23 @@ export default function RetroBoard({ retro, userId, nameOf }: Props) {
     return <Banner>{t('retro.board_draft')}</Banner>
   }
 
-  const kinds: RetroCardKind[] = revealed ? ['good', 'bad', 'action'] : ['good', 'bad']
+  // Reaberta: a urna voltou a 'collecting', mas o que já foi revelado continua visível a todos.
+  const reopened = collecting && !!retro.revealedAt
+  const showActions = revealed || cards.some((c) => c.kind === 'action')
+  const kinds: RetroCardKind[] = showActions ? ['good', 'bad', 'action'] : ['good', 'bad']
+  const pendingCount = cards.filter((c) => !c.revealedAt).length
   const banner = collecting
-    ? conductor
-      ? t('retro.board_collecting_conductor', { n: cards.length })
-      : participant ? t('retro.board_collecting_participant') : t('retro.board_collecting_viewer')
+    ? reopened
+      ? t('retro.board_reopened')
+      : conductor
+        ? t('retro.board_collecting_conductor', { n: pendingCount })
+        : participant ? t('retro.board_collecting_participant') : t('retro.board_collecting_viewer')
     : null
 
   return (
     <div>
       {banner && <Banner>{banner}</Banner>}
-      <div className={`grid grid-cols-1 gap-4 ${revealed ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
+      <div className={`grid grid-cols-1 gap-4 ${showActions ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
         {kinds.map((kind) => {
           const laneCards = cards.filter((c) => c.kind === kind)
           const style = LANE_STYLE[kind]
@@ -88,7 +94,7 @@ export default function RetroBoard({ retro, userId, nameOf }: Props) {
                 style={{ background: style.bg, color: style.fg, borderRadius: 'var(--radius-md)' }}
               >
                 <span>{t(`retro.lane_${kind}`)}</span>
-                {(revealed || conductor) && <span className="font-normal">{laneCards.length}</span>}
+                {(revealed || conductor || reopened) && <span className="font-normal">{laneCards.length}</span>}
               </div>
               <div className="space-y-2">
                 {canWrite && kind !== 'action' && <AddCardForm retroId={retro.id} kind={kind} />}
@@ -97,7 +103,7 @@ export default function RetroBoard({ retro, userId, nameOf }: Props) {
                 ) : laneCards.length === 0 ? (
                   !loading && (
                     <p className="text-xs px-1 py-2" style={{ color: 'var(--text-tertiary)' }}>
-                      {revealed ? t('retro.laneEmpty') : t('retro.cardsHiddenEmpty')}
+                      {revealed || reopened ? t('retro.laneEmpty') : t('retro.cardsHiddenEmpty')}
                     </p>
                   )
                 ) : (
@@ -109,11 +115,11 @@ export default function RetroBoard({ retro, userId, nameOf }: Props) {
                         key={card.id}
                         card={card}
                         mine={mine}
-                        canEditText={collecting && mine}
+                        canEditText={collecting && mine && !card.revealedAt}
                         canLink={(collecting && mine) || (participant && (retro.phase === 'revealed' || retro.phase === 'discussing'))}
                         links={links.filter((l) => l.cardId === card.id)}
-                        authorName={revealed && !retro.anonymous && authorId ? nameOf(authorId) : undefined}
-                        secret={collecting && !mine}
+                        authorName={!!card.revealedAt && !retro.anonymous && authorId ? nameOf(authorId) : undefined}
+                        secret={!card.revealedAt && !mine}
                       />
                     )
                   })

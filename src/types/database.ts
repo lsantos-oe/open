@@ -444,6 +444,7 @@ export interface DbRetroCard {
   kind: 'good' | 'bad' | 'action'
   text: string
   created_at: string
+  revealed_at: string | null
 }
 
 export interface DbRetroCardAuthor {

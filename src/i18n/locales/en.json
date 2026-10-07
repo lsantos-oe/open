@@ -639,7 +639,7 @@
     "advance_revealed": "Start discussion",
     "advance_discussing": "Close retro",
     "confirm_draft": "Open the box? Participants will be able to submit cards.",
-    "confirm_collecting": "Close the box? Every card becomes visible to everyone and no new ones can be submitted. This cannot be undone.",
+    "confirm_collecting": "Close the box? Every card becomes visible to everyone and no new ones can be submitted. You can reopen it while the retro is not closed and its date has not passed.",
     "confirm_revealed": "Start the discussion and action planning?",
     "confirm_discussing": "Close the retro? Actions can still be followed up in the next retro.",
     "hint_draft": "Set up participants and open the box when everything is ready.",
@@ -672,7 +672,11 @@
     "linkType_project": "Project",
     "linkType_incident": "Incident",
     "linkType_client": "Client",
-    "editLinks": "Links"
+    "editLinks": "Links",
+    "reopen": "Reopen the box",
+    "confirm_reopen": "Reopen the box? Cards already revealed stay visible to everyone; new ones stay secret until you close the box again.",
+    "reopenDatePassed": "The retro date has passed. Edit the retro and set a future date to reopen the box.",
+    "board_reopened": "Box reopened. Cards already revealed stay visible; new ones stay secret (only author and facilitator see them) until the facilitator closes the box again."
   },
   "import": {
     "title": "Import JSON",

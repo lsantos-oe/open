@@ -14,6 +14,8 @@ interface RetroStore {
   createRetro: (input: RetroInput) => Promise<string | null>
   updateRetro: (id: string, input: RetroInput) => Promise<boolean>
   advancePhase: (id: string) => Promise<boolean>
+  /** Volta a urna para 'collecting' (o banco valida: não encerrada e data ainda no futuro). */
+  reopenUrn: (id: string) => Promise<boolean>
   deleteRetro: (id: string) => Promise<boolean>
   /** Aplica uma mudança de retros vinda do Realtime (ex.: o condutor avançou a fase). */
   applyRemoteRetro: (row: DbRetro) => void
@@ -168,6 +170,13 @@ export const useRetroStore = create<RetroStore>((set, get) => ({
     if (error) return
     const ids = (data ?? []).map((p) => p.user_id as string)
     set((s) => ({ retros: s.retros.map((r) => (r.id === retroId ? { ...r, participantIds: ids } : r)) }))
+  },
+
+  async reopenUrn(id) {
+    const { data, error } = await supabase.from('retros').update({ phase: 'collecting' }).eq('id', id).select('*').single()
+    if (error || !data) { toastError(writeErrorMessage(error, 'Não foi possível reabrir a urna.')); return false }
+    set((s) => ({ retros: s.retros.map((r) => (r.id === id ? dbToRetro(data as DbRetro, r.participantIds) : r)) }))
+    return true
   },
 
   async deleteRetro(id) {
