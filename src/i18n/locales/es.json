@@ -762,6 +762,25 @@
     "actionsModeHint": "Los participantes siempre pueden apoyar, comentar y editar las acciones; aquí decides quién registra acciones nuevas y subacciones.",
     "actionsConductorOnlyHint": "En esta retro solo el facilitador crea acciones. Puedes apoyarlas y comentarlas."
   },
+  "editor": {
+    "loading": "Abriendo el documento...",
+    "error": "No se pudo abrir el documento colaborativo.",
+    "retry": "Intentar de nuevo",
+    "replaced": "Este documento fue reemplazado por una importación.",
+    "reload": "Recargar",
+    "hint": "Escribe / para comandos y @ para mencionar personas, proyectos, incidentes y clientes",
+    "editingNow": "{{names}} editando",
+    "callout": "Destacado",
+    "calloutHint": "Caja para llamar la atención (haz clic en el ícono para cambiar el tipo)",
+    "groupExtras": "Extras",
+    "groupTemplates": "Plantillas",
+    "mentionPeople": "Personas",
+    "mentionProjects": "Proyectos",
+    "mentionIncidents": "Incidentes",
+    "mentionClients": "Clientes",
+    "charterTemplate": "Plantilla de charter",
+    "charterTemplateHint": "Objetivos, alcance, fuera de alcance, criterios de éxito, restricciones y supuestos"
+  },
   "import": {
     "title": "Importar JSON",
     "placeholder": "Pega el JSON del proyecto aquí...",

@@ -2,6 +2,7 @@ import i18n from '@/i18n'
 import { Project, AppSettings, Entry, ProjectCharter } from '@/types'
 import { projectDurationDays, projectDateRange, isProjectDelayed } from './projectStats'
 import { computeVariance } from './dateEngine'
+import { markdownToSafeHtml } from './charterDoc'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -241,6 +242,16 @@ tr:last-child td { border-bottom: none; }
 .charter-table { width: 100%; }
 .charter-table td { padding: 8px 0; border-bottom: 0.5px solid #E7E5E4; vertical-align: top; line-height: 1.55; }
 .charter-table tr:last-child td { border-bottom: none; }
+.charter-doc { font-size: 12px; color: #57534E; line-height: 1.55; margin-top: 10px; }
+.charter-doc h1, .charter-doc h2, .charter-doc h3 { color: #1C1917; font-weight: 600; margin: 12px 0 4px; }
+.charter-doc h1 { font-size: 15px; } .charter-doc h2 { font-size: 13px; } .charter-doc h3 { font-size: 12px; }
+.charter-doc p { margin: 4px 0; }
+.charter-doc ul { list-style: disc; padding-left: 18px; margin: 4px 0; }
+.charter-doc ol { list-style: decimal; padding-left: 18px; margin: 4px 0; }
+.charter-doc blockquote { border-left: 3px solid #D6D3D1; padding-left: 8px; margin: 6px 0; }
+.charter-doc table { border-collapse: collapse; margin: 6px 0; }
+.charter-doc th, .charter-doc td { border: 1px solid #E7E5E4; padding: 3px 6px; }
+.charter-doc code { background: #F5F5F4; padding: 0 3px; border-radius: 3px; }
 .charter-label {
   font-family: 'Manrope', sans-serif;
   font-size: 10px;
@@ -530,35 +541,43 @@ function buildTeamSection(project: Project): string {
 
 function buildCharterSection(project: Project): string {
   const charter = project.charter
-  if (!charter) return ''
+  // Com o documento (editor de blocos) o texto longo vem dele; sponsor e budget continuam campos curtos.
+  // Sem documento ainda (projeto antigo que ninguém abriu), mostra os campos no formato antigo.
+  const docHtml = project.charterDoc ? markdownToSafeHtml(project.charterDoc) : ''
+  if (!charter && !docHtml) return ''
 
   type CharterKey = keyof ProjectCharter
   const fields: { key: CharterKey; labelKey: string }[] = [
     { key: 'sponsor',         labelKey: 'charter.sponsor' },
-    { key: 'objectives',      labelKey: 'charter.objectives' },
-    { key: 'scope',           labelKey: 'charter.scope' },
-    { key: 'outOfScope',      labelKey: 'charter.outOfScope' },
-    { key: 'successCriteria', labelKey: 'charter.successCriteria' },
-    { key: 'constraints',     labelKey: 'charter.constraints' },
-    { key: 'assumptions',     labelKey: 'charter.assumptions' },
+    ...(docHtml ? [] : [
+      { key: 'objectives' as CharterKey,      labelKey: 'charter.objectives' },
+      { key: 'scope' as CharterKey,           labelKey: 'charter.scope' },
+      { key: 'outOfScope' as CharterKey,      labelKey: 'charter.outOfScope' },
+      { key: 'successCriteria' as CharterKey, labelKey: 'charter.successCriteria' },
+      { key: 'constraints' as CharterKey,     labelKey: 'charter.constraints' },
+      { key: 'assumptions' as CharterKey,     labelKey: 'charter.assumptions' },
+    ]),
     { key: 'budget',          labelKey: 'charter.budget' },
   ]
 
-  const rows = fields
-    .filter((f) => charter[f.key])
-    .map((f) => `
+  const rows = charter
+    ? fields
+        .filter((f) => charter[f.key])
+        .map((f) => `
       <tr>
         <td class="charter-label">${t(f.labelKey)}</td>
         <td class="charter-value" style="white-space:pre-wrap;">${esc(charter[f.key] as string)}</td>
       </tr>
     `).join('')
+    : ''
 
-  if (!rows) return ''
+  if (!rows && !docHtml) return ''
 
   return `
     <div class="section">
       <div class="section-title">${t('charter.title')}</div>
-      <table class="charter-table"><tbody>${rows}</tbody></table>
+      ${rows ? `<table class="charter-table"><tbody>${rows}</tbody></table>` : ''}
+      ${docHtml ? `<div class="charter-doc">${docHtml}</div>` : ''}
     </div>
   `
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Project, ProjectCharter, TeamMember, EntryOwner, ReportLink } from '@/types'
 import { useAppStore } from '@/store/useAppStore'
@@ -13,6 +13,10 @@ import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { EntityAttachments } from '@/components/ui/EntityAttachments'
 import OwnersField from '@/components/plan/OwnersField'
 import TeamTab from './TeamTab'
+import { charterTemplateMarkdown, legacyCharterToMarkdown } from '@/utils/charterDoc'
+
+// O editor de blocos (BlockNote + Yjs) é pesado: carrega só quando a seção do charter é aberta.
+const CollabEditor = lazy(() => import('@/components/editor/CollabEditor'))
 
 const EMPTY_CHARTER: ProjectCharter = {
   sponsor: '',
@@ -24,15 +28,6 @@ const EMPTY_CHARTER: ProjectCharter = {
   assumptions: '',
   budget: '',
 }
-
-const CHARTER_TEXTAREAS: { key: keyof ProjectCharter; rows?: number }[] = [
-  { key: 'objectives', rows: 4 },
-  { key: 'scope', rows: 4 },
-  { key: 'outOfScope', rows: 3 },
-  { key: 'successCriteria', rows: 3 },
-  { key: 'constraints', rows: 3 },
-  { key: 'assumptions', rows: 3 },
-]
 
 interface Props {
   project: Project
@@ -321,7 +316,7 @@ function EditableDevField({ project, onSave }: {
 
 export default function OverviewTab({ project }: Props) {
   const { t } = useTranslation()
-  const { updateProject, linkProjectClient, unlinkProjectClient, addProjectLink, removeProjectLink, deleteReportLink, clients, teamDirectory, settings } = useAppStore()
+  const { updateProject, setProjectCharterDoc, linkProjectClient, unlinkProjectClient, addProjectLink, removeProjectLink, deleteReportLink, clients, teamDirectory, settings } = useAppStore()
   const [overview, setOverview] = useState(project.overview ?? '')
   const [charter, setCharter] = useState<ProjectCharter>(project.charter ?? EMPTY_CHARTER)
   const [linkModal, setLinkModal] = useState(false)
@@ -346,6 +341,24 @@ export default function OverviewTab({ project }: Props) {
     charterTimer.current = setTimeout(() => updateProject(project.id, { charter }), 700)
     return () => clearTimeout(charterTimer.current)
   }, [charter])
+
+  // Projeção do documento em Markdown (o que relatórios, exportações e a IA leem). Estável: o editor
+  // se reinscreve quando esta função muda.
+  const saveCharterDoc = useCallback((md: string) => { void setProjectCharterDoc(project.id, md) }, [project.id, setProjectCharterDoc])
+  const charterLabel = useCallback((s: string) => t(`charter.${s}`), [t])
+  // Semente do documento (só usada quando o documento ainda não existe — na primeira abertura ou depois de uma
+  // importação que o resetou). Calculada a cada render, sem memoizar: o editor a lê na hora de (re)conectar e
+  // precisa do Markdown MAIS RECENTE, não do que existia quando esta tela montou.
+  const charterSeed = project.charterDoc || legacyCharterToMarkdown(project.charter, charterLabel) || charterTemplateMarkdown(charterLabel)
+  const charterTemplates = useMemo(
+    () => [{
+      title: t('editor.charterTemplate'),
+      subtext: t('editor.charterTemplateHint'),
+      aliases: ['charter', 'template', 'modelo'],
+      markdown: charterTemplateMarkdown(charterLabel),
+    }],
+    [t, charterLabel],
+  )
 
   function setCharterField(field: keyof ProjectCharter, value: string) {
     setCharter((c) => ({ ...c, [field]: value }))
@@ -586,17 +599,15 @@ export default function OverviewTab({ project }: Props) {
             </Field>
           </div>
 
-          <div className="border-t border-[var(--border-default)] pt-5 grid grid-cols-1 gap-5">
-            {CHARTER_TEXTAREAS.map(({ key, rows }) => (
-              <Field key={key} label={t(`charter.${key}`)}>
-                <Textarea
-                  value={charter[key] ?? ''}
-                  onChange={(e) => setCharterField(key, e.target.value)}
-                  rows={rows ?? 3}
-                  placeholder={`Descreva ${t(`charter.${key}`).toLowerCase()}...`}
-                />
-              </Field>
-            ))}
+          <div className="border-t border-[var(--border-default)] pt-5">
+            <Suspense fallback={<p className="text-xs py-6 text-center" style={{ color: 'var(--text-tertiary)' }}>{t('editor.loading')}</p>}>
+              <CollabEditor
+                docId={`project_${project.id}_charter`}
+                seedMarkdown={charterSeed}
+                onMarkdownChange={saveCharterDoc}
+                templates={charterTemplates}
+              />
+            </Suspense>
           </div>
         </div>
       </CollapsibleSection>

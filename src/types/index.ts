@@ -329,6 +329,9 @@ export interface Project {
   links: Link[]
   overview?: string
   charter?: ProjectCharter
+  /** Documento do charter em Markdown (editor de blocos). É uma projeção do documento colaborativo: só é
+   *  gravado por setProjectCharterDoc (nunca pela sincronização geral da linha do projeto). */
+  charterDoc?: string
   proposalLink?: string
   dealLink?: string
   openPoints?: OpenPoint[]

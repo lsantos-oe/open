@@ -315,6 +315,7 @@ export function dbProjectToStore(data: DbProjectFull): Project {
     baselineSetAt: project.baseline_set_at ?? undefined,
     overview: project.overview ?? undefined,
     charter: project.charter ? dbCharterToStore(project.charter as DbCharter) : undefined,
+    charterDoc: project.charter_doc ?? undefined,
     proposalLink: project.proposal_link ?? undefined,
     dealLink: project.deal_link ?? undefined,
     team: ((project.team as DbTeamMember[] | null) ?? []).map(dbTeamMemberToStore),

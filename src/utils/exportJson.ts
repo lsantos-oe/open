@@ -32,6 +32,7 @@ function projectToExportShape(project: Project, clients: Client[]) {
     ...(project.overview && { overview: project.overview }),
     ...(project.baselineSetAt && { baselineSetAt: project.baselineSetAt }),
     ...(project.charter && { charter: project.charter }),
+    ...(project.charterDoc && { charterDoc: project.charterDoc }),
     team: project.team.map(({ id: _id, ...m }) => m),
     links: project.links.length > 0 ? project.links : undefined,
     phases: project.phases.map((ph) => ({

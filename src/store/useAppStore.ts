@@ -217,6 +217,11 @@ interface AppStore {
   createProject: (data: Omit<Project, 'id' | 'phases' | 'risks' | 'reportLinks' | 'delayLog' | 'team' | 'links' | 'status' | 'client' | 'clientId' | 'clientIds'> & { clientIds?: string[] }) => string
   duplicateProject: (source: Project, overrides: { name: string; clientIds: string[]; pm: string; pmMemberId?: string; language: AppLanguage; devLead?: string; devLeadMemberId?: string; devType?: 'integration' | 'application'; devIntegration?: string }) => string
   updateProject: (id: string, patch: Partial<Project>) => void
+  /** Grava a projeção em Markdown do documento do charter (atualização direcionada, só essa coluna). */
+  setProjectCharterDoc: (id: string, markdown: string) => Promise<void>
+  /** Substitui o documento do charter por um Markdown vindo de fora (importação): grava a coluna E descarta o
+   *  estado colaborativo, para que editores abertos recarreguem e o próximo a abrir recomece do novo texto. */
+  replaceProjectCharterDoc: (id: string, markdown: string) => Promise<void>
   renameProject: (id: string, name: string) => void
   linkProjectClient: (projectId: string, clientId: string) => void
   unlinkProjectClient: (projectId: string, clientId: string) => void
@@ -1258,6 +1263,20 @@ export const useAppStore = create<AppStore>()(
         }, () => set({ projects: prev }))
       },
 
+      async setProjectCharterDoc(id, markdown) {
+        // Atualização direcionada: nunca usa dbSyncProjectRow, que regrava a linha inteira a partir da memória
+        // deste navegador e poderia sobrescrever um documento mais novo de outra pessoa.
+        set((s) => ({ projects: mutateProject(s.projects, id, (p) => ({ ...p, charterDoc: markdown })) }))
+        const { error } = await supabase.from('projects').update({ charter_doc: markdown }).eq('id', id)
+        if (error) useToastStore.getState().addToast(error.message)
+      },
+
+      async replaceProjectCharterDoc(id, markdown) {
+        await get().setProjectCharterDoc(id, markdown)
+        const { error } = await supabase.rpc('collab_reset', { p_doc: `project_${id}_charter` })
+        if (error) useToastStore.getState().addToast(error.message)
+      },
+
       renameProject(id, name) {
         const prev = get().projects
         const oldName = prev.find((p) => p.id === id)?.name
@@ -1416,6 +1435,7 @@ export const useAppStore = create<AppStore>()(
           team: source.team.map((m) => ({ ...m, id: uuid() })),
           links: source.links.map((l) => ({ ...l, id: uuid() })),
           charter: source.charter ? { ...source.charter } : undefined,
+          charterDoc: source.charterDoc,
           overview: source.overview,
           status: 'planning',
           archived: false,
@@ -1431,6 +1451,11 @@ export const useAppStore = create<AppStore>()(
             const flat = storeProjectToDb(newProject, userId)
             const { error: pe } = await supabase.from('projects').insert(flat.project)
             if (pe) throw new Error(pe.message)
+            if (newProject.charterDoc) {
+              // charter_doc não vai no insert geral (ver setProjectCharterDoc): copia à parte.
+              const { error: cde } = await supabase.from('projects').update({ charter_doc: newProject.charterDoc }).eq('id', newId)
+              if (cde) throw new Error(cde.message)
+            }
             if (flat.phases.length) {
               const { error: phe } = await supabase.from('phases').insert(flat.phases)
               if (phe) throw new Error(phe.message)

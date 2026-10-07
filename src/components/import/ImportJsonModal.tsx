@@ -18,7 +18,7 @@ type MergeMode = 'replace' | 'merge'
 export default function ImportJsonModal({ initialTab, projectId, onClose }: Props) {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { projects, importProject, updateProject } = useAppStore()
+  const { projects, importProject, updateProject, replaceProjectCharterDoc } = useAppStore()
 
   const [tab, setTab] = useState<Tab>(initialTab)
   const [jsonText, setJsonText] = useState('')
@@ -61,12 +61,14 @@ export default function ImportJsonModal({ initialTab, projectId, onClose }: Prop
       if (tab === 'new') {
         const project = importNewProject(jsonText)
         importProject(project)
+        if (project.charterDoc) void replaceProjectCharterDoc(project.id, project.charterDoc)
         onClose()
         navigate(`/project/${project.id}`)
       } else {
         if (!targetProject) return
         const updated = importUpdateProject(targetProject, jsonText, mergeMode)
         updateProject(targetProject.id, updated)
+        if (updated.charterDoc !== targetProject.charterDoc) void replaceProjectCharterDoc(targetProject.id, updated.charterDoc ?? '')
         onClose()
       }
     } catch (e) {

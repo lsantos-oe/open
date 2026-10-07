@@ -19,6 +19,8 @@ import {
 } from '@/types'
 import { applyIsCritical } from './criticalPath'
 import { recalcDuration } from './dateEngine'
+import i18n from '@/i18n'
+import { CHARTER_SECTIONS, CharterSection, legacyCharterToMarkdown, upsertMarkdownSection } from './charterDoc'
 import { useAppStore } from '@/store/useAppStore'
 
 // ─── Import schema types ─────────────────────────────────────────────────────
@@ -79,6 +81,8 @@ export interface ImportJson {
     devIntegration?: string
     overview?: string
     charter?: Partial<ProjectCharter>
+    /** Documento do charter em Markdown (substitui o documento inteiro). */
+    charterDoc?: string
     phases?: ImportPhase[]
     risks?: ImportRisk[]
     team?: ImportTeamMember[]
@@ -228,12 +232,17 @@ export function validateImportJson(raw: string): ValidationResult {
       entries: totalEntries,
       risks: Array.isArray(p.risks) ? p.risks.length : 0,
       teamMembers: Array.isArray(p.team) ? p.team.length : 0,
-      hasCharter: !!p.charter,
+      hasCharter: !!p.charter || !!p.charterDoc,
     },
   }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Título de cada seção do charter no idioma do projeto. */
+function charterLabel(lang: string) {
+  return (section: CharterSection) => i18n.t(`charter.${section}`, { lng: lang })
+}
 
 function buildIdMap(phases: ImportPhase[]): Map<string, string> {
   const map = new Map<string, string>()
@@ -382,6 +391,7 @@ export function importNewProject(raw: string): Project {
     devIntegration: p.devIntegration,
     overview: p.overview,
     charter: p.charter as ProjectCharter | undefined,
+    charterDoc: p.charterDoc?.trim() || legacyCharterToMarkdown(p.charter, charterLabel(p.language ?? 'pt')) || undefined,
     phases: applyIsCritical(phases),
     risks,
     reportLinks: [],
@@ -414,6 +424,7 @@ export function importUpdateProject(
       devIntegration: imported.devIntegration,
       overview: imported.overview,
       charter: imported.charter,
+      charterDoc: imported.charterDoc,
       phases: imported.phases,
       risks: imported.risks,
       team: imported.team,
@@ -545,10 +556,26 @@ export function importUpdateProject(
     }
   }
 
+  // Documento do charter: um charterDoc importado substitui tudo; campos do formato antigo atualizam só a seção
+  // de mesmo título (ou a criam), então reimportar o mesmo arquivo não duplica nada.
+  let mergedDoc = existing.charterDoc
+  if (p.charterDoc?.trim()) {
+    mergedDoc = p.charterDoc.trim()
+  } else if (p.charter) {
+    const lang = existing.language
+    for (const section of CHARTER_SECTIONS) {
+      const value = p.charter[section]
+      if (!value?.trim()) continue
+      const allLabels = (['pt', 'en', 'es'] as const).map((l) => charterLabel(l)(section))
+      mergedDoc = upsertMarkdownSection(mergedDoc ?? '', allLabels, charterLabel(lang)(section), value)
+    }
+  }
+
   return {
     ...existing,
     overview: p.overview ?? existing.overview,
     charter: mergedCharter,
+    charterDoc: mergedDoc,
     phases: applyIsCritical(applyDurations(mergedPhases, holidays)),
     risks: mergedRisks,
     team: mergedTeam,

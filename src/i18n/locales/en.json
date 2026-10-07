@@ -762,6 +762,25 @@
     "actionsModeHint": "Participants can always support, comment on and edit actions; this decides who records new actions and sub-actions.",
     "actionsConductorOnlyHint": "In this retro only the facilitator creates actions. You can support and comment on them."
   },
+  "editor": {
+    "loading": "Opening the document...",
+    "error": "Could not open the collaborative document.",
+    "retry": "Try again",
+    "replaced": "This document was replaced by an import.",
+    "reload": "Reload",
+    "hint": "Type / for commands and @ to mention people, projects, incidents and clients",
+    "editingNow": "{{names}} editing",
+    "callout": "Callout",
+    "calloutHint": "A box to draw attention (click the icon to change its type)",
+    "groupExtras": "Extras",
+    "groupTemplates": "Templates",
+    "mentionPeople": "People",
+    "mentionProjects": "Projects",
+    "mentionIncidents": "Incidents",
+    "mentionClients": "Clients",
+    "charterTemplate": "Charter template",
+    "charterTemplateHint": "Objectives, scope, out of scope, success criteria, constraints and assumptions"
+  },
   "import": {
     "title": "Import JSON",
     "placeholder": "Paste the project JSON here...",

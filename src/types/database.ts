@@ -127,6 +127,8 @@ export interface DbProject {
   status: ProjectStatus | null
   baseline_set_at: string | null
   charter: DbCharter | null          // JSONB
+  /** Markdown do charter. Opcional de propósito: o sync geral do projeto não grava esta coluna. */
+  charter_doc?: string | null
   overview: string | null
   proposal_link: string | null
   deal_link: string | null

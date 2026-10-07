@@ -1,0 +1,64 @@
+/* Integra o BlockNote ao tema do Open (os tokens já trocam sozinhos no modo escuro). */
+.bn-container {
+  --bn-font-family: inherit;
+  --bn-border-radius: var(--radius-md);
+  --bn-colors-editor-text: var(--text-primary);
+  --bn-colors-editor-background: transparent;
+  --bn-colors-menu-text: var(--text-primary);
+  --bn-colors-menu-background: var(--surface-card);
+  --bn-colors-tooltip-text: var(--text-primary);
+  --bn-colors-tooltip-background: var(--surface-card);
+  --bn-colors-hovered-text: var(--text-primary);
+  --bn-colors-hovered-background: var(--surface-subtle);
+  --bn-colors-selected-text: #fff;
+  --bn-colors-selected-background: var(--oe-primary);
+  --bn-colors-disabled-text: var(--text-disabled);
+  --bn-colors-disabled-background: var(--surface-subtle);
+  --bn-colors-border: var(--border-default);
+  --bn-colors-side-menu: var(--text-tertiary);
+}
+
+.oe-editor {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-input);
+  padding: 6px 0;
+}
+.oe-editor:focus-within { border-color: var(--oe-primary); }
+.oe-editor .bn-editor { padding-inline: 14px; font-size: 14px; }
+.oe-editor .bn-container { background: transparent; }
+
+.oe-editor__bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-size: 11px; color: var(--text-tertiary); margin-bottom: 6px; min-height: 20px;
+}
+.oe-editor__people { display: flex; align-items: center; gap: 4px; }
+.oe-editor__dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+/* Menções */
+.oe-mention {
+  display: inline-block; padding: 0 5px; border-radius: 4px; font-weight: 500; cursor: pointer;
+  background: var(--surface-subtle); color: var(--oe-primary);
+}
+.oe-mention--user { background: var(--color-info-bg); color: var(--color-info-text); cursor: default; }
+.oe-mention--project { background: var(--color-violet-bg); color: var(--color-violet-text); }
+.oe-mention--incident { background: var(--color-warning-bg); color: var(--color-warning-text); }
+.oe-mention--client { background: var(--color-success-bg); color: var(--color-success-text); }
+
+/* Destaque (callout) */
+.oe-callout {
+  display: flex; gap: 10px; align-items: flex-start; width: 100%;
+  padding: 10px 12px; border-radius: var(--radius-md);
+  background: var(--color-info-bg); color: var(--text-primary);
+}
+.oe-callout--warning { background: var(--color-warning-bg); }
+.oe-callout--success { background: var(--color-success-bg); }
+.oe-callout--danger { background: var(--color-danger-bg); }
+.oe-callout__icon {
+  flex: none; width: 20px; height: 20px; border-radius: 50%; font-size: 11px; font-weight: 700; line-height: 20px;
+  text-align: center; border: none; cursor: pointer; background: var(--color-info-text); color: #fff;
+}
+.oe-callout--warning .oe-callout__icon { background: var(--color-warning-text); }
+.oe-callout--success .oe-callout__icon { background: var(--color-success-text); }
+.oe-callout--danger .oe-callout__icon { background: var(--color-danger-text); }
+.oe-callout__body { flex: 1; min-width: 0; }
