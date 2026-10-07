@@ -4,9 +4,10 @@ import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { useAppStore } from '@/store/useAppStore'
 import { useRetroBoardStore } from '@/stores/useRetroBoardStore'
+import { useRetroStore } from '@/stores/useRetroStore'
 import { teamDirectoryAsTeamMembers } from '@/ai/tools/helpers'
 import { Retro, RetroActionStatus, RetroLinkRef } from '@/types/retro'
-import { ACTION_STATUSES, canEngageAction, voteCounts } from '@/utils/retroBoard'
+import { ACTION_STATUSES, REVIEW_OUTCOME_STYLE, canEngageAction, voteCounts } from '@/utils/retroBoard'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input, Select, Textarea, Field } from '@/components/ui/Input'
@@ -32,7 +33,8 @@ const sameRefs = (a: RetroLinkRef[], b: RetroLinkRef[]) =>
 export default function RetroActionModal({ retro, cardId, userId, isAdmin, nameOf, interactionOpen, onOpenAction, onClose }: Props) {
   const { t } = useTranslation()
   const { teamDirectory, contacts } = useAppStore()
-  const { cards, links, votes, comments, updateAction, setCardLinks, addAction, addComment, deleteComment, deleteCard, toggleVote } = useRetroBoardStore()
+  const retros = useRetroStore((st) => st.retros)
+  const { cards, links, votes, comments, reviews, updateAction, setCardLinks, addAction, addComment, deleteComment, deleteCard, toggleVote } = useRetroBoardStore()
 
   const card = cards.find((c) => c.id === cardId)
   const teamMembers = useMemo(() => teamDirectoryAsTeamMembers(teamDirectory), [teamDirectory])
@@ -54,7 +56,11 @@ export default function RetroActionModal({ retro, cardId, userId, isAdmin, nameO
 
   if (!card || !draft) return null // a ação foi excluída (por mim ou por outra pessoa)
 
-  const canEdit = canEngageAction(retro, card, userId, isAdmin)
+  const canEdit = canEngageAction(retro, card, userId, isAdmin, retros)
+  // Ação de uma retro anterior (follow-up): editar/comentar vale, mas voto e subações ficam na retro de origem.
+  const foreign = card.retroId !== retro.id
+  const history = reviews.filter((r) => r.cardId === card.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  const retroTitle = (id: string) => retros.find((r) => r.id === id)?.title ?? '—'
   const canDelete = !!userId && (isAdmin || retro.createdBy === userId || retro.conductorId === userId)
   const counts = voteCounts(votes)
   const subActions = cards.filter((c) => c.parentCardId === card.id && c.kind === 'action')
@@ -113,6 +119,11 @@ export default function RetroActionModal({ retro, cardId, userId, isAdmin, nameO
         <div className="space-y-4 min-w-0">
           {!canEdit && (
             <p className="text-xs px-3 py-2 rounded-[var(--radius-md)]" style={{ background: 'var(--surface-subtle)', color: 'var(--text-secondary)' }}>{t('retro.actionReadOnly')}</p>
+          )}
+          {foreign && (
+            <p className="text-xs px-3 py-2 rounded-[var(--radius-md)]" style={{ background: 'var(--color-info-bg)', color: 'var(--color-info-text)' }}>
+              {t('retro.foreignAction', { title: retroTitle(card.retroId) })} — {t('retro.foreignActionHint')}
+            </p>
           )}
           {parent && (
             <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
@@ -188,7 +199,7 @@ export default function RetroActionModal({ retro, cardId, userId, isAdmin, nameO
                 </li>
               ))}
             </ul>
-            {interactionOpen && (
+            {interactionOpen && !foreign && (
               <div className="flex gap-2">
                 <Input value={subText} placeholder={t('retro.addSubAction')} onChange={(e) => setSubText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') addSub() }} />
                 <Button size="sm" variant="secondary" onClick={addSub} disabled={!subText.trim()}>{t('retro.createAction')}</Button>
@@ -202,12 +213,33 @@ export default function RetroActionModal({ retro, cardId, userId, isAdmin, nameO
             <VoteButton
               count={counts.get(card.id) ?? 0}
               voted={votes.some((v) => v.cardId === card.id && v.userId === userId)}
-              disabled={!interactionOpen || !userId || !retro.participantIds.concat(retro.conductorId ?? retro.createdBy).includes(userId)}
+              disabled={foreign || !interactionOpen || !userId || !retro.participantIds.concat(retro.conductorId ?? retro.createdBy).includes(userId)}
               title={t('retro.voteBtn')}
               onToggle={() => toggleVote(card.id)}
             />
             <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{t('retro.supports')}</span>
           </div>
+
+          {history.length > 0 && (
+            <section>
+              <h3 className="text-xs font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>{t('retro.reviewHistory')}</h3>
+              <ul className="space-y-2">
+                {history.map((r) => (
+                  <li key={r.id} className="text-[12.5px]">
+                    <span className="inline-block px-1.5 py-[1px] text-[10.5px] font-[500]" style={{ ...REVIEW_OUTCOME_STYLE[r.outcome], borderRadius: 'var(--radius-pill)' }}>
+                      {t(`retro.outcomeDone_${r.outcome}`)}
+                    </span>
+                    <span className="ml-1.5 text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{t('retro.reviewedIn', { title: retroTitle(r.retroId) })}</span>
+                    {r.result && <p className="mt-0.5" style={{ color: 'var(--text-primary)' }}>{t('retro.successResult')}: {r.result}</p>}
+                    {r.note && <p className="mt-0.5 whitespace-pre-wrap break-words" style={{ color: 'var(--text-secondary)' }}>{r.note}</p>}
+                    <p className="text-[10.5px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                      {t('retro.reviewedByAt', { name: nameOf(r.reviewedBy), when: formatDistanceToNow(new Date(r.createdAt), { addSuffix: true, locale: ptBR }) })}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           <section>
             <h3 className="text-xs font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>{t('retro.comments')}</h3>

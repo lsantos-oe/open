@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Retro, RetroCard, RetroCardKind, RetroLinkRef, RETRO_PHASES } from '@/types/retro'
-import { isRetroConductor } from '@/utils/retro'
+import { canManageRetro, isRetroConductor } from '@/utils/retro'
 import { sortByVotes, voteCounts, votesUsed } from '@/utils/retroBoard'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useRetroBoardStore } from '@/stores/useRetroBoardStore'
@@ -11,6 +11,7 @@ import RetroCardItem, { CARD_MAX_LENGTH } from './RetroCardItem'
 import { EntityLinksPicker } from './EntityLinks'
 import RetroActionCard from './RetroActionCard'
 import RetroActionModal from './RetroActionModal'
+import RetroFollowUpPanel from './RetroFollowUpPanel'
 
 interface Props {
   retro: Retro
@@ -59,7 +60,9 @@ function AddCardForm({ retroId, kind }: { retroId: string; kind: 'good' | 'bad' 
 
 export default function RetroBoard({ retro, userId, nameOf }: Props) {
   const { t } = useTranslation()
-  const { cards, authors, links, votes, comments, loading, toggleVote, addAction } = useRetroBoardStore()
+  const { cards: allCards, authors, links, votes, comments, loading, toggleVote, addAction } = useRetroBoardStore()
+  // O store também guarda as ações das retros anteriores (follow-up); as raias mostram só as desta retro.
+  const cards = allCards.filter((c) => c.retroId === retro.id)
   const isAdmin = useAuthStore((s) => s.profile?.role === 'admin')
   const [openActionId, setOpenActionId] = useState<string | null>(null)
   const [newAction, setNewAction] = useState('')
@@ -71,9 +74,28 @@ export default function RetroBoard({ retro, userId, nameOf }: Props) {
   const canWrite = collecting && participant
   // Votar e criar ações só com a urna fechada/em discussão (o banco também exige isso).
   const interactionOpen = participant && (retro.phase === 'revealed' || retro.phase === 'discussing')
+  const canReview = (participant || canManageRetro(retro, userId, isAdmin)) && retro.phase !== 'closed'
+
+  const followUp = retro.previousRetroId ? (
+    <RetroFollowUpPanel retro={retro} canReview={canReview} onOpenAction={setOpenActionId} />
+  ) : null
+
+  const actionModal = openActionId && (
+    <RetroActionModal
+      key={openActionId}
+      retro={retro}
+      cardId={openActionId}
+      userId={userId}
+      isAdmin={isAdmin}
+      nameOf={nameOf}
+      interactionOpen={interactionOpen}
+      onOpenAction={setOpenActionId}
+      onClose={() => setOpenActionId(null)}
+    />
+  )
 
   if (retro.phase === 'draft') {
-    return <Banner>{t('retro.board_draft')}</Banner>
+    return <div>{followUp}<Banner>{t('retro.board_draft')}</Banner>{actionModal}</div>
   }
 
   // Reaberta: a urna voltou a 'collecting', mas o que já foi revelado continua visível a todos.
@@ -90,7 +112,7 @@ export default function RetroBoard({ retro, userId, nameOf }: Props) {
     : null
 
   const counts = voteCounts(votes)
-  const votesLeft = Math.max(0, retro.votesPerPerson - votesUsed(votes, cards, userId))
+  const votesLeft = Math.max(0, retro.votesPerPerson - votesUsed(votes, allCards, userId))
   const voteFor = (card: RetroCard) => {
     const voted = votes.some((v) => v.cardId === card.id && v.userId === userId)
     const noVotesLeft = card.kind !== 'action' && !voted && votesLeft <= 0
@@ -116,6 +138,7 @@ export default function RetroBoard({ retro, userId, nameOf }: Props) {
 
   return (
     <div>
+      {followUp}
       {banner && <Banner>{banner}</Banner>}
       {interactionOpen && retro.votesPerPerson > 0 && (
         <p className="text-xs mb-3" style={{ color: votesLeft === 0 ? 'var(--color-warning-text)' : 'var(--text-tertiary)' }}>
@@ -206,19 +229,7 @@ export default function RetroBoard({ retro, userId, nameOf }: Props) {
         })}
       </div>
 
-      {openActionId && (
-        <RetroActionModal
-          key={openActionId}
-          retro={retro}
-          cardId={openActionId}
-          userId={userId}
-          isAdmin={isAdmin}
-          nameOf={nameOf}
-          interactionOpen={interactionOpen}
-          onOpenAction={setOpenActionId}
-          onClose={() => setOpenActionId(null)}
-        />
-      )}
+      {actionModal}
     </div>
   )
 }

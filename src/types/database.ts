@@ -484,3 +484,14 @@ export interface DbRetroCardLink {
   incident_id: string | null
   client_id: string | null
 }
+
+export interface DbRetroReview {
+  id: string
+  card_id: string
+  retro_id: string
+  outcome: 'resolved' | 'dropped' | 'carried'
+  note: string | null
+  result: string | null
+  reviewed_by: string
+  created_at: string
+}

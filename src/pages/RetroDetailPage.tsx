@@ -37,10 +37,12 @@ export default function RetroDetailPage() {
   useEffect(() => { if (!loaded) loadRetros() }, [loaded, loadRetros])
 
   const retroExists = retros.some((r) => r.id === id)
+  // Recarrega o quadro se o vínculo com a retro anterior mudar: as ações do follow-up dependem dele.
+  const previousRetroId = retros.find((r) => r.id === id)?.previousRetroId
   useEffect(() => {
     if (!id || !retroExists) return
     return useRetroBoardStore.getState().open(id)
-  }, [id, retroExists])
+  }, [id, retroExists, previousRetroId])
 
   const retro = retros.find((r) => r.id === id)
   const isAdmin = profile?.role === 'admin'

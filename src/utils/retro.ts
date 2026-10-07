@@ -52,3 +52,19 @@ export function retroDatePassed(retro: Retro): boolean {
 export function canReopenUrn(retro: Retro, userId?: string, isAdmin?: boolean): boolean {
   return (retro.phase === 'revealed' || retro.phase === 'discussing') && canAdvanceRetroPhase(retro, userId, isAdmin)
 }
+
+/** Retros anteriores encadeadas (a mais recente primeiro). Seguro contra ciclos em previous_retro_id. */
+export function retroAncestors(retros: Retro[], retroId: string): Retro[] {
+  const byId = new Map(retros.map((r) => [r.id, r]))
+  const out: Retro[] = []
+  const seen = new Set([retroId])
+  let cur = byId.get(retroId)?.previousRetroId
+  while (cur && !seen.has(cur)) {
+    const r = byId.get(cur)
+    if (!r) break
+    out.push(r)
+    seen.add(cur)
+    cur = r.previousRetroId
+  }
+  return out
+}

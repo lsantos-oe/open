@@ -20,7 +20,7 @@ interface Props {
   onOpen: (id: string) => void
 }
 
-function StatusPill({ status }: { status: RetroCard['actionStatus'] }) {
+export function StatusPill({ status }: { status: RetroCard['actionStatus'] }) {
   const { t } = useTranslation()
   return (
     <span className="inline-block whitespace-nowrap text-[10.5px] font-[500] px-1.5 py-[1px]" style={{ ...ACTION_STATUS_STYLE[status], borderRadius: 'var(--radius-pill)' }}>

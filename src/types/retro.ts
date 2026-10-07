@@ -105,3 +105,18 @@ export interface RetroCardLink extends RetroLinkRef {
   linkId: string
   cardId: string
 }
+
+export type RetroReviewOutcome = 'resolved' | 'dropped' | 'carried'
+
+/** Revisão de uma ação numa retro de follow-up: o histórico da ação ao longo das retros. */
+export interface RetroReview {
+  id: string
+  cardId: string
+  /** A retro de follow-up em que a ação foi revisada. */
+  retroId: string
+  outcome: RetroReviewOutcome
+  note?: string
+  result?: string
+  reviewedBy: string
+  createdAt: string
+}

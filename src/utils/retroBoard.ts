@@ -1,4 +1,4 @@
-import { Retro, RetroActionStatus, RetroCard, RetroVote } from '@/types/retro'
+import { Retro, RetroActionStatus, RetroCard, RetroReviewOutcome, RetroVote } from '@/types/retro'
 
 export function voteCounts(votes: RetroVote[]): Map<string, number> {
   const counts = new Map<string, number>()
@@ -18,13 +18,15 @@ export function votesUsed(votes: RetroVote[], cards: RetroCard[], userId?: strin
   return votes.filter((v) => v.userId === userId && (kind.get(v.cardId) === 'good' || kind.get(v.cardId) === 'bad')).length
 }
 
-/** Espelha retro_can_engage_action do banco (que é quem de fato decide): participantes, condutor/criador/admin,
- *  e donos ou envolvidos da ação. Serve só para decidir o que mostrar editável. */
-export function canEngageAction(retro: Retro, card: RetroCard, userId?: string, isAdmin?: boolean): boolean {
+/** Espelha retro_can_engage_action do banco (que é quem de fato decide): dono/envolvido da ação, ou
+ *  gestor/participante da retro da ação ou da retro aberta na tela (um follow-up dela). Serve só para
+ *  decidir o que mostrar editável. */
+export function canEngageAction(retro: Retro, card: RetroCard, userId?: string, isAdmin?: boolean, retros: Retro[] = []): boolean {
   if (!userId) return false
-  if (isAdmin || retro.createdBy === userId || retro.conductorId === userId) return true
-  if (retro.participantIds.includes(userId)) return true
-  return [...card.owners, ...card.involved].some((o) => o.memberId === userId)
+  if (isAdmin) return true
+  if ([...card.owners, ...card.involved].some((o) => o.memberId === userId)) return true
+  const candidates = [retro, retros.find((r) => r.id === card.retroId)].filter((r): r is Retro => !!r)
+  return candidates.some((r) => r.createdBy === userId || r.conductorId === userId || r.participantIds.includes(userId))
 }
 
 export const ACTION_STATUSES: RetroActionStatus[] = ['open', 'in_progress', 'done', 'dropped']
@@ -38,4 +40,12 @@ export const ACTION_STATUS_STYLE: Record<RetroActionStatus, { background: string
 
 export function isActionOverdue(card: RetroCard, today: string): boolean {
   return !!card.dueDate && card.dueDate < today && (card.actionStatus === 'open' || card.actionStatus === 'in_progress')
+}
+
+export const REVIEW_OUTCOMES: RetroReviewOutcome[] = ['resolved', 'carried', 'dropped']
+
+export const REVIEW_OUTCOME_STYLE: Record<RetroReviewOutcome, { background: string; color: string }> = {
+  resolved: { background: 'var(--color-success-bg)', color: 'var(--color-success-text)' },
+  carried: { background: 'var(--color-warning-bg)', color: 'var(--color-warning-text)' },
+  dropped: { background: 'var(--surface-subtle)', color: 'var(--text-tertiary)' },
 }
