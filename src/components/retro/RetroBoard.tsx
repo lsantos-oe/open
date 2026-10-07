@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Retro, RetroCard, RetroCardKind, RetroLinkRef, RETRO_PHASES } from '@/types/retro'
 import { canManageRetro, isRetroConductor } from '@/utils/retro'
@@ -65,6 +66,16 @@ export default function RetroBoard({ retro, userId, nameOf }: Props) {
   const cards = allCards.filter((c) => c.retroId === retro.id)
   const isAdmin = useAuthStore((s) => s.profile?.role === 'admin')
   const [openActionId, setOpenActionId] = useState<string | null>(null)
+  // Link de notificação (/retros/<id>?action=<card>): abre a ação direto e limpa o parâmetro da URL.
+  const [searchParams, setSearchParams] = useSearchParams()
+  useEffect(() => {
+    const action = searchParams.get('action')
+    if (!action) return
+    setOpenActionId(action)
+    const next = new URLSearchParams(searchParams)
+    next.delete('action')
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
   const [newAction, setNewAction] = useState('')
 
   const revealed = RETRO_PHASES.indexOf(retro.phase) >= 2
@@ -80,7 +91,9 @@ export default function RetroBoard({ retro, userId, nameOf }: Props) {
     <RetroFollowUpPanel retro={retro} canReview={canReview} onOpenAction={setOpenActionId} />
   ) : null
 
-  const actionModal = openActionId && (
+  // Só monta o modal com a ação já carregada: ele inicializa o rascunho a partir dela (e o link de
+  // notificação pode abrir a página antes de os cards chegarem).
+  const actionModal = openActionId && allCards.some((c) => c.id === openActionId) && (
     <RetroActionModal
       key={openActionId}
       retro={retro}
