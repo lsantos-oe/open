@@ -755,7 +755,12 @@
     "reviewedByAt": "{{name}} · {{when}}",
     "foreignAction": "Ação da retro {{title}}",
     "foreignActionHint": "Esta ação veio de uma retro anterior. Voto e subações ficam na retro de origem.",
-    "currentResult": "Resultado atual"
+    "currentResult": "Resultado atual",
+    "fieldActionsMode": "Quem cria ações",
+    "actionsMode_conductor": "Só o condutor (padrão)",
+    "actionsMode_participants": "Todos os participantes",
+    "actionsModeHint": "Participantes sempre podem apoiar, comentar e editar as ações; aqui você decide quem registra ações novas e subações.",
+    "actionsConductorOnlyHint": "Nesta retro só o condutor cria ações. Você pode apoiar e comentar nelas."
   },
   "import": {
     "title": "Importar JSON",

@@ -85,6 +85,8 @@ export default function RetroBoard({ retro, userId, nameOf }: Props) {
   const canWrite = collecting && participant
   // Votar e criar ações só com a urna fechada/em discussão (o banco também exige isso).
   const interactionOpen = participant && (retro.phase === 'revealed' || retro.phase === 'discussing')
+  // Padrão da retro: só o condutor cria ações/subações (configurável). O banco também exige isso.
+  const canCreateActions = interactionOpen && (!retro.actionsConductorOnly || conductor)
   const canReview = (participant || canManageRetro(retro, userId, isAdmin)) && retro.phase !== 'closed'
 
   const followUp = retro.previousRetroId ? (
@@ -102,6 +104,7 @@ export default function RetroBoard({ retro, userId, nameOf }: Props) {
       isAdmin={isAdmin}
       nameOf={nameOf}
       interactionOpen={interactionOpen}
+      canCreateActions={canCreateActions}
       onOpenAction={setOpenActionId}
       onClose={() => setOpenActionId(null)}
     />
@@ -177,7 +180,7 @@ export default function RetroBoard({ retro, userId, nameOf }: Props) {
 
                 {kind === 'action' ? (
                   <>
-                    {interactionOpen && (
+                    {canCreateActions && (
                       <div className="flex gap-1.5">
                         <Input
                           value={newAction}
@@ -190,7 +193,7 @@ export default function RetroBoard({ retro, userId, nameOf }: Props) {
                       </div>
                     )}
                     {topActions.length === 0 ? (
-                      !loading && <p className="text-xs px-1 py-2" style={{ color: 'var(--text-tertiary)' }}>{interactionOpen ? t('retro.actionsLaneHint') : t('retro.actionsEmpty')}</p>
+                      !loading && <p className="text-xs px-1 py-2" style={{ color: 'var(--text-tertiary)' }}>{interactionOpen ? (canCreateActions ? t('retro.actionsLaneHint') : t('retro.actionsConductorOnlyHint')) : t('retro.actionsEmpty')}</p>
                     ) : (
                       topActions.map((a) => (
                         <RetroActionCard
@@ -229,7 +232,7 @@ export default function RetroBoard({ retro, userId, nameOf }: Props) {
                         vote={card.revealedAt ? voteFor(card) : undefined}
                         actions={card.revealedAt ? {
                           count: actions.filter((a) => a.parentCardId === card.id).length,
-                          canAdd: interactionOpen,
+                          canAdd: canCreateActions,
                           onCreate: async (text) => { const id = await addAction(retro.id, text, card.id); if (id) setOpenActionId(id) },
                         } : undefined}
                       />

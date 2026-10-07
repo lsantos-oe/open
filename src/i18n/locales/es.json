@@ -755,7 +755,12 @@
     "reviewedByAt": "{{name}} · {{when}}",
     "foreignAction": "Acción de la retro {{title}}",
     "foreignActionHint": "Esta acción viene de una retro anterior. El voto y las subacciones quedan en la retro de origen.",
-    "currentResult": "Resultado actual"
+    "currentResult": "Resultado actual",
+    "fieldActionsMode": "Quién crea acciones",
+    "actionsMode_conductor": "Solo el facilitador (por defecto)",
+    "actionsMode_participants": "Todos los participantes",
+    "actionsModeHint": "Los participantes siempre pueden apoyar, comentar y editar las acciones; aquí decides quién registra acciones nuevas y subacciones.",
+    "actionsConductorOnlyHint": "En esta retro solo el facilitador crea acciones. Puedes apoyarlas y comentarlas."
   },
   "import": {
     "title": "Importar JSON",

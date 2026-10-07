@@ -201,6 +201,9 @@ export default function RetroDetailPage() {
                 </div>
               )}
             </InfoRow>
+            <InfoRow label={t('retro.fieldActionsMode')}>
+              {retro.actionsConductorOnly ? t('retro.actionsMode_conductor') : t('retro.actionsMode_participants')}
+            </InfoRow>
             <InfoRow label={t('retro.fieldAnonymous')}>
               {retro.anonymous ? t('retro.anonymousYes') : t('retro.anonymousNo')} · {t('retro.votesInfo', { n: retro.votesPerPerson })}
             </InfoRow>

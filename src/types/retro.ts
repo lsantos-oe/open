@@ -15,6 +15,8 @@ export interface Retro {
   phase: RetroPhase
   anonymous: boolean
   votesPerPerson: number
+  /** Só o condutor cria ações (padrão); com false, qualquer participante cria. */
+  actionsConductorOnly: boolean
   previousRetroId?: string
   revealedAt?: string
   closedAt?: string
@@ -32,6 +34,7 @@ export interface RetroInput {
   conductorId?: string
   anonymous: boolean
   votesPerPerson: number
+  actionsConductorOnly: boolean
   previousRetroId?: string
   participantIds: string[]
 }

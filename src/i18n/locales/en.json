@@ -755,7 +755,12 @@
     "reviewedByAt": "{{name}} · {{when}}",
     "foreignAction": "Action from retro {{title}}",
     "foreignActionHint": "This action came from a previous retro. Voting and sub-actions stay in the original retro.",
-    "currentResult": "Current result"
+    "currentResult": "Current result",
+    "fieldActionsMode": "Who creates actions",
+    "actionsMode_conductor": "Only the facilitator (default)",
+    "actionsMode_participants": "All participants",
+    "actionsModeHint": "Participants can always support, comment on and edit actions; this decides who records new actions and sub-actions.",
+    "actionsConductorOnlyHint": "In this retro only the facilitator creates actions. You can support and comment on them."
   },
   "import": {
     "title": "Import JSON",

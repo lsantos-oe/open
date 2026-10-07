@@ -34,6 +34,7 @@ function dbToRetro(row: DbRetro, participantIds: string[]): Retro {
     phase: row.phase,
     anonymous: row.anonymous,
     votesPerPerson: row.votes_per_person,
+    actionsConductorOnly: row.actions_conductor_only ?? true,
     previousRetroId: row.previous_retro_id ?? undefined,
     revealedAt: row.revealed_at ?? undefined,
     closedAt: row.closed_at ?? undefined,
@@ -53,6 +54,7 @@ function inputToDb(input: RetroInput) {
     conductor_id: input.conductorId || null,
     anonymous: input.anonymous,
     votes_per_person: input.votesPerPerson,
+    actions_conductor_only: input.actionsConductorOnly,
     previous_retro_id: input.previousRetroId || null,
   }
 }

@@ -7,7 +7,7 @@ import { Retro, RetroInput } from '@/types/retro'
 import { formatRetroDate } from '@/utils/retro'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
-import { Input, Field } from '@/components/ui/Input'
+import { Input, Field, Select } from '@/components/ui/Input'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { MultiSelect } from '@/components/ui/MultiSelect'
 
@@ -52,6 +52,7 @@ export default function RetroFormModal({ open, onClose, retro, onSaved }: Props)
   const [previousRetroId, setPreviousRetroId] = useState(retro?.previousRetroId ?? '')
   const [anonymous, setAnonymous] = useState(retro?.anonymous ?? true)
   const [votesPerPerson, setVotesPerPerson] = useState(retro?.votesPerPerson ?? 5)
+  const [actionsConductorOnly, setActionsConductorOnly] = useState(retro?.actionsConductorOnly ?? true)
   const [saving, setSaving] = useState(false)
 
   const people = useMemo(
@@ -82,6 +83,7 @@ export default function RetroFormModal({ open, onClose, retro, onSaved }: Props)
       conductorId: conductorId || undefined,
       anonymous,
       votesPerPerson,
+      actionsConductorOnly,
       previousRetroId: previousRetroId || undefined,
       participantIds,
     }
@@ -154,6 +156,13 @@ export default function RetroFormModal({ open, onClose, retro, onSaved }: Props)
             options={previousOptions}
             emptyOptionLabel={t('retro.noPrevious')}
           />
+        </Field>
+
+        <Field label={t('retro.fieldActionsMode')} hint={t('retro.actionsModeHint')}>
+          <Select value={actionsConductorOnly ? 'conductor' : 'participants'} onChange={(e) => setActionsConductorOnly(e.target.value === 'conductor')}>
+            <option value="conductor">{t('retro.actionsMode_conductor')}</option>
+            <option value="participants">{t('retro.actionsMode_participants')}</option>
+          </Select>
         </Field>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

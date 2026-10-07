@@ -23,6 +23,8 @@ interface Props {
   nameOf: (userId?: string) => string
   /** Participante em fase que aceita novas subações/votos (urna fechada ou discussão). */
   interactionOpen: boolean
+  /** Pode criar subações (urna fechada/discussão e, se a retro restringe, só o condutor). */
+  canCreateActions: boolean
   onOpenAction: (id: string) => void
   onClose: () => void
 }
@@ -30,7 +32,7 @@ interface Props {
 const sameRefs = (a: RetroLinkRef[], b: RetroLinkRef[]) =>
   a.length === b.length && a.every((x) => b.some((y) => y.type === x.type && y.id === x.id))
 
-export default function RetroActionModal({ retro, cardId, userId, isAdmin, nameOf, interactionOpen, onOpenAction, onClose }: Props) {
+export default function RetroActionModal({ retro, cardId, userId, isAdmin, nameOf, interactionOpen, canCreateActions, onOpenAction, onClose }: Props) {
   const { t } = useTranslation()
   const { teamDirectory, contacts } = useAppStore()
   const retros = useRetroStore((st) => st.retros)
@@ -199,7 +201,7 @@ export default function RetroActionModal({ retro, cardId, userId, isAdmin, nameO
                 </li>
               ))}
             </ul>
-            {interactionOpen && !foreign && (
+            {canCreateActions && !foreign && (
               <div className="flex gap-2">
                 <Input value={subText} placeholder={t('retro.addSubAction')} onChange={(e) => setSubText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') addSub() }} />
                 <Button size="sm" variant="secondary" onClick={addSub} disabled={!subText.trim()}>{t('retro.createAction')}</Button>

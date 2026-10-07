@@ -426,6 +426,7 @@ export interface DbRetro {
   phase: 'draft' | 'collecting' | 'revealed' | 'discussing' | 'closed'
   anonymous: boolean
   votes_per_person: number
+  actions_conductor_only: boolean
   previous_retro_id: string | null
   revealed_at: string | null
   closed_at: string | null
