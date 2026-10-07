@@ -1,6 +1,9 @@
+import { useEffect, useMemo } from 'react'
 import { NavLink, useNavigate, useMatch, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
+import { useRetroStore } from '@/stores/useRetroStore'
+import { RETRO_PHASE_STYLE, formatRetroDate } from '@/utils/retro'
 import { Project, Incident } from '@/types'
 import { HomeIcon, WalletIcon, ContactsIcon, SupportIcon, PortfolioIcon, TasksIcon, GuideIcon, GearIcon, RetroIcon } from '@/components/ui/icons'
 
@@ -28,6 +31,9 @@ export function Sidebar() {
   const activeProjectId = projectMatch?.params.id
   const incidentMatch = useMatch('/support/:id')
   const activeIncidentId = incidentMatch?.params.id
+  const retroMatch = useMatch('/retros/:id')
+  const activeRetroId = retroMatch?.params.id
+  const { retros, loaded: retrosLoaded, loadRetros } = useRetroStore()
   const collapsed = settings.sidebarCollapsed ?? false
 
   function toggle() { updateSettings({ sidebarCollapsed: !collapsed }) }
@@ -42,13 +48,24 @@ export function Sidebar() {
     (collapsed ? 'justify-center px-0 py-2 w-full' : 'px-2 py-1.5')
 
   // Shortcuts section is contextual: projects on Portfólio/project-detail routes,
-  // recent incidents on Sustentação/incident-detail routes, hidden elsewhere.
-  const shortcutKind: 'projects' | 'incidents' | null =
+  // recent incidents on Sustentação/incident-detail routes, retros on Retros routes,
+  // hidden elsewhere.
+  const shortcutKind: 'projects' | 'incidents' | 'retros' | null =
     location.pathname.startsWith('/portfolio') || location.pathname.startsWith('/projects/')
       ? 'projects'
       : location.pathname.startsWith('/support')
         ? 'incidents'
-        : null
+        : location.pathname.startsWith('/retros')
+          ? 'retros'
+          : null
+
+  // As retros só carregam quando alguém abre a área; a sidebar precisa delas mesmo se a pessoa
+  // entrar direto numa retro (ex.: pelo link de uma notificação).
+  useEffect(() => {
+    if (shortcutKind === 'retros' && !retrosLoaded) loadRetros()
+  }, [shortcutKind, retrosLoaded, loadRetros])
+
+  const sortedRetros = useMemo(() => [...retros].sort((a, b) => b.retroDate.localeCompare(a.retroDate)), [retros])
 
   const recentIncidents = incidents.slice(0, 8)
 
@@ -133,7 +150,7 @@ export function Sidebar() {
         <div className="shrink-0" style={{ height: '0.5px', background: 'var(--sidebar-border)', margin: '0 8px' }} />
       )}
 
-      {/* Contextual shortcuts: Projetos (Portfólio) or Incidentes recentes (Sustentação) */}
+      {/* Contextual shortcuts: Projetos (Portfólio), Incidentes recentes (Sustentação) or Retros */}
       {shortcutKind && (
         <div className="flex-1 flex flex-col min-h-0">
           {!collapsed && (
@@ -148,11 +165,27 @@ export function Sidebar() {
                 padding: '10px 8px 6px',
               }}
             >
-              {shortcutKind === 'projects' ? t('nav.projects') : t('nav.recentIncidents')}
+              {shortcutKind === 'projects' ? t('nav.projects') : shortcutKind === 'retros' ? t('nav.retros') : t('nav.recentIncidents')}
             </p>
           )}
           <div className="flex-1 overflow-y-auto min-h-0" style={{ padding: collapsed ? '8px 6px' : '0 8px 8px' }}>
-          {shortcutKind === 'projects'
+          {shortcutKind === 'retros'
+            ? sortedRetros.map((retro) => {
+                const isActive = retro.id === activeRetroId
+                return (
+                  <button
+                    key={retro.id}
+                    onClick={() => navigate(`/retros/${retro.id}`)}
+                    title={`${retro.title} · ${formatRetroDate(retro.retroDate, settings.dateFormat)} · ${t(`retro.phase_${retro.phase}`)}`}
+                    className={`w-full flex items-center rounded-[var(--radius-md)] transition-colors mb-0.5 hover:bg-white/5 ${isActive ? 'bg-[var(--sidebar-active-bg)]' : ''} ${collapsed ? 'justify-center px-0 py-2' : 'gap-2 px-2 py-1.5'}`}
+                    style={{ color: isActive ? 'white' : 'var(--sidebar-text)' }}
+                  >
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: RETRO_PHASE_STYLE[retro.phase].color, flexShrink: 0 }} />
+                    {!collapsed && <span className="truncate text-[12px] text-left">{retro.title}</span>}
+                  </button>
+                )
+              })
+            : shortcutKind === 'projects'
             ? projects.map((project, i) => {
                 const color = projectColor(project, i)
                 const isActive = project.id === activeProjectId
