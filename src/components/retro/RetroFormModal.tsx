@@ -129,7 +129,10 @@ export default function RetroFormModal({ open, onClose, retro, onSaved }: Props)
         <Field label={t('retro.fieldConductor')} hint={t('retro.conductorHint')}>
           <SearchableSelect
             value={conductorId}
-            onChange={setConductorId}
+            onChange={(id) => {
+              setConductorId(id)
+              if (id) setParticipantIds((ids) => (ids.includes(id) ? ids : [...ids, id]))
+            }}
             options={people}
             emptyOptionLabel={t('retro.noConductor')}
             disabled={conductorLocked}

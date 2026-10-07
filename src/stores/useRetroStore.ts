@@ -55,6 +55,12 @@ function inputToDb(input: RetroInput) {
   }
 }
 
+/** O condutor (ou, sem condutor, o criador) sempre participa: também envia cards e vota. */
+function withConductor(input: RetroInput, fallbackConductorId: string): RetroInput {
+  const conductor = input.conductorId || fallbackConductorId
+  return input.participantIds.includes(conductor) ? input : { ...input, participantIds: [...input.participantIds, conductor] }
+}
+
 function toastError(message: string) {
   useToastStore.getState().addToast(message)
 }
@@ -94,9 +100,10 @@ export const useRetroStore = create<RetroStore>((set, get) => ({
     }
   },
 
-  async createRetro(input) {
+  async createRetro(rawInput) {
     const userId = useAuthStore.getState().user?.id
     if (!userId) return null
+    const input = withConductor(rawInput, userId)
     const { data, error } = await supabase
       .from('retros')
       .insert({ ...inputToDb(input), created_by: userId })
@@ -115,9 +122,10 @@ export const useRetroStore = create<RetroStore>((set, get) => ({
     return retroId
   },
 
-  async updateRetro(id, input) {
+  async updateRetro(id, rawInput) {
     const current = get().retros.find((r) => r.id === id)
     if (!current) return false
+    const input = withConductor(rawInput, current.createdBy)
 
     // phase fica de fora de propósito: só avança via advancePhase().
     const { data, error } = await supabase.from('retros').update(inputToDb(input)).eq('id', id).select('*').single()

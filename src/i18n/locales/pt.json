@@ -667,7 +667,12 @@
     "deleteCardConfirm": "Excluir este card?",
     "cardsInLane": "{{n}} cards",
     "actionsSoon": "As ações (com donos, envolvidos e métricas de sucesso) chegam na próxima etapa.",
-    "boardEmptyRevealed": "Nenhum card foi enviado nesta retro."
+    "boardEmptyRevealed": "Nenhum card foi enviado nesta retro.",
+    "linksPlaceholder": "Vincular projetos, incidentes ou clientes",
+    "linkType_project": "Projeto",
+    "linkType_incident": "Incidente",
+    "linkType_client": "Cliente",
+    "editLinks": "Vínculos"
   },
   "import": {
     "title": "Importar JSON",

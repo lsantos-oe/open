@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Retro, RetroCardKind, RETRO_PHASES } from '@/types/retro'
+import { Retro, RetroCardKind, RetroLinkRef, RETRO_PHASES } from '@/types/retro'
 import { isRetroConductor } from '@/utils/retro'
 import { useRetroBoardStore } from '@/stores/useRetroBoardStore'
 import { Button } from '@/components/ui/Button'
 import { Textarea } from '@/components/ui/Input'
 import RetroCardItem, { CARD_MAX_LENGTH } from './RetroCardItem'
+import { EntityLinksPicker } from './EntityLinks'
 
 interface Props {
   retro: Retro
@@ -23,14 +24,15 @@ function AddCardForm({ retroId, kind }: { retroId: string; kind: 'good' | 'bad' 
   const { t } = useTranslation()
   const addCard = useRetroBoardStore((s) => s.addCard)
   const [text, setText] = useState('')
+  const [links, setLinks] = useState<RetroLinkRef[]>([])
   const [sending, setSending] = useState(false)
 
   async function send() {
     if (!text.trim() || sending) return
     setSending(true)
-    const ok = await addCard(retroId, kind, text)
+    const ok = await addCard(retroId, kind, text, links)
     setSending(false)
-    if (ok) setText('')
+    if (ok) { setText(''); setLinks([]) }
   }
 
   return (
@@ -43,6 +45,7 @@ function AddCardForm({ retroId, kind }: { retroId: string; kind: 'good' | 'bad' 
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
       />
+      <EntityLinksPicker value={links} onChange={setLinks} />
       <div className="flex justify-end">
         <Button size="xs" onClick={send} disabled={!text.trim() || sending}>{t('retro.sendCard')}</Button>
       </div>
@@ -52,7 +55,7 @@ function AddCardForm({ retroId, kind }: { retroId: string; kind: 'good' | 'bad' 
 
 export default function RetroBoard({ retro, userId, nameOf }: Props) {
   const { t } = useTranslation()
-  const { cards, authors, loading } = useRetroBoardStore()
+  const { cards, authors, links, loading } = useRetroBoardStore()
 
   const revealed = RETRO_PHASES.indexOf(retro.phase) >= 2
   const collecting = retro.phase === 'collecting'
@@ -106,7 +109,9 @@ export default function RetroBoard({ retro, userId, nameOf }: Props) {
                         key={card.id}
                         card={card}
                         mine={mine}
-                        editable={collecting}
+                        canEditText={collecting && mine}
+                        canLink={(collecting && mine) || (participant && (retro.phase === 'revealed' || retro.phase === 'discussing'))}
+                        links={links.filter((l) => l.cardId === card.id)}
                         authorName={revealed && !retro.anonymous && authorId ? nameOf(authorId) : undefined}
                         secret={collecting && !mine}
                       />

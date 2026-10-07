@@ -158,6 +158,9 @@ interface AppStore {
 
   // Notifications
   loadNotifications: () => Promise<void>
+  /** Mantém o sino atualizado ao vivo (Realtime). Idempotente por usuário. */
+  subscribeNotifications: () => void
+  unsubscribeNotifications: () => void
   markNotificationRead: (id: string) => Promise<void>
   markAllNotificationsRead: () => Promise<void>
 
@@ -399,6 +402,8 @@ function getUserId(): string {
   if (!user?.id) throw new Error('Usuário não autenticado')
   return user.id
 }
+
+let notificationsChannel: { userId: string; channel: ReturnType<typeof supabase.channel> } | null = null
 
 /** Fire-and-forget: creates a notification row for another user. Never notifies yourself. */
 function notifyUser(userId: string, message: string, link?: string): void {
@@ -820,6 +825,29 @@ export const useAppStore = create<AppStore>()(
         } catch {
           // silently fail — not signed in yet, or table not migrated
         }
+      },
+
+      subscribeNotifications() {
+        const userId = useAuthStore.getState().user?.id
+        if (!userId || notificationsChannel?.userId === userId) return
+        if (notificationsChannel) supabase.removeChannel(notificationsChannel.channel)
+        const channel = supabase
+          .channel(`notifications:${userId}`)
+          .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
+            (payload) => {
+              const n = payload.new as DbNotification
+              set((s) => ({ notifications: [n, ...s.notifications.filter((x) => x.id !== n.id)] }))
+            },
+          )
+          .subscribe()
+        notificationsChannel = { userId, channel }
+      },
+
+      unsubscribeNotifications() {
+        if (notificationsChannel) supabase.removeChannel(notificationsChannel.channel)
+        notificationsChannel = null
       },
 
       async markNotificationRead(id) {

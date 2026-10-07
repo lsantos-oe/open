@@ -667,7 +667,12 @@
     "deleteCardConfirm": "¿Eliminar esta tarjeta?",
     "cardsInLane": "{{n}} tarjetas",
     "actionsSoon": "Las acciones (con responsables, involucrados y métricas de éxito) llegan en el próximo paso.",
-    "boardEmptyRevealed": "No se enviaron tarjetas en esta retro."
+    "boardEmptyRevealed": "No se enviaron tarjetas en esta retro.",
+    "linksPlaceholder": "Vincular proyectos, incidentes o clientes",
+    "linkType_project": "Proyecto",
+    "linkType_incident": "Incidente",
+    "linkType_client": "Cliente",
+    "editLinks": "Vínculos"
   },
   "import": {
     "title": "Importar JSON",

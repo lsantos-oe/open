@@ -53,6 +53,7 @@ export default function App() {
         await useAppStore.getState().loadTeamDirectory()
         await useAppStore.getState().loadInvitedUsers()
         await useAppStore.getState().loadNotifications()
+        useAppStore.getState().subscribeNotifications()
         await useAppStore.getState().loadClients()
         await useAppStore.getState().loadIncidents()
         await useAppStore.getState().loadContacts()
@@ -77,8 +78,10 @@ export default function App() {
             await useAppStore.getState().loadTeamDirectory()
             await useAppStore.getState().loadInvitedUsers()
             await useAppStore.getState().loadNotifications()
+            useAppStore.getState().subscribeNotifications()
           })
         } else {
+          useAppStore.getState().unsubscribeNotifications()
           useAuthStore.setState({ user: null, profile: null, loading: false })
         }
       })

@@ -667,7 +667,12 @@
     "deleteCardConfirm": "Delete this card?",
     "cardsInLane": "{{n}} cards",
     "actionsSoon": "Actions (with owners, people involved and success metrics) arrive in the next step.",
-    "boardEmptyRevealed": "No cards were submitted in this retro."
+    "boardEmptyRevealed": "No cards were submitted in this retro.",
+    "linksPlaceholder": "Link projects, incidents or clients",
+    "linkType_project": "Project",
+    "linkType_incident": "Incident",
+    "linkType_client": "Client",
+    "editLinks": "Links"
   },
   "import": {
     "title": "Import JSON",

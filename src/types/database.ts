@@ -450,3 +450,12 @@ export interface DbRetroCardAuthor {
   card_id: string
   author_id: string
 }
+
+export interface DbRetroCardLink {
+  id: string
+  card_id: string
+  retro_id: string
+  project_id: string | null
+  incident_id: string | null
+  client_id: string | null
+}

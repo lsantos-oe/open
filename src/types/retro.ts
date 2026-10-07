@@ -43,3 +43,17 @@ export interface RetroCard {
   text: string
   createdAt: string
 }
+
+export type RetroLinkType = 'project' | 'incident' | 'client'
+
+/** Referência a uma entidade do Open (usada para montar/comparar vínculos). */
+export interface RetroLinkRef {
+  type: RetroLinkType
+  id: string
+}
+
+export interface RetroCardLink extends RetroLinkRef {
+  /** id da linha em retro_card_links */
+  linkId: string
+  cardId: string
+}
