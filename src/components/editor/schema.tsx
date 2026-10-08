@@ -1,20 +1,10 @@
 import { BlockNoteSchema, defaultBlockSpecs, defaultInlineContentSpecs, defaultProps } from '@blocknote/core'
 import { createReactBlockSpec, createReactInlineContentSpec } from '@blocknote/react'
 
-/** Para onde cada tipo de menção leva (o clique é tratado por quem hospeda o editor, que tem o Router). */
-export const MENTION_ROUTE: Record<MentionKind, (id: string) => string> = {
-  user: () => '', // pessoas não têm página própria
-  project: (id) => `/projects/${id}`,
-  incident: (id) => `/support/${id}`,
-  client: (id) => `/wallet/${id}`,
-}
+import { MENTION_ROUTE, MentionKind, mentionHref } from '@/utils/mentions'
 
-export type MentionKind = 'user' | 'project' | 'incident' | 'client'
-
-/** Link Markdown de uma menção: [@Nome](open:user/<id>) — é isso que o banco lê para notificar. */
-export function mentionHref(kind: MentionKind, id: string): string {
-  return `open:${kind}/${id}`
-}
+export { MENTION_ROUTE, mentionHref }
+export type { MentionKind }
 
 const mention = createReactInlineContentSpec(
   {

@@ -763,6 +763,7 @@
     "actionsConductorOnlyHint": "In this retro only the facilitator creates actions. You can support and comment on them."
   },
   "editor": {
+    "loadingField": "Loading editor…",
     "loading": "Opening the document...",
     "error": "Could not open the collaborative document.",
     "retry": "Try again",
@@ -853,6 +854,8 @@
     "viewTable": "Table"
   },
   "diary": {
+    "autosavedHint": "Saved automatically as you write.",
+    "opDescriptionEditHint": "The description is edited directly in the point panel (click the row) — several people can write at once.",
     "title": "Project Diary",
     "tabOpenPoints": "Open Points",
     "tabMeetings": "Meetings",

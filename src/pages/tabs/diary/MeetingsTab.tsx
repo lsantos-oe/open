@@ -11,6 +11,8 @@ import { CalendarIcon } from '@/components/ui/icons'
 import DiaryComments from '@/components/diary/DiaryComments'
 import FileAttachments from '@/components/diary/FileAttachments'
 import OwnersField from '@/components/plan/OwnersField'
+import DocField from '@/components/editor/DocField'
+import RichTextInput from '@/components/editor/RichTextInput'
 
 interface Props {
   projectId: string
@@ -68,7 +70,7 @@ export default function MeetingsTab({ projectId, meetings, phases, teamMembers }
     setForm({
       title: m.title,
       date: m.date,
-      notes: m.notes ?? '',
+      notes: '', // as notas de uma reunião existente se editam direto no corpo dela (documento colaborativo)
     })
     setParticipants(m.participants)
     setEditMeeting(m)
@@ -92,7 +94,6 @@ export default function MeetingsTab({ projectId, meetings, phases, teamMembers }
       title: form.title.trim(),
       date: form.date,
       participants,
-      notes: form.notes || undefined,
     })
     setEditMeeting(null)
   }
@@ -112,7 +113,9 @@ export default function MeetingsTab({ projectId, meetings, phases, teamMembers }
     setForm((f) => ({ ...f, [k]: v }))
   }
 
-  function MeetingFormFields() {
+  // Chamada como função (não como <Componente />): um componente declarado aqui dentro mudaria de identidade a
+  // cada render e remontaria o formulário — e o editor de notas junto — a cada tecla.
+  function renderMeetingFormFields(withNotes: boolean) {
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
@@ -125,15 +128,11 @@ export default function MeetingsTab({ projectId, meetings, phases, teamMembers }
           <Field label={t('diary.meetingAttendees')} className="col-span-2">
             <OwnersField owners={participants} onChange={setParticipants} teamMembers={teamMembers} contacts={projectContacts} />
           </Field>
-          <Field label={t('diary.meetingNotes')} className="col-span-2">
-            <textarea
-              value={form.notes}
-              onChange={(e) => set('notes', e.target.value)}
-              rows={4}
-              className="block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:outline-none focus:ring-1"
-              style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)', resize: 'none' }}
-            />
-          </Field>
+          {withNotes && (
+            <Field label={t('diary.meetingNotes')} className="col-span-2">
+              <RichTextInput initialMarkdown="" onChange={(md) => set('notes', md)} uploadScope="meeting_notes" minHeight={110} />
+            </Field>
+          )}
         </div>
       </div>
     )
@@ -215,11 +214,10 @@ export default function MeetingsTab({ projectId, meetings, phases, teamMembers }
                         ))}
                       </div>
                     )}
-                    {m.notes && (
-                      <div className="p-3 rounded-[var(--radius-lg)] text-sm whitespace-pre-wrap" style={{ background: 'var(--surface-subtle)', color: 'var(--text-secondary)' }}>
-                        {m.notes}
-                      </div>
-                    )}
+                    <div>
+                      <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--text-tertiary)' }}>{t('diary.meetingNotes')}</p>
+                      <DocField kind="meeting.notes" target={{ id: m.id, projectId }} value={m.notes} minHeight={90} />
+                    </div>
 
                     {/* Items */}
                     <div>
@@ -309,7 +307,7 @@ export default function MeetingsTab({ projectId, meetings, phases, teamMembers }
           </>
         }
       >
-        <MeetingFormFields />
+        {renderMeetingFormFields(true)}
       </Modal>
 
       {/* Edit Modal */}
@@ -325,7 +323,7 @@ export default function MeetingsTab({ projectId, meetings, phases, teamMembers }
           </>
         }
       >
-        <MeetingFormFields />
+        {renderMeetingFormFields(false)}
       </Modal>
     </div>
   )

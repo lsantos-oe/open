@@ -7,8 +7,10 @@ import { Risk, ActionTask, Probability, Impact, Phase } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
-import { Input, Select, Textarea, Field } from '@/components/ui/Input'
+import { Input, Select, Field } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
+import RichTextInput from '@/components/editor/RichTextInput'
+import { markdownToPlainText } from '@/utils/docText'
 import { ShieldIcon } from '@/components/ui/icons'
 
 const PROB_VAL: Record<Probability | Impact, number> = { low: 1, medium: 2, high: 3 }
@@ -142,10 +144,13 @@ function RiskPanel({ projectId, risk, riskIndex, allEntries, onClose }: RiskPane
         {/* Risk detail form */}
         <div className="px-5 py-4 space-y-4">
           <Field label="Descrição">
-            <Textarea
-              value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              rows={3}
+            {/* Texto inicial = o do risco (não o do formulário, que só é recarregado depois do render). */}
+            <RichTextInput
+              key={risk.id}
+              initialMarkdown={risk.description}
+              onChange={(md) => setForm((f) => ({ ...f, description: md }))}
+              uploadScope={`risk_${risk.id}`}
+              minHeight={90}
             />
           </Field>
           <div className="grid grid-cols-2 gap-3">
@@ -345,11 +350,12 @@ function AddRiskModal({ projectId, allEntries, onClose }: AddRiskModalProps) {
     >
       <div className="space-y-4">
         <Field label="Descrição" required>
-          <Textarea
+          <RichTextInput
+            initialMarkdown=""
+            onChange={(md) => setForm((f) => ({ ...f, description: md }))}
+            uploadScope="risk_new"
+            minHeight={90}
             autoFocus
-            value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            rows={3}
           />
         </Field>
         <div className="grid grid-cols-2 gap-3">
@@ -470,7 +476,7 @@ export default function RisksPage({ projectId, focusRiskId, onFocusConsumed }: R
                   <td className="px-3 py-2.5 text-xs text-[var(--text-tertiary)] max-w-[140px] truncate" title={getLinkedNames(r.linkedEntryIds)}>
                     {getLinkedNames(r.linkedEntryIds) || '—'}
                   </td>
-                  <td className="px-3 py-2.5 text-[var(--text-secondary)] max-w-[200px] truncate" title={r.description}>{r.description}</td>
+                  <td className="px-3 py-2.5 text-[var(--text-secondary)] max-w-[200px] truncate" title={markdownToPlainText(r.description)}>{markdownToPlainText(r.description)}</td>
                   <td className="px-3 py-2.5"><FlagDot score={r.score} /></td>
                   <td className="px-3 py-2.5">
                     <Badge variant={r.probability === 'high' ? 'red' : r.probability === 'medium' ? 'yellow' : 'green'}>

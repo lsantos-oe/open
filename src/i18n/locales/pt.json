@@ -763,6 +763,7 @@
     "actionsConductorOnlyHint": "Nesta retro só o condutor cria ações. Você pode apoiar e comentar nelas."
   },
   "editor": {
+    "loadingField": "Carregando editor…",
     "loading": "Abrindo o documento...",
     "error": "Não foi possível abrir o documento colaborativo.",
     "retry": "Tentar de novo",
@@ -818,6 +819,8 @@
     "viewTable": "Tabela"
   },
   "diary": {
+    "autosavedHint": "Salvo automaticamente enquanto você escreve.",
+    "opDescriptionEditHint": "A descrição se edita direto no painel do ponto (clique na linha) — vários usuários podem escrever ao mesmo tempo.",
     "title": "Diário do Projeto",
     "tabOpenPoints": "Open Points",
     "tabMeetings": "Reuniões",

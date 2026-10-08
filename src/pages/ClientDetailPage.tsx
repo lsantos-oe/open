@@ -14,6 +14,7 @@ import {
   PersonIcon, CalendarIcon, CheckCircleIcon, NoteIcon,
 } from '@/components/ui/icons'
 import { contactsForClient } from '@/utils/contacts'
+import DocField from '@/components/editor/DocField'
 import { findCountry } from '@/data/countries'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -49,8 +50,6 @@ export default function ClientDetailPage() {
   const client = clients.find((c) => c.id === id)
 
   // ── Overview local state ──
-  const [editingNotes, setEditingNotes] = useState(false)
-  const [notesDraft, setNotesDraft] = useState(client?.notes ?? '')
   const [editingLink, setEditingLink] = useState(false)
   const [linkDraft, setLinkDraft] = useState(client?.ploomesLink ?? '')
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
@@ -93,11 +92,6 @@ export default function ClientDetailPage() {
   const timelineEvents = clientProjects
     .flatMap((p) => (p.history ?? []).map((h) => ({ ...h, projectName: p.name, projectId: p.id })))
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-
-  function saveNotes() {
-    updateClient(client!.id, { notes: notesDraft || undefined })
-    setEditingNotes(false)
-  }
 
   function saveLink() {
     updateClient(client!.id, { ploomesLink: linkDraft || undefined })
@@ -235,27 +229,7 @@ export default function ClientDetailPage() {
             </Field>
 
             <Field label="Notas">
-              {editingNotes ? (
-                <div>
-                  <textarea
-                    autoFocus
-                    value={notesDraft}
-                    onChange={(e) => setNotesDraft(e.target.value)}
-                    onBlur={saveNotes}
-                    rows={6}
-                    className="block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:outline-none focus:ring-1"
-                    style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)', resize: 'none' }}
-                  />
-                </div>
-              ) : (
-                <div
-                  onClick={() => { setNotesDraft(client.notes ?? ''); setEditingNotes(true) }}
-                  className="p-3 rounded-[var(--radius-lg)] border text-sm whitespace-pre-wrap cursor-text min-h-[80px]"
-                  style={{ background: 'var(--surface-subtle)', borderColor: 'var(--border-default)', color: client.notes ? 'var(--text-secondary)' : 'var(--text-tertiary)' }}
-                >
-                  {client.notes || 'Clique para adicionar notas...'}
-                </div>
-              )}
+              <DocField kind="client.notes" target={{ id: client.id }} value={client.notes} minHeight={110} />
             </Field>
 
             <Field label="Projetos vinculados">

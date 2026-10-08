@@ -1,53 +1,34 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import * as Y from 'yjs'
-import { BlockNoteEditor, filterSuggestionItems, insertOrUpdateBlockForSlashMenu } from '@blocknote/core'
+import { BlockNoteEditor } from '@blocknote/core'
 import { blocksToYDoc, withCollaboration } from '@blocknote/core/yjs'
-import * as locales from '@blocknote/core/locales'
-import { BlockNoteView } from '@blocknote/mantine'
-import { SuggestionMenuController, getDefaultReactSlashMenuItems, useCreateBlockNote } from '@blocknote/react'
-import '@blocknote/mantine/style.css'
-import './editor.css'
-import { useAppStore } from '@/store/useAppStore'
+import { useCreateBlockNote } from '@blocknote/react'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { COLLAB_FRAGMENT, SupabaseCollab } from './SupabaseCollab'
-import { MentionKind, schema } from './schema'
+import { schema } from './schema'
 import { resolveDocFileUrl, uploadDocFile } from './fileStorage'
 import { useCollabPresence } from './useCollabPresence'
 import { normalizeExportedMarkdown, prepareBlocksForExport } from './markdown'
 import { parseMarkdownToBlocks } from './seed'
+import { EditorFrame, EditorTemplate, colorFor, useEditorDictionary, useEditorExtras } from './editorCommon'
 
-export interface EditorTemplate {
-  title: string
-  subtext?: string
-  aliases?: string[]
-  /** Markdown inserido no ponto do cursor quando o item do menu `/` é escolhido. */
-  markdown: string
-}
+export type { EditorTemplate }
 
 export interface CollabEditorProps {
   /** "<tipo>_<uuid>_<campo>", ex.: project_3f2a…_charter */
   docId: string
   /** Markdown que semeia o documento na primeira abertura (só usado se o documento ainda não existe). */
   seedMarkdown: string
+  /** Busca o texto mais recente da coluna no momento de semear (a memória desta tela pode estar defasada).
+   *  Devolve undefined para usar `seedMarkdown`. Só roda quando o documento ainda não existe no banco. */
+  fetchSeed?: () => Promise<string | undefined>
   /** Recebe o Markdown atual (com debounce) — é a projeção que relatórios, exportações e a IA leem. */
   onMarkdownChange?: (markdown: string) => void
   templates?: EditorTemplate[]
-}
-
-const CURSOR_COLORS = ['#D9530E', '#3568C4', '#1A8850', '#7C3AED', '#A8790A', '#D14343', '#0E7490', '#BE185D']
-const colorFor = (id: string) => CURSOR_COLORS[[...id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % CURSOR_COLORS.length]
-
-function useDarkMode(): boolean {
-  const [dark, setDark] = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches)
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    const on = (e: MediaQueryListEvent) => setDark(e.matches)
-    mq.addEventListener('change', on)
-    return () => mq.removeEventListener('change', on)
-  }, [])
-  return dark
+  /** Visual enxuto (sem a dica do menu `/`), para campos dentro de painéis e modais. */
+  compact?: boolean
+  minHeight?: number
 }
 
 /** Abre (ou recria) a conexão colaborativa e só monta o editor quando o documento está pronto. */
@@ -60,6 +41,8 @@ export default function CollabEditor(props: CollabEditorProps) {
   const [generation, setGeneration] = useState(0)
   const seedRef = useRef(props.seedMarkdown)
   seedRef.current = props.seedMarkdown
+  const fetchSeedRef = useRef(props.fetchSeed)
+  fetchSeedRef.current = props.fetchSeed
 
   useEffect(() => {
     if (!userId) return
@@ -71,7 +54,8 @@ export default function CollabEditor(props: CollabEditorProps) {
     // Semente: Markdown → blocos → Yjs. Só roda se o documento ainda não existe no banco.
     const seed = async () => {
       const headless = BlockNoteEditor.create({ schema })
-      const blocks = await parseMarkdownToBlocks(headless, seedRef.current || '')
+      const fresh = await fetchSeedRef.current?.().catch(() => undefined)
+      const blocks = await parseMarkdownToBlocks(headless, fresh ?? seedRef.current ?? '')
       const ydoc = blocksToYDoc(headless, blocks, COLLAB_FRAGMENT)
       return Y.encodeStateAsUpdate(ydoc)
     }
@@ -106,16 +90,11 @@ export default function CollabEditor(props: CollabEditorProps) {
   )
 }
 
-function EditorBody({ collab, onMarkdownChange, templates = [], docId }: CollabEditorProps & { collab: SupabaseCollab }) {
-  const { t, i18n } = useTranslation()
-  const navigate = useNavigate()
-  const dark = useDarkMode()
+function EditorBody({ collab, onMarkdownChange, templates = [], docId, compact, minHeight }: CollabEditorProps & { collab: SupabaseCollab }) {
+  const { t } = useTranslation()
   const { profile, user } = useAuthStore()
-  const { teamDirectory, projects, incidents, clients } = useAppStore()
   const people = useCollabPresence(collab.awareness)
-
-  const lang = (i18n.language || 'pt').slice(0, 2)
-  const dictionary = lang === 'en' ? locales.en : lang === 'es' ? locales.es : locales.pt
+  const dictionary = useEditorDictionary()
 
   // Nesta versão do BlockNote a colaboração é opt-in: sem withCollaboration o editor ignora o Yjs
   // (e abriria vazio, sem sincronizar nada).
@@ -159,64 +138,12 @@ function EditorBody({ collab, onMarkdownChange, templates = [], docId }: CollabE
     }
   }, [editor, onMarkdownChange])
 
-  const slashItems = useMemo(
-    () => async (query: string) => {
-      const callout = {
-        title: t('editor.callout'),
-        subtext: t('editor.calloutHint'),
-        aliases: ['callout', 'destaque', 'aviso', 'nota', 'alert'],
-        group: t('editor.groupExtras'),
-        icon: <span style={{ fontWeight: 700 }}>i</span>,
-        onItemClick: () => insertOrUpdateBlockForSlashMenu(editor, { type: 'callout' }),
-      }
-      const tpl = templates.map((tp) => ({
-        title: tp.title,
-        subtext: tp.subtext,
-        aliases: tp.aliases,
-        group: t('editor.groupTemplates'),
-        icon: <span style={{ fontWeight: 700 }}>¶</span>,
-        onItemClick: async () => {
-          const blocks = await parseMarkdownToBlocks(editor, tp.markdown)
-          const current = editor.getTextCursorPosition().block
-          editor.insertBlocks(blocks, current, 'after')
-        },
-      }))
-      return filterSuggestionItems([...getDefaultReactSlashMenuItems(editor), callout, ...tpl], query)
-    },
-    [editor, templates, t],
-  )
-
-  const mentionItems = useMemo(
-    () => async (query: string) => {
-      const insert = (kind: MentionKind, id: string, label: string) => {
-        editor.insertInlineContent([{ type: 'mention', props: { kind, id, label } }, ' '])
-      }
-      const all = [
-        ...teamDirectory.filter((p) => p.active).map((p) => ({ kind: 'user' as const, id: p.id, label: p.name ?? p.email ?? '—', group: t('editor.mentionPeople') })),
-        ...projects.filter((p) => !p.archived && !p.hidden).map((p) => ({ kind: 'project' as const, id: p.id, label: p.name, group: t('editor.mentionProjects') })),
-        ...incidents.map((i) => ({ kind: 'incident' as const, id: i.id, label: i.title, group: t('editor.mentionIncidents') })),
-        ...clients.filter((c) => !c.archived).map((c) => ({ kind: 'client' as const, id: c.id, label: c.name, group: t('editor.mentionClients') })),
-      ]
-      const q = query.trim().toLowerCase()
-      return all
-        .filter((m) => !q || m.label.toLowerCase().includes(q))
-        .slice(0, 12)
-        .map((m) => ({ title: m.label, group: m.group, onItemClick: () => insert(m.kind, m.id, m.label) }))
-    },
-    [editor, teamDirectory, projects, incidents, clients, t],
-  )
-
-  // Clique numa menção de projeto/incidente/cliente abre a página (o Router está aqui, não dentro do editor).
-  function onClick(e: React.MouseEvent) {
-    const target = (e.target as HTMLElement).closest('[data-open-link]') as HTMLElement | null
-    const to = target?.dataset.openLink
-    if (to) navigate(to)
-  }
+  const extras = useEditorExtras(editor, { templates })
 
   return (
     <div>
       <div className="oe-editor__bar">
-        <span>{t('editor.hint')}</span>
+        <span>{compact ? '' : t('editor.hint')}</span>
         {people.length > 0 && (
           <span className="oe-editor__people" title={people.map((p) => p.name).join(', ')}>
             {people.map((p) => <span key={p.clientId} className="oe-editor__dot" style={{ background: p.color }} />)}
@@ -224,12 +151,7 @@ function EditorBody({ collab, onMarkdownChange, templates = [], docId }: CollabE
           </span>
         )}
       </div>
-      <div className="oe-editor" onClick={onClick}>
-        <BlockNoteView editor={editor} theme={dark ? 'dark' : 'light'} slashMenu={false}>
-          <SuggestionMenuController triggerCharacter="/" getItems={slashItems} />
-          <SuggestionMenuController triggerCharacter="@" getItems={mentionItems} />
-        </BlockNoteView>
-      </div>
+      <EditorFrame editor={editor} extras={extras} compact={compact} minHeight={minHeight} />
     </div>
   )
 }

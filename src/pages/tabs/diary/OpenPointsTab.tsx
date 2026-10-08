@@ -9,6 +9,10 @@ import { Input, Select, Field } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { PinIcon } from '@/components/ui/icons'
 import OwnersField from '@/components/plan/OwnersField'
+import DocField from '@/components/editor/DocField'
+import DocView from '@/components/editor/DocView'
+import RichTextInput from '@/components/editor/RichTextInput'
+import { markdownToPlainText } from '@/utils/docText'
 import DiaryComments from '@/components/diary/DiaryComments'
 import FileAttachments from '@/components/diary/FileAttachments'
 
@@ -48,6 +52,8 @@ function responsibleToOwners(name: string): EntryOwner[] {
 }
 
 interface OpFormFieldsProps {
+  /** Na criação a descrição é um editor local; num ponto existente ela é um documento colaborativo (editado no painel). */
+  mode: 'create' | 'edit'
   form: OpForm
   set: <K extends keyof OpForm>(k: K, v: OpForm[K]) => void
   allEntries: { id: string; name: string }[]
@@ -55,22 +61,20 @@ interface OpFormFieldsProps {
   contacts: ReturnType<typeof contactsForClients>
 }
 
-function OpFormFields({ form, set, allEntries, teamMembers, contacts }: OpFormFieldsProps) {
+function OpFormFields({ mode, form, set, allEntries, teamMembers, contacts }: OpFormFieldsProps) {
   const { t } = useTranslation()
   return (
     <div className="space-y-4">
       <Field label={t('diary.opTitle')} required>
         <Input autoFocus value={form.title} onChange={(e) => set('title', e.target.value)} />
       </Field>
-      <Field label={t('diary.opDescription')}>
-        <textarea
-          value={form.description}
-          onChange={(e) => set('description', e.target.value)}
-          rows={3}
-          className="block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:outline-none focus:ring-1"
-          style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)', resize: 'none' }}
-        />
-      </Field>
+      {mode === 'create' ? (
+        <Field label={t('diary.opDescription')}>
+          <RichTextInput initialMarkdown="" onChange={(md) => set('description', md)} uploadScope="open_point" minHeight={90} />
+        </Field>
+      ) : (
+        <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{t('diary.opDescriptionEditHint')}</p>
+      )}
       <div className="grid grid-cols-2 gap-4">
         <Field label={t('diary.opPriority')}>
           <Select value={form.priority} onChange={(e) => set('priority', e.target.value as OpenPointPriority)}>
@@ -182,7 +186,6 @@ export default function OpenPointsTab({ scope, openPoints, phases }: Props) {
     if (!editOp || !form.title.trim()) return
     updateOpenPoint(scope, editOp.id, {
       title: form.title.trim(),
-      description: form.description || undefined,
       priority: form.priority,
       responsible: form.responsible || undefined,
       dueDate: form.dueDate || undefined,
@@ -264,7 +267,7 @@ export default function OpenPointsTab({ scope, openPoints, phases }: Props) {
                   <td className="px-3 py-2.5">
                     <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{op.title}</span>
                     {op.description && (
-                      <p className="text-xs mt-0.5 truncate max-w-xs" style={{ color: 'var(--text-tertiary)' }}>{op.description}</p>
+                      <p className="text-xs mt-0.5 truncate max-w-xs" style={{ color: 'var(--text-tertiary)' }}>{markdownToPlainText(op.description)}</p>
                     )}
                   </td>
                   <td className="px-3 py-2.5">
@@ -339,7 +342,7 @@ export default function OpenPointsTab({ scope, openPoints, phases }: Props) {
           </>
         }
       >
-        <OpFormFields form={form} set={set} allEntries={allEntries} teamMembers={directoryAsTeam} contacts={scopeContacts} />
+        <OpFormFields mode="create" form={form} set={set} allEntries={allEntries} teamMembers={directoryAsTeam} contacts={scopeContacts} />
       </Modal>
 
       {/* Edit Modal */}
@@ -355,7 +358,7 @@ export default function OpenPointsTab({ scope, openPoints, phases }: Props) {
           </>
         }
       >
-        <OpFormFields form={form} set={set} allEntries={allEntries} teamMembers={directoryAsTeam} contacts={scopeContacts} />
+        <OpFormFields mode="edit" form={form} set={set} allEntries={allEntries} teamMembers={directoryAsTeam} contacts={scopeContacts} />
       </Modal>
 
       {/* Resolve Modal */}
@@ -372,14 +375,7 @@ export default function OpenPointsTab({ scope, openPoints, phases }: Props) {
         }
       >
         <Field label={t('diary.opResolution')} required>
-          <textarea
-            autoFocus
-            value={resolution}
-            onChange={(e) => setResolution(e.target.value)}
-            rows={3}
-            className="block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:outline-none focus:ring-1"
-            style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)', resize: 'none' }}
-          />
+          <RichTextInput initialMarkdown="" onChange={setResolution} uploadScope="open_point_resolution" minHeight={90} autoFocus />
         </Field>
       </Modal>
 
@@ -413,9 +409,10 @@ export default function OpenPointsTab({ scope, openPoints, phases }: Props) {
                   {t(`diary.status${drawerItem.status.charAt(0).toUpperCase() + drawerItem.status.slice(1)}`)}
                 </span>
               </div>
-              {drawerItem.description && (
-                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{drawerItem.description}</p>
-              )}
+              <div>
+                <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--text-tertiary)' }}>{t('diary.opDescription')}</p>
+                <DocField kind="openpoint.description" target={{ id: drawerItem.id, scope }} value={drawerItem.description} minHeight={90} />
+              </div>
               {drawerItem.responsible && (
                 <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{t('diary.opResponsible')}: <span style={{ color: 'var(--text-secondary)' }}>{drawerItem.responsible}</span></p>
               )}
@@ -425,7 +422,7 @@ export default function OpenPointsTab({ scope, openPoints, phases }: Props) {
               {drawerItem.status === 'resolved' && drawerItem.resolution && (
                 <div className="p-3 rounded-[var(--radius-lg)]" style={{ background: 'var(--color-success-bg, #f0fdf4)' }}>
                   <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-success-text, #16a34a)' }}>{t('diary.opResolution')}</p>
-                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{drawerItem.resolution}</p>
+                  <DocView markdown={drawerItem.resolution} />
                   {drawerItem.resolvedBy && (
                     <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>{t('diary.resolvedBy')}: {drawerItem.resolvedBy}</p>
                   )}

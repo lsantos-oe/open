@@ -27,6 +27,8 @@
 .oe-editor:focus-within { border-color: var(--oe-primary); }
 .oe-editor .bn-editor { padding-inline: 14px; font-size: 14px; }
 .oe-editor .bn-container { background: transparent; }
+.oe-editor--compact { padding: 2px 0; }
+.oe-editor--compact .bn-editor { font-size: 13px; }
 
 .oe-editor__bar {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;

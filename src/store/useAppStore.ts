@@ -12,6 +12,7 @@ import {
 import { applyDateChange } from '@/utils/dateEngine'
 import { applyIsCritical } from '@/utils/criticalPath'
 import { workdaysBetween, parseHolidays } from '@/utils/businessDays'
+import { DOC_FIELDS, DocFieldKind, docIdFor } from '@/utils/docFields'
 import { applyAutoStatus, computeBaselineFields } from '@/utils/statusCalc'
 import { parseISO } from 'date-fns'
 import { supabase } from '@/lib/supabase'
@@ -37,6 +38,15 @@ import type { DbProjectFull, DbProfile, DbInvitedUser, DbNotification, UserRole 
 import type { DbIncidentFull } from '@/utils/dbConversions'
 
 export type DiaryScope = { type: 'project'; id: string } | { type: 'incident'; id: string }
+
+/** Onde mora o registro de um campo-documento: `id` é o do próprio registro; o resto localiza o pai na memória. */
+export interface DocFieldRef {
+  id: string
+  /** open_points e history: o projeto/incidente a que pertencem. */
+  scope?: DiaryScope
+  /** meeting_logs: o projeto. */
+  projectId?: string
+}
 
 const TEMPLATES_VERSION = 2
 
@@ -222,6 +232,9 @@ interface AppStore {
   /** Substitui o documento do charter por um Markdown vindo de fora (importação): grava a coluna E descarta o
    *  estado colaborativo, para que editores abertos recarreguem e o próximo a abrir recomece do novo texto. */
   replaceProjectCharterDoc: (id: string, markdown: string) => Promise<void>
+  /** Grava a projeção em Markdown de um campo-documento (editor colaborativo): atualiza a memória e chama
+   *  collab_set_projection, a única forma de alterar a coluna enquanto o documento vivo existe. */
+  setDocField: (kind: DocFieldKind, ref: DocFieldRef, markdown: string) => Promise<void>
   renameProject: (id: string, name: string) => void
   linkProjectClient: (projectId: string, clientId: string) => void
   unlinkProjectClient: (projectId: string, clientId: string) => void
@@ -497,6 +510,13 @@ function sync(fn: () => Promise<void>, revert?: () => void): void {
       err instanceof Error ? err.message : 'Erro ao salvar'
     )
   })
+}
+
+/** Descarta o documento colaborativo de um campo antes de uma gravação que vem de fora do editor (IA, importação,
+ *  formulário). Sem isso, collab_guard_projection descartaria a gravação enquanto o documento vivo existir. */
+async function resetCollabDoc(kind: DocFieldKind, id: string): Promise<void> {
+  const { error } = await supabase.rpc('collab_reset', { p_doc: docIdFor(kind, id) })
+  if (error) throw new Error(error.message)
 }
 
 async function dbSyncProjectRow(project: Project, userId: string): Promise<void> {
@@ -1253,12 +1273,16 @@ export const useAppStore = create<AppStore>()(
 
       updateProject(id, patch) {
         const prev = get().projects
+        // As anotações do projeto são um documento colaborativo: só um texto realmente novo (vindo de fora do editor)
+        // descarta o documento vivo. Um patch que repete o valor atual não deve derrubar quem está editando.
+        const overviewChanged = patch.overview !== undefined && patch.overview !== prev.find((p) => p.id === id)?.overview
         set((s) => ({
           projects: mutateProject(s.projects, id, (p) => ({ ...p, ...patch })),
         }))
         sync(async () => {
           const project = get().projects.find((p) => p.id === id)
           if (!project) return
+          if (overviewChanged) await resetCollabDoc('project.overview', id)
           await dbSyncProjectRow(project, getUserId())
         }, () => set({ projects: prev }))
       },
@@ -1274,6 +1298,44 @@ export const useAppStore = create<AppStore>()(
       async replaceProjectCharterDoc(id, markdown) {
         await get().setProjectCharterDoc(id, markdown)
         const { error } = await supabase.rpc('collab_reset', { p_doc: `project_${id}_charter` })
+        if (error) useToastStore.getState().addToast(error.message)
+      },
+
+      async setDocField(kind, ref, markdown) {
+        // Memória primeiro (a tela já mostra o texto), depois a projeção no banco. Nunca passa pelas gravações de
+        // linha inteira: elas poderiam sobrescrever um documento mais novo de outra pessoa.
+        switch (kind) {
+          case 'incident.description':
+            set((s) => ({ incidents: mutateIncident(s.incidents, ref.id, (i) => ({ ...i, description: markdown })) }))
+            break
+          case 'client.notes':
+            set((s) => ({ clients: mutateClient(s.clients, ref.id, (c) => ({ ...c, notes: markdown })) }))
+            break
+          case 'project.overview':
+            set((s) => ({ projects: mutateProject(s.projects, ref.id, (p) => ({ ...p, overview: markdown })) }))
+            break
+          case 'meeting.notes':
+            if (ref.projectId) {
+              set((s) => ({ projects: mutateProject(s.projects, ref.projectId!, (p) => ({ ...p, meetings: (p.meetings ?? []).map((m) => (m.id === ref.id ? { ...m, notes: markdown } : m)) })) }))
+            }
+            break
+          case 'openpoint.description':
+            if (ref.scope?.type === 'project') {
+              set((s) => ({ projects: mutateProject(s.projects, ref.scope!.id, (p) => ({ ...p, openPoints: (p.openPoints ?? []).map((op) => (op.id === ref.id ? { ...op, description: markdown } : op)) })) }))
+            } else if (ref.scope) {
+              set((s) => ({ incidents: mutateIncident(s.incidents, ref.scope!.id, (i) => ({ ...i, openPoints: i.openPoints.map((op) => (op.id === ref.id ? { ...op, description: markdown } : op)) })) }))
+            }
+            break
+          case 'history.detail':
+            if (ref.scope?.type === 'project') {
+              set((s) => ({ projects: mutateProject(s.projects, ref.scope!.id, (p) => ({ ...p, history: (p.history ?? []).map((h) => (h.id === ref.id ? { ...h, detail: markdown } : h)) })) }))
+            } else if (ref.scope) {
+              set((s) => ({ incidents: mutateIncident(s.incidents, ref.scope!.id, (i) => ({ ...i, history: i.history.map((h) => (h.id === ref.id ? { ...h, detail: markdown } : h)) })) }))
+            }
+            break
+        }
+        const { table, column } = DOC_FIELDS[kind]
+        const { error } = await supabase.rpc('collab_set_projection', { p_table: table, p_id: ref.id, p_column: column, p_md: markdown })
         if (error) useToastStore.getState().addToast(error.message)
       },
 
@@ -2756,6 +2818,10 @@ export const useAppStore = create<AppStore>()(
       },
 
       updateOpenPoint(scope, opId, patch) {
+        const before = scope.type === 'project'
+          ? get().projects.find((p) => p.id === scope.id)?.openPoints?.find((op) => op.id === opId)
+          : get().incidents.find((i) => i.id === scope.id)?.openPoints.find((op) => op.id === opId)
+        const descriptionChanged = patch.description !== undefined && patch.description !== before?.description
         if (scope.type === 'project') {
           set((s) => ({ projects: mutateProject(s.projects, scope.id, (p) => ({ ...p, openPoints: (p.openPoints ?? []).map((op) => op.id === opId ? { ...op, ...patch } : op) })) }))
         } else {
@@ -2771,6 +2837,7 @@ export const useAppStore = create<AppStore>()(
           if (patch.dueDate !== undefined) fields.due_date = patch.dueDate
           if (patch.linkedEntryId !== undefined) fields.linked_entry_id = patch.linkedEntryId
           if (Object.keys(fields).length === 0) return
+          if (descriptionChanged) await resetCollabDoc('openpoint.description', opId)
           const { error } = await supabase.from('open_points').update(fields).eq('id', opId)
           if (error) throw new Error(error.message)
         })
@@ -2838,6 +2905,8 @@ export const useAppStore = create<AppStore>()(
       },
 
       updateMeetingLog(projectId, meetingId, patch) {
+        const notesChanged = patch.notes !== undefined
+          && patch.notes !== get().projects.find((p) => p.id === projectId)?.meetings?.find((m) => m.id === meetingId)?.notes
         set((s) => ({
           projects: mutateProject(s.projects, projectId, (p) => ({
             ...p,
@@ -2856,6 +2925,7 @@ export const useAppStore = create<AppStore>()(
           fields.updated_at = new Date().toISOString()
           fields.updated_by = authUser?.id ?? null
           fields.updated_by_name = authUser?.user_metadata?.full_name ?? authUser?.email ?? null
+          if (notesChanged) await resetCollabDoc('meeting.notes', meetingId)
           const { error } = await supabase.from('meeting_logs').update(fields).eq('id', meetingId)
           if (error) throw new Error(error.message)
         })
@@ -2944,6 +3014,10 @@ export const useAppStore = create<AppStore>()(
       },
 
       updateHistoryEntry(scope, entryId, patch) {
+        const before = scope.type === 'project'
+          ? get().projects.find((p) => p.id === scope.id)?.history?.find((h) => h.id === entryId)
+          : get().incidents.find((i) => i.id === scope.id)?.history.find((h) => h.id === entryId)
+        const detailChanged = patch.detail !== undefined && patch.detail !== before?.detail
         if (scope.type === 'project') {
           set((s) => ({ projects: mutateProject(s.projects, scope.id, (p) => ({ ...p, history: (p.history ?? []).map((h) => h.id === entryId ? { ...h, ...patch } : h) })) }))
         } else {
@@ -2954,6 +3028,7 @@ export const useAppStore = create<AppStore>()(
           if (patch.title !== undefined) fields.title = patch.title
           if (patch.detail !== undefined) fields.detail = patch.detail
           if (Object.keys(fields).length === 0) return
+          if (detailChanged) await resetCollabDoc('history.detail', entryId)
           const { error } = await supabase.from('history').update(fields).eq('id', entryId)
           if (error) throw new Error(error.message)
         })
@@ -3112,8 +3187,10 @@ export const useAppStore = create<AppStore>()(
 
       updateClient(id, patch) {
         const prev = get().clients
+        const notesChanged = patch.notes !== undefined && patch.notes !== prev.find((c) => c.id === id)?.notes
         set((s) => ({ clients: mutateClient(s.clients, id, (c) => ({ ...c, ...patch })) }))
         sync(async () => {
+          if (notesChanged) await resetCollabDoc('client.notes', id)
           const fields: Record<string, unknown> = {}
           if (patch.name !== undefined) fields.name = patch.name
           if (patch.country !== undefined) fields.country = patch.country
@@ -3290,8 +3367,10 @@ export const useAppStore = create<AppStore>()(
 
       updateIncident(id, patch) {
         const prev = get().incidents
+        const descriptionChanged = patch.description !== undefined && patch.description !== prev.find((i) => i.id === id)?.description
         set((s) => ({ incidents: mutateIncident(s.incidents, id, (i) => ({ ...i, ...patch })) }))
         sync(async () => {
+          if (descriptionChanged) await resetCollabDoc('incident.description', id)
           const fields: Record<string, unknown> = {}
           if (patch.title !== undefined) fields.title = patch.title
           if (patch.description !== undefined) fields.description = patch.description

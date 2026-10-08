@@ -18,6 +18,7 @@ import { AvatarStack } from '@/components/ui/AvatarStack'
 import { contactsForClients } from '@/utils/contacts'
 import { CopyLinkButton } from '@/components/ui/CopyLinkButton'
 import { EntityAttachments } from '@/components/ui/EntityAttachments'
+import DocField from '@/components/editor/DocField'
 import { SignalBadges, signalRowTint } from '@/components/ui/SignalBadges'
 import { differenceInCalendarDays } from 'date-fns'
 
@@ -269,13 +270,7 @@ export default function IncidentDetailPage() {
             </div>
 
             <Field label={t('incident.description')}>
-              <textarea
-                value={incident.description ?? ''}
-                onChange={(e) => updateIncident(incident.id, { description: e.target.value || undefined })}
-                rows={4}
-                className="block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:outline-none focus:ring-1"
-                style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)', resize: 'none' }}
-              />
+              <DocField kind="incident.description" target={{ id: incident.id }} value={incident.description} minHeight={110} />
             </Field>
 
             <Field label="Anexos">

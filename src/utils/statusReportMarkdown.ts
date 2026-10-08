@@ -1,5 +1,6 @@
 import { Project, Entry, AppSettings } from '@/types'
 import { projectDurationDays, projectEndVariance, isProjectDelayed } from './projectStats'
+import { markdownForExport, markdownTableCell } from './docText'
 
 const STATUS_LABEL: Record<string, string> = {
   backlog: 'Backlog / Futuros',
@@ -57,7 +58,7 @@ export function generateStatusReportMarkdown(project: Project, settings: AppSett
 
   if (project.overview) {
     lines.push('## Overview')
-    lines.push(project.overview)
+    lines.push(markdownForExport(project.overview))
     lines.push('')
   }
 
@@ -78,7 +79,7 @@ export function generateStatusReportMarkdown(project: Project, settings: AppSett
     lines.push('| Descrição | Probabilidade | Impacto | Status |')
     lines.push('|---|---|---|---|')
     for (const r of project.risks) {
-      lines.push(`| ${r.description} | ${r.probability} | ${r.impact} | ${r.status} |`)
+      lines.push(`| ${markdownTableCell(r.description)} | ${r.probability} | ${r.impact} | ${r.status} |`)
     }
     lines.push('')
   }
@@ -91,7 +92,7 @@ export function generateStatusReportMarkdown(project: Project, settings: AppSett
     lines.push('| Data | Tarefa | Dias | Responsabilidade | Descrição |')
     lines.push('|---|---|---|---|---|')
     for (const d of project.delayLog) {
-      lines.push(`| ${fmtDate(d.date)} | ${d.entryName} | ${d.days > 0 ? '+' : ''}${d.days} | ${d.responsibility} | ${d.description} |`)
+      lines.push(`| ${fmtDate(d.date)} | ${d.entryName} | ${d.days > 0 ? '+' : ''}${d.days} | ${d.responsibility} | ${markdownTableCell(d.description)} |`)
     }
   }
 

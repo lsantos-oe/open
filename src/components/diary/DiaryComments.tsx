@@ -7,6 +7,8 @@ import { Input, Field } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR, enUS, es, type Locale } from 'date-fns/locale'
+import DocView from '@/components/editor/DocView'
+import { applyMarkdownShortcut } from '@/utils/markdownShortcuts'
 
 const LOCALES: Record<string, Locale> = { pt: ptBR, en: enUS, es }
 
@@ -60,7 +62,7 @@ export default function DiaryComments({ scope, parentType, parentId, comments }:
                   ×
                 </button>
               </div>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>{c.text}</p>
+              <DocView markdown={c.text} fontSize={12} className="mt-0.5" />
             </div>
           </div>
         ))}
@@ -87,7 +89,10 @@ export default function DiaryComments({ scope, parentType, parentId, comments }:
                 color: 'var(--text-primary)',
                 resize: 'none',
               }}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAdd() } }}
+              onKeyDown={(e) => {
+                if (applyMarkdownShortcut(e, setText)) return
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAdd() }
+              }}
             />
           </Field>
           <div className="flex gap-2 justify-end">

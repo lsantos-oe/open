@@ -1,4 +1,7 @@
 import { useState, useMemo, useEffect, CSSProperties, ReactNode } from 'react'
+import RichTextInput from '@/components/editor/RichTextInput'
+import DocView from '@/components/editor/DocView'
+import { applyMarkdownShortcut } from '@/utils/markdownShortcuts'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/store/useAppStore'
@@ -256,9 +259,12 @@ export default function EntryModal({
   const [newLinkUrl, setNewLinkUrl] = useState('')
   const [commentText, setCommentText] = useState('')
   const [depsOpen, setDepsOpen] = useState(false)
+  // O editor da descrição só lê o texto inicial ao montar: cada reinício do formulário o remonta (key).
+  const [descEpoch, setDescEpoch] = useState(0)
 
   useEffect(() => {
     if (!open) return
+    setDescEpoch((e) => e + 1)
     setEndDateError('')
     setDeleteStep('idle')
     setNewLinkLabel('')
@@ -760,12 +766,12 @@ export default function EntryModal({
           {/* Description */}
           <div>
             <FieldLabel>{t('entry.description')}</FieldLabel>
-            <textarea
-              value={form.description}
-              onChange={(e) => set('description', e.target.value)}
-              placeholder={t('entry.descriptionPlaceholder')}
-              rows={4}
-              style={{ ...inputStyle, resize: 'vertical', minHeight: 90 }}
+            <RichTextInput
+              key={descEpoch}
+              initialMarkdown={form.description}
+              onChange={(md) => set('description', md)}
+              uploadScope={entry ? `entry_${entry.id}` : 'entry_new'}
+              minHeight={90}
             />
           </div>
 
@@ -1117,7 +1123,7 @@ export default function EntryModal({
                             {new Date(c.createdAt).toLocaleDateString()}
                           </span>
                         </div>
-                        <p style={{ fontSize: 12, color: 'var(--text-primary)', marginTop: 2, lineHeight: 1.4 }}>{c.text}</p>
+                        <DocView markdown={c.text} fontSize={12} className="mt-0.5" />
                       </div>
                       <button
                         className="rm-comment"
@@ -1135,6 +1141,7 @@ export default function EntryModal({
                   value={commentText}
                   onChange={e => setCommentText(e.target.value)}
                   onKeyDown={e => {
+                    if (applyMarkdownShortcut(e, setCommentText)) return
                     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddComment() }
                   }}
                   rows={2}

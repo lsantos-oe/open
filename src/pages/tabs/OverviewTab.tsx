@@ -7,13 +7,14 @@ import {
   projectDeadline, projectDurationDays, projectEndVariance, projectDateRange, daysUntil,
 } from '@/utils/projectStats'
 import { Button } from '@/components/ui/Button'
-import { Input, Textarea, Field } from '@/components/ui/Input'
+import { Input, Field } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { EntityAttachments } from '@/components/ui/EntityAttachments'
 import OwnersField from '@/components/plan/OwnersField'
 import TeamTab from './TeamTab'
 import { charterTemplateMarkdown, legacyCharterToMarkdown } from '@/utils/charterDoc'
+import DocField from '@/components/editor/DocField'
 
 // O editor de blocos (BlockNote + Yjs) é pesado: carrega só quando a seção do charter é aberta.
 const CollabEditor = lazy(() => import('@/components/editor/CollabEditor'))
@@ -317,24 +318,15 @@ function EditableDevField({ project, onSave }: {
 export default function OverviewTab({ project }: Props) {
   const { t } = useTranslation()
   const { updateProject, setProjectCharterDoc, linkProjectClient, unlinkProjectClient, addProjectLink, removeProjectLink, deleteReportLink, clients, teamDirectory, settings } = useAppStore()
-  const [overview, setOverview] = useState(project.overview ?? '')
   const [charter, setCharter] = useState<ProjectCharter>(project.charter ?? EMPTY_CHARTER)
   const [linkModal, setLinkModal] = useState(false)
   const [linkForm, setLinkForm] = useState({ label: '', url: '' })
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(['dashboard']))
-  const overviewTimer = useRef<ReturnType<typeof setTimeout>>()
   const charterTimer = useRef<ReturnType<typeof setTimeout>>()
 
   useEffect(() => {
-    setOverview(project.overview ?? '')
     setCharter(project.charter ?? EMPTY_CHARTER)
   }, [project.id])
-
-  useEffect(() => {
-    clearTimeout(overviewTimer.current)
-    overviewTimer.current = setTimeout(() => updateProject(project.id, { overview }), 700)
-    return () => clearTimeout(overviewTimer.current)
-  }, [overview])
 
   useEffect(() => {
     clearTimeout(charterTimer.current)
@@ -556,12 +548,7 @@ export default function OverviewTab({ project }: Props) {
 
               <div className="border-t pt-4" style={{ borderColor: 'var(--border-default)' }}>
                 <p className="text-[11px] font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>{t('overview.notes')}</p>
-                <Textarea
-                  value={overview}
-                  onChange={(e) => setOverview(e.target.value)}
-                  rows={4}
-                  placeholder={t('overview.notesPlaceholder')}
-                />
+                <DocField kind="project.overview" target={{ id: project.id }} value={project.overview} minHeight={90} />
                 <p className="text-[11px] text-[var(--text-disabled)] mt-1.5">{t('overview.autosaved')}</p>
               </div>
             </div>

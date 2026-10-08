@@ -14,6 +14,9 @@ import { Input, Select, Textarea, Field } from '@/components/ui/Input'
 import OwnersField from '@/components/plan/OwnersField'
 import { EntityLinksPicker } from './EntityLinks'
 import VoteButton from './VoteButton'
+import RichTextInput from '@/components/editor/RichTextInput'
+import DocView from '@/components/editor/DocView'
+import { applyMarkdownShortcut } from '@/utils/markdownShortcuts'
 
 interface Props {
   retro: Retro
@@ -137,7 +140,9 @@ export default function RetroActionModal({ retro, cardId, userId, isAdmin, nameO
             <Textarea value={draft.text} disabled={!canEdit} onChange={(e) => set('text', e.target.value)} />
           </Field>
           <Field label={t('retro.actionDescription')}>
-            <Textarea value={draft.description} disabled={!canEdit} onChange={(e) => set('description', e.target.value)} />
+            {canEdit
+              ? <RichTextInput initialMarkdown={draft.description} onChange={(md) => set('description', md)} mentions={false} uploadScope={`retro_${card.id}`} minHeight={72} />
+              : <DocView markdown={draft.description} empty="—" />}
           </Field>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -178,7 +183,9 @@ export default function RetroActionModal({ retro, cardId, userId, isAdmin, nameO
 
           {(showResolution || draft.resolutionNote) && (
             <Field label={t('retro.resolutionNote')} hint={t('retro.resolutionHint')}>
-              <Textarea value={draft.resolutionNote} disabled={!canEdit} onChange={(e) => set('resolutionNote', e.target.value)} />
+              {canEdit
+                ? <RichTextInput initialMarkdown={draft.resolutionNote} onChange={(md) => set('resolutionNote', md)} mentions={false} uploadScope={`retro_${card.id}`} minHeight={72} />
+                : <DocView markdown={draft.resolutionNote} empty="—" />}
             </Field>
           )}
 
@@ -255,7 +262,7 @@ export default function RetroActionModal({ retro, cardId, userId, isAdmin, nameO
                       {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true, locale: ptBR })}
                     </span>
                   </div>
-                  <p className="whitespace-pre-wrap break-words">{c.text}</p>
+                  <DocView markdown={c.text} fontSize={12} />
                   {(c.authorId === userId || isAdmin) && (
                     <button type="button" onClick={() => deleteComment(c.id)} className="text-[10.5px] mt-1 hover:underline" style={{ color: 'var(--color-danger-text)' }}>{t('retro.deleteComment')}</button>
                   )}
@@ -264,7 +271,7 @@ export default function RetroActionModal({ retro, cardId, userId, isAdmin, nameO
             </ul>
             {canEdit && (
               <div className="space-y-1.5">
-                <Textarea rows={2} value={commentText} placeholder={t('retro.commentPlaceholder')} onChange={(e) => setCommentText(e.target.value)} />
+                <Textarea rows={2} value={commentText} placeholder={t('retro.commentPlaceholder')} onChange={(e) => setCommentText(e.target.value)} onKeyDown={(e) => { applyMarkdownShortcut(e, setCommentText) }} />
                 <div className="flex justify-end"><Button size="xs" onClick={sendComment} disabled={!commentText.trim()}>{t('retro.sendComment')}</Button></div>
               </div>
             )}

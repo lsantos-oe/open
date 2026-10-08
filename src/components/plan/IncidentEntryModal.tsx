@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, CSSProperties, ReactNode } from 'react'
+import RichTextInput from '@/components/editor/RichTextInput'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/store/useAppStore'
@@ -115,8 +116,12 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, onCl
   const [newLinkLabel, setNewLinkLabel] = useState('')
   const [newLinkUrl, setNewLinkUrl] = useState('')
 
+  // O editor da descrição só lê o texto inicial ao montar: cada reinício do formulário o remonta (key).
+  const [descEpoch, setDescEpoch] = useState(0)
+
   useEffect(() => {
     if (!open) return
+    setDescEpoch((e) => e + 1)
     setForm(entry ? entryToForm(entry) : emptyForm())
     setEndDateError(''); setDeleteStep('idle'); setNewLinkLabel(''); setNewLinkUrl('')
   }, [open, entry])
@@ -322,12 +327,12 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, onCl
 
         <div>
           <FieldLabel>{t('entry.description')}</FieldLabel>
-          <textarea
-            value={form.description}
-            onChange={(e) => set('description', e.target.value)}
-            placeholder={t('entry.descriptionPlaceholder')}
-            rows={4}
-            style={{ ...inputStyle, resize: 'vertical', minHeight: 90 }}
+          <RichTextInput
+            key={descEpoch}
+            initialMarkdown={form.description}
+            onChange={(md) => set('description', md)}
+            uploadScope={entry ? `entry_${entry.id}` : 'entry_new'}
+            minHeight={90}
           />
         </div>
 

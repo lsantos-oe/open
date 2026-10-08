@@ -2,7 +2,7 @@ import i18n from '@/i18n'
 import { Project, AppSettings, Entry, ProjectCharter } from '@/types'
 import { projectDurationDays, projectDateRange, isProjectDelayed } from './projectStats'
 import { computeVariance } from './dateEngine'
-import { markdownToSafeHtml } from './charterDoc'
+import { markdownToSafeHtml, markdownToPlainText } from './docText'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -824,7 +824,7 @@ function buildDelaySection(project: Project, settings: AppSettings, layout: 'sta
         <td style="text-align:right;white-space:nowrap;"><span class="${daysCls}">${prefix}${entry.days}d</span></td>
         <td>${esc(respLabel)}</td>
         <td class="text-muted">${esc(typeLabel)}</td>
-        <td class="text-muted">${esc(entry.description) || '—'}</td>
+        <td class="text-muted">${esc(markdownToPlainText(entry.description)) || '—'}</td>
       </tr>
     `
   }).join('')
@@ -860,7 +860,7 @@ function buildRisksSection(project: Project): string {
     return `
       <div class="risk-row no-break">
         <span class="risk-flag ${flagCls}"></span>
-        <span class="risk-desc">${esc(r.description)}</span>
+        <span class="risk-desc">${esc(markdownToPlainText(r.description))}</span>
         <span class="risk-owner">${esc(r.owner) || '—'}</span>
         ${pill(r.status, esc(r.status))}
       </div>

@@ -8,6 +8,8 @@ import { Modal } from '@/components/ui/Modal'
 import { Input, Select, Textarea, Field } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ClipboardIcon } from '@/components/ui/icons'
+import RichTextInput from '@/components/editor/RichTextInput'
+import { markdownToPlainText } from '@/utils/docText'
 
 const RESPONSIBILITY_KEYS: DelayResponsibility[] = ['internal', 'client_business', 'client_it', 'client_provider']
 const TYPE_KEYS: DelayType[] = ['execution', 'definition', 'planning']
@@ -159,11 +161,11 @@ function DelayModal({ projectId, allEntries, initial, onClose }: DelayModalProps
           </Field>
         </div>
         <Field label={t('delay.description')}>
-          <Textarea
-            value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            rows={2}
-            placeholder="…"
+          <RichTextInput
+            initialMarkdown={form.description}
+            onChange={(md) => setForm((f) => ({ ...f, description: md }))}
+            uploadScope={initial ? `delay_${initial.id}` : 'delay_new'}
+            minHeight={72}
           />
         </Field>
         <Field label={t('delay.comments')}>
@@ -323,8 +325,8 @@ export default function DelayLogPage({ projectId }: DelayLogPageProps) {
                   <td className="px-3 py-2.5">
                     <Badge variant="gray">{t(`delay.${entry.type}` as any)}</Badge>
                   </td>
-                  <td className="px-3 py-2.5 text-xs text-[var(--text-secondary)] max-w-[160px] truncate" title={entry.description}>
-                    {entry.description || '—'}
+                  <td className="px-3 py-2.5 text-xs text-[var(--text-secondary)] max-w-[160px] truncate" title={markdownToPlainText(entry.description)}>
+                    {markdownToPlainText(entry.description) || '—'}
                   </td>
                   <td className="px-3 py-2.5 text-xs text-[var(--text-secondary)] max-w-[160px] truncate" title={entry.comments}>
                     {entry.comments || '—'}

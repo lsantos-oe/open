@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { Input, Field, Select, Textarea } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { UsersManagementPanel } from '@/pages/UsersPage'
+import RichTextInput from '@/components/editor/RichTextInput'
 
 function Section({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
@@ -89,6 +90,8 @@ export default function SettingsPage() {
   const [itPriority, setItPriority] = useState<Probability>('medium')
   const [itImpact, setItImpact] = useState<Probability>('medium')
   const [itTasks, setItTasks] = useState('')
+  const [itDescription, setItDescription] = useState('')
+  const [itDescKey, setItDescKey] = useState(0) // o editor só lê o texto inicial ao montar: cada abertura do modal o remonta
 
   function changeHomepageTab(v: string) {
     setHomepageTab(v)
@@ -127,12 +130,14 @@ export default function SettingsPage() {
 
   function openAddIncidentTemplate() {
     setEditIncidentTemplate(null); setItName(''); setItPriority('medium'); setItImpact('medium'); setItTasks('')
+    setItDescription(''); setItDescKey((k) => k + 1)
     setShowIncidentTemplate(true)
   }
 
   function openEditIncidentTemplate(tpl: IncidentTemplate) {
     setEditIncidentTemplate(tpl); setItName(tpl.name); setItPriority(tpl.priority); setItImpact(tpl.impact)
     setItTasks(tpl.taskTitles.join('\n'))
+    setItDescription(tpl.description ?? ''); setItDescKey((k) => k + 1)
     setShowIncidentTemplate(true)
   }
 
@@ -140,9 +145,9 @@ export default function SettingsPage() {
     if (!itName.trim()) return
     const taskTitles = itTasks.split('\n').map((s) => s.trim()).filter(Boolean)
     if (editIncidentTemplate) {
-      updateIncidentTemplate({ ...editIncidentTemplate, name: itName.trim(), priority: itPriority, impact: itImpact, taskTitles })
+      updateIncidentTemplate({ ...editIncidentTemplate, name: itName.trim(), priority: itPriority, impact: itImpact, taskTitles, description: itDescription.trim() || undefined })
     } else {
-      createIncidentTemplate({ name: itName.trim(), priority: itPriority, impact: itImpact, taskTitles })
+      createIncidentTemplate({ name: itName.trim(), priority: itPriority, impact: itImpact, taskTitles, description: itDescription.trim() || undefined })
     }
     setShowIncidentTemplate(false)
   }
@@ -454,6 +459,9 @@ export default function SettingsPage() {
               </Select>
             </Field>
           </div>
+          <Field label="Descrição padrão" hint="Já entra preenchida ao criar um incidente a partir deste template. Aceita títulos, listas, tabelas e imagens (digite / para ver os blocos).">
+            <RichTextInput key={itDescKey} initialMarkdown={itDescription} onChange={setItDescription} mentions={false} uploadScope="incident_template" minHeight={90} />
+          </Field>
           <Field label="Tarefas padrão" hint="Uma tarefa por linha — criadas automaticamente junto com o incidente.">
             <Textarea value={itTasks} onChange={(e) => setItTasks(e.target.value)} rows={5} placeholder={'Ex:\nInvestigar causa raiz\nAplicar correção\nValidar com o cliente'} />
           </Field>

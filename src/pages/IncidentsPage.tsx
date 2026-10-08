@@ -25,6 +25,7 @@ import { useSort } from '@/hooks/useSort'
 import { useColumnVisibility, ColumnDef } from '@/hooks/useColumnVisibility'
 import { Incident, IncidentStatus, Probability, EntryOwner, TeamMember } from '@/types'
 import { exportIncidentsCsv } from '@/utils/exportListsCsv'
+import RichTextInput from '@/components/editor/RichTextInput'
 
 const COLUMNS: ColumnDef[] = [
   { key: 'title', label: 'Título', locked: true },
@@ -87,6 +88,8 @@ export default function IncidentsPage() {
   const [impact, setImpact] = useState<Probability>('medium')
   const [deadline, setDeadline] = useState('')
   const [templateId, setTemplateId] = useState('')
+  const [description, setDescription] = useState('')
+  const [descKey, setDescKey] = useState(0) // o editor só lê o texto inicial ao montar: abrir o modal ou trocar de template o remonta
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkOwnersOpen, setBulkOwnersOpen] = useState(false)
@@ -138,6 +141,7 @@ export default function IncidentsPage() {
   const sorted = sortItems(filtered)
 
   function openAdd() {
+    setDescription(''); setDescKey((k) => k + 1)
     setTitle(''); setNewClientIds([]); setNewProjectIds([]); setNewStakeholders([]); setClientSearch(''); setProjectSearch('')
     setNewOwners([]); setPriority('medium'); setImpact('medium'); setDeadline(''); setTemplateId('')
     setShowAdd(true)
@@ -205,12 +209,15 @@ export default function IncidentsPage() {
     setPriority(tpl.priority)
     setImpact(tpl.impact)
     if (!deadline) setDeadline(suggestDeadline(tpl.priority))
+    // A descrição padrão do template só entra se o campo ainda não foi escrito à mão.
+    if (!description.trim() && tpl.description) { setDescription(tpl.description); setDescKey((k) => k + 1) }
   }
 
   function handleCreate() {
     if (!title.trim() || newClientIds.length === 0 || !newOwners[0]) return
     const id = createIncident({
       title: title.trim(),
+      description: description.trim() || undefined,
       priority,
       impact,
       deadline: deadline || undefined,
@@ -470,6 +477,9 @@ export default function IncidentsPage() {
           )}
           <Field label={t('incident.colTitle')} required>
             <Input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} />
+          </Field>
+          <Field label={t('incident.description')}>
+            <RichTextInput key={descKey} initialMarkdown={description} onChange={setDescription} uploadScope="incident_new" minHeight={90} />
           </Field>
           <Field label={t('incident.colClients')} required>
             {clients.length > 3 && (

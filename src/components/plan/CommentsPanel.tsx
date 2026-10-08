@@ -8,6 +8,8 @@ import { useOverlayStore } from '@/stores/useOverlayStore'
 import { Entry, EntryComment } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Textarea } from '@/components/ui/Input'
+import DocView from '@/components/editor/DocView'
+import { applyMarkdownShortcut } from '@/utils/markdownShortcuts'
 
 interface Props {
   projectId: string
@@ -152,7 +154,7 @@ export default function CommentsPanel({ projectId, entry, onClose }: Props) {
                 <span className="text-sm font-medium text-[var(--text-secondary)]">{c.author}</span>
                 <span className="text-xs text-[var(--text-tertiary)]">{formatTime(c.createdAt)}</span>
               </div>
-              <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">{c.text}</p>
+              <DocView markdown={c.text} />
             </div>
             <button
               onClick={() => removeComment(projectId, entry.id, c.id)}
@@ -203,10 +205,13 @@ export default function CommentsPanel({ projectId, entry, onClose }: Props) {
           onChange={(e) => setText(e.target.value)}
           placeholder="Escreva um comentário…"
           rows={3}
-          onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSubmit() }}
+          onKeyDown={(e) => {
+            if (applyMarkdownShortcut(e, setText)) return
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSubmit()
+          }}
         />
         <div className="flex items-center justify-between">
-          <span className="text-xs text-[var(--text-tertiary)]">Ctrl+Enter para enviar</span>
+          <span className="text-xs text-[var(--text-tertiary)]">Ctrl+Enter para enviar · Ctrl+B negrito, Ctrl+I itálico, Ctrl+K link</span>
           <Button size="sm" onClick={handleSubmit} disabled={!text.trim()}>Enviar</Button>
         </div>
       </div>

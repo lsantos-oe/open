@@ -1,9 +1,3 @@
-import { unified } from 'unified'
-import remarkParse from 'remark-parse'
-import remarkGfm from 'remark-gfm'
-import remarkRehype from 'remark-rehype'
-import rehypeSanitize from 'rehype-sanitize'
-import rehypeStringify from 'rehype-stringify'
 import { ProjectCharter } from '@/types'
 
 /** As seções do charter, na ordem do documento. A chave é a mesma do formato antigo (campos separados). */
@@ -26,25 +20,6 @@ export function legacyCharterToMarkdown(
     .filter((s) => (charter[s] ?? '').trim())
     .map((s) => `## ${label(s)}\n\n${(charter[s] as string).trim().replace(/\n/g, '  \n')}`)
     .join('\n\n')
-}
-
-/** Markdown → HTML seguro para os relatórios (que são gerados como string e depois impressos/publicados).
- *  HTML cru no texto é descartado e o resultado passa pelo sanitizador. Menções viram texto simples e
- *  imagens do documento (open:file/…) viram uma nota, porque a URL assinada expira e não cabe num relatório estático. */
-export function markdownToSafeHtml(markdown: string): string {
-  if (!markdown.trim()) return ''
-  const prepared = markdown
-    .replace(/!\[([^\]]*)\]\(open:file\/[^)]*\)/g, (_m, alt: string) => `*[imagem${alt ? `: ${alt}` : ''}]*`)
-    .replace(/\[([^\]]*)\]\(open:(?:user|project|incident|client)\/[^)]*\)/g, '$1')
-  return String(
-    unified()
-      .use(remarkParse)
-      .use(remarkGfm)
-      .use(remarkRehype) // allowDangerousHtml desligado: HTML cru do texto é ignorado
-      .use(rehypeSanitize)
-      .use(rehypeStringify)
-      .processSync(prepared),
-  )
 }
 
 /** Substitui o corpo de uma seção `## Título` do documento (ou a acrescenta no fim se não existir).

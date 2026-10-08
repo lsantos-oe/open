@@ -375,6 +375,8 @@ export interface IncidentTemplate {
   priority: Probability
   impact: Probability
   taskTitles: string[]
+  /** Descrição padrão do incidente (Markdown). Entra preenchida no formulário de novo incidente. */
+  description?: string
 }
 
 export interface AppSettings {

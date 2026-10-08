@@ -8,6 +8,9 @@ import { Input, Field } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ClockIcon } from '@/components/ui/icons'
 import DiaryComments from '@/components/diary/DiaryComments'
+import DocField from '@/components/editor/DocField'
+import DocView from '@/components/editor/DocView'
+import RichTextInput from '@/components/editor/RichTextInput'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR, enUS, es, type Locale } from 'date-fns/locale'
 
@@ -68,16 +71,13 @@ export default function HistoryTab({ scope, history }: Props) {
 
   function handleSaveEdit() {
     if (!editEntry || !noteTitle.trim()) return
-    updateHistoryEntry(scope, editEntry.id, {
-      title: noteTitle.trim(),
-      detail: noteDetail || undefined,
-    })
+    // O detalhe de uma nota existente é um documento colaborativo: edita ao vivo (DocField), não por este botão.
+    updateHistoryEntry(scope, editEntry.id, { title: noteTitle.trim() })
     setEditEntry(null)
   }
 
   function openEditNote(entry: HistoryEntry) {
     setNoteTitle(entry.title)
-    setNoteDetail(entry.detail ?? '')
     setEditEntry(entry)
   }
 
@@ -126,9 +126,7 @@ export default function HistoryTab({ scope, history }: Props) {
                           {formatDistanceToNow(new Date(entry.createdAt), { addSuffix: true, locale })}
                         </span>
                       </div>
-                      {entry.detail && (
-                        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{entry.detail}</p>
-                      )}
+                      {entry.detail && <DocView markdown={entry.detail} className="mt-1" />}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <button
@@ -196,13 +194,7 @@ export default function HistoryTab({ scope, history }: Props) {
             <Input autoFocus value={noteTitle} onChange={(e) => setNoteTitle(e.target.value)} />
           </Field>
           <Field label={t('diary.historyNoteDetail')}>
-            <textarea
-              value={noteDetail}
-              onChange={(e) => setNoteDetail(e.target.value)}
-              rows={3}
-              className="block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:outline-none focus:ring-1"
-              style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)', resize: 'none' }}
-            />
+            <RichTextInput initialMarkdown="" onChange={setNoteDetail} uploadScope="history_note" minHeight={90} />
           </Field>
         </div>
       </Modal>
@@ -224,15 +216,16 @@ export default function HistoryTab({ scope, history }: Props) {
           <Field label={t('diary.historyNoteTitle')} required>
             <Input autoFocus value={noteTitle} onChange={(e) => setNoteTitle(e.target.value)} />
           </Field>
-          <Field label={t('diary.historyNoteDetail')}>
-            <textarea
-              value={noteDetail}
-              onChange={(e) => setNoteDetail(e.target.value)}
-              rows={3}
-              className="block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:outline-none focus:ring-1"
-              style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)', resize: 'none' }}
-            />
-          </Field>
+          {editEntry && (
+            <Field label={t('diary.historyNoteDetail')} hint={t('diary.autosavedHint')}>
+              <DocField
+                kind="history.detail"
+                target={{ id: editEntry.id, scope }}
+                value={history.find((h) => h.id === editEntry.id)?.detail ?? editEntry.detail}
+                minHeight={90}
+              />
+            </Field>
+          )}
         </div>
       </Modal>
     </div>

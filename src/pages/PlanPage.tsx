@@ -31,6 +31,7 @@ import { computeAutoStatus } from '@/utils/statusCalc'
 import { contactsForClients } from '@/utils/contacts'
 import { PinIcon, CalendarIcon } from '@/components/ui/icons'
 import { SignalBadges } from '@/components/ui/SignalBadges'
+import RichTextInput from '@/components/editor/RichTextInput'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -775,7 +776,7 @@ function DelayModal({ pending, holidays, onConfirm, onSkip }: {
           </Select>
         </Field>
         <Field label={t('delay.description')}>
-          <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
+          <RichTextInput initialMarkdown="" onChange={setDescription} uploadScope="delay_new" minHeight={72} />
         </Field>
       </div>
     </Modal>
