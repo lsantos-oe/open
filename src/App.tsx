@@ -26,6 +26,7 @@ import RetroDetailPage from '@/pages/RetroDetailPage'
 import LoginPage from '@/pages/LoginPage'
 import AuthCallback from '@/pages/AuthCallback'
 import PublicReportPage from '@/pages/PublicReportPage'
+import AiMemoriesPage from '@/pages/AiMemoriesPage'
 
 export default function App() {
   const defaultLanguage = useAppStore((s) => s.settings.defaultLanguage)
@@ -112,6 +113,7 @@ export default function App() {
           <Route path="/tasks" element={<TasksPage />} />
           <Route path="/projects/:id" element={<ProjectDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings/assistant" element={<AiMemoriesPage />} />
           <Route path="/import" element={<ImportPage />} />
           <Route path="/retros" element={<RetrosPage />} />
           <Route path="/retros/:id" element={<RetroDetailPage />} />

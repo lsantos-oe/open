@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { ChatMessage, ChatContentBlock, PendingWriteConfirmation, PendingAttachment, ActionLink } from '@/types/ai'
+import type { ChatMessage, ChatContentBlock, PendingWriteConfirmation, PendingAttachment, ActionLink, ConversationSummary } from '@/types/ai'
 
 interface AiChatStore {
   open: boolean
@@ -10,6 +10,16 @@ interface AiChatStore {
   toggleExpanded: () => void
 
   conversationId: string | null
+  setConversationId: (id: string | null) => void
+  /** Conversas do usuário (mais recente primeiro) e de quem é o histórico carregado — trocar de usuário no mesmo
+   *  navegador nunca pode mostrar a conversa do anterior. */
+  conversations: ConversationSummary[]
+  setConversations: (c: ConversationSummary[]) => void
+  hydratedFor: string | null
+  setHydratedFor: (userId: string | null) => void
+  /** 'history' mostra a lista de conversas no lugar do chat. */
+  view: 'chat' | 'history'
+  setView: (v: 'chat' | 'history') => void
   messages: ChatMessage[]
   setMessages: (messages: ChatMessage[]) => void
   appendMessage: (message: ChatMessage) => void
@@ -58,6 +68,13 @@ export const useAiChatStore = create<AiChatStore>((set) => ({
   toggleExpanded: () => set((s) => ({ expanded: !s.expanded })),
 
   conversationId: null,
+  setConversationId: (id) => set({ conversationId: id }),
+  conversations: [],
+  setConversations: (conversations) => set({ conversations }),
+  hydratedFor: null,
+  setHydratedFor: (hydratedFor) => set({ hydratedFor }),
+  view: 'chat',
+  setView: (view) => set({ view }),
   messages: [],
   setMessages: (messages) => set({ messages }),
   appendMessage: (message) => set((s) => ({ messages: [...s.messages, message] })),
@@ -90,6 +107,6 @@ export const useAiChatStore = create<AiChatStore>((set) => ({
   reset: () => set({
     conversationId: null, messages: [], isStreaming: false, streamingText: '',
     pendingConfirmation: null, queuedConfirmations: [], pendingToolResults: [],
-    actionLink: null, input: '', attachments: [],
+    actionLink: null, input: '', attachments: [], view: 'chat',
   }),
 }))

@@ -239,6 +239,10 @@ export default function SettingsPage() {
             <Button variant="secondary" size="sm" onClick={() => navigate('/import')}>Abrir importação →</Button>
           </Section>
 
+          <Section title="Memória do assistente" description="O que o assistente de IA guarda sobre você entre as conversas — só você vê e edita.">
+            <Button variant="secondary" size="sm" onClick={() => navigate('/settings/assistant')}>Gerenciar memória →</Button>
+          </Section>
+
           {isAdmin && (
             <Section title="Assistente de IA" description="Chave da API do OpenRouter compartilhada por todo o time — não é por usuário.">
               {hasKey ? (

@@ -43,6 +43,26 @@ export interface ActionLink {
   to: string
 }
 
+// ─── Histórico e memória ────────────────────────────────────────────────────
+
+export interface ConversationSummary {
+  id: string
+  title: string
+  updatedAt: string
+}
+
+export type AiMemoryKind = 'preference' | 'fact' | 'correction' | 'context'
+
+/** Nota curta e pessoal que o assistente (ou o próprio usuário) guardou sobre o usuário. */
+export interface AiMemory {
+  id: string
+  kind: AiMemoryKind
+  content: string
+  source: 'assistant' | 'user'
+  createdAt: string
+  updatedAt: string
+}
+
 // ─── Tool (function-calling) definitions ───────────────────────────────────
 
 export interface AiToolContext {

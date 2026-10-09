@@ -6,6 +6,8 @@ import ReactMarkdown from 'react-markdown'
 import { useAiChatStore } from '@/stores/useAiChatStore'
 import { useOverlayStore } from '@/stores/useOverlayStore'
 import { runConversation, approveConfirmation, rejectConfirmation } from '@/ai/runConversation'
+import { addMessage, hydrateChat, openConversation, startNewConversation, deleteConversation } from '@/ai/persistence'
+import { useAuthStore } from '@/stores/useAuthStore'
 import type { ChatContentBlock, PendingAttachment } from '@/types/ai'
 import { ImageIcon, FileIcon } from '@/components/ui/icons'
 
@@ -39,8 +41,9 @@ export function ChatPanel() {
   const {
     open, setOpen, expanded, toggleExpanded, messages, isStreaming, streamingText, pendingConfirmation,
     queuedConfirmations, input, setInput, attachments, addAttachment, removeAttachment, clearAttachments,
-    appendMessage, actionLink, setActionLink,
+    actionLink, setActionLink, view, setView, conversations, conversationId,
   } = useAiChatStore()
+  const userId = useAuthStore((s) => s.user?.id)
   const sidePanelOpen = useOverlayStore((s) => s.sidePanelCount > 0)
   const navigate = useNavigate()
   const [approving, setApproving] = useState(false)
@@ -49,7 +52,12 @@ export function ChatPanel() {
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight })
-  }, [messages, streamingText, pendingConfirmation, actionLink])
+  }, [messages, streamingText, pendingConfirmation, actionLink, view])
+
+  // Ao abrir o painel (uma vez por usuário), carrega o histórico e retoma a última conversa.
+  useEffect(() => {
+    if (open && userId) void hydrateChat()
+  }, [open, userId])
 
   if (!open) return null
 
@@ -99,7 +107,7 @@ export function ChatPanel() {
     }
     if (text) content.push({ type: 'text', text })
 
-    appendMessage({ id: uuid(), role: 'user', content, createdAt: new Date().toISOString() })
+    addMessage({ id: uuid(), role: 'user', content, createdAt: new Date().toISOString() })
     setInput('')
     clearAttachments()
     setActionLink(null)
@@ -157,8 +165,32 @@ export function ChatPanel() {
           flexShrink: 0,
         }}
       >
-        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Assistente de IA</span>
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
+          {view === 'history' ? 'Conversas' : 'Assistente de IA'}
+        </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button
+            onClick={() => { startNewConversation(); setView('chat') }}
+            disabled={isStreaming}
+            title="Nova conversa"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 18, lineHeight: 1, padding: '2px 6px', opacity: isStreaming ? 0.4 : 1 }}
+          >
+            +
+          </button>
+          <button
+            onClick={() => setView(view === 'history' ? 'chat' : 'history')}
+            title={view === 'history' ? 'Voltar à conversa' : 'Conversas anteriores'}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: view === 'history' ? 'var(--oe-primary)' : 'var(--text-tertiary)', fontSize: 11, fontWeight: 500, padding: '2px 6px' }}
+          >
+            {view === 'history' ? 'Voltar' : 'Histórico'}
+          </button>
+          <button
+            onClick={() => { setOpen(false); navigate('/settings/assistant') }}
+            title="Memória do assistente"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 11, fontWeight: 500, padding: '2px 6px' }}
+          >
+            Memória
+          </button>
           <button
             onClick={toggleExpanded}
             title={expanded ? 'Recolher' : 'Expandir'}
@@ -175,8 +207,41 @@ export function ChatPanel() {
         </div>
       </div>
 
+      {view === 'history' && (
+        <div style={{ flex: 1, overflowY: 'auto', padding: 8 }}>
+          {conversations.length === 0 ? (
+            <p style={{ fontSize: 13, color: 'var(--text-tertiary)', textAlign: 'center', marginTop: 24 }}>Nenhuma conversa salva ainda.</p>
+          ) : conversations.map((c) => (
+            <div
+              key={c.id}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 'var(--radius-md)',
+                background: c.id === conversationId ? 'var(--oe-primary-light)' : 'transparent',
+              }}
+            >
+              <button
+                onClick={() => void openConversation(c.id)}
+                disabled={isStreaming}
+                style={{ flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              >
+                <div style={{ fontSize: 13, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.title}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{new Date(c.updatedAt).toLocaleString()}</div>
+              </button>
+              <button
+                onClick={() => { if (window.confirm('Apagar esta conversa?')) void deleteConversation(c.id) }}
+                disabled={isStreaming && c.id === conversationId}
+                title="Apagar conversa"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 16, lineHeight: 1 }}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Messages */}
-      <div ref={listRef} style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div ref={listRef} style={{ flex: 1, overflowY: 'auto', padding: 16, display: view === 'history' ? 'none' : 'flex', flexDirection: 'column', gap: 12 }}>
         {messages.length === 0 && !isStreaming && (
           <p style={{ fontSize: 13, color: 'var(--text-tertiary)', textAlign: 'center', marginTop: 24 }}>
             Pergunte sobre projetos, clientes ou incidentes — ou cole um texto/imagem pra extrair tarefas automaticamente.
@@ -268,7 +333,7 @@ export function ChatPanel() {
       </div>
 
       {/* Attachments preview */}
-      {attachments.length > 0 && (
+      {view === 'chat' && attachments.length > 0 && (
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', padding: '0 16px 8px' }}>
           {attachments.map((a) => (
             <span
@@ -283,7 +348,7 @@ export function ChatPanel() {
       )}
 
       {/* Composer */}
-      <div style={{ padding: 12, borderTop: '0.5px solid var(--border-default)', display: 'flex', gap: 8, alignItems: 'flex-end', flexShrink: 0 }}>
+      <div style={{ padding: 12, borderTop: '0.5px solid var(--border-default)', display: view === 'history' ? 'none' : 'flex', gap: 8, alignItems: 'flex-end', flexShrink: 0 }}>
         <input
           ref={fileInputRef}
           type="file"

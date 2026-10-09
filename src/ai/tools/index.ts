@@ -6,6 +6,7 @@ import { findUserTool, bulkReassignProjectsTool } from './usersTools'
 import { listPhasesTool, listTasksTool, createTaskTool, updateTaskTool, reorderTaskTool, convertToSubtaskTool, promoteSubtaskTool } from './tasksTools'
 import { generateStatusReportMarkdownTool } from './reportTools'
 import { proposeExtractedItemsTool } from './extractionTools'
+import { rememberTool, forgetTool } from './memoryTools'
 
 export const ALL_TOOLS: AiTool[] = [
   findProjectTool,
@@ -35,6 +36,8 @@ export const ALL_TOOLS: AiTool[] = [
   promoteSubtaskTool,
   generateStatusReportMarkdownTool,
   proposeExtractedItemsTool,
+  rememberTool,
+  forgetTool,
 ]
 
 export const TOOLS_BY_NAME: Record<string, AiTool> = Object.fromEntries(ALL_TOOLS.map((t) => [t.name, t]))

@@ -1,7 +1,10 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { v4 as uuid } from 'uuid'
 import { streamChat, ChatApiError } from './client'
-import { SYSTEM_PROMPT } from './systemPrompt'
+import { buildSystemPrompt } from './systemPrompt'
+import { addMessage } from './persistence'
+import { buildMemoryBlock, mergeSameRole, windowForApi } from './history'
+import { useAiMemoryStore } from '@/stores/useAiMemoryStore'
 import { ALL_TOOLS, TOOLS_BY_NAME } from './tools'
 import type { ExtractedItem } from './tools/extractionTools'
 import { useAiChatStore } from '@/stores/useAiChatStore'
@@ -73,10 +76,13 @@ export async function runConversation(turnsLeft: number = MAX_AUTO_TURNS): Promi
   }
 
   try {
+    // As memórias são recarregadas do banco no começo de cada resposta do usuário (não a cada passo de ferramenta).
+    if (turnsLeft === MAX_AUTO_TURNS) await useAiMemoryStore.getState().load()
     const final = await streamChat({
-      system: SYSTEM_PROMPT,
+      system: buildSystemPrompt(buildMemoryBlock(useAiMemoryStore.getState().memories)),
       tools: anthropicTools,
-      messages: toAnthropicMessages(useAiChatStore.getState().messages),
+      // Só as últimas mensagens vão ao modelo; o histórico inteiro continua salvo e na tela.
+      messages: toAnthropicMessages(mergeSameRole(windowForApi(useAiChatStore.getState().messages))),
       onText: (snapshot) => useAiChatStore.getState().setStreamingText(snapshot),
     })
 
@@ -89,7 +95,7 @@ export async function runConversation(turnsLeft: number = MAX_AUTO_TURNS): Promi
       // Other block kinds (thinking, server tool use, etc.) aren't used by this app — skipped.
     }
 
-    useAiChatStore.getState().appendMessage(newMessage('assistant', assistantBlocks))
+    addMessage(newMessage('assistant', assistantBlocks))
     useAiChatStore.getState().setStreamingText('')
 
     if (final.stop_reason !== 'tool_use') {
@@ -131,7 +137,7 @@ export async function runConversation(turnsLeft: number = MAX_AUTO_TURNS): Promi
 
     if (writeConfirmations.length === 0) {
       // Every tool call this turn was read-only — feed the results back and continue.
-      useAiChatStore.getState().appendMessage(newMessage('user', resultBlocks))
+      addMessage(newMessage('user', resultBlocks))
       await runConversation(turnsLeft - 1)
       return
     }
@@ -206,7 +212,7 @@ async function advanceAfterConfirmation(resolvedResult: ChatContentBlock): Promi
 
   useAiChatStore.getState().setPendingToolResults([])
   useAiChatStore.getState().setStreaming(true)
-  useAiChatStore.getState().appendMessage(newMessage('user', allResults))
+  addMessage(newMessage('user', allResults))
   await runConversation()
 }
 
