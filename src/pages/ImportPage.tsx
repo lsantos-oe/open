@@ -1,55 +1,40 @@
-import { useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
 import { useToastStore } from '@/stores/useToastStore'
 import { Button } from '@/components/ui/Button'
 import { Input, Select } from '@/components/ui/Input'
+import { parseStagingFile, fold } from '@/utils/importStaging'
+import { buildImportRows, rowCounts } from '@/utils/importReview'
 import {
-  parseStagingFile, StagingWorkbook, StagingProjectRow, StagingIncidentRow, StagingTaskRow,
-} from '@/utils/importStaging'
-import { matchClient, matchProject, matchIncident, matchTaskOrigin } from '@/utils/importStagingMatch'
-import { Entry, EntryStatus, IncidentStatus, ProjectStatus, RiskFlag, Probability } from '@/types'
-
-type RowAction = 'create' | 'update' | 'skip'
-type TaskScope = 'projeto' | 'incidente' | 'solta'
-
-interface ProjectRowState {
-  row: StagingProjectRow
-  include: boolean
-  action: RowAction
-  clientId: string
-  matchProjectId?: string
-  name: string
-  status: ProjectStatus
-}
-
-interface IncidentRowState {
-  row: StagingIncidentRow
-  include: boolean
-  action: RowAction
-  clientId: string
-  matchIncidentId?: string
-  title: string
-  status: IncidentStatus
-  priority: Probability
-}
-
-interface TaskRowState {
-  row: StagingTaskRow
-  include: boolean
-  scope: TaskScope
-  targetKey?: string // `existing:<id>` or `batch:<linha_origem>`
-  clientId: string
-  name: string
-  status: EntryStatus
-  riskFlag: RiskFlag
-  responsavel: string
-}
+  ImportRows, RowAction, TaskScope, blockedRows, commitImport,
+} from '@/utils/importCommit'
+import {
+  CLIENT_STATUS_LABELS, IMPORT_ENTITIES, ImportEntity, LAYOUTS, importFileName,
+} from '@/utils/importLayouts'
+import type { ListsData } from '@/utils/importTemplate'
+import { COUNTRIES, findCountry } from '@/data/countries'
+import { teamDirectoryAsTeamMembers } from '@/ai/tools/helpers'
+import { ClientStatus, EntryStatus, IncidentStatus, ProjectStatus, RiskFlag, Probability } from '@/types'
 
 const PROJECT_STATUSES: ProjectStatus[] = ['backlog', 'planning', 'in_progress', 'done']
 const INCIDENT_STATUSES: IncidentStatus[] = ['open', 'in_progress', 'waiting_on_client', 'resolved', 'closed']
 const TASK_STATUSES: EntryStatus[] = ['pending', 'todo', 'in_progress', 'validation', 'done', 'blocked']
+const CLIENT_STATUSES: ClientStatus[] = ['pre_venda', 'implantacao', 'sustentacao_novos_projetos']
 const PRIORITIES: Probability[] = ['low', 'medium', 'high']
+
+type Choice = ImportEntity | 'tudo'
+
+const CARDS: { id: Choice; title: string; description: string }[] = [
+  { id: 'clientes', title: 'Clientes', description: 'Carteira: nome, país, status, responsável e notas.' },
+  { id: 'projetos', title: 'Projetos', description: 'Projetos por cliente, com tipo, líder, status e go-live.' },
+  { id: 'incidentes', title: 'Incidentes', description: 'Sustentação: prioridade, impacto, prazo e responsável.' },
+  { id: 'tarefas', title: 'Tarefas', description: 'De projetos, de incidentes ou soltas, com responsável e datas.' },
+  { id: 'tudo', title: 'Tudo em um arquivo', description: 'Todas as abas juntas — tarefas podem apontar para projetos criados no mesmo arquivo.' },
+]
+
+const fmtDate = (iso?: string) => (iso ? iso.split('-').reverse().join('/') : '')
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
@@ -63,87 +48,80 @@ function Td({ children }: { children: React.ReactNode }) {
   return <td className="px-2 py-1.5 align-top" style={{ borderBottom: '1px solid var(--border-default)' }}>{children}</td>
 }
 
+/** Avisos da linha (erros de leitura em vermelho + observação de quem gerou o arquivo). */
+function Notes({ errors, note }: { errors: string[]; note?: string }) {
+  return (
+    <div className="text-[11.5px] min-w-[140px]">
+      {errors.map((e, i) => <div key={i} style={{ color: 'var(--color-danger-text)' }}>{e}</div>)}
+      {note && <div style={{ color: 'var(--text-tertiary)' }}>{note}</div>}
+    </div>
+  )
+}
+
+const EMPTY: ImportRows = { clients: [], projects: [], incidents: [], tasks: [] }
+
 export default function ImportPage() {
   const { t } = useTranslation()
   const { addToast } = useToastStore()
-  const {
-    clients, projects, incidents, settings,
-    createProject, updateProject, createIncident, updateIncident,
-    addUnassignedEntry, addIncidentEntry, addStandaloneTask, updateEntry,
-  } = useAppStore()
+  const [searchParams] = useSearchParams()
+  const store = useAppStore()
+  const { clients, projects, incidents, teamDirectory, settings } = store
 
+  const initial = searchParams.get('entity')
+  const [choice, setChoice] = useState<Choice>(([...IMPORT_ENTITIES, 'tudo'] as string[]).includes(initial ?? '') ? (initial as Choice) : 'projetos')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [fileName, setFileName] = useState('')
   const [parseErrors, setParseErrors] = useState<string[]>([])
-  const [projectRows, setProjectRows] = useState<ProjectRowState[]>([])
-  const [incidentRows, setIncidentRows] = useState<IncidentRowState[]>([])
-  const [taskRows, setTaskRows] = useState<TaskRowState[]>([])
+  const [rows, setRows] = useState<ImportRows>(EMPTY)
   const [committing, setCommitting] = useState(false)
+  const [downloading, setDownloading] = useState(false)
 
-  const activeClients = clients.filter((c) => !c.archived)
+  const activeClients = useMemo(() => clients.filter((c) => !c.archived), [clients])
+  const hasRows = rows.clients.length + rows.projects.length + rows.incidents.length + rows.tasks.length > 0
 
-  function buildState(wb: StagingWorkbook) {
-    const pRows: ProjectRowState[] = wb.projetos.map((row) => {
-      const clientMatch = matchClient(activeClients, row.cliente)
-      const clientId = clientMatch.match?.id ?? ''
-      const projMatch = clientId ? matchProject(projects, row.nome, clientId) : { action: 'create' as const, candidates: [] }
-      return {
-        row,
-        include: row.errors.length === 0,
-        action: projMatch.action === 'update' ? 'update' : 'create',
-        clientId,
-        matchProjectId: projMatch.match?.id,
-        name: row.nome,
-        status: row.status,
+  // ── modelo (.xlsx) ─────────────────────────────────────────────────────────
+
+  async function downloadTemplate() {
+    setDownloading(true)
+    try {
+      const lists: ListsData = {
+        clients: activeClients.map((c) => c.name),
+        users: teamDirectory.filter((p) => p.active).map((p) => p.name ?? p.email ?? '').filter(Boolean),
+        projects: projects.filter((p) => !p.archived).map((p) => p.name),
+        incidents: incidents.map((i) => i.title),
+        countries: COUNTRIES.map((c) => c.name),
       }
-    })
-
-    const iRows: IncidentRowState[] = wb.incidentes.map((row) => {
-      const clientMatch = matchClient(activeClients, row.cliente)
-      const clientId = clientMatch.match?.id ?? ''
-      const incMatch = clientId ? matchIncident(incidents, row.titulo, clientId) : { action: 'create' as const, candidates: [] }
-      return {
-        row,
-        include: row.errors.length === 0,
-        action: incMatch.action === 'update' ? 'update' : 'create',
-        clientId,
-        matchIncidentId: incMatch.match?.id,
-        title: row.titulo,
-        status: row.status,
-        priority: row.prioridade,
-      }
-    })
-
-    const tRows: TaskRowState[] = wb.tarefas.map((row) => {
-      let targetKey: string | undefined
-      const origin = matchTaskOrigin(row, { projetos: wb.projetos, incidentes: wb.incidentes }, { projects, incidents })
-      if (origin?.batchRow) targetKey = `batch:${origin.batchRow.linhaOrigem}`
-      else if (origin?.match) targetKey = `existing:${origin.match.id}`
-      const clientMatch = row.cliente ? matchClient(activeClients, row.cliente) : undefined
-      return {
-        row,
-        include: row.errors.length === 0,
-        scope: row.origemTipo,
-        targetKey,
-        clientId: clientMatch?.match?.id ?? '',
-        name: row.nome,
-        status: row.status,
-        riskFlag: row.riskFlag,
-        responsavel: row.responsavel ?? '',
-      }
-    })
-
-    setProjectRows(pRows)
-    setIncidentRows(iRows)
-    setTaskRows(tRows)
+      // exceljs é pesado: só é baixado quando alguém pede o modelo.
+      const { buildImportTemplate } = await import('@/utils/importTemplate')
+      const { blob, fileName: name } = await buildImportTemplate(choice === 'tudo' ? [...IMPORT_ENTITIES] : [choice], lists, importFileName(choice))
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = name
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 10_000)
+    } catch (err) {
+      addToast(err instanceof Error ? `Não foi possível gerar o modelo: ${err.message}` : 'Não foi possível gerar o modelo.')
+    } finally {
+      setDownloading(false)
+    }
   }
+
+  // ── planilha preenchida ────────────────────────────────────────────────────
 
   async function handleFile(file: File) {
     setFileName(file.name)
     try {
       const wb = await parseStagingFile(file)
-      setParseErrors(wb.sheetErrors)
-      buildState(wb)
+      const errors = [...wb.sheetErrors]
+      const counts = rowCounts(wb)
+      if (choice !== 'tudo' && errors.length === 0 && counts[choice] === 0) {
+        errors.push(`Nenhuma linha encontrada na aba "${LAYOUTS[choice].sheet}". Use o modelo baixado nesta tela e preencha a partir da linha 2.`)
+      }
+      setParseErrors(errors)
+      setRows(buildImportRows(wb, { clients, projects, incidents }, choice))
     } catch (err) {
       addToast(err instanceof Error ? err.message : 'Erro ao ler o arquivo')
     }
@@ -152,139 +130,162 @@ export default function ImportPage() {
   function reset() {
     setFileName('')
     setParseErrors([])
-    setProjectRows([])
-    setIncidentRows([])
-    setTaskRows([])
+    setRows(EMPTY)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  const blockedProjects = projectRows.filter((r) => r.include && !r.clientId)
-  const blockedIncidents = incidentRows.filter((r) => r.include && !r.clientId)
-  const blockedTasks = taskRows.filter((r) => r.include && r.scope !== 'solta' && !r.targetKey)
+  // O menu "Importar" do topo navega para /import?entity=...: se a página já estiver aberta, acompanha a escolha.
+  const entityParam = searchParams.get('entity')
+  useEffect(() => {
+    if (entityParam && ([...IMPORT_ENTITIES, 'tudo'] as string[]).includes(entityParam) && entityParam !== choice) {
+      setChoice(entityParam as Choice)
+      reset()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entityParam])
 
+  function pickChoice(c: Choice) {
+    if (c === choice) return
+    setChoice(c)
+    reset()
+  }
+
+  // ── commit ─────────────────────────────────────────────────────────────────
+
+  const blocked = blockedRows(rows)
+  const blockedCount = blocked.projects.length + blocked.incidents.length + blocked.tasks.length
   const includedCount =
-    projectRows.filter((r) => r.include).length +
-    incidentRows.filter((r) => r.include).length +
-    taskRows.filter((r) => r.include).length
+    rows.clients.filter((r) => r.include && r.action !== 'skip').length +
+    rows.projects.filter((r) => r.include && r.action !== 'skip').length +
+    rows.incidents.filter((r) => r.include && r.action !== 'skip').length +
+    rows.tasks.filter((r) => r.include).length
 
-  async function commit() {
-    if (blockedProjects.length || blockedIncidents.length || blockedTasks.length) {
+  function commit() {
+    if (blockedCount > 0) {
       addToast('Existem linhas incluídas sem cliente ou origem resolvida — ajuste antes de importar.')
       return
     }
     setCommitting(true)
     try {
-      const projLinhaToId = new Map<string, string>()
-      const incLinhaToId = new Map<string, string>()
-
-      for (const r of projectRows) {
-        if (!r.include) continue
-        if (r.action === 'update' && r.matchProjectId) {
-          updateProject(r.matchProjectId, {
-            status: r.status,
-            overview: [r.row.descricao, r.row.linkReferencia, r.row.notas].filter(Boolean).join('\n\n') || undefined,
-          })
-          projLinhaToId.set(r.row.linhaOrigem, r.matchProjectId)
-        } else {
-          const id = createProject({
-            name: r.name,
-            type: r.row.tipo,
-            pm: r.row.pm,
-            language: settings.defaultLanguage,
-            clientIds: [r.clientId],
-          })
-          if (r.status !== 'planning') updateProject(id, { status: r.status })
-          const overview = [r.row.descricao, r.row.linkReferencia, r.row.notas].filter(Boolean).join('\n\n')
-          if (overview) updateProject(id, { overview })
-          if (r.row.dataGoLive) {
-            const created = useAppStore.getState().projects.find((p) => p.id === id)
-            const milestones = created?.phases.flatMap((ph) => ph.entries.filter((e) => e.type === 'milestone')) ?? []
-            const goLive = milestones.find((e) => e.name.toLowerCase().includes('go live') || e.name.toLowerCase().includes('go-live'))
-            if (goLive) updateEntry(id, goLive.id, { plannedDate: r.row.dataGoLive })
-          }
-          projLinhaToId.set(r.row.linhaOrigem, id)
-        }
-      }
-
-      for (const r of incidentRows) {
-        if (!r.include) continue
-        const description = [r.row.descricao, r.row.linkEvidencia, r.row.notas].filter(Boolean).join('\n\n') || undefined
-        if (r.action === 'update' && r.matchIncidentId) {
-          updateIncident(r.matchIncidentId, { status: r.status, priority: r.priority, impact: r.priority, description })
-          incLinhaToId.set(r.row.linhaOrigem, r.matchIncidentId)
-        } else {
-          const relatedProjectId = r.row.projetoRelacionado ? projLinhaToId.get(r.row.projetoRelacionado) : undefined
-          const id = createIncident({
-            title: r.title,
-            description,
-            priority: r.priority,
-            impact: r.priority,
-            deadline: r.row.prazo,
-            clientIds: [r.clientId],
-            projectIds: relatedProjectId ? [relatedProjectId] : undefined,
-          })
-          if (r.status !== 'open') updateIncident(id, { status: r.status })
-          incLinhaToId.set(r.row.linhaOrigem, id)
-        }
-      }
-
-      for (const r of taskRows) {
-        if (!r.include) continue
-        const description = [r.row.descricao, r.row.linkEvidencia, r.row.notas].filter(Boolean).join('\n\n') || undefined
-        const entry: Omit<Entry, 'id' | 'isCritical' | 'comments' | 'links' | 'subtasks'> = {
-          type: 'task',
-          name: r.name,
-          description,
-          responsible: r.responsavel,
-          dependsOn: [],
-          riskFlag: r.riskFlag,
-          status: r.status,
-          order: 0,
-          clientId: r.scope === 'solta' ? (r.clientId || undefined) : undefined,
-        }
-        if (r.scope === 'solta') {
-          addStandaloneTask(entry)
-        } else if (r.scope === 'projeto' && r.targetKey) {
-          const id = r.targetKey.startsWith('batch:') ? projLinhaToId.get(r.targetKey.slice(6)) : r.targetKey.slice(9)
-          if (id) addUnassignedEntry(id, entry)
-        } else if (r.scope === 'incidente' && r.targetKey) {
-          const id = r.targetKey.startsWith('batch:') ? incLinhaToId.get(r.targetKey.slice(6)) : r.targetKey.slice(9)
-          if (id) addIncidentEntry(id, entry)
-        }
-      }
-
-      addToast(`Importação concluída: ${includedCount} itens processados.`, 'success')
+      const s = useAppStore.getState()
+      const summary = commitImport(rows, {
+        clients: s.clients, projects: s.projects, incidents: s.incidents,
+        teamMembers: teamDirectoryAsTeamMembers(s.teamDirectory),
+        defaultLanguage: settings.defaultLanguage,
+        createClient: s.createClient, updateClient: s.updateClient,
+        createProject: s.createProject, updateProject: s.updateProject,
+        createIncident: s.createIncident, updateIncident: s.updateIncident,
+        addEntry: s.addEntry, addUnassignedEntry: s.addUnassignedEntry, addIncidentEntry: s.addIncidentEntry, addStandaloneTask: s.addStandaloneTask, updateEntry: s.updateEntry,
+        getProject: (id) => useAppStore.getState().projects.find((p) => p.id === id),
+      })
+      const parts = [
+        summary.clients.created + summary.clients.updated ? `${summary.clients.created} cliente(s) criado(s), ${summary.clients.updated} atualizado(s)` : '',
+        summary.projects.created + summary.projects.updated ? `${summary.projects.created} projeto(s) criado(s), ${summary.projects.updated} atualizado(s)` : '',
+        summary.incidents.created + summary.incidents.updated ? `${summary.incidents.created} incidente(s) criado(s), ${summary.incidents.updated} atualizado(s)` : '',
+        summary.tasks.created ? `${summary.tasks.created} tarefa(s) criada(s)` : '',
+      ].filter(Boolean)
+      addToast(`Importação concluída: ${parts.join(' · ') || 'nada a gravar'}.`, 'success')
       reset()
     } finally {
       setCommitting(false)
     }
   }
 
+  // ── helpers de edição de linha ─────────────────────────────────────────────
+
+  const patch = <K extends keyof ImportRows>(key: K, i: number, change: Partial<ImportRows[K][number]>) =>
+    setRows((r) => ({ ...r, [key]: r[key].map((x, xi) => (xi === i ? { ...x, ...change } : x)) }) as ImportRows)
+
+  /** Seletor de cliente: existentes, os criados neste arquivo e (se a planilha trouxe um nome novo) "criar agora". */
+  // Função de render (não um componente): um componente declarado aqui dentro mudaria de identidade a cada render.
+  function clientSelect(value: string, sheetName: string | undefined, onChange: (v: string) => void) {
+    const batch = rows.clients.filter((c) => c.include && c.action === 'create' && c.name.trim())
+    const canCreate = !!sheetName?.trim() && !activeClients.some((c) => fold(c.name) === fold(sheetName))
+    return (
+      <Select className="!py-1 !text-[12px] min-w-[150px]" value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="">{sheetName ? `⚠ ${sheetName} (escolha)` : '— escolha —'}</option>
+        {canCreate && <option value={`new:${sheetName!.trim()}`}>+ Criar cliente “{sheetName!.trim()}”</option>}
+        {batch.map((c) => <option key={c.name} value={`batch:${fold(c.name)}`}>(novo neste arquivo) {c.name}</option>)}
+        {activeClients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+      </Select>
+    )
+  }
+
+  const actionSelect = (value: RowAction, canUpdate: boolean, onChange: (a: RowAction) => void) => (
+    <Select className="!py-1 !text-[12px] min-w-[96px]" value={value} onChange={(e) => onChange(e.target.value as RowAction)}>
+      <option value="create">Criar</option>
+      <option value="update" disabled={!canUpdate}>Atualizar</option>
+      <option value="skip">Ignorar</option>
+    </Select>
+  )
+
+  const card = CARDS.find((c) => c.id === choice)!
+
   return (
     <div className="p-6 max-w-[1400px] mx-auto">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{t('bulkImport.title', 'Importação em massa')}</h1>
-          <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
-            {t('bulkImport.subtitle', 'Suba uma planilha de staging (Projetos/Incidentes/Tarefas) para revisar e importar para o Open.')}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx"
-            className="hidden"
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
-          />
-          <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()}>
-            {fileName || t('bulkImport.chooseFile', 'Escolher arquivo .xlsx')}
-          </Button>
-          {(projectRows.length > 0 || incidentRows.length > 0 || taskRows.length > 0) && (
-            <Button variant="ghost" size="sm" onClick={reset}>{t('bulkImport.clear', 'Limpar')}</Button>
-          )}
-        </div>
+      <div className="mb-5">
+        <h1 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{t('bulkImport.title', 'Importação em massa')}</h1>
+        <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
+          Escolha o que importar, baixe o modelo em Excel (com todas as colunas, listas de opções e instruções), preencha e envie de volta.
+          Nada é gravado antes da revisão.
+        </p>
       </div>
+
+      {/* 1) O que importar */}
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 mb-5">
+        {CARDS.map((c) => {
+          const active = c.id === choice
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => pickChoice(c.id)}
+              aria-pressed={active}
+              className="text-left p-3 rounded-[var(--radius-lg)] border-2 transition-colors"
+              style={{
+                borderColor: active ? 'var(--oe-primary)' : 'var(--border-default)',
+                background: active ? 'var(--color-info-bg)' : 'var(--surface-card)',
+              }}
+            >
+              <p className="text-sm font-semibold" style={{ color: active ? 'var(--oe-primary)' : 'var(--text-primary)' }}>{c.title}</p>
+              <p className="text-[11.5px] mt-1" style={{ color: 'var(--text-tertiary)' }}>{c.description}</p>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* 2) Modelo e envio */}
+      <section
+        className="mb-6 p-4 rounded-[var(--radius-lg)] border grid grid-cols-1 md:grid-cols-2 gap-4"
+        style={{ background: 'var(--surface-card)', borderColor: 'var(--border-default)' }}
+      >
+        <div>
+          <p className="text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>1. Baixe o modelo de {card.title.toLowerCase()}</p>
+          <p className="text-xs mb-3" style={{ color: 'var(--text-tertiary)' }}>
+            Planilha pronta, com todas as colunas, listas suspensas (clientes, responsáveis, projetos e status que já existem no Open) e uma aba de instruções.
+          </p>
+          <Button variant="secondary" size="sm" onClick={downloadTemplate} disabled={downloading}>
+            {downloading ? 'Gerando…' : '↓ Baixar modelo (.xlsx)'}
+          </Button>
+        </div>
+        <div>
+          <p className="text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>2. Envie a planilha preenchida</p>
+          <p className="text-xs mb-3" style={{ color: 'var(--text-tertiary)' }}>
+            {choice === 'tudo' ? 'Aceita as abas Clientes, Projetos, Incidentes e Tarefas (também arquivos de staging gerados em conversa).' : `Lê a aba "${LAYOUTS[choice as ImportEntity].sheet}". Você revisa cada linha antes de gravar.`}
+          </p>
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
+            />
+            <Button size="sm" onClick={() => fileInputRef.current?.click()}>{fileName || 'Escolher arquivo .xlsx'}</Button>
+            {hasRows && <Button variant="ghost" size="sm" onClick={reset}>{t('bulkImport.clear', 'Limpar')}</Button>}
+          </div>
+        </div>
+      </section>
 
       {parseErrors.length > 0 && (
         <div className="mb-4 p-3 text-xs rounded-[var(--radius-md)]" style={{ background: 'var(--color-danger-bg)', color: 'var(--color-danger-text)' }}>
@@ -292,47 +293,35 @@ export default function ImportPage() {
         </div>
       )}
 
-      {projectRows.length === 0 && incidentRows.length === 0 && taskRows.length === 0 && (
-        <div className="text-sm text-center py-16" style={{ color: 'var(--text-tertiary)' }}>
+      {!hasRows && parseErrors.length === 0 && (
+        <div className="text-sm text-center py-12" style={{ color: 'var(--text-tertiary)' }}>
           {t('bulkImport.empty', 'Nenhum arquivo carregado ainda.')}
         </div>
       )}
 
-      {projectRows.length > 0 && (
+      {/* Clientes */}
+      {rows.clients.length > 0 && (
         <section className="mb-8">
           <h2 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>
-            Projetos ({projectRows.filter((r) => r.include).length}/{projectRows.length})
+            Clientes ({rows.clients.filter((r) => r.include).length}/{rows.clients.length})
           </h2>
           <div className="overflow-x-auto rounded-[var(--radius-lg)] border" style={{ borderColor: 'var(--border-default)' }}>
             <table className="w-full text-[12px]" style={{ background: 'var(--surface-card)' }}>
-              <thead><tr>
-                <Th>{" "}</Th><Th>Linha</Th><Th>Ação</Th><Th>Cliente</Th><Th>Nome</Th><Th>Status</Th><Th>Nota</Th>
-              </tr></thead>
+              <thead><tr><Th>{' '}</Th><Th>Ação</Th><Th>Nome</Th><Th>País</Th><Th>Status</Th><Th>Responsável</Th><Th>Avisos</Th></tr></thead>
               <tbody>
-                {projectRows.map((r, i) => (
+                {rows.clients.map((r, i) => (
                   <tr key={i}>
-                    <Td><input type="checkbox" checked={r.include} onChange={(e) => setProjectRows((rows) => rows.map((x, xi) => xi === i ? { ...x, include: e.target.checked } : x))} /></Td>
-                    <Td>{r.row.linhaOrigem}</Td>
+                    <Td><input type="checkbox" checked={r.include} onChange={(e) => patch('clients', i, { include: e.target.checked })} /></Td>
+                    <Td>{actionSelect(r.action, !!r.matchClientId, (action) => patch('clients', i, { action }))}</Td>
+                    <Td><Input className="!py-1 !text-[12px] min-w-[200px]" value={r.name} onChange={(e) => patch('clients', i, { name: e.target.value })} /></Td>
+                    <Td>{findCountry(r.row.pais)?.name ?? <span style={{ color: 'var(--text-disabled)' }}>—</span>}</Td>
                     <Td>
-                      <Select className="!py-1 !text-[12px]" value={r.action} onChange={(e) => setProjectRows((rows) => rows.map((x, xi) => xi === i ? { ...x, action: e.target.value as RowAction } : x))}>
-                        <option value="create">Criar</option>
-                        <option value="update" disabled={!r.matchProjectId}>Atualizar</option>
-                        <option value="skip">Ignorar</option>
+                      <Select className="!py-1 !text-[12px]" value={r.status} onChange={(e) => patch('clients', i, { status: e.target.value as ClientStatus })}>
+                        {CLIENT_STATUSES.map((s, k) => <option key={s} value={s}>{CLIENT_STATUS_LABELS[k]}</option>)}
                       </Select>
                     </Td>
-                    <Td>
-                      <Select className="!py-1 !text-[12px] min-w-[140px]" value={r.clientId} onChange={(e) => setProjectRows((rows) => rows.map((x, xi) => xi === i ? { ...x, clientId: e.target.value } : x))}>
-                        <option value="">{r.row.cliente || '—'}</option>
-                        {activeClients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </Select>
-                    </Td>
-                    <Td><Input className="!py-1 !text-[12px] min-w-[180px]" value={r.name} onChange={(e) => setProjectRows((rows) => rows.map((x, xi) => xi === i ? { ...x, name: e.target.value } : x))} /></Td>
-                    <Td>
-                      <Select className="!py-1 !text-[12px]" value={r.status} onChange={(e) => setProjectRows((rows) => rows.map((x, xi) => xi === i ? { ...x, status: e.target.value as ProjectStatus } : x))}>
-                        {PROJECT_STATUSES.map((s) => <option key={s} value={s}>{t(`status.${s}`)}</option>)}
-                      </Select>
-                    </Td>
-                    <Td><span style={{ color: 'var(--text-tertiary)' }}>{r.row.observacaoIA}</span></Td>
+                    <Td>{r.row.responsavel ?? <span style={{ color: 'var(--text-disabled)' }}>—</span>}</Td>
+                    <Td><Notes errors={r.row.errors} note={r.action === 'update' ? 'Já existe: será atualizado (notas são anexadas).' : r.row.observacaoIA} /></Td>
                   </tr>
                 ))}
               </tbody>
@@ -341,46 +330,64 @@ export default function ImportPage() {
         </section>
       )}
 
-      {incidentRows.length > 0 && (
+      {/* Projetos */}
+      {rows.projects.length > 0 && (
         <section className="mb-8">
           <h2 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>
-            Incidentes ({incidentRows.filter((r) => r.include).length}/{incidentRows.length})
+            Projetos ({rows.projects.filter((r) => r.include).length}/{rows.projects.length})
           </h2>
           <div className="overflow-x-auto rounded-[var(--radius-lg)] border" style={{ borderColor: 'var(--border-default)' }}>
             <table className="w-full text-[12px]" style={{ background: 'var(--surface-card)' }}>
-              <thead><tr>
-                <Th>{" "}</Th><Th>Linha</Th><Th>Ação</Th><Th>Cliente</Th><Th>Título</Th><Th>Prioridade</Th><Th>Status</Th><Th>Nota</Th>
-              </tr></thead>
+              <thead><tr><Th>{' '}</Th><Th>Ação</Th><Th>Cliente</Th><Th>Nome</Th><Th>Status</Th><Th>Avisos</Th></tr></thead>
               <tbody>
-                {incidentRows.map((r, i) => (
+                {rows.projects.map((r, i) => (
                   <tr key={i}>
-                    <Td><input type="checkbox" checked={r.include} onChange={(e) => setIncidentRows((rows) => rows.map((x, xi) => xi === i ? { ...x, include: e.target.checked } : x))} /></Td>
-                    <Td>{r.row.linhaOrigem}</Td>
+                    <Td><input type="checkbox" checked={r.include} onChange={(e) => patch('projects', i, { include: e.target.checked })} /></Td>
+                    <Td>{actionSelect(r.action, !!r.matchProjectId, (action) => patch('projects', i, { action }))}</Td>
+                    <Td>{clientSelect(r.clientId, r.row.cliente, (clientId) => patch('projects', i, { clientId }))}</Td>
+                    <Td><Input className="!py-1 !text-[12px] min-w-[180px]" value={r.name} onChange={(e) => patch('projects', i, { name: e.target.value })} /></Td>
                     <Td>
-                      <Select className="!py-1 !text-[12px]" value={r.action} onChange={(e) => setIncidentRows((rows) => rows.map((x, xi) => xi === i ? { ...x, action: e.target.value as RowAction } : x))}>
-                        <option value="create">Criar</option>
-                        <option value="update" disabled={!r.matchIncidentId}>Atualizar</option>
-                        <option value="skip">Ignorar</option>
+                      <Select className="!py-1 !text-[12px]" value={r.status} onChange={(e) => patch('projects', i, { status: e.target.value as ProjectStatus })}>
+                        {PROJECT_STATUSES.map((s) => <option key={s} value={s}>{t(`status.${s}`)}</option>)}
                       </Select>
                     </Td>
+                    <Td><Notes errors={r.row.errors} note={r.action === 'update' ? 'Já existe: status atualizado e texto anexado às anotações.' : r.similarTo ? `Parecido com “${r.similarTo}” — marque Atualizar se for o mesmo.` : r.row.observacaoIA} /></Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {/* Incidentes */}
+      {rows.incidents.length > 0 && (
+        <section className="mb-8">
+          <h2 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>
+            Incidentes ({rows.incidents.filter((r) => r.include).length}/{rows.incidents.length})
+          </h2>
+          <div className="overflow-x-auto rounded-[var(--radius-lg)] border" style={{ borderColor: 'var(--border-default)' }}>
+            <table className="w-full text-[12px]" style={{ background: 'var(--surface-card)' }}>
+              <thead><tr><Th>{' '}</Th><Th>Ação</Th><Th>Cliente</Th><Th>Título</Th><Th>Prioridade</Th><Th>Status</Th><Th>Responsável</Th><Th>Avisos</Th></tr></thead>
+              <tbody>
+                {rows.incidents.map((r, i) => (
+                  <tr key={i}>
+                    <Td><input type="checkbox" checked={r.include} onChange={(e) => patch('incidents', i, { include: e.target.checked })} /></Td>
+                    <Td>{actionSelect(r.action, !!r.matchIncidentId, (action) => patch('incidents', i, { action }))}</Td>
+                    <Td>{clientSelect(r.clientId, r.row.cliente, (clientId) => patch('incidents', i, { clientId }))}</Td>
+                    <Td><Input className="!py-1 !text-[12px] min-w-[180px]" value={r.title} onChange={(e) => patch('incidents', i, { title: e.target.value })} /></Td>
                     <Td>
-                      <Select className="!py-1 !text-[12px] min-w-[140px]" value={r.clientId} onChange={(e) => setIncidentRows((rows) => rows.map((x, xi) => xi === i ? { ...x, clientId: e.target.value } : x))}>
-                        <option value="">{r.row.cliente || '—'}</option>
-                        {activeClients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </Select>
-                    </Td>
-                    <Td><Input className="!py-1 !text-[12px] min-w-[180px]" value={r.title} onChange={(e) => setIncidentRows((rows) => rows.map((x, xi) => xi === i ? { ...x, title: e.target.value } : x))} /></Td>
-                    <Td>
-                      <Select className="!py-1 !text-[12px]" value={r.priority} onChange={(e) => setIncidentRows((rows) => rows.map((x, xi) => xi === i ? { ...x, priority: e.target.value as Probability } : x))}>
+                      <Select className="!py-1 !text-[12px]" value={r.priority} onChange={(e) => patch('incidents', i, { priority: e.target.value as Probability })}>
                         {PRIORITIES.map((p) => <option key={p} value={p}>{t(`risk.${p}`)}</option>)}
                       </Select>
                     </Td>
                     <Td>
-                      <Select className="!py-1 !text-[12px]" value={r.status} onChange={(e) => setIncidentRows((rows) => rows.map((x, xi) => xi === i ? { ...x, status: e.target.value as IncidentStatus } : x))}>
+                      <Select className="!py-1 !text-[12px]" value={r.status} onChange={(e) => patch('incidents', i, { status: e.target.value as IncidentStatus })}>
                         {INCIDENT_STATUSES.map((s) => <option key={s} value={s}>{t(`incident.status_${s}`)}</option>)}
                       </Select>
                     </Td>
-                    <Td><span style={{ color: 'var(--text-tertiary)' }}>{r.row.observacaoIA}</span></Td>
+                    <Td>{r.row.responsavel ?? <span style={{ color: 'var(--text-disabled)' }}>—</span>}</Td>
+                    <Td><Notes errors={r.row.errors} note={r.action === 'update' ? 'Já existe: status/prioridade atualizados e texto anexado à descrição.' : r.similarTo ? `Parecido com “${r.similarTo}” — marque Atualizar se for o mesmo.` : r.row.observacaoIA} /></Td>
                   </tr>
                 ))}
               </tbody>
@@ -389,41 +396,41 @@ export default function ImportPage() {
         </section>
       )}
 
-      {taskRows.length > 0 && (
+      {/* Tarefas */}
+      {rows.tasks.length > 0 && (
         <section className="mb-8">
           <h2 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>
-            Tarefas ({taskRows.filter((r) => r.include).length}/{taskRows.length})
+            Tarefas ({rows.tasks.filter((r) => r.include).length}/{rows.tasks.length})
           </h2>
           <div className="overflow-x-auto rounded-[var(--radius-lg)] border" style={{ borderColor: 'var(--border-default)' }}>
             <table className="w-full text-[12px]" style={{ background: 'var(--surface-card)' }}>
-              <thead><tr>
-                <Th>{" "}</Th><Th>Linha</Th><Th>Origem</Th><Th>Nome</Th><Th>Responsável</Th><Th>Status</Th><Th>Prioridade</Th><Th>Nota</Th>
-              </tr></thead>
+              <thead><tr><Th>{' '}</Th><Th>Origem</Th><Th>Nome</Th><Th>Responsável</Th><Th>Status</Th><Th>Prioridade</Th><Th>Plano</Th><Th>Avisos</Th></tr></thead>
               <tbody>
-                {taskRows.map((r, i) => {
+                {rows.tasks.map((r, i) => {
                   const originLabel = r.scope === 'solta'
                     ? 'Tarefa solta'
                     : r.targetKey
-                      ? (r.targetKey.startsWith('batch:') ? `(novo neste lote) ${r.row.origemNome}` : r.row.origemNome)
-                      : `⚠ não encontrado: ${r.row.origemNome}`
+                      ? (r.targetKey.startsWith('batch:') ? `(neste arquivo) ${r.row.origemNome}` : r.row.origemNome)
+                      : `⚠ não encontrado: ${r.row.origemNome ?? '—'}`
+                  const plan = [r.row.inicio || r.row.fim ? `${fmtDate(r.row.inicio) || '…'} → ${fmtDate(r.row.fim) || '…'}` : '', r.row.duracaoDias !== undefined ? `${r.row.duracaoDias}d` : '', r.row.fase ? `fase: ${r.row.fase}` : ''].filter(Boolean).join(' · ')
                   return (
                     <tr key={i}>
-                      <Td><input type="checkbox" checked={r.include} onChange={(e) => setTaskRows((rows) => rows.map((x, xi) => xi === i ? { ...x, include: e.target.checked } : x))} /></Td>
-                      <Td>{r.row.linhaOrigem}</Td>
+                      <Td><input type="checkbox" checked={r.include} onChange={(e) => patch('tasks', i, { include: e.target.checked })} /></Td>
                       <Td>
-                        <div className="flex flex-col gap-1 min-w-[160px]">
-                          <Select className="!py-1 !text-[12px]" value={r.scope} onChange={(e) => setTaskRows((rows) => rows.map((x, xi) => xi === i ? { ...x, scope: e.target.value as TaskScope } : x))}>
+                        <div className="flex flex-col gap-1 min-w-[170px]">
+                          <Select className="!py-1 !text-[12px]" value={r.scope} onChange={(e) => patch('tasks', i, { scope: e.target.value as TaskScope })}>
                             <option value="projeto">Projeto</option>
                             <option value="incidente">Incidente</option>
                             <option value="solta">Tarefa solta</option>
                           </Select>
                           <span style={{ color: r.scope !== 'solta' && !r.targetKey ? 'var(--color-danger-text)' : 'var(--text-tertiary)' }}>{originLabel}</span>
+                          {r.scope === 'solta' && clientSelect(r.clientId, r.row.cliente, (clientId) => patch('tasks', i, { clientId }))}
                         </div>
                       </Td>
-                      <Td><Input className="!py-1 !text-[12px] min-w-[180px]" value={r.name} onChange={(e) => setTaskRows((rows) => rows.map((x, xi) => xi === i ? { ...x, name: e.target.value } : x))} /></Td>
-                      <Td><Input className="!py-1 !text-[12px] min-w-[120px]" value={r.responsavel} onChange={(e) => setTaskRows((rows) => rows.map((x, xi) => xi === i ? { ...x, responsavel: e.target.value } : x))} placeholder="—" /></Td>
+                      <Td><Input className="!py-1 !text-[12px] min-w-[180px]" value={r.name} onChange={(e) => patch('tasks', i, { name: e.target.value })} /></Td>
+                      <Td><Input className="!py-1 !text-[12px] min-w-[120px]" value={r.responsavel} onChange={(e) => patch('tasks', i, { responsavel: e.target.value })} placeholder="—" /></Td>
                       <Td>
-                        <Select className="!py-1 !text-[12px]" value={r.status} onChange={(e) => setTaskRows((rows) => rows.map((x, xi) => xi === i ? { ...x, status: e.target.value as EntryStatus } : x))}>
+                        <Select className="!py-1 !text-[12px]" value={r.status} onChange={(e) => patch('tasks', i, { status: e.target.value as EntryStatus })}>
                           {TASK_STATUSES.map((s) => <option key={s} value={s}>{t(`status.${s}`)}</option>)}
                         </Select>
                       </Td>
@@ -433,14 +440,14 @@ export default function ImportPage() {
                           value={r.riskFlag === 'critical' ? 'high' : r.riskFlag === 'warning' ? 'medium' : 'low'}
                           onChange={(e) => {
                             const v = e.target.value as Probability
-                            const flag: RiskFlag = v === 'high' ? 'critical' : v === 'medium' ? 'warning' : 'none'
-                            setTaskRows((rows) => rows.map((x, xi) => xi === i ? { ...x, riskFlag: flag } : x))
+                            patch('tasks', i, { riskFlag: (v === 'high' ? 'critical' : v === 'medium' ? 'warning' : 'none') as RiskFlag })
                           }}
                         >
                           {PRIORITIES.map((p) => <option key={p} value={p}>{t(`risk.${p}`)}</option>)}
                         </Select>
                       </Td>
-                      <Td><span style={{ color: 'var(--text-tertiary)' }}>{r.row.observacaoIA}</span></Td>
+                      <Td><span className="text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>{plan || '—'}</span></Td>
+                      <Td><Notes errors={r.row.errors} note={r.row.observacaoIA} /></Td>
                     </tr>
                   )
                 })}
@@ -450,12 +457,12 @@ export default function ImportPage() {
         </section>
       )}
 
-      {(projectRows.length > 0 || incidentRows.length > 0 || taskRows.length > 0) && (
+      {hasRows && (
         <div className="sticky bottom-4 flex items-center justify-between p-3 rounded-[var(--radius-lg)] border shadow-[var(--shadow-md)]" style={{ background: 'var(--surface-card)', borderColor: 'var(--border-default)' }}>
           <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
             {includedCount} itens marcados para importação
-            {(blockedProjects.length + blockedIncidents.length + blockedTasks.length) > 0 && (
-              <span style={{ color: 'var(--color-danger-text)' }}> — {blockedProjects.length + blockedIncidents.length + blockedTasks.length} bloqueados (cliente/origem não resolvidos)</span>
+            {blockedCount > 0 && (
+              <span style={{ color: 'var(--color-danger-text)' }}> — {blockedCount} bloqueados (cliente/origem não resolvidos)</span>
             )}
           </span>
           <Button onClick={commit} disabled={committing || includedCount === 0}>

@@ -407,6 +407,8 @@ interface NewProjectModalProps {
     name: string; clientIds: string[]; pm: string; pmMemberId?: string; type: ProjectType
     language: 'pt' | 'en' | 'es'; devLead?: string; devLeadMemberId?: string
     devType?: 'integration' | 'application'; devIntegration?: string
+    /** Projeto vazio: sem fases, tarefas nem cronograma. */
+    blank?: boolean
   }) => void
 }
 
@@ -414,6 +416,8 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
   const { t, i18n } = useTranslation()
   const { createClient } = useAppStore()
   const [selectedType, setSelectedType] = useState<ProjectType>('nova_conta')
+  /** "Em branco": o tipo continua valendo (agrupa o projeto), mas nada do template é aplicado. */
+  const [blank, setBlank] = useState(false)
   const [clientIds, setClientIds] = useState<string[]>([])
   const [clientSearch, setClientSearch] = useState('')
   const [isAddingClient, setIsAddingClient] = useState(false)
@@ -454,7 +458,7 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
   }
 
   function reset() {
-    setSelectedType('nova_conta'); setClientIds([]); setClientSearch(''); setIsAddingClient(false); setNewClientName('')
+    setSelectedType('nova_conta'); setBlank(false); setClientIds([]); setClientSearch(''); setIsAddingClient(false); setNewClientName('')
     setName(''); setPmMemberId(''); setLanguage('pt'); setHasDev(false)
     setDevLeadMemberId(''); setDevType('integration'); setDevIntegration('')
     setAttempted(false)
@@ -469,6 +473,7 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
       name: name.trim(), clientIds,
       pm: pmMember?.name ?? '', pmMemberId: pmMemberId || undefined, type: selectedType,
       language,
+      ...(blank && { blank: true }),
       ...(hasDev && {
         devLead: devLeadMember?.name, devLeadMemberId: devLeadMemberId || undefined,
         devType, devIntegration: devIntegration || undefined,
@@ -499,12 +504,12 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
           <div className="grid grid-cols-2 gap-3">
             {templates.map((tpl: ProjectTemplate) => {
               const entryCount = tpl.phases.reduce((n: number, p) => n + p.entries.length, 0)
-              const isActive = selectedType === tpl.type
+              const isActive = !blank && selectedType === tpl.type
               return (
                 <button
                   key={tpl.id}
                   type="button"
-                  onClick={() => setSelectedType(tpl.type)}
+                  onClick={() => { setBlank(false); setSelectedType(tpl.type) }}
                   className={`text-left p-4 rounded-[var(--radius-lg)] border-2 transition-all ${
                     isActive
                       ? 'border-[var(--oe-primary)] bg-[var(--color-info-bg)]'
@@ -536,7 +541,47 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
                 </button>
               )
             })}
+            {/* Projeto em branco: sem fases, tarefas nem cronograma */}
+            <button
+              type="button"
+              onClick={() => setBlank(true)}
+              className={`text-left p-4 rounded-[var(--radius-lg)] border-2 transition-all col-span-2 ${
+                blank
+                  ? 'border-[var(--oe-primary)] bg-[var(--color-info-bg)]'
+                  : 'border-[var(--border-default)] hover:border-[var(--oe-primary)] bg-[var(--surface-card)]'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div className={`w-8 h-8 rounded-[var(--radius-lg)] flex items-center justify-center text-sm shrink-0 ${blank ? 'bg-[var(--oe-primary)] text-white' : 'bg-[var(--surface-subtle)] text-[var(--text-tertiary)]'}`}>
+                  ＋
+                </div>
+                <div>
+                  <p className={`font-semibold text-sm ${blank ? 'text-[var(--oe-primary)]' : 'text-[var(--text-secondary)]'}`}>{t('project.blankTemplate')}</p>
+                  <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{t('project.blankTemplateHint')}</p>
+                </div>
+              </div>
+            </button>
           </div>
+          {blank && (
+            <div className="mt-3 flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+              <span>{t('project.blankTypeLabel')}</span>
+              {(['nova_conta', 'novo_projeto'] as ProjectType[]).map((ty) => (
+                <button
+                  key={ty}
+                  type="button"
+                  onClick={() => setSelectedType(ty)}
+                  className="px-2.5 py-1 rounded-[var(--radius-pill)] border"
+                  style={{
+                    borderColor: selectedType === ty ? 'var(--oe-primary)' : 'var(--border-default)',
+                    background: selectedType === ty ? 'var(--color-info-bg)' : 'transparent',
+                    color: selectedType === ty ? 'var(--oe-primary)' : 'var(--text-secondary)',
+                  }}
+                >
+                  {t(`project.${ty}`)}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Details */}

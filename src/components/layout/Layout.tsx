@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 import { Toaster } from '@/components/ui/Toaster'
 import { CommandPalette } from './CommandPalette'
+import { GlobalEntryModal } from './GlobalEntryModal'
 import { ChatLauncher } from '@/components/ai/ChatLauncher'
 
 export function Layout() {
@@ -17,6 +18,7 @@ export function Layout() {
       </div>
       <Toaster />
       <CommandPalette />
+      <GlobalEntryModal />
       <ChatLauncher />
     </div>
   )

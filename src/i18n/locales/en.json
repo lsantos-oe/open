@@ -83,6 +83,9 @@
     "noClientsRegistered": "No clients registered."
   },
   "project": {
+    "blankTemplate": "Blank project",
+    "blankTemplateHint": "No phases, tasks or schedule — build everything from scratch.",
+    "blankTypeLabel": "Project type:",
     "new": "New Project",
     "name": "Project Name",
     "editNameHint": "Click to edit the project name",

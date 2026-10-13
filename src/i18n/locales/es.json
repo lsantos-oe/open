@@ -83,6 +83,9 @@
     "noClientsRegistered": "Ningún cliente registrado."
   },
   "project": {
+    "blankTemplate": "Proyecto en blanco",
+    "blankTemplateHint": "Sin fases, tareas ni cronograma — arma todo desde cero.",
+    "blankTypeLabel": "Tipo de proyecto:",
     "new": "Nuevo Proyecto",
     "name": "Nombre del Proyecto",
     "editNameHint": "Haz clic para editar el nombre del proyecto",

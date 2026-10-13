@@ -206,10 +206,12 @@ function DraggableCard({ card, onEdit }: { card: BoardCard; onEdit: (c: BoardCar
 
 // ─── BoardColumn ──────────────────────────────────────────────────────────────
 
-function BoardColumn({ status, cards, onEdit, droppableId }: {
+function BoardColumn({ status, cards, onEdit, onAdd, droppableId }: {
   status: EntryStatus
   cards: BoardCard[]
   onEdit: (c: BoardCard) => void
+  /** Botão "+" no cabeçalho da coluna: cria uma tarefa já neste status. */
+  onAdd?: (status: EntryStatus) => void
   droppableId?: string
 }) {
   const { t } = useTranslation()
@@ -227,12 +229,25 @@ function BoardColumn({ status, cards, onEdit, droppableId }: {
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 12px 8px' }}>
-        <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: colStyle.header }}>
+        <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: colStyle.header, flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>
           {t(KANBAN_COLS.find(c => c.status === status)?.labelKey as any)}
         </span>
-        <span style={{ minWidth: 20, height: 20, borderRadius: 'var(--radius-pill)', background: 'var(--surface-card)', color: colStyle.header, fontSize: 11, fontWeight: 600, padding: '0 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {cards.length}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, marginLeft: 6 }}>
+          {onAdd && (
+            <button
+              type="button"
+              onClick={() => onAdd(status)}
+              title={t('plan.addTask')}
+              aria-label={`${t('plan.addTask')} — ${t(KANBAN_COLS.find(c => c.status === status)?.labelKey as any)}`}
+              style={{ width: 20, height: 20, borderRadius: 'var(--radius-pill)', border: 'none', background: 'var(--surface-card)', color: colStyle.header, fontSize: 14, lineHeight: 1, cursor: 'pointer' }}
+            >
+              +
+            </button>
+          )}
+          <span style={{ minWidth: 20, height: 20, borderRadius: 'var(--radius-pill)', background: 'var(--surface-card)', color: colStyle.header, fontSize: 11, fontWeight: 600, padding: '0 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {cards.length}
+          </span>
+        </div>
       </div>
       <div ref={setNodeRef} style={{ flex: 1, padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {cards.map(card => (
@@ -303,11 +318,13 @@ interface EntryBoardProps {
   cards: BoardCard[]
   onStatusChange: (entryId: string, status: EntryStatus) => void
   onCardClick: (card: BoardCard) => void
+  /** Quando informado, cada coluna ganha um "+" que chama isto com o status da coluna. */
+  onAddCard?: (status: EntryStatus) => void
   /** Split entries flagged hiddenFromPlan into a separate collapsible section below the board. */
   showInternalSection?: boolean
 }
 
-export default function EntryBoard({ cards, onStatusChange, onCardClick, showInternalSection = true }: EntryBoardProps) {
+export default function EntryBoard({ cards, onStatusChange, onCardClick, onAddCard, showInternalSection = true }: EntryBoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null)
 
   const sensors = useSensors(
@@ -351,6 +368,7 @@ export default function EntryBoard({ cards, onStatusChange, onCardClick, showInt
               status={col.status}
               cards={normalCards.filter(c => c.status === col.status)}
               onEdit={onCardClick}
+              onAdd={onAddCard}
             />
           ))}
         </div>

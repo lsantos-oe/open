@@ -36,6 +36,7 @@ export const createProjectTool: AiTool = {
       pmName: { type: 'string', description: 'Nome do líder do projeto — precisa ser um usuário cadastrado no sistema' },
       type: { type: 'string', enum: ['nova_conta', 'novo_projeto'] },
       language: { type: 'string', enum: ['pt', 'en', 'es'], description: 'Idioma do projeto, padrão pt' },
+      blank: { type: 'boolean', description: 'true = projeto em branco: sem fases, tarefas nem cronograma (não aplica o template). Use quando o usuário pedir um projeto vazio/do zero.' },
     },
     required: ['name', 'pmName', 'type'],
   },
@@ -43,7 +44,7 @@ export const createProjectTool: AiTool = {
   describe(input) {
     const clientsText = Array.isArray(input.clientNames) && input.clientNames.length
       ? ` no(s) cliente(s) ${(input.clientNames as string[]).join(', ')}` : ''
-    return `Estou prestes a criar um novo projeto${clientsText}. O resultado final ficará assim: projeto "${input.name}" (${input.type === 'nova_conta' ? 'Nova Conta' : 'Novo Projeto'}), líder ${input.pmName}. É basicamente isso?`
+    return `Estou prestes a criar um novo projeto${clientsText}. O resultado final ficará assim: projeto "${input.name}" (${input.type === 'nova_conta' ? 'Nova Conta' : 'Novo Projeto'}), líder ${input.pmName}${input.blank ? ', em branco (sem fases nem tarefas)' : ''}. É basicamente isso?`
   },
   async execute(input) {
     const store = useAppStore.getState()
@@ -56,6 +57,7 @@ export const createProjectTool: AiTool = {
       pmMemberId: pmMember?.userId,
       type: (input.type as 'nova_conta' | 'novo_projeto') ?? 'novo_projeto',
       language: (input.language as 'pt' | 'en' | 'es') ?? 'pt',
+      blank: input.blank === true,
     })
     return { createdProjectId: id }
   },

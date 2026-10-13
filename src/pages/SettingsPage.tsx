@@ -235,7 +235,7 @@ export default function SettingsPage() {
             />
           </Section>
 
-          <Section title="Importação em massa" description="Suba uma planilha de staging (Projetos/Incidentes/Tarefas) para revisar e importar em lote.">
+          <Section title="Importação em massa" description="Importe clientes, projetos, incidentes e tarefas de uma planilha Excel — baixe o modelo pronto (com listas e instruções), preencha e envie.">
             <Button variant="secondary" size="sm" onClick={() => navigate('/import')}>Abrir importação →</Button>
           </Section>
 

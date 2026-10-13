@@ -30,6 +30,8 @@ interface EntryModalProps {
   defaultParentId?: string
   defaultParentEntryId?: string
   defaultType?: EntryType
+  /** Status inicial de uma tarefa nova (ex.: o "+" de uma coluna do Kanban). */
+  defaultStatus?: EntryStatus
   lockProject?: boolean
   /** Lets the Project field be cleared to "Nenhum", turning this into a
    *  standalone task. Off by default so PlanPage/KanbanPage — which always
@@ -86,6 +88,7 @@ function emptyForm(
   phaseId: string,
   parentEntryId?: string,
   parentId?: string,
+  status: EntryStatus = 'pending',
 ): Form {
   return {
     name: '',
@@ -94,7 +97,7 @@ function emptyForm(
     projectId,
     phaseId,
     owners: [],
-    status: 'pending',
+    status,
     riskFlag: 'none',
     plannedStart: '',
     plannedEnd: '',
@@ -189,6 +192,7 @@ export default function EntryModal({
   defaultProjectId, defaultPhaseId,
   defaultParentId, defaultParentEntryId,
   defaultType = 'task',
+  defaultStatus,
   lockProject,
   allowStandalone,
   onClose, onRequestDateChange,
@@ -248,7 +252,7 @@ export default function EntryModal({
     const projId = defaultProjectId ?? ''
     const proj = projects.find((p) => p.id === projId)
     const phId = defaultPhaseId ?? proj?.phases[0]?.id ?? ''
-    return emptyForm(defaultType, projId, phId, defaultParentEntryId, defaultParentId)
+    return emptyForm(defaultType, projId, phId, defaultParentEntryId, defaultParentId, defaultStatus)
   }
 
   const [form, setForm] = useState<Form>(makeForm)

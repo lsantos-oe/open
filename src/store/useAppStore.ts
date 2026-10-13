@@ -224,7 +224,8 @@ interface AppStore {
   hideProject: (id: string) => Promise<void>
 
   // Projects
-  createProject: (data: Omit<Project, 'id' | 'phases' | 'risks' | 'reportLinks' | 'delayLog' | 'team' | 'links' | 'status' | 'client' | 'clientId' | 'clientIds'> & { clientIds?: string[] }) => string
+  /** `blank: true` cria o projeto vazio — sem fases, tarefas nem cronograma (não aplica o template do tipo). */
+  createProject: (data: Omit<Project, 'id' | 'phases' | 'risks' | 'reportLinks' | 'delayLog' | 'team' | 'links' | 'status' | 'client' | 'clientId' | 'clientIds'> & { clientIds?: string[]; blank?: boolean }) => string
   duplicateProject: (source: Project, overrides: { name: string; clientIds: string[]; pm: string; pmMemberId?: string; language: AppLanguage; devLead?: string; devLeadMemberId?: string; devType?: 'integration' | 'application'; devIntegration?: string }) => string
   updateProject: (id: string, patch: Partial<Project>) => void
   /** Grava a projeção em Markdown do documento do charter (atualização direcionada, só essa coluna). */
@@ -1147,10 +1148,10 @@ export const useAppStore = create<AppStore>()(
 
       // ── Projects ──────────────────────────────────────────────────────────
 
-      createProject(data) {
+      createProject({ blank, ...data }) {
         const id = uuid()
         const { settings } = get()
-        const template = settings.templates.find((t) => t.type === data.type)
+        const template = blank ? undefined : settings.templates.find((t) => t.type === data.type)
         const today = new Date().toISOString().split('T')[0]
 
         let phases: Phase[] = []

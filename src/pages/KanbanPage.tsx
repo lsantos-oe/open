@@ -6,6 +6,7 @@ import EntryModal from '@/components/plan/EntryModal'
 import EntryBoard, { BoardCard } from '@/components/plan/EntryBoard'
 import { StatusDot } from '@/components/ui/StatusDot'
 import { AvatarStack } from '@/components/ui/AvatarStack'
+import { Button } from '@/components/ui/Button'
 
 const ENTRY_STATUS_COLOR: Record<EntryStatus, string> = {
   pending: 'var(--text-tertiary)',
@@ -43,13 +44,15 @@ function buildCards(phases: Phase[]): BoardCard[] {
 
 export default function KanbanPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation()
-  const { projects, updateEntryStatus } = useAppStore()
+  const { projects, updateEntryStatus, changeEntryDate } = useAppStore()
   const project = projects.find((p) => p.id === projectId)!
 
   const [view, setView] = useState<'kanban' | 'table'>(() => (localStorage.getItem('pb-project-tasks-view') as 'kanban' | 'table') ?? 'kanban')
   const [filterResponsible, setFilterResponsible] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [editCard, setEditCard] = useState<BoardCard | null>(null)
+  /** Nova tarefa: o status vem da coluna cujo "+" foi clicado (ou 'pending' pelo botão da barra). */
+  const [newTaskStatus, setNewTaskStatus] = useState<EntryStatus | null>(null)
 
   function changeView(v: 'kanban' | 'table') {
     setView(v)
@@ -120,6 +123,8 @@ export default function KanbanPage({ projectId }: { projectId: string }) {
             <option value="">{t('tasks.filterMember')}</option>
             {allResponsibles.map((name) => <option key={name} value={name}>{name}</option>)}
           </select>
+
+          <Button size="sm" className="ml-auto" onClick={() => setNewTaskStatus('pending')}>{t('plan.addTask')}</Button>
         </div>
 
         {view === 'kanban' ? (
@@ -127,6 +132,7 @@ export default function KanbanPage({ projectId }: { projectId: string }) {
             cards={filteredCards}
             onStatusChange={(entryId, status) => updateEntryStatus(projectId, entryId, status)}
             onCardClick={setEditCard}
+            onAddCard={setNewTaskStatus}
           />
         ) : (
           <table className="w-full text-sm rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
@@ -169,6 +175,20 @@ export default function KanbanPage({ projectId }: { projectId: string }) {
           entryProjectId={projectId}
           entryPhaseId={editPhaseId}
           onClose={() => setEditCard(null)}
+          // Aqui não há o diálogo de justificativa de atraso do Plano: a data é aplicada direto.
+          onRequestDateChange={(e, field, value) => changeEntryDate(projectId, e.id, field, value)}
+        />
+      )}
+
+      {newTaskStatus && (
+        <EntryModal
+          open
+          mode="create"
+          defaultProjectId={projectId}
+          defaultPhaseId={project.phases.find((ph) => !ph.isUnassigned)?.id}
+          defaultStatus={newTaskStatus}
+          lockProject
+          onClose={() => setNewTaskStatus(null)}
         />
       )}
     </>

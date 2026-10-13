@@ -14,6 +14,13 @@ const QUICK_CREATE = [
   { to: '/wallet', label: 'Novo cliente', Icon: WalletIcon },
 ]
 
+const IMPORT_OPTIONS = [
+  { entity: 'clientes', label: 'Clientes', Icon: WalletIcon },
+  { entity: 'projetos', label: 'Projetos', Icon: PortfolioIcon },
+  { entity: 'incidentes', label: 'Incidentes', Icon: SupportIcon },
+  { entity: 'tarefas', label: 'Tarefas', Icon: TasksIcon },
+] as const
+
 function getInitials(name: string): string {
   return name.split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'U'
 }
@@ -25,8 +32,10 @@ export function Topbar() {
   const [showMenu, setShowMenu] = useState(false)
   const [showEditProfile, setShowEditProfile] = useState(false)
   const [showQuickCreate, setShowQuickCreate] = useState(false)
+  const [showImport, setShowImport] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const quickCreateRef = useRef<HTMLDivElement>(null)
+  const importRef = useRef<HTMLDivElement>(null)
 
   const displayName = profile?.name ?? user?.email ?? 'Usuário'
   const avatarUrl = profile?.avatar_url ?? null
@@ -49,6 +58,20 @@ export function Topbar() {
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [showQuickCreate])
+
+  useEffect(() => {
+    if (!showImport) return
+    function handler(e: MouseEvent) {
+      if (importRef.current && !importRef.current.contains(e.target as Node)) setShowImport(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showImport])
+
+  function goImport(entity: string) {
+    setShowImport(false)
+    navigate(`/import?entity=${entity}`)
+  }
 
   function goCreate(to: string) {
     setShowQuickCreate(false)
@@ -80,6 +103,61 @@ export function Topbar() {
         </button>
 
         <div className="flex-1" />
+
+        <div ref={importRef} style={{ position: 'relative' }}>
+          <button
+            onClick={() => setShowImport((v) => !v)}
+            title="Importar de uma planilha Excel"
+            className="flex items-center gap-1.5 transition-colors"
+            style={{
+              height: 28, padding: '0 10px', borderRadius: 'var(--radius-md)', fontSize: 12.5,
+              background: showImport ? 'var(--oe-primary)' : 'var(--surface-subtle)',
+              color: showImport ? 'white' : 'var(--text-secondary)',
+              border: '1px solid var(--border-default)',
+            }}
+          >
+            <UploadIcon />
+            Importar
+          </button>
+
+          {showImport && (
+            <div style={{
+              position: 'absolute', top: 34, right: 0, minWidth: 230,
+              background: 'var(--surface-card)', border: '0.5px solid var(--border-default)',
+              borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', zIndex: 100, overflow: 'hidden', padding: 4,
+            }}>
+              <p style={{ padding: '6px 8px 4px', fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)' }}>
+                Importar do Excel
+              </p>
+              {IMPORT_OPTIONS.map(({ entity, label, Icon }) => (
+                <button
+                  key={entity}
+                  onClick={() => goImport(entity)}
+                  className="w-full text-left flex items-center gap-2.5 rounded-[var(--radius-md)]"
+                  style={{ padding: '7px 8px', fontSize: 12.5, color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                >
+                  <span className="shrink-0" style={{ color: 'var(--text-tertiary)' }}><Icon className="w-4 h-4" /></span>
+                  {label}
+                </button>
+              ))}
+              <div style={{ height: 1, background: 'var(--border-default)', margin: '4px 0' }} />
+              <button
+                onClick={() => goImport('tudo')}
+                className="w-full text-left rounded-[var(--radius-md)]"
+                style={{ padding: '7px 8px', fontSize: 12.5, color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+              >
+                Tudo em um arquivo
+              </button>
+              <p style={{ padding: '4px 8px 6px', fontSize: 10.5, color: 'var(--text-tertiary)' }}>
+                Em cada opção você baixa o modelo em Excel e envia a planilha preenchida.
+              </p>
+            </div>
+          )}
+        </div>
 
         <div ref={quickCreateRef} style={{ position: 'relative' }}>
           <button
@@ -175,6 +253,14 @@ export function Topbar() {
 
       <EditProfileModal open={showEditProfile} onClose={() => setShowEditProfile(false)} />
     </>
+  )
+}
+
+function UploadIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0-12l-4 4m4-4l4 4" />
+    </svg>
   )
 }
 
