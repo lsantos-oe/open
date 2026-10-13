@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, CSSProperties, ReactNode } from 'react'
 import RichTextInput from '@/components/editor/RichTextInput'
+import EntryComments from './EntryComments'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/store/useAppStore'
@@ -422,6 +423,13 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, defa
 
         {mode === 'edit' && entry && (
           <EntityAttachments entityType="entry" entityId={entry.id} />
+        )}
+
+        {/* Conversa da tarefa: em cadeia (respostas, menções, edição) */}
+        {mode === 'edit' && entry && incident?.entries.some((e) => e.id === entry.id) && (
+          <div style={{ borderTop: '1px solid var(--border-default)', paddingTop: 16 }}>
+            <EntryComments entryId={entry.id} scope={{ type: 'incident', incidentId }} maxListHeight={260} />
+          </div>
         )}
       </div>
     </Modal>

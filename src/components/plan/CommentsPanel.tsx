@@ -1,31 +1,15 @@
-import { useState, useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
-import { useAppStore } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
-import { ChatBubbleIcon } from '@/components/ui/icons'
 import { useOverlayStore } from '@/stores/useOverlayStore'
-import { Entry, EntryComment } from '@/types'
-import { Button } from '@/components/ui/Button'
-import { Textarea } from '@/components/ui/Input'
-import DocView from '@/components/editor/DocView'
-import { applyMarkdownShortcut } from '@/utils/markdownShortcuts'
+import { Entry } from '@/types'
+import EntryComments from './EntryComments'
 
 interface Props {
   projectId: string
   entry: Entry
   onClose: () => void
-}
-
-function formatTime(iso: string): string {
-  try {
-    return new Date(iso).toLocaleString('pt-BR', {
-      day: '2-digit', month: '2-digit', year: '2-digit',
-      hour: '2-digit', minute: '2-digit',
-    })
-  } catch {
-    return iso
-  }
 }
 
 function formatDate(iso: string): string {
@@ -38,54 +22,9 @@ function formatDate(iso: string): string {
   }
 }
 
-function getInitials(name: string): string {
-  return name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() || '?'
-}
-
-const AVATAR_COLORS = [
-  'bg-blue-500', 'bg-purple-500', 'bg-teal-500', 'bg-orange-500',
-  'bg-pink-500', 'bg-indigo-500', 'bg-green-500', 'bg-red-500',
-]
-
-function hashColor(name: string): string {
-  let h = 0
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xff
-  return AVATAR_COLORS[h % AVATAR_COLORS.length]
-}
-
-interface AvatarProps { author: string; currentAuthorName: string | null; avatarUrl: string | null }
-
-function CommentAvatar({ author, currentAuthorName, avatarUrl }: AvatarProps) {
-  const isCurrentUser = currentAuthorName && author === currentAuthorName
-  if (isCurrentUser && avatarUrl) {
-    return (
-      <img
-        src={avatarUrl}
-        alt={author}
-        style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-      />
-    )
-  }
-  return (
-    <div className={`w-8 h-8 rounded-[var(--radius-pill)] shrink-0 flex items-center justify-center text-xs font-bold text-white ${hashColor(author)}`}>
-      {getInitials(author)}
-    </div>
-  )
-}
-
 export default function CommentsPanel({ projectId, entry, onClose }: Props) {
   const { t } = useTranslation()
-  const { addComment, removeComment } = useAppStore()
   const { user, profile } = useAuthStore()
-  const [text, setText] = useState('')
-  const bottomRef = useRef<HTMLDivElement>(null)
-
-  const currentAuthorName = profile?.name ?? user?.email ?? null
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [entry.comments.length])
-
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     document.addEventListener('keydown', handler)
@@ -96,16 +35,6 @@ export default function CommentsPanel({ projectId, entry, onClose }: Props) {
     useOverlayStore.getState().openSidePanel()
     return () => useOverlayStore.getState().closeSidePanel()
   }, [])
-
-  function handleSubmit() {
-    if (!text.trim()) return
-    addComment(projectId, entry.id, {
-      author: currentAuthorName ?? 'Anônimo',
-      text: text.trim(),
-      createdAt: new Date().toISOString(),
-    })
-    setText('')
-  }
 
   // Resolve creator name for audit footer
   const creatorName = entry.createdById && entry.createdById === user?.id
@@ -134,40 +63,9 @@ export default function CommentsPanel({ projectId, entry, onClose }: Props) {
         </button>
       </div>
 
-      {/* Comment list */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-        {entry.comments.length === 0 && (
-          <div className="text-center py-12 text-[var(--text-tertiary)]">
-            <div className="flex justify-center mb-2"><ChatBubbleIcon className="w-7 h-7" /></div>
-            <p className="text-sm">Nenhum comentário ainda.</p>
-          </div>
-        )}
-        {entry.comments.map((c: EntryComment) => (
-          <div key={c.id} className="flex gap-3 group">
-            <CommentAvatar
-              author={c.author}
-              currentAuthorName={currentAuthorName}
-              avatarUrl={profile?.avatar_url ?? null}
-            />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-sm font-medium text-[var(--text-secondary)]">{c.author}</span>
-                <span className="text-xs text-[var(--text-tertiary)]">{formatTime(c.createdAt)}</span>
-              </div>
-              <DocView markdown={c.text} />
-            </div>
-            <button
-              onClick={() => removeComment(projectId, entry.id, c.id)}
-              className="opacity-0 group-hover:opacity-100 text-[var(--text-disabled)] hover:text-[var(--color-danger-text)] transition-opacity shrink-0 mt-1"
-              title="Excluir"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        ))}
-        <div ref={bottomRef} />
+      {/* Conversa em cadeia: a lista rola e a caixa de comentar fica fixa embaixo */}
+      <div className="flex-1 min-h-0 px-5 py-4">
+        <EntryComments entryId={entry.id} scope={{ type: 'project', projectId }} fill />
       </div>
 
       {/* Entry audit footer */}
@@ -193,28 +91,6 @@ export default function CommentsPanel({ projectId, entry, onClose }: Props) {
         </div>
       )}
 
-      {/* Input area */}
-      <div className="border-t border-[var(--border-default)] px-5 py-4 space-y-3">
-        {currentAuthorName && (
-          <p className="text-xs text-[var(--text-tertiary)]">
-            Comentando como <span className="font-medium text-[var(--text-secondary)]">{currentAuthorName}</span>
-          </p>
-        )}
-        <Textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Escreva um comentário…"
-          rows={3}
-          onKeyDown={(e) => {
-            if (applyMarkdownShortcut(e, setText)) return
-            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSubmit()
-          }}
-        />
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-[var(--text-tertiary)]">Ctrl+Enter para enviar · Ctrl+B negrito, Ctrl+I itálico, Ctrl+K link</span>
-          <Button size="sm" onClick={handleSubmit} disabled={!text.trim()}>Enviar</Button>
-        </div>
-      </div>
     </div>
   )
 

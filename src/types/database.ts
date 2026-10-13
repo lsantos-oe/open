@@ -200,6 +200,8 @@ export interface DbComment {
   author_avatar: string | null
   text: string
   created_at: string | null
+  parent_id?: string | null
+  updated_at?: string | null
 }
 
 export interface DbDelayLog {

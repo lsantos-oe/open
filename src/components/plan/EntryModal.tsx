@@ -1,11 +1,9 @@
 import { useState, useMemo, useEffect, CSSProperties, ReactNode } from 'react'
 import RichTextInput from '@/components/editor/RichTextInput'
-import DocView from '@/components/editor/DocView'
-import { applyMarkdownShortcut } from '@/utils/markdownShortcuts'
+import EntryComments from './EntryComments'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/store/useAppStore'
-import { useAuthStore } from '@/stores/useAuthStore'
 import { useToastStore } from '@/stores/useToastStore'
 import { Entry, EntryOwner, EntryType, EntryStatus, RiskFlag, Link, TeamMember } from '@/types'
 import { contactsForClients, contactsForClient } from '@/utils/contacts'
@@ -75,12 +73,6 @@ const TYPE_ICONS: Record<EntryType, ReactNode> = {
   meeting: <CalendarIcon className="w-4 h-4" />,
 }
 
-function avatarInitials(name: string): string {
-  const parts = name.trim().split(/\s+/)
-  return parts.length >= 2
-    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-    : name.slice(0, 2).toUpperCase()
-}
 
 function emptyForm(
   type: EntryType,
@@ -201,10 +193,8 @@ export default function EntryModal({
   const {
     projects, clients, contacts, teamDirectory,
     addEntry, addUnassignedEntry, addSubtask, updateEntry, deleteEntry, moveEntryToPhase, moveEntryToUnassignedPhase,
-    addComment, removeComment,
     addStandaloneTask, updateStandaloneTask, deleteStandaloneTask, changeStandaloneTaskDate,
   } = useAppStore()
-  const { profile } = useAuthStore()
   const { addToast } = useToastStore()
   const navigate = useNavigate()
 
@@ -261,7 +251,6 @@ export default function EntryModal({
   const [deleteStep, setDeleteStep] = useState<'idle' | 'confirm'>('idle')
   const [newLinkLabel, setNewLinkLabel] = useState('')
   const [newLinkUrl, setNewLinkUrl] = useState('')
-  const [commentText, setCommentText] = useState('')
   const [depsOpen, setDepsOpen] = useState(false)
   // O editor da descrição só lê o texto inicial ao montar: cada reinício do formulário o remonta (key).
   const [descEpoch, setDescEpoch] = useState(0)
@@ -273,7 +262,6 @@ export default function EntryModal({
     setDeleteStep('idle')
     setNewLinkLabel('')
     setNewLinkUrl('')
-    setCommentText('')
     setDepsOpen(false)
     setClientFilter(origClientId)
     setForm(makeForm())
@@ -368,16 +356,6 @@ export default function EntryModal({
 
   function removeLink(id: string) {
     setForm((f) => ({ ...f, links: f.links.filter((l) => l.id !== id) }))
-  }
-
-  function handleAddComment() {
-    if (!commentText.trim() || !entry) return
-    addComment(origProjectId, entry.id, {
-      author: profile?.name ?? 'Usuário',
-      text: commentText.trim(),
-      createdAt: new Date().toISOString(),
-    })
-    setCommentText('')
   }
 
   function handleToggleHiddenFromPlan() {
@@ -625,6 +603,11 @@ export default function EntryModal({
 
   // ── footer ────────────────────────────────────────────────────────────────
 
+  // Comentários só existem para tarefas já salvas e que são linhas próprias (as subtarefas ficam dentro da tarefa-mãe).
+  const showComments = mode === 'edit' && !!entry && (origProjectId
+    ? !!origProject?.phases.some((ph) => ph.entries.some((e) => e.id === entry.id))
+    : true)
+
   const footer = (
     <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 8 }}>
       {mode === 'edit' && (
@@ -674,7 +657,8 @@ export default function EntryModal({
 
   return (
     <Modal open={open} title={title} onClose={onClose} size="xl" noPadding footer={footer}>
-      <div style={{ display: 'flex', height: '100%', minHeight: 480, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 480 }}>
+      <div style={{ display: 'flex', flex: 1, minHeight: showComments ? 360 : 480, overflow: 'hidden' }}>
 
         {/* ── LEFT COLUMN ── */}
         <div style={{ flex: 2, padding: 24, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -1100,82 +1084,6 @@ export default function EntryModal({
             <EntityAttachments entityType="entry" entityId={entry.id} />
           )}
 
-          {/* Comments (edit mode, project tasks only — standalone tasks have no comment thread) */}
-          {mode === 'edit' && entry && !!origProjectId && (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <FieldLabel>{t('entry.comments')}</FieldLabel>
-              {entry.comments.length === 0 ? (
-                <p style={{ fontSize: 12, color: 'var(--text-disabled)', marginBottom: 8 }}>
-                  {t('entry.noComments')}
-                </p>
-              ) : (
-                <div style={{ marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 180, overflowY: 'auto' }}>
-                  {entry.comments.map(c => (
-                    <div
-                      key={c.id}
-                      style={{ display: 'flex', gap: 8 }}
-                      onMouseEnter={e => { (e.currentTarget.querySelector('.rm-comment') as HTMLElement | null)?.style.setProperty('opacity', '1') }}
-                      onMouseLeave={e => { (e.currentTarget.querySelector('.rm-comment') as HTMLElement | null)?.style.setProperty('opacity', '0') }}
-                    >
-                      <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--oe-primary)', color: 'white', fontSize: 9, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
-                        {avatarInitials(c.author)}
-                      </span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
-                          <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-secondary)' }}>{c.author}</span>
-                          <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>
-                            {new Date(c.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <DocView markdown={c.text} fontSize={12} className="mt-0.5" />
-                      </div>
-                      <button
-                        className="rm-comment"
-                        onClick={() => removeComment(origProjectId, entry.id, c.id)}
-                        style={{ fontSize: 14, color: 'var(--text-disabled)', background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0, opacity: 0, transition: 'opacity 0.15s' }}
-                        onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-danger-text)')}
-                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-disabled)')}
-                      >×</button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div style={{ display: 'flex', gap: 6, marginTop: 'auto' }}>
-                <textarea
-                  value={commentText}
-                  onChange={e => setCommentText(e.target.value)}
-                  onKeyDown={e => {
-                    if (applyMarkdownShortcut(e, setCommentText)) return
-                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddComment() }
-                  }}
-                  rows={2}
-                  placeholder={t('entry.commentPlaceholder')}
-                  style={{
-                    flex: 1, fontSize: 12,
-                    border: '1px solid var(--border-default)',
-                    borderRadius: 'var(--radius-md)', padding: '6px 8px',
-                    color: 'var(--text-primary)', background: 'var(--surface-input)',
-                    resize: 'none', outline: 'none',
-                  }}
-                  onFocus={e => (e.currentTarget.style.borderColor = 'var(--oe-primary)')}
-                  onBlur={e => (e.currentTarget.style.borderColor = 'var(--border-default)')}
-                />
-                <button
-                  onClick={handleAddComment}
-                  disabled={!commentText.trim()}
-                  style={{
-                    fontSize: 12, background: 'var(--oe-primary)', color: 'white',
-                    borderRadius: 'var(--radius-md)', padding: '5px 10px',
-                    border: 'none', cursor: 'pointer', alignSelf: 'flex-end',
-                    opacity: commentText.trim() ? 1 : 0.4,
-                  }}
-                >
-                  {t('actions.add')}
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Created / Updated metadata */}
           {mode === 'edit' && entry && (entry.createdAt || entry.updatedAt) && (
             <div style={{ paddingTop: 10, borderTop: '1px solid var(--border-default)', marginTop: 'auto' }}>
@@ -1192,6 +1100,14 @@ export default function EntryModal({
             </div>
           )}
         </div>
+      </div>
+
+      {/* Conversa da tarefa: seção inferior, em cadeia (respostas, menções, edição) */}
+      {showComments && entry && (
+        <div style={{ flexShrink: 0, borderTop: '1px solid var(--border-default)', padding: '16px 24px 18px', background: 'var(--surface-card)' }}>
+          <EntryComments entryId={entry.id} scope={origProjectId ? { type: 'project', projectId: origProjectId } : { type: 'standalone' }} maxListHeight={240} />
+        </div>
+      )}
       </div>
     </Modal>
   )

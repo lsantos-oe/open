@@ -90,6 +90,10 @@ function dbEntryToStore(row: DbEntry, comments: DbComment[]): Entry {
       author: c.author_name ?? 'Anônimo',
       text: c.text,
       createdAt: c.created_at ?? new Date().toISOString(),
+      authorId: c.author_id ?? undefined,
+      authorAvatar: c.author_avatar ?? undefined,
+      parentId: c.parent_id ?? undefined,
+      updatedAt: c.updated_at ?? undefined,
     }))
 
   // Migrate owners from responsible/responsibleMemberId if not stored
@@ -514,15 +518,18 @@ function storeEntryCommentsToDb(
   entry: Entry,
   projectId: string,
 ): DbComment[] {
-  return entry.comments.map(c => ({
+  // Pais antes das respostas: o upsert em lote precisa encontrar o comentário respondido.
+  return [...entry.comments].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map(c => ({
     id: c.id,
     project_id: projectId,
     entry_id: entry.id,
-    author_id: null,
+    author_id: c.authorId ?? null,
     author_name: c.author,
-    author_avatar: null,
+    author_avatar: c.authorAvatar ?? null,
     text: c.text,
     created_at: c.createdAt,
+    parent_id: c.parentId ?? null,
+    updated_at: c.updatedAt ?? null,
   }))
 }
 

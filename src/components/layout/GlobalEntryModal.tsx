@@ -1,4 +1,5 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAppStore } from '@/store/useAppStore'
 import { useEntryOpenerStore } from '@/stores/useEntryOpenerStore'
 import EntryModal from '@/components/plan/EntryModal'
@@ -37,6 +38,18 @@ export function GlobalEntryModal() {
   const entryId = useEntryOpenerStore((s) => s.entryId)
   const close = useEntryOpenerStore((s) => s.close)
   const { projects, incidents, standaloneTasks, changeEntryDate } = useAppStore()
+
+  // Link direto para uma tarefa (?task=<id>), como o das notificações de comentário: abre o modal por cima da página.
+  // O id fica guardado até os dados carregarem; o parâmetro sai da URL para não reabrir ao recarregar/voltar.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const taskParam = searchParams.get('task')
+  useEffect(() => {
+    if (!taskParam) return
+    useEntryOpenerStore.getState().open(taskParam)
+    const next = new URLSearchParams(searchParams)
+    next.delete('task')
+    setSearchParams(next, { replace: true })
+  }, [taskParam]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const located = useMemo(
     () => (entryId ? locateEntry(entryId, { projects, incidents, standaloneTasks }) : null),

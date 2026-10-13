@@ -19,6 +19,13 @@ export interface EntryComment {
   author: string
   text: string
   createdAt: string
+  /** Quem escreveu (perfil). Ausente em comentários antigos: qualquer um pode editá-los. */
+  authorId?: string
+  authorAvatar?: string
+  /** Resposta a outro comentário (um nível: respostas de respostas ficam na cadeia do comentário original). */
+  parentId?: string
+  /** Preenchido quando o texto foi editado. */
+  updatedAt?: string
 }
 
 export interface Link {

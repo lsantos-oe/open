@@ -34,7 +34,7 @@ import {
   storeIncidentToDb,
   dbEntryToStorePartial,
 } from '@/utils/dbConversions'
-import type { DbProjectFull, DbProfile, DbInvitedUser, DbNotification, UserRole } from '@/types/database'
+import type { DbProjectFull, DbProfile, DbInvitedUser, DbNotification, DbComment, UserRole } from '@/types/database'
 import type { DbIncidentFull } from '@/utils/dbConversions'
 
 export type DiaryScope = { type: 'project'; id: string } | { type: 'incident'; id: string }
@@ -47,6 +47,9 @@ export interface DocFieldRef {
   /** meeting_logs: o projeto. */
   projectId?: string
 }
+
+/** Onde a tarefa dos comentários vive: define o project_id gravado e qual linha recebe a atividade nova. */
+export type CommentScope = { type: 'project'; projectId: string } | { type: 'incident'; incidentId: string } | { type: 'standalone' }
 
 const TEMPLATES_VERSION = 2
 
@@ -324,6 +327,12 @@ interface AppStore {
   // Comments
   addComment: (projectId: string, entryId: string, comment: Omit<EntryComment, 'id'>) => void
   removeComment: (projectId: string, entryId: string, commentId: string) => void
+  /** Conversa da tarefa (projeto, incidente ou solta): comentar, responder (parentId), editar e apagar. */
+  addEntryComment: (scope: CommentScope, entryId: string, input: { text: string; parentId?: string }) => void
+  editEntryComment: (entryId: string, commentId: string, text: string) => void
+  deleteEntryComment: (entryId: string, commentId: string) => void
+  /** Mantém a conversa de uma tarefa aberta atualizada em tempo real (comentários de outras pessoas). Devolve o cancelamento. */
+  subscribeEntryComments: (entryId: string) => () => void
 
   // Settings
   updateSettings: (patch: Partial<AppSettings>) => void
@@ -511,6 +520,37 @@ function sync(fn: () => Promise<void>, revert?: () => void): void {
       err instanceof Error ? err.message : 'Erro ao salvar'
     )
   })
+}
+
+/** Aplica `fn` à tarefa (ou subtarefa) com este id, onde quer que ela esteja: projetos, incidentes ou tarefas soltas. */
+function mapEntryEverywhere(
+  state: { projects: Project[]; incidents: Incident[]; standaloneTasks: Entry[] },
+  entryId: string,
+  fn: (e: Entry) => Entry,
+): { projects: Project[]; incidents: Incident[]; standaloneTasks: Entry[] } {
+  const onEntry = (e: Entry): Entry => {
+    if (e.id === entryId) return fn(e)
+    if (!e.subtasks.some((sub) => sub.id === entryId)) return e
+    return { ...e, subtasks: e.subtasks.map((sub) => (sub.id === entryId ? fn(sub) : sub)) }
+  }
+  return {
+    projects: state.projects.map((p) => (p.phases.some((ph) => ph.entries.some((e) => e.id === entryId || e.subtasks.some((s) => s.id === entryId)))
+      ? { ...p, phases: p.phases.map((ph) => ({ ...ph, entries: ph.entries.map(onEntry) })) }
+      : p)),
+    incidents: state.incidents.map((i) => (i.entries.some((e) => e.id === entryId || e.subtasks.some((s) => s.id === entryId)) ? { ...i, entries: i.entries.map(onEntry) } : i)),
+    standaloneTasks: state.standaloneTasks.some((e) => e.id === entryId || e.subtasks.some((s) => s.id === entryId)) ? state.standaloneTasks.map(onEntry) : state.standaloneTasks,
+  }
+}
+
+/** Remove o comentário e as respostas dele. */
+const withoutThread = (comments: EntryComment[], commentId: string) => comments.filter((c) => c.id !== commentId && c.parentId !== commentId)
+
+/** Comentário vindo do Realtime (linha da tabela comments) → formato do store. */
+function dbCommentToStore(c: DbComment): EntryComment {
+  return {
+    id: c.id, author: c.author_name ?? 'Anônimo', text: c.text, createdAt: c.created_at ?? new Date().toISOString(),
+    authorId: c.author_id ?? undefined, authorAvatar: c.author_avatar ?? undefined, parentId: c.parent_id ?? undefined, updatedAt: c.updated_at ?? undefined,
+  }
 }
 
 /** Descarta o documento colaborativo de um campo antes de uma gravação que vem de fora do editor (IA, importação,
@@ -2649,63 +2689,97 @@ export const useAppStore = create<AppStore>()(
       // ── Comments ──────────────────────────────────────────────────────────
 
       addComment(projectId, entryId, comment) {
+        // Compatibilidade (painel de comentários do Plano, comentário em massa): vira um comentário comum, sem resposta.
+        get().addEntryComment({ type: 'project', projectId }, entryId, { text: comment.text })
+      },
+
+      removeComment(_projectId, entryId, commentId) {
+        get().deleteEntryComment(entryId, commentId)
+      },
+
+      addEntryComment(scope, entryId, { text, parentId }) {
+        const body = text.trim()
+        if (!body) return
         const id = uuid()
-        const newComment: EntryComment = { ...comment, id }
-        const prev = get().projects
         const nowTs = new Date().toISOString()
-        set((s) => ({
-          projects: mutateProject(s.projects, projectId, (p) => ({
-            ...p,
-            phases: p.phases.map((ph) => ({
-              ...ph,
-              entries: ph.entries.map((e) => {
-                if (e.id === entryId) return { ...e, comments: [...e.comments, newComment], lastActivityAt: nowTs }
-                const hasSub = e.subtasks.some((sub) => sub.id === entryId)
-                if (!hasSub) return e
-                return { ...e, subtasks: e.subtasks.map((sub) => sub.id === entryId ? { ...sub, comments: [...sub.comments, newComment] } : sub) }
-              }),
-            })),
-          })),
-        }))
+        const profile = useAuthStore.getState().profile
+        const userId = useAuthStore.getState().user?.id
+        const newComment: EntryComment = {
+          id, author: profile?.name ?? profile?.email ?? 'Usuário', text: body, createdAt: nowTs,
+          authorId: userId, authorAvatar: profile?.avatar_url ?? undefined, parentId,
+        }
+        const prev = { projects: get().projects, incidents: get().incidents, standaloneTasks: get().standaloneTasks }
+        set((s) => mapEntryEverywhere(s, entryId, (e) => ({ ...e, comments: [...e.comments, newComment], lastActivityAt: nowTs })))
         sync(async () => {
           const { error } = await supabase.from('comments').insert({
             id,
-            project_id: projectId,
+            project_id: scope.type === 'project' ? scope.projectId : null,
             entry_id: entryId,
-            author_id: null,
+            author_id: userId ?? null,
             author_name: newComment.author,
-            author_avatar: null,
-            text: newComment.text,
-            created_at: newComment.createdAt,
+            author_avatar: newComment.authorAvatar ?? null,
+            text: body,
+            parent_id: parentId ?? null,
+            created_at: nowTs,
           })
           if (error) throw new Error(error.message)
-          // Comments live in their own table — bumping last_activity_at needs
-          // a separate targeted write to the entry's own row.
-          const project = get().projects.find((p) => p.id === projectId)
-          if (project) await dbSyncEntry(project, entryId, getUserId())
-        }, () => set({ projects: prev }))
+          // Comentários moram numa tabela própria: a atividade nova (last_activity_at) precisa de uma gravação à parte.
+          if (scope.type === 'project') {
+            const project = get().projects.find((p) => p.id === scope.projectId)
+            if (project) await dbSyncEntry(project, entryId, getUserId())
+          } else if (scope.type === 'incident') {
+            const incident = get().incidents.find((i) => i.id === scope.incidentId)
+            if (incident) await dbSyncIncidentEntry(incident, entryId, getUserId())
+          } else {
+            await dbSyncStandaloneEntry(get().standaloneTasks, entryId, getUserId())
+          }
+        }, () => set(prev))
       },
 
-      removeComment(projectId, entryId, commentId) {
-        const prev = get().projects
-        set((s) => ({
-          projects: mutateProject(s.projects, projectId, (p) => ({
-            ...p,
-            phases: p.phases.map((ph) => ({
-              ...ph,
-              entries: ph.entries.map((e) => {
-                if (e.id === entryId) return { ...e, comments: e.comments.filter((c) => c.id !== commentId) }
-                const hasSub = e.subtasks.some((sub) => sub.id === entryId)
-                if (!hasSub) return e
-                return { ...e, subtasks: e.subtasks.map((sub) => sub.id === entryId ? { ...sub, comments: sub.comments.filter((c) => c.id !== commentId) } : sub) }
-              }),
-            })),
-          })),
-        }))
+      editEntryComment(entryId, commentId, text) {
+        const body = text.trim()
+        if (!body) return
+        const nowTs = new Date().toISOString()
+        const prev = { projects: get().projects, incidents: get().incidents, standaloneTasks: get().standaloneTasks }
+        set((s) => mapEntryEverywhere(s, entryId, (e) => ({ ...e, comments: e.comments.map((c) => (c.id === commentId ? { ...c, text: body, updatedAt: nowTs } : c)) })))
         sync(async () => {
+          const { error } = await supabase.from('comments').update({ text: body }).eq('id', commentId)
+          if (error) throw new Error(error.message)
+        }, () => set(prev))
+      },
+
+      deleteEntryComment(entryId, commentId) {
+        const prev = { projects: get().projects, incidents: get().incidents, standaloneTasks: get().standaloneTasks }
+        set((s) => mapEntryEverywhere(s, entryId, (e) => ({ ...e, comments: withoutThread(e.comments, commentId) })))
+        sync(async () => {
+          // As respostas saem junto (on delete cascade no banco).
           const { error } = await supabase.from('comments').delete().eq('id', commentId)
           if (error) throw new Error(error.message)
-        }, () => set({ projects: prev }))
+        }, () => set(prev))
+      },
+
+      subscribeEntryComments(entryId) {
+        const apply = (event: 'INSERT' | 'UPDATE' | 'DELETE', row: Partial<DbComment>) => {
+          if (!row.id) return
+          if (event === 'DELETE') {
+            set((s) => mapEntryEverywhere(s, entryId, (e) => (e.comments.some((c) => c.id === row.id) ? { ...e, comments: withoutThread(e.comments, row.id!) } : e)))
+          } else if (row.entry_id === entryId) {
+            const incoming = dbCommentToStore(row as DbComment)
+            set((s) => mapEntryEverywhere(s, entryId, (e) => {
+              const exists = e.comments.some((c) => c.id === incoming.id)
+              if (event === 'INSERT') return exists ? e : { ...e, comments: [...e.comments, incoming], lastActivityAt: incoming.createdAt }
+              return { ...e, comments: e.comments.map((c) => (c.id === incoming.id ? { ...c, text: incoming.text, updatedAt: incoming.updatedAt } : c)) }
+            }))
+          }
+        }
+        const channel = supabase
+          .channel(`entry-comments:${entryId}`)
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments', filter: `entry_id=eq.${entryId}` }, (p) => apply('INSERT', p.new as Partial<DbComment>))
+          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'comments', filter: `entry_id=eq.${entryId}` }, (p) => apply('UPDATE', p.new as Partial<DbComment>))
+          // DELETE não aceita filtro por coluna: chega de qualquer comentário; só afeta esta tarefa se o id estiver nela.
+          .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'comments' }, (p) => apply('DELETE', p.old as Partial<DbComment>))
+          .subscribe()
+        return () => { void supabase.removeChannel(channel) }
       },
 
       // ── Settings ──────────────────────────────────────────────────────────

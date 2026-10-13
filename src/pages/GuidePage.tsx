@@ -87,7 +87,8 @@ const SECTIONS: Section[] = [
         <p>Visão cruzada de todas as tarefas — de projetos, de incidentes ou <strong>soltas</strong> (sem projeto nem incidente) — em três modos: <strong>Kanban</strong>, <strong>Tabela</strong> (editável e agrupável) e <strong>Carga</strong> (quanto cada pessoa tem de trabalho).</p>
         <p>Os status são Backlog, <strong>To Do</strong> (o que o time puxou para a semana), Em andamento, Validação/Teste, Concluído e Bloqueado. Os sinais <em>atrasada</em>, <em>parada</em> e <em>bloqueada</em> aparecem nos cards e na tabela, e dá para ordenar por data da tarefa ou do projeto/incidente.</p>
         <p>Para criar: botão <strong>Nova tarefa</strong> ou <strong>duplo clique numa raia</strong> do kanban (cria uma tarefa já naquele status; o campo de projeto aceita "Nenhum" para tarefa solta).</p>
-        <p>A descrição da tarefa usa o editor de blocos (títulos, listas, tabelas, imagens, menções) e os comentários aceitam formatação simples (veja "Editor de blocos").</p>
+        <p>A descrição da tarefa usa o editor de blocos (títulos, listas, tabelas, imagens, menções).</p>
+        <p><strong>Comentários:</strong> no fim do modal da tarefa há uma conversa em cadeia, como numa rede social — cada comentário mostra quem escreveu e quando, e você pode <strong>responder</strong> (as respostas ficam aninhadas), <strong>editar</strong> e <strong>excluir</strong> os seus (admins moderam qualquer um). Digite <strong>@</strong> para mencionar alguém: a pessoa recebe uma notificação com link direto para a tarefa, e quem tem o comentário respondido também é avisado. Enter envia, Shift+Enter quebra a linha, e a conversa atualiza sozinha enquanto a tarefa está aberta. Vale para tarefas de projetos, de incidentes e soltas (subtarefas não têm conversa própria).</p>
         <p>Seleção em massa troca responsável ou status de várias tarefas; o filtro <strong>Meus</strong> mostra só as suas. Para criar muitas tarefas de uma vez: <strong>Importar → Tarefas</strong>.</p>
       </>
     ),
@@ -125,7 +126,7 @@ const SECTIONS: Section[] = [
         </Ul>
         <p><strong>Edição em conjunto:</strong> nestes campos várias pessoas escrevem ao mesmo tempo e veem o cursor umas das outras, sem botão Salvar: descrição de incidente, notas de cliente, anotações e Charter do projeto, notas de reunião, descrição de ponto em aberto e detalhe de notas do Histórico.</p>
         <p>Nos formulários que têm botão <strong>Salvar</strong> (tarefa, risco, atraso, criação de incidente/reunião/ponto em aberto, ação de retro, template de incidente) o mesmo editor funciona, mas o texto só é gravado ao salvar.</p>
-        <p><strong>Comentários</strong> (tarefas, Diário e retros) aceitam formatação simples: <strong>Ctrl/⌘+B</strong> negrito, <strong>Ctrl/⌘+I</strong> itálico, <strong>Ctrl/⌘+E</strong> código e <strong>Ctrl/⌘+K</strong> link — e também listas e links escritos em Markdown.</p>
+        <p><strong>Comentários</strong> (tarefas, Diário e retros) aceitam formatação simples — nas tarefas, Markdown e <strong>@menções</strong>: <strong>Ctrl/⌘+B</strong> negrito, <strong>Ctrl/⌘+I</strong> itálico, <strong>Ctrl/⌘+E</strong> código e <strong>Ctrl/⌘+K</strong> link — e também listas e links escritos em Markdown.</p>
         <p>O texto é guardado em Markdown, por isso relatórios, exportações e o assistente de IA conseguem lê-lo. Textos antigos, escritos em texto puro, aparecem normalmente (com as quebras de linha preservadas).</p>
       </>
     ),

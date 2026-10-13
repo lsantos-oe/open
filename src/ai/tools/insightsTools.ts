@@ -183,7 +183,8 @@ export const getTaskTool: AiTool = {
       dependsOnNames: e.dependsOn.map((id) => nameById.get(id) ?? id),
       links: e.links.map((l) => ({ label: l.label, url: l.url })),
       createdAt: e.createdAt?.slice(0, 10),
-      comments: e.comments.slice(-25).map((c) => ({ author: c.author, date: c.createdAt.slice(0, 10), text: clip(c.text, 400) })),
+      // Conversa em cadeia: respostas indicam a quem respondem.
+      comments: e.comments.slice(-25).map((c) => ({ author: c.author, date: c.createdAt.slice(0, 10), text: clip(c.text, 400), replyTo: c.parentId ? e.comments.find((x) => x.id === c.parentId)?.author : undefined, edited: c.updatedAt ? true : undefined })),
     })
   },
 }
