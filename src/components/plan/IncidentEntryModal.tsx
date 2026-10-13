@@ -17,6 +17,8 @@ interface Props {
   mode: 'create' | 'edit'
   incidentId: string
   entry?: Entry
+  /** Status inicial de uma tarefa nova (ex.: duplo clique numa raia do Kanban). */
+  defaultStatus?: EntryStatus
   onClose: () => void
 }
 
@@ -60,9 +62,9 @@ function FieldBox({ label, children }: { label: string; children: React.ReactNod
   return <div><FieldLabel>{label}</FieldLabel>{children}</div>
 }
 
-function emptyForm(): Form {
+function emptyForm(status: EntryStatus = 'pending'): Form {
   return {
-    name: '', description: '', type: 'task', owners: [], status: 'pending', riskFlag: 'none',
+    name: '', description: '', type: 'task', owners: [], status, riskFlag: 'none',
     plannedStart: '', plannedEnd: '', plannedDate: '', durationDays: 1, durationHours: 1,
     dependsOn: [], links: [],
   }
@@ -92,7 +94,7 @@ function entryToForm(entry: Entry): Form {
   }
 }
 
-export default function IncidentEntryModal({ open, mode, incidentId, entry, onClose }: Props) {
+export default function IncidentEntryModal({ open, mode, incidentId, entry, defaultStatus, onClose }: Props) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { incidents, projects, clients, teamDirectory, contacts, addIncidentEntry, updateIncidentEntry, deleteIncidentEntry, changeIncidentEntryDate } = useAppStore()
@@ -110,7 +112,7 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, onCl
     [contacts, incident],
   )
 
-  const [form, setForm] = useState<Form>(entry ? entryToForm(entry) : emptyForm())
+  const [form, setForm] = useState<Form>(entry ? entryToForm(entry) : emptyForm(defaultStatus))
   const [endDateError, setEndDateError] = useState('')
   const [deleteStep, setDeleteStep] = useState<'idle' | 'confirm'>('idle')
   const [newLinkLabel, setNewLinkLabel] = useState('')
@@ -122,7 +124,7 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, onCl
   useEffect(() => {
     if (!open) return
     setDescEpoch((e) => e + 1)
-    setForm(entry ? entryToForm(entry) : emptyForm())
+    setForm(entry ? entryToForm(entry) : emptyForm(defaultStatus))
     setEndDateError(''); setDeleteStep('idle'); setNewLinkLabel(''); setNewLinkUrl('')
   }, [open, entry])
 

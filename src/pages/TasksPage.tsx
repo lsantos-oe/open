@@ -242,6 +242,7 @@ function DraggableCard({ card, onEdit }: { card: GlobalCard; onEdit: (c: GlobalC
       style={style}
       {...listeners}
       {...attributes}
+      data-board-card
       className={`cursor-grab active:cursor-grabbing touch-none ${isDragging ? 'opacity-30' : ''}`}
     >
       <TaskCard card={card} onClick={isDragging ? undefined : () => onEdit(card)} />
@@ -251,11 +252,13 @@ function DraggableCard({ card, onEdit }: { card: GlobalCard; onEdit: (c: GlobalC
 
 // ─── KanbanColumn ─────────────────────────────────────────────────────────────
 
-function KanbanColumn({ status, labelKey, cards, onEdit }: {
+function KanbanColumn({ status, labelKey, cards, onEdit, onAdd }: {
   status: EntryStatus
   labelKey: string
   cards: GlobalCard[]
   onEdit: (c: GlobalCard) => void
+  /** Duplo clique na raia (fora dos cards) cria uma tarefa já neste status. */
+  onAdd: (status: EntryStatus) => void
 }) {
   const { t } = useTranslation()
   const { setNodeRef, isOver } = useDroppable({ id: status })
@@ -263,8 +266,10 @@ function KanbanColumn({ status, labelKey, cards, onEdit }: {
 
   return (
     <div
+      onDoubleClick={(e) => { if (!(e.target as HTMLElement).closest('[data-board-card], button, a, input, select, textarea')) onAdd(status) }}
+      title={t('plan.dblClickToAdd')}
       style={{
-        display: 'flex', flexDirection: 'column', minHeight: '60vh', minWidth: 0,
+        display: 'flex', flexDirection: 'column', minHeight: '60vh', minWidth: 0, userSelect: 'none',
         background: style.bg, borderRadius: 'var(--radius-lg)',
         outline: isOver ? `2px solid ${style.header}` : '2px solid transparent',
         transition: 'outline 0.1s',
@@ -282,6 +287,9 @@ function KanbanColumn({ status, labelKey, cards, onEdit }: {
         {cards.map(card => (
           <DraggableCard key={card.id} card={card} onEdit={onEdit} />
         ))}
+        {cards.length === 0 && (
+          <span style={{ fontSize: 11, color: 'var(--text-disabled)', textAlign: 'center', padding: '16px 4px' }}>{t('plan.dblClickToAdd')}</span>
+        )}
       </div>
     </div>
   )
@@ -319,6 +327,8 @@ export default function TasksPage() {
   const [onlyMine, setOnlyMine] = useState(false)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [newTaskOpen, setNewTaskOpen] = useState(false)
+  /** Raia onde o duplo clique aconteceu: a tarefa nova já nasce nesse status. */
+  const [newTaskStatus, setNewTaskStatus] = useState<EntryStatus | undefined>(undefined)
   const [editCard, setEditCard] = useState<GlobalCard | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkOwnersOpen, setBulkOwnersOpen] = useState(false)
@@ -1111,6 +1121,7 @@ export default function TasksPage() {
                   return dateSortMode !== 'none' ? applyDateOrder(inCol) : inCol
                 })()}
                 onEdit={setEditCard}
+                onAdd={(status) => { setNewTaskStatus(status); setNewTaskOpen(true) }}
               />
             ))}
           </div>
@@ -1125,7 +1136,8 @@ export default function TasksPage() {
         open={newTaskOpen}
         mode="create"
         allowStandalone
-        onClose={() => setNewTaskOpen(false)}
+        defaultStatus={newTaskStatus}
+        onClose={() => { setNewTaskOpen(false); setNewTaskStatus(undefined) }}
       />
 
       {/* Edit task modal */}

@@ -79,7 +79,7 @@ export default function IncidentDetailPage() {
   const [contactCreateMode, setContactCreateMode] = useState(false)
   const [newContactClientId, setNewContactClientId] = useState('')
   const [newContactForm, setNewContactForm] = useState({ name: '', role: '', email: '', phone: '' })
-  const [taskModal, setTaskModal] = useState<{ mode: 'create' | 'edit'; entry?: Entry } | null>(null)
+  const [taskModal, setTaskModal] = useState<{ mode: 'create' | 'edit'; entry?: Entry; status?: EntryStatus } | null>(null)
   const [taskView, setTaskView] = useState<'kanban' | 'table'>(() => (localStorage.getItem('pb-incident-tasks-view') as 'kanban' | 'table') ?? 'kanban')
   const [taskFilterStatus, setTaskFilterStatus] = useState('')
   const [taskFilterResponsible, setTaskFilterResponsible] = useState('')
@@ -372,13 +372,15 @@ export default function IncidentDetailPage() {
                 </>
               )}
             </div>
-            {incident.entries.length === 0 ? (
+            {incident.entries.length === 0 && taskView !== 'kanban' ? (
               <p className="text-sm text-center py-12" style={{ color: 'var(--text-tertiary)' }}>{t('plan.noEntries')}</p>
             ) : taskView === 'kanban' ? (
+              // O quadro aparece mesmo sem tarefas: o duplo clique numa raia cria a primeira já naquele status.
               <EntryBoard
                 cards={filteredBoardCards}
                 onStatusChange={(entryId, status) => updateIncidentEntryStatus(incident.id, entryId, status)}
                 onCardClick={(card) => setTaskModal({ mode: 'edit', entry: card })}
+                onAddCard={(status) => setTaskModal({ mode: 'create', status })}
                 showInternalSection={false}
               />
             ) : (
@@ -559,6 +561,7 @@ export default function IncidentDetailPage() {
           mode={taskModal.mode}
           incidentId={incident.id}
           entry={taskModal.entry}
+          defaultStatus={taskModal.status}
           onClose={() => setTaskModal(null)}
         />
       )}

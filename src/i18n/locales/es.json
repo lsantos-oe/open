@@ -292,6 +292,7 @@
     "viewClient": "Ver cliente"
   },
   "plan": {
+    "dblClickToAdd": "Haz doble clic para crear aquí",
     "addTask": "+ Tarea",
     "addMilestone": "+ Hito",
     "addMeeting": "+ Reunión",

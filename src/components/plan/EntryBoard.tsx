@@ -197,6 +197,7 @@ function DraggableCard({ card, onEdit }: { card: BoardCard; onEdit: (c: BoardCar
       style={style}
       {...listeners}
       {...attributes}
+      data-board-card
       className={`cursor-grab active:cursor-grabbing touch-none ${isDragging ? 'opacity-30' : ''}`}
     >
       <BoardEntryCard card={card} onClick={isDragging ? undefined : () => onEdit(card)} />
@@ -220,8 +221,11 @@ function BoardColumn({ status, cards, onEdit, onAdd, droppableId }: {
 
   return (
     <div
+      // Duplo clique na raia (fora dos cards e botões) cria um item já neste status.
+      onDoubleClick={onAdd ? (e) => { if (!(e.target as HTMLElement).closest('[data-board-card], button, a, input, select, textarea')) onAdd(status) } : undefined}
+      title={onAdd ? t('plan.dblClickToAdd') : undefined}
       style={{
-        display: 'flex', flexDirection: 'column', minHeight: '30vh', minWidth: 0,
+        display: 'flex', flexDirection: 'column', minHeight: '30vh', minWidth: 0, userSelect: onAdd ? 'none' : undefined,
         background: colStyle.bg,
         borderRadius: 'var(--radius-lg)',
         outline: isOver ? `2px solid ${colStyle.header}` : '2px solid transparent',
@@ -253,6 +257,9 @@ function BoardColumn({ status, cards, onEdit, onAdd, droppableId }: {
         {cards.map(card => (
           <DraggableCard key={card.id} card={card} onEdit={onEdit} />
         ))}
+        {onAdd && cards.length === 0 && (
+          <span style={{ fontSize: 11, color: 'var(--text-disabled)', textAlign: 'center', padding: '16px 4px' }}>{t('plan.dblClickToAdd')}</span>
+        )}
       </div>
     </div>
   )

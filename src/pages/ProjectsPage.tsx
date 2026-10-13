@@ -318,9 +318,11 @@ function ListView({ projects, holidays, onOpen, selected, onToggle, sortField, s
 interface KanbanViewProps {
   projects: Project[]; holidays: string[]; onOpen: (id: string) => void
   selected: Set<string>; onToggle: (id: string) => void
+  /** Duplo clique numa raia: abre o novo projeto já com o status dela. */
+  onCreate: (status: ProjectStatus) => void
 }
 
-function KanbanView({ projects, holidays, onOpen, selected, onToggle }: KanbanViewProps) {
+function KanbanView({ projects, holidays, onOpen, selected, onToggle, onCreate }: KanbanViewProps) {
   const { t } = useTranslation()
 
   if (projects.length === 0) return <EmptyFiltered />
@@ -330,7 +332,12 @@ function KanbanView({ projects, holidays, onOpen, selected, onToggle }: KanbanVi
       {KANBAN_STATUSES.map((status) => {
         const cards = projects.filter((p) => p.status === status)
         return (
-          <div key={status} className={`border ${KANBAN_BG[status]} rounded-[var(--radius-lg)] p-3 min-h-[300px]`}>
+          <div
+            key={status}
+            onDoubleClick={(e) => { if (!(e.target as HTMLElement).closest('[role="button"], button, a, input, select, textarea')) onCreate(status) }}
+            title={t('plan.dblClickToAdd')}
+            className={`border ${KANBAN_BG[status]} rounded-[var(--radius-lg)] p-3 min-h-[300px] select-none`}
+          >
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">{t(`project.${status}`)}</span>
               <span className="bg-[var(--surface-card)] text-[var(--text-secondary)] rounded-[var(--radius-pill)] text-xs px-2 py-0.5 font-medium border border-[var(--border-default)]">
@@ -338,6 +345,9 @@ function KanbanView({ projects, holidays, onOpen, selected, onToggle }: KanbanVi
               </span>
             </div>
             <div className="space-y-2">
+              {cards.length === 0 && (
+                <p className="text-[11px] text-center py-4 text-[var(--text-disabled)]">{t('plan.dblClickToAdd')}</p>
+              )}
               {cards.map((p) => {
                 const dur = projectDurationDays(p, holidays)
                 const variance = projectEndVariance(p, holidays)
@@ -994,6 +1004,8 @@ export default function ProjectsPage() {
   const [onlyMine, setOnlyMine] = useState(false)
   const [onlyDelayed, setOnlyDelayed] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
+  /** Raia do Kanban onde o duplo clique aconteceu: o projeto nasce nesse status. */
+  const [newProjectStatus, setNewProjectStatus] = useState<ProjectStatus | undefined>(undefined)
   const [showImportModal, setShowImportModal] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
 
@@ -1088,6 +1100,8 @@ export default function ProjectsPage() {
 
   function handleCreate(data: Parameters<typeof createProject>[0]) {
     const id = createProject(data)
+    if (newProjectStatus && newProjectStatus !== 'planning') updateProject(id, { status: newProjectStatus })
+    setNewProjectStatus(undefined)
     setModalOpen(false)
     navigate(`/projects/${id}`)
   }
@@ -1198,12 +1212,12 @@ export default function ProjectsPage() {
           </div>
         </>
       ) : (
-        <KanbanView projects={sorted} holidays={settings.holidays} onOpen={(id) => navigate(`/projects/${id}`)} selected={selected} onToggle={toggleSelect} />
+        <KanbanView projects={sorted} holidays={settings.holidays} onOpen={(id) => navigate(`/projects/${id}`)} selected={selected} onToggle={toggleSelect} onCreate={(status) => { setNewProjectStatus(status); setModalOpen(true) }} />
       )}
 
       <NewProjectModal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => { setModalOpen(false); setNewProjectStatus(undefined) }}
         clients={storeClients}
         teamMembers={teamMembers}
         templates={settings.templates}
