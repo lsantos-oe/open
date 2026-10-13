@@ -5,23 +5,16 @@ import { useAuthStore } from '@/stores/useAuthStore'
 import { useToastStore } from '@/stores/useToastStore'
 import type { ChatContentBlock, ChatMessage, ConversationSummary } from '@/types/ai'
 import { repairDanglingToolUse, sanitizeForStorage, titleFromText } from './history'
+import { aiQueue } from './queue'
 
 // Histórico do assistente no banco (ai_conversations / ai_messages, por usuário via RLS).
-// Todas as gravações passam por UMA fila: o supabase-js disputa o lock da sessão se várias chamadas rodam em
-// paralelo, e a ordem das mensagens precisa ser a da conversa.
+// Toda chamada passa pela fila do assistente (queue.ts): uma de cada vez, na ordem da conversa.
 
-let queue: Promise<unknown> = Promise.resolve()
-function enqueue<T>(job: () => Promise<T>): Promise<T> {
-  const run = queue.then(job, job)
-  queue = run.catch(() => undefined)
-  return run
-}
-
-let warned = false
-function warnOnce(message: string) {
-  if (warned) return
-  warned = true
-  useToastStore.getState().addToast(`Não foi possível salvar o histórico do assistente: ${message}`)
+/** Falha de gravação nunca pode ser silenciosa: sem isso a conversa "some" e ninguém sabe por quê. */
+function reportFailure(what: string, err: unknown) {
+  const message = err instanceof Error ? err.message : typeof err === 'object' && err && 'message' in err ? String((err as { message: unknown }).message) : String(err)
+  console.error(`[assistente] ${what}:`, err)
+  useToastStore.getState().addToast(`Assistente: não foi possível ${what} (${message}).`)
 }
 
 const userId = () => useAuthStore.getState().user?.id
@@ -31,12 +24,13 @@ function firstText(content: ChatContentBlock[]): string {
 }
 
 /** Acrescenta a mensagem à conversa na tela E a grava. A conversa só passa a existir no banco na primeira mensagem
- *  (abrir o painel ou clicar em "Nova conversa" não cria linhas vazias). */
-export function addMessage(message: ChatMessage): void {
+ *  (abrir o painel ou clicar em "Nova conversa" não cria linhas vazias). Quem chama deve dar `await`: a próxima
+ *  chamada ao Supabase só começa depois que esta gravação terminou. */
+export async function addMessage(message: ChatMessage): Promise<void> {
   const chat = useAiChatStore.getState()
   chat.appendMessage(message)
   const uid = userId()
-  if (!uid) return
+  if (!uid) { reportFailure('salvar a conversa', new Error('usuário não identificado')); return }
 
   let conversationId = chat.conversationId
   const isNew = !conversationId
@@ -48,14 +42,14 @@ export function addMessage(message: ChatMessage): void {
   const title = titleFromText(firstText(message.content))
   const convId = conversationId
 
-  void enqueue(async () => {
+  try {
     if (isNew) {
-      const { error } = await supabase.from('ai_conversations').insert({ id: convId, user_id: uid, title })
-      if (error) { warnOnce(error.message); return }
+      const { error } = await aiQueue(async () => await supabase.from('ai_conversations').insert({ id: convId, user_id: uid, title }))
+      if (error) throw error
       const now = new Date().toISOString()
       useAiChatStore.getState().setConversations([{ id: convId, title, updatedAt: now }, ...useAiChatStore.getState().conversations])
     }
-    const { error } = await supabase.from('ai_messages').insert({
+    const { error } = await aiQueue(async () => await supabase.from('ai_messages').insert({
       id: message.id,
       conversation_id: convId,
       user_id: uid,
@@ -63,37 +57,40 @@ export function addMessage(message: ChatMessage): void {
       content: sanitizeForStorage(message.content),
       position,
       created_at: message.createdAt,
-    })
-    if (error) { warnOnce(error.message); return }
+    }))
+    if (error) throw error
     const now = new Date().toISOString()
-    await supabase.from('ai_conversations').update({ updated_at: now }).eq('id', convId)
+    // A data de atualização só serve para ordenar a lista: se falhar, não vale interromper a conversa.
+    await aiQueue(async () => await supabase.from('ai_conversations').update({ updated_at: now }).eq('id', convId)).catch(() => undefined)
     const list = useAiChatStore.getState().conversations
     useAiChatStore.getState().setConversations([
       ...list.filter((c) => c.id === convId).map((c) => ({ ...c, updatedAt: now })),
       ...list.filter((c) => c.id !== convId),
     ])
-  })
+  } catch (err) {
+    reportFailure('salvar a conversa', err)
+  }
 }
 
 async function fetchConversations(uid: string): Promise<ConversationSummary[]> {
-  const { data, error } = await supabase
+  const { data, error } = await aiQueue(async () => await supabase
     .from('ai_conversations')
     .select('id, title, updated_at')
     .eq('user_id', uid)
     .order('updated_at', { ascending: false })
-    .limit(50)
-  if (error) { warnOnce(error.message); return [] }
+    .limit(50))
+  if (error) { reportFailure('carregar as conversas', error); return [] }
   return (data ?? []).map((c) => ({ id: c.id as string, title: (c.title as string | null) || 'Conversa', updatedAt: c.updated_at as string }))
 }
 
 async function fetchMessages(conversationId: string): Promise<ChatMessage[]> {
-  const { data, error } = await supabase
+  const { data, error } = await aiQueue(async () => await supabase
     .from('ai_messages')
     .select('id, role, content, created_at')
     .eq('conversation_id', conversationId)
     .order('position', { ascending: true, nullsFirst: true })
-    .order('created_at', { ascending: true })
-  if (error) { warnOnce(error.message); return [] }
+    .order('created_at', { ascending: true }))
+  if (error) { reportFailure('abrir a conversa', error); return [] }
   const messages = (data ?? []).map((m) => ({
     id: m.id as string,
     role: m.role as 'user' | 'assistant',
@@ -135,7 +132,7 @@ export async function openConversation(id: string): Promise<void> {
   // Fechada no meio de uma ação (cartão de confirmação aberto): o tool_use ficou sem resultado. O resultado de erro é
   // GRAVADO, senão toda volta futura enviaria um tool_use órfão e a API recusaria a conversa.
   const repaired = repairDanglingToolUse(messages, () => uuid())
-  if (repaired.length > messages.length) addMessage(repaired[repaired.length - 1])
+  if (repaired.length > messages.length) await addMessage(repaired[repaired.length - 1])
 }
 
 export function startNewConversation(): void {
@@ -145,8 +142,8 @@ export function startNewConversation(): void {
 }
 
 export async function deleteConversation(id: string): Promise<void> {
-  const { error } = await supabase.from('ai_conversations').delete().eq('id', id)
-  if (error) { useToastStore.getState().addToast(error.message); return }
+  const { error } = await aiQueue(async () => await supabase.from('ai_conversations').delete().eq('id', id))
+  if (error) { reportFailure('apagar a conversa', error); return }
   const chat = useAiChatStore.getState()
   chat.setConversations(chat.conversations.filter((c) => c.id !== id))
   if (chat.conversationId === id) chat.reset()

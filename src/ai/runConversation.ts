@@ -95,7 +95,7 @@ export async function runConversation(turnsLeft: number = MAX_AUTO_TURNS): Promi
       // Other block kinds (thinking, server tool use, etc.) aren't used by this app — skipped.
     }
 
-    addMessage(newMessage('assistant', assistantBlocks))
+    await addMessage(newMessage('assistant', assistantBlocks))
     useAiChatStore.getState().setStreamingText('')
 
     if (final.stop_reason !== 'tool_use') {
@@ -137,7 +137,7 @@ export async function runConversation(turnsLeft: number = MAX_AUTO_TURNS): Promi
 
     if (writeConfirmations.length === 0) {
       // Every tool call this turn was read-only — feed the results back and continue.
-      addMessage(newMessage('user', resultBlocks))
+      await addMessage(newMessage('user', resultBlocks))
       await runConversation(turnsLeft - 1)
       return
     }
@@ -212,7 +212,7 @@ async function advanceAfterConfirmation(resolvedResult: ChatContentBlock): Promi
 
   useAiChatStore.getState().setPendingToolResults([])
   useAiChatStore.getState().setStreaming(true)
-  addMessage(newMessage('user', allResults))
+  await addMessage(newMessage('user', allResults))
   await runConversation()
 }
 

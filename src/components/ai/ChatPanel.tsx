@@ -107,10 +107,12 @@ export function ChatPanel() {
     }
     if (text) content.push({ type: 'text', text })
 
-    addMessage({ id: uuid(), role: 'user', content, createdAt: new Date().toISOString() })
+    // A tela reage na hora; a gravação da mensagem termina antes de qualquer outra chamada ao Supabase.
     setInput('')
     clearAttachments()
     setActionLink(null)
+    useAiChatStore.getState().setStreaming(true)
+    await addMessage({ id: uuid(), role: 'user', content, createdAt: new Date().toISOString() })
     await runConversation()
   }
 

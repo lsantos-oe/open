@@ -1,5 +1,6 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { supabase, supabaseUrl, supabaseAnonKey } from '@/lib/supabase'
+import { aiQueue } from './queue'
 
 export const AI_MODEL = 'anthropic/claude-sonnet-5'
 
@@ -33,7 +34,7 @@ interface StreamChatParams {
  *  streaming into the chat UI. A raw fetch() gives direct access to the
  *  response body as a ReadableStream. */
 export async function streamChat({ system, messages, tools, onText }: StreamChatParams): Promise<Anthropic.Message> {
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { session } } = await aiQueue(async () => await supabase.auth.getSession())
   if (!session) throw new Error('Sessão expirada. Faça login novamente.')
 
   const res = await fetch(`${supabaseUrl}/functions/v1/ai-chat`, {
