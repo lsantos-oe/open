@@ -211,7 +211,7 @@ function BoardColumn({ status, cards, onEdit, onAdd, droppableId }: {
   status: EntryStatus
   cards: BoardCard[]
   onEdit: (c: BoardCard) => void
-  /** Botão "+" no cabeçalho da coluna: cria uma tarefa já neste status. */
+  /** Duplo clique na raia (fora dos cards e botões): cria uma tarefa já neste status. */
   onAdd?: (status: EntryStatus) => void
   droppableId?: string
 }) {
@@ -237,17 +237,6 @@ function BoardColumn({ status, cards, onEdit, onAdd, droppableId }: {
           {t(KANBAN_COLS.find(c => c.status === status)?.labelKey as any)}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, marginLeft: 6 }}>
-          {onAdd && (
-            <button
-              type="button"
-              onClick={() => onAdd(status)}
-              title={t('plan.addTask')}
-              aria-label={`${t('plan.addTask')} — ${t(KANBAN_COLS.find(c => c.status === status)?.labelKey as any)}`}
-              style={{ width: 20, height: 20, borderRadius: 'var(--radius-pill)', border: 'none', background: 'var(--surface-card)', color: colStyle.header, fontSize: 14, lineHeight: 1, cursor: 'pointer' }}
-            >
-              +
-            </button>
-          )}
           <span style={{ minWidth: 20, height: 20, borderRadius: 'var(--radius-pill)', background: 'var(--surface-card)', color: colStyle.header, fontSize: 11, fontWeight: 600, padding: '0 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {cards.length}
           </span>
@@ -325,7 +314,7 @@ interface EntryBoardProps {
   cards: BoardCard[]
   onStatusChange: (entryId: string, status: EntryStatus) => void
   onCardClick: (card: BoardCard) => void
-  /** Quando informado, cada coluna ganha um "+" que chama isto com o status da coluna. */
+  /** Quando informado, o duplo clique numa raia chama isto com o status dela. */
   onAddCard?: (status: EntryStatus) => void
   /** Split entries flagged hiddenFromPlan into a separate collapsible section below the board. */
   showInternalSection?: boolean
