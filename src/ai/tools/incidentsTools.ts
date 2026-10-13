@@ -21,36 +21,6 @@ export const findIncidentTool: AiTool = {
   },
 }
 
-export const listIncidentsTool: AiTool = {
-  name: 'list_incidents',
-  description: 'Lista incidentes, opcionalmente filtrados por nome do cliente ou status.',
-  input_schema: {
-    type: 'object',
-    properties: {
-      clientName: { type: 'string', description: 'Filtra por nome do cliente vinculado (busca parcial)' },
-      status: { type: 'string', enum: ['open', 'in_progress', 'waiting_on_client', 'resolved', 'closed'] },
-    },
-  },
-  isWrite: false,
-  async execute(input) {
-    const { incidents, clients } = useAppStore.getState()
-    let list = incidents
-    if (input.clientName) {
-      const clientIds = new Set(
-        clients.filter((c) => c.name.toLowerCase().includes(String(input.clientName).toLowerCase())).map((c) => c.id),
-      )
-      list = list.filter((i) => i.clientIds.some((id) => clientIds.has(id)))
-    }
-    if (input.status) list = list.filter((i) => i.status === input.status)
-    return {
-      incidents: list.map((i) => ({
-        id: i.id, title: i.title, status: i.status, priority: i.priority,
-        clients: i.clientIds.map((id) => clients.find((c) => c.id === id)?.name).filter(Boolean),
-      })),
-    }
-  },
-}
-
 export const createIncidentTool: AiTool = {
   name: 'create_incident',
   description: 'Cria um novo incidente (Sustentação), opcionalmente vinculado a um ou mais clientes. Sempre requer confirmação do usuário antes de executar.',

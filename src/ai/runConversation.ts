@@ -5,6 +5,7 @@ import { buildSystemPrompt } from './systemPrompt'
 import { addMessage } from './persistence'
 import { buildMemoryBlock, mergeSameRole, windowForApi } from './history'
 import { useAiMemoryStore } from '@/stores/useAiMemoryStore'
+import { buildReadCtx, currentUserName } from './tools/insightsTools'
 import { ALL_TOOLS, TOOLS_BY_NAME } from './tools'
 import type { ExtractedItem } from './tools/extractionTools'
 import { useAiChatStore } from '@/stores/useAiChatStore'
@@ -55,6 +56,11 @@ function handleAnthropicError(err: unknown): void {
   useToastStore.getState().addToast('Não foi possível falar com o assistente agora. Tente novamente.')
 }
 
+function promptNow(): string {
+  const ctx = buildReadCtx()
+  return buildSystemPrompt(buildMemoryBlock(useAiMemoryStore.getState().memories), { today: ctx.today, userName: currentUserName(ctx) })
+}
+
 function currentCtx(): AiToolContext {
   return { userId: useAuthStore.getState().user?.id ?? '' }
 }
@@ -79,7 +85,7 @@ export async function runConversation(turnsLeft: number = MAX_AUTO_TURNS): Promi
     // As memórias são recarregadas do banco no começo de cada resposta do usuário (não a cada passo de ferramenta).
     if (turnsLeft === MAX_AUTO_TURNS) await useAiMemoryStore.getState().load()
     const final = await streamChat({
-      system: buildSystemPrompt(buildMemoryBlock(useAiMemoryStore.getState().memories)),
+      system: promptNow(),
       tools: anthropicTools,
       // Só as últimas mensagens vão ao modelo; o histórico inteiro continua salvo e na tela.
       messages: toAnthropicMessages(mergeSameRole(windowForApi(useAiChatStore.getState().messages))),

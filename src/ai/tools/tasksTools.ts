@@ -34,48 +34,6 @@ function findEntry(entries: Entry[], entryId: string): Entry | undefined {
   return undefined
 }
 
-function summarizeEntry(e: Entry) {
-  return {
-    id: e.id, name: e.name, type: e.type, status: e.status,
-    subtasks: e.subtasks.map((sub) => ({ id: sub.id, name: sub.name, type: sub.type, status: sub.status })),
-  }
-}
-
-export const listTasksTool: AiTool = {
-  name: 'list_tasks',
-  description: 'Lista as tarefas/marcos/reuniões (com id de cada uma, e de cada subtarefa) de um projeto (todas as fases, ou uma fase específica), de um incidente, ou as tarefas soltas (sem projeto/incidente) se nenhum dos dois for informado. Use sempre que só tiver os nomes (ex: vindos de um relatório) e precisar do id real pra chamar update_task, convert_to_subtask, promote_subtask etc.',
-  input_schema: {
-    type: 'object',
-    properties: {
-      projectId: { type: 'string', description: 'Id do projeto (obtido via find_project) — obrigatório se for tarefa de projeto' },
-      phaseId: { type: 'string', description: 'Filtra por uma fase específica (opcional, obtido via list_phases)' },
-      incidentId: { type: 'string', description: 'Id do incidente (obtido via find_incident) — obrigatório se for tarefa de incidente' },
-    },
-  },
-  isWrite: false,
-  async execute(input) {
-    const store = useAppStore.getState()
-    if (input.incidentId) {
-      const incident = store.incidents.find((i) => i.id === input.incidentId)
-      if (!incident) return { error: 'Incidente não encontrado.' }
-      return { tasks: incident.entries.map(summarizeEntry) }
-    }
-    if (input.projectId) {
-      const project = store.projects.find((p) => p.id === input.projectId)
-      if (!project) return { error: 'Projeto não encontrado.' }
-      const phases = input.phaseId ? project.phases.filter((ph) => ph.id === input.phaseId) : project.phases
-      return {
-        phases: phases.map((ph) => ({
-          phaseId: ph.id,
-          phaseName: ph.name,
-          tasks: ph.entries.map(summarizeEntry),
-        })),
-      }
-    }
-    return { tasks: store.standaloneTasks.map(summarizeEntry) }
-  },
-}
-
 export const createTaskTool: AiTool = {
   name: 'create_task',
   description: 'Cria uma nova tarefa, marco ou reunião em um projeto, em um incidente, ou "solta" (sem projeto nem incidente, opcionalmente vinculada a um cliente). Toda tarefa precisa de um Executor; o Validador é opcional. Datas/duração são opcionais — se omitidas, o item entra sem agendamento e pode ser agendado depois com update_task. Sempre requer confirmação do usuário antes de executar.',

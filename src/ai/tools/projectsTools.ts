@@ -1,6 +1,5 @@
 import { useAppStore } from '@/store/useAppStore'
 import { AiTool } from '@/types/ai'
-import { projectDurationDays, projectEndVariance, isProjectDelayed } from '@/utils/projectStats'
 import { findByName, teamDirectoryAsTeamMembers } from './helpers'
 
 export const findProjectTool: AiTool = {
@@ -22,63 +21,6 @@ export const findProjectTool: AiTool = {
     if (matches.length === 1) return { match: matches[0] }
     if (matches.length === 0) return { matches: [] }
     return { matches }
-  },
-}
-
-export const getProjectOverviewTool: AiTool = {
-  name: 'get_project_overview',
-  description: 'Retorna o status detalhado de um projeto: status, fase atual, duração, variância de baseline e se está atrasado.',
-  input_schema: {
-    type: 'object',
-    properties: { projectId: { type: 'string', description: 'Id do projeto (obtido via find_project)' } },
-    required: ['projectId'],
-  },
-  isWrite: false,
-  async execute(input) {
-    const { projects, clients, settings } = useAppStore.getState()
-    const project = projects.find((p) => p.id === input.projectId)
-    if (!project) return { error: 'Projeto não encontrado.' }
-    const duration = projectDurationDays(project, settings.holidays)
-    const variance = projectEndVariance(project, settings.holidays)
-    const delayed = isProjectDelayed(project, settings.holidays)
-    return {
-      name: project.name,
-      clients: project.clientIds.map((id) => clients.find((c) => c.id === id)?.name).filter(Boolean),
-      pm: project.pm, status: project.status,
-      delayed, durationDays: duration, varianceDays: variance,
-      phaseCount: project.phases.length,
-      openRisks: project.risks.filter((r) => r.status !== 'resolved' && r.status !== 'mitigated').length,
-    }
-  },
-}
-
-export const listProjectsTool: AiTool = {
-  name: 'list_projects',
-  description: 'Lista projetos, opcionalmente filtrados por cliente, líder (pm) ou status.',
-  input_schema: {
-    type: 'object',
-    properties: {
-      clientName: { type: 'string', description: 'Filtra por nome do cliente (busca parcial)' },
-      pmName: { type: 'string', description: 'Filtra por nome do líder do projeto (busca parcial)' },
-      status: { type: 'string', enum: ['backlog', 'planning', 'in_progress', 'done'] },
-    },
-  },
-  isWrite: false,
-  async execute(input) {
-    const { projects, clients } = useAppStore.getState()
-    let list = projects.filter((p) => !p.archived)
-    if (input.clientName) {
-      const q = String(input.clientName).toLowerCase()
-      list = list.filter((p) => p.clientIds.some((id) => clients.find((c) => c.id === id)?.name.toLowerCase().includes(q)))
-    }
-    if (input.pmName) list = list.filter((p) => p.pm.toLowerCase().includes(String(input.pmName).toLowerCase()))
-    if (input.status) list = list.filter((p) => p.status === input.status)
-    return {
-      projects: list.map((p) => ({
-        id: p.id, name: p.name, pm: p.pm, status: p.status,
-        clients: p.clientIds.map((id) => clients.find((c) => c.id === id)?.name).filter(Boolean),
-      })),
-    }
   },
 }
 

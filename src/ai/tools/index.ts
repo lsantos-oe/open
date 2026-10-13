@@ -1,12 +1,16 @@
 import { AiTool } from '@/types/ai'
-import { findProjectTool, getProjectOverviewTool, listProjectsTool, createProjectTool, updateProjectTool, updateEntityStatusTool } from './projectsTools'
+import { findProjectTool, createProjectTool, updateProjectTool, updateEntityStatusTool } from './projectsTools'
 import { findClientTool, createClientTool, updateClientTool, findContactTool, createContactTool, updateContactTool } from './clientsTools'
-import { findIncidentTool, listIncidentsTool, createIncidentTool, updateIncidentTool } from './incidentsTools'
+import { findIncidentTool, createIncidentTool, updateIncidentTool } from './incidentsTools'
 import { findUserTool, bulkReassignProjectsTool } from './usersTools'
-import { listPhasesTool, listTasksTool, createTaskTool, updateTaskTool, reorderTaskTool, convertToSubtaskTool, promoteSubtaskTool } from './tasksTools'
+import { listPhasesTool, createTaskTool, updateTaskTool, reorderTaskTool, convertToSubtaskTool, promoteSubtaskTool } from './tasksTools'
 import { generateStatusReportMarkdownTool } from './reportTools'
 import { proposeExtractedItemsTool } from './extractionTools'
 import { rememberTool, forgetTool } from './memoryTools'
+import {
+  listTasksTool, searchTasksTool, getTaskTool, getProjectOverviewTool, getProjectDetailsTool, listProjectsTool, workloadTool,
+  listIncidentsTool, getIncidentDetailsTool, listClientsTool, getClientDetailsTool, listOpenPointsTool, searchKnowledgeTool, listUsersTool,
+} from './insightsTools'
 
 export const ALL_TOOLS: AiTool[] = [
   findProjectTool,
@@ -36,6 +40,16 @@ export const ALL_TOOLS: AiTool[] = [
   promoteSubtaskTool,
   generateStatusReportMarkdownTool,
   proposeExtractedItemsTool,
+  searchTasksTool,
+  getTaskTool,
+  getProjectDetailsTool,
+  workloadTool,
+  getIncidentDetailsTool,
+  listClientsTool,
+  getClientDetailsTool,
+  listOpenPointsTool,
+  searchKnowledgeTool,
+  listUsersTool,
   rememberTool,
   forgetTool,
 ]
