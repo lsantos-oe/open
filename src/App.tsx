@@ -28,6 +28,16 @@ import AuthCallback from '@/pages/AuthCallback'
 import PublicReportPage from '@/pages/PublicReportPage'
 import AiMemoriesPage from '@/pages/AiMemoriesPage'
 
+// Mede cada etapa do carregamento inicial (console: "[open:carga]") para achar o que está lento.
+async function timedLoad(name: string, fn: () => Promise<unknown>) {
+  const t0 = performance.now()
+  try {
+    await fn()
+  } finally {
+    console.info(`[open:carga] ${name}: ${Math.round(performance.now() - t0)} ms`)
+  }
+}
+
 export default function App() {
   const defaultLanguage = useAppStore((s) => s.settings.defaultLanguage)
 
@@ -49,17 +59,18 @@ export default function App() {
         // at once makes multiple calls race to acquire that lock in the same
         // tick, which is exactly what trips its "lock stolen by another
         // request" failure mode and can make every load below reject.
-        await useAppStore.getState().loadProjects()
-        await useAppStore.getState().loadSettings()
-        await useAppStore.getState().loadTeamDirectory()
-        await useAppStore.getState().loadInvitedUsers()
-        await useAppStore.getState().loadNotifications()
-        useAppStore.getState().subscribeNotifications()
-        await useAppStore.getState().loadClients()
-        await useAppStore.getState().loadIncidents()
-        await useAppStore.getState().loadContacts()
-        await useAppStore.getState().loadStandaloneTasks()
-        await useAiStore.getState().loadHasKey()
+        const app = useAppStore.getState()
+        await timedLoad('projetos', () => app.loadProjects())
+        await timedLoad('configurações', () => app.loadSettings())
+        await timedLoad('equipe', () => app.loadTeamDirectory())
+        await timedLoad('convites', () => app.loadInvitedUsers())
+        await timedLoad('notificações', () => app.loadNotifications())
+        app.subscribeNotifications()
+        await timedLoad('clientes', () => app.loadClients())
+        await timedLoad('incidentes', () => app.loadIncidents())
+        await timedLoad('contatos', () => app.loadContacts())
+        await timedLoad('tarefas soltas', () => app.loadStandaloneTasks())
+        await timedLoad('assistente', () => useAiStore.getState().loadHasKey())
       }
 
       if (cancelled) return
