@@ -91,6 +91,16 @@ export interface DbProfile {
   role: UserRole
   active: boolean
   created_at: string | null
+  /** ID numérico do Discord (alertas por DM). Só a Edge Function discord-link grava. */
+  discord_user_id?: string | null
+  discord_username?: string | null
+  discord_prefs?: DiscordPrefs | null
+}
+
+export interface DiscordPrefs {
+  assigned: boolean
+  changed: boolean
+  due: boolean
 }
 
 export interface DbInvitedUser {

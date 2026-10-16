@@ -182,13 +182,14 @@ const SECTIONS: Section[] = [
   {
     id: 'settings',
     title: 'Configurações',
-    summary: 'Idioma, feriados, templates, preferências, memória do IA e importação.',
+    summary: 'Idioma, feriados, templates, preferências, memória do IA, importação e alertas no Discord.',
     icon: <GearIcon className="w-5 h-5" />,
     content: (
       <>
         <p>Idioma, formato de data, dias úteis, feriados, <strong>templates de projeto</strong> e de <strong>incidente</strong> (com descrição padrão) e a lista de projetos arquivados (com opção de desarquivar ou excluir da lista).</p>
         <p>A seção <strong>Preferências pessoais</strong> guarda sua aba inicial preferida ao abrir um projeto — só neste navegador.</p>
         <p><strong>Memória do assistente</strong> leva à página onde você gerencia o que o assistente de IA guarda sobre você. <strong>Importação em massa</strong> abre a importação por Excel. Admins também configuram aqui a chave do assistente de IA, compartilhada pelo time.</p>
+        <p><strong>Alertas no Discord:</strong> em <strong>Editar perfil</strong> (menu do seu avatar), informe seu @ do Discord e clique em <strong>Conectar</strong> — chega uma mensagem de teste. Depois escolha quais avisos quer receber por mensagem direta: quando uma tarefa for <strong>atribuída a você</strong> (ou criada já com você), quando <strong>outra pessoa alterar</strong> uma tarefa sua (status, prazo, nome, descrição, risco ou sua saída da tarefa) e quando uma tarefa sua <strong>vencer</strong> (1 dia antes e no dia, às 8h). Você nunca é avisado do que você mesmo fez. Para funcionar, você precisa estar no servidor do Discord do time e permitir mensagens diretas dos membros dele.</p>
       </>
     ),
   },

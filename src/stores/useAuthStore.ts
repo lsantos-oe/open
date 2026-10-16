@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import type { DbProfile } from '@/types/database'
+import type { DbProfile, DiscordPrefs } from '@/types/database'
 
 interface AuthState {
   user: User | null
@@ -12,7 +12,7 @@ interface AuthState {
   signOut: () => Promise<void>
   initialize: () => Promise<void>
   loadProfile: () => Promise<void>
-  updateOwnProfile: (patch: { name?: string; avatar_url?: string }) => Promise<void>
+  updateOwnProfile: (patch: { name?: string; avatar_url?: string; discord_prefs?: DiscordPrefs }) => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({

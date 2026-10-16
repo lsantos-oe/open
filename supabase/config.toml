@@ -2,3 +2,11 @@
 # Explicit: Supabase rejects any call without a valid logged-in user's JWT
 # before this function's code even runs. Never set this to false.
 verify_jwt = true
+
+[functions.discord-link]
+# Chamada pelo perfil do usuário logado: exige JWT.
+verify_jwt = true
+
+[functions.discord-dispatch]
+# Chamada pelo pg_cron, sem usuário: a proteção é o segredo x-cron-secret dentro da função.
+verify_jwt = false
