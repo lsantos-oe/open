@@ -1,5 +1,15 @@
 import { Entry, EntryStatus } from '@/types'
 
+const BOARD_STATUSES: readonly EntryStatus[] = ['pending', 'todo', 'in_progress', 'validation', 'done', 'blocked']
+
+/** Raia do kanban onde um status é exibido. O kanban só tem seis raias; o status gravado 'overdue' (resultado de
+ *  computeAutoStatus quando o prazo passa) e qualquer valor vazio ou desconhecido não têm raia própria e, sem isto,
+ *  o card contava no total mas sumia do quadro. Atrasado cai em To Do (o aviso de atraso continua no selo de sinal). */
+export function boardStatus(status: EntryStatus | null | undefined): EntryStatus {
+  if (status && BOARD_STATUSES.includes(status)) return status
+  return status === 'overdue' ? 'todo' : 'pending'
+}
+
 export function computeAutoStatus(entry: Entry, today: string): EntryStatus {
   if (entry.actualEnd) return 'done'
   const end = entry.type === 'task' ? entry.plannedEnd : entry.plannedDate

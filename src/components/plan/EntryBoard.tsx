@@ -1,3 +1,4 @@
+import { boardStatus } from '@/utils/statusCalc'
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -281,7 +282,7 @@ function InternalTasksSection({ cards, onEdit }: {
       {open && (
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${KANBAN_COLS.length}, 1fr)`, gap: 12, marginTop: 12 }}>
           {KANBAN_COLS.map(col => {
-            const colCards = cards.filter(c => c.status === col.status)
+            const colCards = cards.filter(c => boardStatus(c.status) === col.status)
             if (colCards.length === 0) return (
               <div
                 key={col.status}
@@ -362,7 +363,7 @@ export default function EntryBoard({ cards, onStatusChange, onCardClick, onAddCa
             <BoardColumn
               key={col.status}
               status={col.status}
-              cards={normalCards.filter(c => c.status === col.status)}
+              cards={normalCards.filter(c => boardStatus(c.status) === col.status)}
               onEdit={onCardClick}
               onAdd={onAddCard}
             />

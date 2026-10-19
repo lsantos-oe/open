@@ -1,3 +1,4 @@
+import { boardStatus } from '@/utils/statusCalc'
 import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -1117,7 +1118,7 @@ export default function TasksPage() {
                 status={col.status}
                 labelKey={col.labelKey}
                 cards={(() => {
-                  const inCol = sortedCards.filter(c => c.status === col.status)
+                  const inCol = sortedCards.filter(c => boardStatus(c.status) === col.status)
                   return dateSortMode !== 'none' ? applyDateOrder(inCol) : inCol
                 })()}
                 onEdit={setEditCard}
