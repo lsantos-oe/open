@@ -125,7 +125,11 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind, 
           onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--oe-primary)')}
           onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border-default)')}
         >
-          + {t('entry.addOwner')}
+          {/* Campo de um responsável só (Líder, Dev Lead, responsável do incidente): o botão não promete "adicionar" —
+              escolher alguém substitui quem já está. */}
+          {max === 1
+            ? (owners.length > 0 ? t('entry.changeOwner') : `+ ${t('entry.pickOwner')}`)
+            : `+ ${t('entry.addOwner')}`}
         </button>
       </div>
 

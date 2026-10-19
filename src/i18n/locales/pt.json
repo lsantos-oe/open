@@ -264,6 +264,8 @@
     "description": "Descrição",
     "descriptionPlaceholder": "Detalhes da tarefa...",
     "addOwner": "Adicionar responsável",
+    "pickOwner": "Selecionar",
+    "changeOwner": "Trocar",
     "fromTeam": "Da equipe",
     "fromUser": "Usuário",
     "fromContact": "Contato",

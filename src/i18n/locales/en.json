@@ -264,6 +264,8 @@
     "description": "Description",
     "descriptionPlaceholder": "Task details...",
     "addOwner": "Add owner",
+    "pickOwner": "Select",
+    "changeOwner": "Change",
     "fromTeam": "From team",
     "fromUser": "User",
     "fromContact": "Contact",
