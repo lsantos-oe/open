@@ -1,3 +1,4 @@
+import { isLate } from './statusCalc'
 import i18n from '@/i18n'
 import { Project, AppSettings, Entry, ProjectCharter } from '@/types'
 import { projectDurationDays, projectDateRange, isProjectDelayed } from './projectStats'
@@ -726,7 +727,8 @@ function buildPlanSection(project: Project, settings: AppSettings, config: Repor
           case 'variance':
             return `<td style="text-align:right;">${varHtml(variance)}</td>`
           case 'status':
-            return `<td>${pill(e.status, t(`entry.${e.status}`))}</td>`
+            // Atraso é calculado pela data e aparece ao lado da etapa (a tarefa pode estar atrasada em qualquer etapa).
+            return `<td>${pill(e.status, t(`entry.${e.status}`))}${isLate(e, todayISO()) ? ` ${pill('overdue', t('status.overdue'))}` : ''}</td>`
           default: return '<td></td>'
         }
       }).join('')

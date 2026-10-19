@@ -263,6 +263,7 @@ function InternalTasksSection({ cards, onEdit }: {
 }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(true)
+  const today = new Date().toISOString().split('T')[0]
   if (cards.length === 0) return null
 
   return (
@@ -282,7 +283,7 @@ function InternalTasksSection({ cards, onEdit }: {
       {open && (
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${KANBAN_COLS.length}, 1fr)`, gap: 12, marginTop: 12 }}>
           {KANBAN_COLS.map(col => {
-            const colCards = cards.filter(c => boardStatus(c.status) === col.status)
+            const colCards = cards.filter(c => boardStatus(c, today) === col.status)
             if (colCards.length === 0) return (
               <div
                 key={col.status}
@@ -322,6 +323,7 @@ interface EntryBoardProps {
 }
 
 export default function EntryBoard({ cards, onStatusChange, onCardClick, onAddCard, showInternalSection = true }: EntryBoardProps) {
+  const today = new Date().toISOString().split('T')[0]
   const [activeId, setActiveId] = useState<string | null>(null)
 
   const sensors = useSensors(
@@ -363,7 +365,7 @@ export default function EntryBoard({ cards, onStatusChange, onCardClick, onAddCa
             <BoardColumn
               key={col.status}
               status={col.status}
-              cards={normalCards.filter(c => boardStatus(c.status) === col.status)}
+              cards={normalCards.filter(c => boardStatus(c, today) === col.status)}
               onEdit={onCardClick}
               onAdd={onAddCard}
             />

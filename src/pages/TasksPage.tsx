@@ -1118,7 +1118,7 @@ export default function TasksPage() {
                 status={col.status}
                 labelKey={col.labelKey}
                 cards={(() => {
-                  const inCol = sortedCards.filter(c => boardStatus(c.status) === col.status)
+                  const inCol = sortedCards.filter(c => boardStatus(c, today) === col.status)
                   return dateSortMode !== 'none' ? applyDateOrder(inCol) : inCol
                 })()}
                 onEdit={setEditCard}

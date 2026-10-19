@@ -1,6 +1,7 @@
 import { parseISO } from 'date-fns'
 import { Project, Entry } from '@/types'
 import { workdaysBetween, parseHolidays } from './businessDays'
+import { isLate } from './statusCalc'
 
 function allEntryDates(project: Project): { starts: Date[]; ends: Date[]; blEnds: Date[] } {
   const starts: Date[] = []
@@ -111,9 +112,9 @@ export function projectProgress(project: Project): { done: number; total: number
   return { done, total: entries.length, pct: Math.round((done / entries.length) * 100) }
 }
 
-/** Count of entries currently flagged overdue (plannedEnd/plannedDate < today, not yet done). */
-export function projectOverdueCount(project: Project): number {
-  return allVisibleEntries(project).filter((e) => e.status === 'overdue').length
+/** Count of entries currently overdue (plannedEnd/plannedDate < today, not yet done) — by date, not by stored status. */
+export function projectOverdueCount(project: Project, today = new Date().toISOString().split('T')[0]): number {
+  return allVisibleEntries(project).filter((e) => isLate(e, today)).length
 }
 
 export function projectMilestoneProgress(project: Project): { done: number; total: number } | undefined {

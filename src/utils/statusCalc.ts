@@ -2,21 +2,38 @@ import { Entry, EntryStatus } from '@/types'
 
 const BOARD_STATUSES: readonly EntryStatus[] = ['pending', 'todo', 'in_progress', 'validation', 'done', 'blocked']
 
-/** Raia do kanban onde um status é exibido. O kanban só tem seis raias; o status gravado 'overdue' (resultado de
- *  computeAutoStatus quando o prazo passa) e qualquer valor vazio ou desconhecido não têm raia própria e, sem isto,
- *  o card contava no total mas sumia do quadro. Atrasado cai em To Do (o aviso de atraso continua no selo de sinal). */
-export function boardStatus(status: EntryStatus | null | undefined): EntryStatus {
-  if (status && BOARD_STATUSES.includes(status)) return status
-  return status === 'overdue' ? 'todo' : 'pending'
+type DatedEntry = Pick<Entry, 'type' | 'plannedStart' | 'plannedEnd' | 'plannedDate' | 'actualEnd' | 'status'>
+
+/** Atraso NÃO é uma etapa: uma tarefa pode estar atrasada em Backlog, To Do, Em andamento… Por isso é sempre calculado
+ *  pela data (prazo passou e a tarefa não está concluída) e nunca grava no `status`, que é a etapa em que ela está. */
+export function isLate(entry: DatedEntry, today: string): boolean {
+  if (entry.actualEnd || entry.status === 'done') return false
+  const end = entry.type === 'task' ? entry.plannedEnd : entry.plannedDate
+  return !!end && end < today
 }
 
+/** Etapa automática (quando ninguém escolheu o status à mão): concluída se tem fim real; em andamento a partir da
+ *  data de início; senão Backlog. Nunca devolve 'overdue' — ver isLate. */
 export function computeAutoStatus(entry: Entry, today: string): EntryStatus {
   if (entry.actualEnd) return 'done'
   const end = entry.type === 'task' ? entry.plannedEnd : entry.plannedDate
   const start = entry.type === 'task' ? entry.plannedStart : entry.plannedDate
   if (!end) return 'pending'
-  if (today > end) return 'overdue'
   if (start && today >= start) return 'in_progress'
+  return 'pending'
+}
+
+/** Raia do kanban onde o card aparece. O quadro tem seis raias e o status gravado 'overdue' (legado: versões antigas
+ *  trocavam a etapa por "Atrasado" quando o prazo passava) não tem raia — sem isto o card entrava no contador e sumia
+ *  do quadro. Para esses, reconstrói a etapa pelas datas, como a etapa automática faria. Vazio/desconhecido: Backlog. */
+export function boardStatus(entry: DatedEntry, today: string): EntryStatus {
+  const s = entry.status
+  if (s && BOARD_STATUSES.includes(s)) return s
+  if (s === 'overdue') {
+    if (entry.actualEnd) return 'done'
+    const start = entry.type === 'task' ? entry.plannedStart : entry.plannedDate
+    return start && today >= start ? 'in_progress' : 'pending'
+  }
   return 'pending'
 }
 

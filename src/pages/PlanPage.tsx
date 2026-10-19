@@ -27,7 +27,7 @@ import { SelectionBar } from '@/components/ui/SelectionBar'
 import { computeVariance } from '@/utils/dateEngine'
 import { workdaysBetween, parseHolidays } from '@/utils/businessDays'
 import { exportProjectCsv } from '@/utils/exportCsv'
-import { computeAutoStatus } from '@/utils/statusCalc'
+import { isLate } from '@/utils/statusCalc'
 import { contactsForClients } from '@/utils/contacts'
 import { PinIcon, CalendarIcon } from '@/components/ui/icons'
 import { SignalBadges } from '@/components/ui/SignalBadges'
@@ -1322,11 +1322,11 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
         const e = row.original
         if (e.type !== 'task') {
           const { iso, isActual, editField } = displayEnd(e)
-          const isOverdue = !isActual && e.status === 'overdue'
+          const isOverdue = !isActual && isLate(e, today)
           return <DateCell iso={iso} isActual={isActual} isOverdue={isOverdue} onCommit={(v) => requestDateChange(e, editField, v)} />
         }
         const { iso, isActual, editField } = displayStart(e)
-        const isOverdue = !isActual && e.status === 'overdue'
+        const isOverdue = !isActual && isLate(e, today)
         return <DateCell iso={iso} isActual={isActual} isOverdue={isOverdue} onCommit={(v) => requestDateChange(e, editField, v)} />
       },
     },
@@ -1338,7 +1338,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
         const e = row.original
         if (e.type !== 'task') return <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>—</span>
         const { iso, isActual, editField } = displayEnd(e)
-        const isOverdue = !isActual && e.status === 'overdue'
+        const isOverdue = !isActual && isLate(e, today)
         return <DateCell iso={iso} isActual={isActual} isOverdue={isOverdue} onCommit={(v) => requestDateChange(e, editField, v)} />
       },
     },
@@ -1400,8 +1400,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
       header: () => <span>{t('entry.status')}</span>,
       cell: ({ row }) => {
         const e = row.original
-        const autoStatus = computeAutoStatus(e, today)
-        const showOverridePin = e.statusOverride && autoStatus === 'overdue'
+        const showOverridePin = e.statusOverride && isLate(e, today)
         return (
           <div className="flex items-center gap-1">
             <StatusBadge
@@ -1634,13 +1633,13 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
 
               if (!isCollapsed) {
                 const e = row.original
-                const autoStatus = computeAutoStatus(e, today)
-                const isSpecialRow = e.status === 'overdue' || (e.statusOverride && autoStatus === 'overdue')
-                const rowBg = e.status === 'overdue'
-                  ? 'var(--color-danger-bg)'
-                  : (e.statusOverride && autoStatus === 'overdue')
-                    ? 'var(--color-warning-bg)'
-                    : 'var(--surface-card)'
+                // Atraso é calculado pela data (isLate), não pelo status: vermelho se a etapa é automática,
+                // âmbar se alguém fixou a etapa à mão e o prazo passou.
+                const late = isLate(e, today)
+                const isSpecialRow = late
+                const rowBg = late
+                  ? (e.statusOverride ? 'var(--color-warning-bg)' : 'var(--color-danger-bg)')
+                  : 'var(--surface-card)'
                 items.push(
                   <PlanTableRow
                     key={row.id}
