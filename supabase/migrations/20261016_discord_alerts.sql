@@ -161,7 +161,7 @@ begin
     v_changes := v_changes || format('nome (antes: "%s")', left(old.name, 60));
   end if;
   if new.description is distinct from old.description then
-    v_changes := v_changes || 'descrição alterada';
+    v_changes := array_append(v_changes, 'descrição alterada');
   end if;
   if new.risk_flag is distinct from old.risk_flag then
     v_changes := v_changes || format('risco: %s → %s', public.discord_risk_label(old.risk_flag), public.discord_risk_label(new.risk_flag));
