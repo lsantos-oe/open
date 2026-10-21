@@ -51,8 +51,10 @@ export interface Entry {
   type: EntryType
   name: string
   description?: string
-  /** Set only on a standalone task (no project/incident) — the client it's
-   *  optionally scoped to. Always undefined for project- or incident-owned entries. */
+  /** Set only on a standalone task (no project/incident) — the clients it's
+   *  optionally scoped to (one or more). Always empty for project- or incident-owned entries. */
+  clientIds?: string[]
+  /** Legacy singular — mirrors clientIds[0]. See utils/entryClients.ts. */
   clientId?: string
   responsible: string
   dependsOn: string[]

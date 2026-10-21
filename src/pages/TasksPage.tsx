@@ -1,4 +1,5 @@
 import { boardStatus } from '@/utils/statusCalc'
+import { entryClientIds } from '@/utils/entryClients'
 import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -145,9 +146,10 @@ function buildCards(projects: Project[], incidents: Incident[], standaloneTasks:
     const entry = standaloneTasks[i]
     const owners = entryOwners(entry)
     if (owners.length === 0) continue
-    const clientName = entry.clientId ? clients.find((c) => c.id === entry.clientId)?.name : undefined
+    const clientIds = entryClientIds(entry).filter((id) => clients.some((c) => c.id === id))
+    const clientName = clientIds.map((id) => clients.find((c) => c.id === id)?.name).filter(Boolean).join(', ')
     const color = PALETTE[(projects.length + incidents.length + i) % PALETTE.length]
-    cards.push({ ...entry, _scopeType: 'standalone', _scopeId: entry.id, _scopeName: clientName ?? '', _scopeColor: color, _clientIds: entry.clientId ? [entry.clientId] : [] })
+    cards.push({ ...entry, _scopeType: 'standalone', _scopeId: entry.id, _scopeName: clientName, _scopeColor: color, _clientIds: clientIds })
   }
   return cards
 }
@@ -387,8 +389,8 @@ export default function TasksPage() {
       } else if (card._scopeType === 'incident') {
         const incident = incidents.find((i) => i.id === card._scopeId)
         incident?.clientIds.forEach((id) => clientIds.add(id))
-      } else if (card.clientId) {
-        clientIds.add(card.clientId)
+      } else {
+        entryClientIds(card).forEach((id) => clientIds.add(id))
       }
     }
     return clientIds.size > 0 ? contactsForClients(contacts, [...clientIds]) : []
@@ -752,17 +754,15 @@ export default function TasksPage() {
                     .map((ph) => <option key={ph.id} value={ph.id}>{ph.name}</option>)}
                 </select>
               ) : (
-                <select
-                  autoFocus
-                  defaultValue={card.clientId ?? ''}
-                  onChange={(e) => { updateStandaloneTask(card.id, { clientId: e.target.value || undefined }); setEditingCell(null) }}
-                  onBlur={() => setEditingCell(null)}
-                  className="text-xs rounded px-1 py-0.5 border max-w-[160px]"
-                  style={{ borderColor: 'var(--oe-primary)' }}
-                >
-                  <option value="">— Sem cliente —</option>
-                  {[...clients].sort((a, b) => a.name.localeCompare(b.name)).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+                <div className="min-w-[160px]" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null) && !document.querySelector('[data-oe-nested-popover]')) setEditingCell(null) }}>
+                  <MultiSelect
+                    values={entryClientIds(card)}
+                    onChange={(ids) => updateStandaloneTask(card.id, { clientIds: ids })}
+                    options={[...clients].sort((a, b) => a.name.localeCompare(b.name)).map((c) => ({ id: c.id, label: c.name }))}
+                    placeholder="— Sem cliente —"
+                    className="flex items-center justify-between gap-2 w-full border border-[var(--oe-primary)] bg-[var(--surface-input)] px-2 py-0.5 text-xs text-left rounded"
+                  />
+                </div>
               )
             ) : (
               <span

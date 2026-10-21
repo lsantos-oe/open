@@ -1,3 +1,4 @@
+import { entryClientIds } from '@/utils/entryClients'
 import { differenceInCalendarDays, parseISO } from 'date-fns'
 import type {
   Client, ClientContact, Entry, EntryOwner, HistoryEntry, Incident, MeetingLog, OpenPoint, Project, Risk,
@@ -491,7 +492,7 @@ export function clientDetails(ctx: ReadCtx, c: Client) {
     contacts: ctx.contacts.filter((k) => k.clientIds.includes(c.id)).map((k) => ({ name: k.name, role: k.role, email: k.email, phone: k.phone })),
     projectList: projs.map((p) => projectRow(ctx, p)),
     incidentList: capList(incs.map((i) => incidentRow(ctx, i)), 30),
-    standaloneTasks: ctx.standaloneTasks.filter((e) => e.clientId === c.id).map((e) => taskView(ctx, { entry: e, scope: 'standalone' })),
+    standaloneTasks: ctx.standaloneTasks.filter((e) => entryClientIds(e).includes(c.id)).map((e) => taskView(ctx, { entry: e, scope: 'standalone' })),
   })
 }
 

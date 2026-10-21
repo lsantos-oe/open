@@ -1,3 +1,4 @@
+import { normalizeEntryClients } from '@/utils/entryClients'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { v4 as uuid } from 'uuid'
@@ -3706,7 +3707,7 @@ export const useAppStore = create<AppStore>()(
       addStandaloneTask(entryData) {
         const entryId = uuid()
         const prev = get().standaloneTasks
-        const newEntry: Entry = { ...entryData, id: entryId, isCritical: false, subtasks: [], comments: [], links: [] }
+        const newEntry: Entry = { ...normalizeEntryClients(entryData), id: entryId, isCritical: false, subtasks: [], comments: [], links: [] }
         set({ standaloneTasks: refreshStandaloneCriticalPath([...prev, newEntry]) })
         sync(async () => {
           const userId = getUserId()
@@ -3715,7 +3716,8 @@ export const useAppStore = create<AppStore>()(
         }, () => set({ standaloneTasks: prev }))
       },
 
-      updateStandaloneTask(entryId, patch) {
+      updateStandaloneTask(entryId, rawPatch) {
+        const patch = normalizeEntryClients(rawPatch)
         const prev = get().standaloneTasks
         set({
           standaloneTasks: refreshStandaloneCriticalPath(

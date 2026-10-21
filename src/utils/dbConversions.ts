@@ -3,6 +3,7 @@
  * Zustand store types (camelCase).
  */
 
+import { entryClientIds } from './entryClients'
 import type {
   Project, Phase, Entry, EntryComment, EntryOwner, Link, Risk, ActionTask, ReportLink,
   DelayLogEntry, TeamMember, ProjectCharter, EntryType, EntryStatus,
@@ -114,7 +115,8 @@ function dbEntryToStore(row: DbEntry, comments: DbComment[]): Entry {
     type: row.type,
     name: row.name,
     description: row.description ?? undefined,
-    clientId: row.client_id ?? undefined,
+    clientIds: row.client_ids?.length ? row.client_ids : row.client_id ? [row.client_id] : [],
+    clientId: row.client_ids?.[0] ?? row.client_id ?? undefined,
     responsible: row.responsible ?? '',
     dependsOn: (row.depends_on as string[]) ?? [],
     isCritical: row.is_critical ?? false,
@@ -414,7 +416,8 @@ function storeEntryToDb(entry: Entry, phaseId: string | null, projectId: string 
     project_id: projectId,
     phase_id: phaseId,
     incident_id: incidentId ?? null,
-    client_id: entry.clientId ?? null,
+    client_id: entryClientIds(entry)[0] ?? null,
+    client_ids: entryClientIds(entry),
     type: entry.type,
     name: entry.name,
     description: entry.description ?? null,

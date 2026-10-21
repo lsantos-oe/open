@@ -46,7 +46,8 @@ export const createTaskTool: AiTool = {
       projectId: { type: 'string', description: 'Id do projeto (obtido via find_project) — obrigatório se o item é de um projeto' },
       phaseId: { type: 'string', description: 'Id da fase do projeto (obtido via list_phases) — se omitido, usa a primeira fase existente' },
       incidentId: { type: 'string', description: 'Id do incidente (obtido via find_incident) — obrigatório se o item é de um incidente' },
-      clientId: { type: 'string', description: 'Id do cliente (obtido via find_client) — só faz sentido pra uma tarefa solta (sem projectId nem incidentId), é opcional mesmo nesse caso' },
+      clientIds: { type: 'array', items: { type: 'string' }, description: 'Ids dos clientes (obtidos via find_client) — uma tarefa solta (sem projectId nem incidentId) pode ter VÁRIOS clientes; opcional' },
+      clientId: { type: 'string', description: 'Id de um único cliente (atalho de clientIds com um só) — só pra tarefa solta' },
       executorName: { type: 'string', description: 'Nome do responsável executor (obrigatório)' },
       validatorName: { type: 'string', description: 'Nome do validador (opcional)' },
       plannedStart: { type: 'string', description: 'Data de início planejada (YYYY-MM-DD) — só pra type=task' },
@@ -108,7 +109,10 @@ export const createTaskTool: AiTool = {
       return { success: true, scope: 'project', projectId: input.projectId, phaseId, createdEntryId }
     }
     // No projectId/incidentId — standalone task, optionally scoped to a client.
-    store.addStandaloneTask({ ...base, clientId: input.clientId ? String(input.clientId) : undefined })
+    const clientIds = Array.isArray(input.clientIds)
+      ? input.clientIds.map(String).filter(Boolean)
+      : input.clientId ? [String(input.clientId)] : []
+    store.addStandaloneTask({ ...base, clientIds })
     const createdEntryId = useAppStore.getState().standaloneTasks.at(-1)?.id
     return { success: true, scope: 'standalone', createdEntryId }
   },
@@ -124,7 +128,8 @@ export const updateTaskTool: AiTool = {
       entryName: { type: 'string', description: 'Nome atual do item, só pro resumo de confirmação' },
       projectId: { type: 'string', description: 'Obrigatório se o item é de um projeto' },
       incidentId: { type: 'string', description: 'Obrigatório se o item é de um incidente' },
-      clientId: { type: 'string', description: 'Novo cliente vinculado (opcional) — só pra tarefa solta (sem projectId nem incidentId); passe string vazia pra remover' },
+      clientIds: { type: 'array', items: { type: 'string' }, description: 'Nova lista COMPLETA de clientes da tarefa solta (substitui a anterior; sem projectId nem incidentId); lista vazia remove todos' },
+      clientId: { type: 'string', description: 'Atalho de clientIds com um só cliente — só pra tarefa solta; passe string vazia pra remover' },
       name: { type: 'string', description: 'Novo nome (opcional)' },
       description: { type: 'string', description: 'Nova descrição (opcional)' },
       executorName: { type: 'string', description: 'Novo executor (opcional)' },
@@ -170,7 +175,10 @@ export const updateTaskTool: AiTool = {
     if (typeof input.durationDays === 'number') patch.durationDays = input.durationDays
     if (typeof input.durationHours === 'number') patch.durationHours = input.durationHours
     if (Array.isArray(input.dependsOn)) patch.dependsOn = input.dependsOn
-    if (!input.projectId && !input.incidentId && input.clientId !== undefined) patch.clientId = String(input.clientId) || undefined
+    if (!input.projectId && !input.incidentId) {
+      if (Array.isArray(input.clientIds)) patch.clientIds = input.clientIds.map(String).filter(Boolean)
+      else if (input.clientId !== undefined) patch.clientIds = String(input.clientId) ? [String(input.clientId)] : []
+    }
 
     if (input.executorName || input.validatorName !== undefined) {
       const existing = input.incidentId

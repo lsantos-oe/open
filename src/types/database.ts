@@ -167,6 +167,7 @@ export interface DbEntry {
   phase_id: string | null
   incident_id: string | null
   client_id: string | null
+  client_ids?: string[] | null        // todos os clientes da tarefa solta; client_id espelha o primeiro
   type: EntryType
   name: string
   description: string | null

@@ -10,6 +10,8 @@ import { contactsForClients, contactsForClient } from '@/utils/contacts'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
+import { MultiSelect } from '@/components/ui/MultiSelect'
+import { entryClientIds } from '@/utils/entryClients'
 import { CopyLinkButton } from '@/components/ui/CopyLinkButton'
 import { EntityAttachments } from '@/components/ui/EntityAttachments'
 import { CheckCircleIcon, FlagIcon, CalendarIcon, ExternalLinkIcon } from '@/components/ui/icons'
@@ -225,11 +227,11 @@ export default function EntryModal({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, origProjectId])
 
-  const origClientId = useMemo(() => {
-    if (origProjectId) return projects.find((p) => p.id === origProjectId)?.clientId ?? ''
-    // Standalone task: there's no project to derive a client from, so its
-    // own clientId field IS the value.
-    return entry?.clientId ?? ''
+  const origClientIds = useMemo((): string[] => {
+    if (origProjectId) return projects.find((p) => p.id === origProjectId)?.clientIds ?? []
+    // Standalone task: there's no project to derive clients from, so its
+    // own clientIds ARE the value.
+    return entry ? entryClientIds(entry) : []
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, origProjectId])
 
@@ -246,7 +248,7 @@ export default function EntryModal({
   }
 
   const [form, setForm] = useState<Form>(makeForm)
-  const [clientFilter, setClientFilter] = useState(origClientId)
+  const [clientFilter, setClientFilter] = useState<string[]>(origClientIds)
   const [endDateError, setEndDateError] = useState('')
   const [deleteStep, setDeleteStep] = useState<'idle' | 'confirm'>('idle')
   const [newLinkLabel, setNewLinkLabel] = useState('')
@@ -263,7 +265,7 @@ export default function EntryModal({
     setNewLinkLabel('')
     setNewLinkUrl('')
     setDepsOpen(false)
-    setClientFilter(origClientId)
+    setClientFilter(origClientIds)
     setForm(makeForm())
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
@@ -281,7 +283,7 @@ export default function EntryModal({
   const selectedPhases = selectedProject?.phases ?? []
   const visiblePhases = useMemo(() => selectedPhases.filter((ph) => !ph.isUnassigned), [selectedPhases])
   const visibleProjects = useMemo(
-    () => projects.filter((p) => !p.archived && (!clientFilter || p.clientIds.includes(clientFilter))),
+    () => projects.filter((p) => !p.archived && (clientFilter.length === 0 || p.clientIds.some((id) => clientFilter.includes(id)))),
     [projects, clientFilter],
   )
   // OwnersField expects TeamMember[] — map the global registered-user directory
@@ -294,7 +296,7 @@ export default function EntryModal({
   )
   const selectedContacts = useMemo(() => {
     if (selectedProject?.clientIds.length) return contactsForClients(contacts, selectedProject.clientIds)
-    if (!form.projectId && clientFilter) return contactsForClient(contacts, clientFilter)
+    if (!form.projectId && clientFilter.length > 0) return contactsForClients(contacts, clientFilter)
     return []
   }, [contacts, selectedProject?.clientIds, form.projectId, clientFilter])
 
@@ -320,15 +322,14 @@ export default function EntryModal({
     setForm((f) => ({ ...f, projectId: newProjectId, phaseId: newPhaseId, dependsOn: [] }))
   }
 
-  function handleClientFilterChange(newClientId: string) {
-    setClientFilter(newClientId)
-    // Standalone: this field IS the task's own client, not a project-list filter.
+  function handleClientFilterChange(newClientIds: string[]) {
+    setClientFilter(newClientIds)
+    // Standalone: this field IS the task's own clients, not a project-list filter.
     if (!form.projectId) return
-    const stillValid = newClientId
-      ? !!projects.find((p) => p.id === form.projectId)?.clientIds.includes(newClientId)
-      : true
-    if (!stillValid) {
-      const candidates = projects.filter((p) => !p.archived && (!newClientId || p.clientIds.includes(newClientId)))
+    const matches = (p: { clientIds: string[] }) => newClientIds.length === 0 || p.clientIds.some((id) => newClientIds.includes(id))
+    const current = projects.find((p) => p.id === form.projectId)
+    if (!current || !matches(current)) {
+      const candidates = projects.filter((p) => !p.archived && matches(p))
       handleProjectChange(candidates[0]?.id ?? '')
     }
   }
@@ -464,7 +465,7 @@ export default function EntryModal({
       type: 'task' as const,
       name: form.name.trim(),
       description: form.description.trim() || undefined,
-      clientId: clientFilter || undefined,
+      clientIds: clientFilter,
       ...buildOwnerPatch(),
       status: form.status,
       riskFlag: form.riskFlag,
@@ -529,7 +530,7 @@ export default function EntryModal({
       updateStandaloneTask(entry.id, {
         name: form.name.trim(),
         description: form.description.trim() || undefined,
-        clientId: clientFilter || undefined,
+        clientIds: clientFilter,
         owners: form.owners,
         responsible: executor?.name ?? '',
         status: form.status,
@@ -909,13 +910,13 @@ export default function EntryModal({
           display: 'flex', flexDirection: 'column', gap: 16,
         }}>
 
-          {/* Client (filters the Project picker below) */}
+          {/* Clientes: filtram a lista de projetos abaixo e, numa tarefa solta (sem projeto), SÃO os clientes da tarefa — pode ser mais de um. */}
           <FieldBox label={t('entry.client' as any)}>
-            <SearchableSelect
-              value={clientFilter}
+            <MultiSelect
+              values={clientFilter}
               onChange={handleClientFilterChange}
               options={clients.map(c => ({ id: c.id, label: c.name }))}
-              emptyOptionLabel={`— ${t('entry.allClients' as any)} —`}
+              placeholder={`— ${t('entry.allClients' as any)} —`}
               disabled={lockProject && mode === 'create'}
               style={inputStyle}
             />

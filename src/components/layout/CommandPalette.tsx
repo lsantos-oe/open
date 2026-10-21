@@ -1,3 +1,4 @@
+import { entryClientIds } from '@/utils/entryClients'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
@@ -94,7 +95,7 @@ export function CommandPalette() {
       for (const e of i.entries) add({ id: e.id, type: ENTRY_TYPE_LABEL[e.type], label: e.name, sublabel: i.title, entryId: e.id })
     }
     for (const e of standaloneTasks) {
-      const client = e.clientId ? clients.find((c) => c.id === e.clientId)?.name : undefined
+      const client = entryClientIds(e).map((id) => clients.find((c) => c.id === id)?.name).filter(Boolean).join(', ') || undefined
       add({ id: e.id, type: ENTRY_TYPE_LABEL[e.type], label: e.name, sublabel: client ?? 'Tarefa solta', entryId: e.id })
     }
     for (const r of retros) add({ id: r.id, type: 'Retro', label: r.title, path: `/retros/${r.id}` })
