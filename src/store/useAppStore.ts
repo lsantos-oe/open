@@ -1,3 +1,4 @@
+import { CloseOutTarget, isClosingIncidentStatus, localTodayISO, openTasksOfIncident, openTasksOfProject } from '@/utils/closeOut'
 import { normalizeEntryClients } from '@/utils/entryClients'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
@@ -219,6 +220,13 @@ interface AppStore {
   loadStandaloneTasks: () => Promise<void>
   addStandaloneTask: (entryData: Omit<Entry, 'id' | 'isCritical' | 'subtasks' | 'comments' | 'links'>) => void
   updateStandaloneTask: (entryId: string, patch: Partial<Entry>) => void
+  /** Projetos/incidentes que acabaram de ser concluídos/resolvidos e ainda têm tarefas abertas: o modal de
+   *  encerramento (CloseOutModal) pergunta, um de cada vez, se as tarefas também devem ser concluídas. */
+  closeOutQueue: CloseOutTarget[]
+  enqueueCloseOut: (target: CloseOutTarget) => void
+  dismissCloseOut: () => void
+  /** Conclui as tarefas escolhidas (status Concluído, Fim real = hoje, no relógio de quem agiu) e tira o item da fila. */
+  completeTasks: (target: CloseOutTarget, entryIds: string[]) => void
   deleteStandaloneTask: (entryId: string) => void
   updateStandaloneTaskStatus: (entryId: string, status: EntryStatus) => void
   changeStandaloneTaskDate: (entryId: string, field: 'plannedStart' | 'plannedEnd' | 'plannedDate' | 'actualStart' | 'actualEnd', value: string) => void
@@ -711,6 +719,7 @@ export const useAppStore = create<AppStore>()(
       incidentsLoading: false,
       standaloneTasks: [],
       standaloneTasksLoaded: false,
+      closeOutQueue: [],
       settings: {
         holidays: [],
         holidayNames: {},
@@ -1318,9 +1327,15 @@ export const useAppStore = create<AppStore>()(
         // As anotações do projeto são um documento colaborativo: só um texto realmente novo (vindo de fora do editor)
         // descarta o documento vivo. Um patch que repete o valor atual não deve derrubar quem está editando.
         const overviewChanged = patch.overview !== undefined && patch.overview !== prev.find((p) => p.id === id)?.overview
+        const wasDone = prev.find((p) => p.id === id)?.status === 'done'
         set((s) => ({
           projects: mutateProject(s.projects, id, (p) => ({ ...p, ...patch })),
         }))
+        // Entrou em Concluído e ainda há tarefas abertas: pergunta se também devem ser concluídas.
+        if (patch.status === 'done' && !wasDone) {
+          const updated = get().projects.find((p) => p.id === id)
+          if (updated && openTasksOfProject(updated).length > 0) get().enqueueCloseOut({ kind: 'project', id })
+        }
         sync(async () => {
           const project = get().projects.find((p) => p.id === id)
           if (!project) return
@@ -3490,6 +3505,11 @@ export const useAppStore = create<AppStore>()(
           const { error } = await supabase.from('incidents').update(fields).eq('id', id)
           if (error) throw new Error(error.message)
         })
+        // Entrou em Resolvido/Fechado e ainda há tarefas abertas: pergunta se também devem ser concluídas.
+        if (current && isClosingIncidentStatus(status) && !isClosingIncidentStatus(current.status)) {
+          const updated = get().incidents.find((i) => i.id === id)
+          if (updated && openTasksOfIncident(updated).length > 0) get().enqueueCloseOut({ kind: 'incident', id })
+        }
         if (current) {
           get().addHistoryEntry({ type: 'incident', id }, { event: 'status_changed', title: current.title, detail: status })
           const statusLabel: Record<IncidentStatus, string> = {
@@ -3729,6 +3749,48 @@ export const useAppStore = create<AppStore>()(
         sync(async () => {
           await dbSyncStandaloneEntry(get().standaloneTasks, entryId, getUserId())
         }, () => set({ standaloneTasks: prev }))
+      },
+
+      enqueueCloseOut(target) {
+        set((s) => (s.closeOutQueue.some((t) => t.kind === target.kind && t.id === target.id) ? s : { closeOutQueue: [...s.closeOutQueue, target] }))
+      },
+
+      dismissCloseOut() {
+        set((s) => ({ closeOutQueue: s.closeOutQueue.slice(1) }))
+      },
+
+      completeTasks(target, entryIds) {
+        const today = localTodayISO()
+        const nowTs = new Date().toISOString()
+        const ids = new Set(entryIds)
+        const complete = (e: Entry): Entry =>
+          ids.has(e.id) && e.status !== 'done'
+            ? { ...e, status: 'done', statusOverride: true, actualEnd: today, lastActivityAt: nowTs }
+            : e
+        const prevProjects = get().projects
+        const prevIncidents = get().incidents
+        set((s) => ({
+          closeOutQueue: s.closeOutQueue.filter((t) => !(t.kind === target.kind && t.id === target.id)),
+          projects: target.kind === 'project'
+            ? mutateProject(s.projects, target.id, (p) => ({ ...p, phases: p.phases.map((ph) => ({ ...ph, entries: ph.entries.map(complete) })) }))
+            : s.projects,
+          incidents: target.kind === 'incident'
+            ? mutateIncident(s.incidents, target.id, (i) => ({ ...i, entries: i.entries.map(complete) }))
+            : s.incidents,
+        }))
+        if (ids.size === 0) return
+        sync(async () => {
+          const userId = getUserId()
+          for (const entryId of ids) {
+            if (target.kind === 'project') {
+              const project = get().projects.find((p) => p.id === target.id)
+              if (project) await dbSyncEntry(project, entryId, userId)
+            } else {
+              const incident = get().incidents.find((i) => i.id === target.id)
+              if (incident) await dbSyncIncidentEntry(incident, entryId, userId)
+            }
+          }
+        }, () => set({ projects: prevProjects, incidents: prevIncidents }))
       },
 
       deleteStandaloneTask(entryId) {
