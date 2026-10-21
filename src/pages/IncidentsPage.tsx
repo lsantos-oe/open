@@ -1,6 +1,8 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, useDroppable, useDraggable } from '@dnd-kit/core'
+import { CSS } from '@dnd-kit/utilities'
 import { useAppStore } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { Button } from '@/components/ui/Button'
@@ -59,9 +61,85 @@ const PRIORITY_COLOR: Record<Probability, string> = {
 
 const KANBAN_STATUSES: IncidentStatus[] = ['open', 'in_progress', 'waiting_on_client', 'resolved', 'closed']
 
+// ─── Kanban de incidentes (arrastar entre raias muda o status) ───────────────
+
+function IncidentCard({ incident, clientLabel, onClick, ghost = false }: {
+  incident: Incident
+  clientLabel: string
+  onClick?: () => void
+  ghost?: boolean
+}) {
+  const { t } = useTranslation()
+  return (
+    <div
+      onClick={onClick}
+      role="button"
+      className="w-full text-left rounded-[var(--radius-lg)] p-3 shadow-sm border hover:border-[var(--oe-primary)] hover:shadow transition-all"
+      style={{ background: 'var(--surface-card)', borderColor: 'var(--border-default)', boxShadow: ghost ? 'var(--shadow-md)' : undefined }}
+    >
+      <p className="font-medium text-sm mb-1 line-clamp-2" style={{ color: 'var(--text-primary)' }}>{incident.title}</p>
+      <p className="text-xs mb-2" style={{ color: 'var(--text-tertiary)' }}>{clientLabel}</p>
+      <div className="flex items-center justify-between">
+        <AvatarStack people={incident.owner ? [{ name: incident.owner.name }] : []} size={18} />
+        <StatusDot color={PRIORITY_COLOR[incident.priority]} label={t(`risk.${incident.priority}`)} />
+      </div>
+    </div>
+  )
+}
+
+function DraggableIncident({ incident, clientLabel, onOpen }: { incident: Incident; clientLabel: string; onOpen: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: incident.id })
+  return (
+    <div
+      ref={setNodeRef}
+      style={transform ? { transform: CSS.Translate.toString(transform) } : undefined}
+      {...listeners}
+      {...attributes}
+      data-board-card
+      className={`cursor-grab active:cursor-grabbing touch-none ${isDragging ? 'opacity-30' : ''}`}
+    >
+      <IncidentCard incident={incident} clientLabel={clientLabel} onClick={isDragging ? undefined : onOpen} />
+    </div>
+  )
+}
+
+function IncidentColumn({ status, incidents, clientNames, onOpen }: {
+  status: IncidentStatus
+  incidents: Incident[]
+  clientNames: (ids: string[]) => string
+  onOpen: (id: string) => void
+}) {
+  const { t } = useTranslation()
+  const { setNodeRef, isOver } = useDroppable({ id: status })
+  return (
+    <div
+      className="border rounded-[var(--radius-lg)] p-3 min-h-[300px] flex flex-col"
+      style={{
+        borderColor: 'var(--border-default)', background: 'var(--surface-subtle)', minWidth: 0,
+        outline: isOver ? '2px solid var(--oe-primary)' : '2px solid transparent', transition: 'outline 0.1s',
+      }}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>{t(`incident.status_${status}`)}</span>
+        <span className="rounded-[var(--radius-pill)] text-xs px-2 py-0.5 font-medium border" style={{ background: 'var(--surface-card)', color: 'var(--text-secondary)', borderColor: 'var(--border-default)' }}>
+          {incidents.length}
+        </span>
+      </div>
+      {/* A raia inteira (não só a lista) recebe o card solto — mesmo com a raia vazia */}
+      <div ref={setNodeRef} className="space-y-2 flex-1">
+        {incidents.map((i) => (
+          <DraggableIncident key={i.id} incident={i} clientLabel={clientNames(i.clientIds)} onOpen={() => onOpen(i.id)} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function IncidentsPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [activeIncidentId, setActiveIncidentId] = useState<string | null>(null)
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
   const { incidents, clients, projects, contacts, teamDirectory, settings, createIncident, addIncidentEntry, addIncidentStakeholder, updateIncident, updateIncidentStatus, linkIncidentClient } = useAppStore()
   const { user } = useAuthStore()
 
@@ -109,6 +187,15 @@ export default function IncidentsPage() {
     for (const i of incidents) if (i.owner) seen.set(ownerKey(i.owner), i.owner.name)
     return [...seen.entries()].map(([id, name]) => ({ id, label: name })).sort((a, b) => a.label.localeCompare(b.label))
   }, [incidents])
+
+  function handleIncidentDragEnd(e: DragEndEvent) {
+    setActiveIncidentId(null)
+    if (!e.over) return
+    const status = String(e.over.id) as IncidentStatus
+    if (!KANBAN_STATUSES.includes(status)) return
+    const incident = incidents.find((i) => i.id === e.active.id)
+    if (incident && incident.status !== status) updateIncidentStatus(incident.id, status)
+  }
 
   function clientNames(clientIds: string[]): string {
     return clientIds.map((id) => clients.find((c) => c.id === id)?.name).filter(Boolean).join(', ') || '—'
@@ -344,39 +431,30 @@ export default function IncidentsPage() {
       ) : filtered.length === 0 ? (
         <EmptyState icon={<SupportIcon className="w-9 h-9" />} title="Nenhum incidente encontrado com esses filtros." />
       ) : view === 'kanban' ? (
-        <div className="grid grid-cols-5 gap-4">
-          {KANBAN_STATUSES.map((status) => {
-            const cards = sorted.filter((i) => i.status === status)
-            return (
-              <div key={status} className="border rounded-[var(--radius-lg)] p-3 min-h-[300px]" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-subtle)' }}>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>{t(`incident.status_${status}`)}</span>
-                  <span className="rounded-[var(--radius-pill)] text-xs px-2 py-0.5 font-medium border" style={{ background: 'var(--surface-card)', color: 'var(--text-secondary)', borderColor: 'var(--border-default)' }}>
-                    {cards.length}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  {cards.map((i) => (
-                    <div
-                      key={i.id}
-                      onClick={() => navigate(`/support/${i.id}`)}
-                      role="button"
-                      className="w-full text-left rounded-[var(--radius-lg)] p-3 shadow-sm border hover:border-[var(--oe-primary)] hover:shadow transition-all cursor-pointer"
-                      style={{ background: 'var(--surface-card)', borderColor: 'var(--border-default)' }}
-                    >
-                      <p className="font-medium text-sm mb-1 line-clamp-2" style={{ color: 'var(--text-primary)' }}>{i.title}</p>
-                      <p className="text-xs mb-2" style={{ color: 'var(--text-tertiary)' }}>{clientNames(i.clientIds)}</p>
-                      <div className="flex items-center justify-between">
-                        <AvatarStack people={i.owner ? [{ name: i.owner.name }] : []} size={18} />
-                        <StatusDot color={PRIORITY_COLOR[i.priority]} label={t(`risk.${i.priority}`)} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )
-          })}
-        </div>
+        <DndContext
+          sensors={sensors}
+          onDragStart={(e: DragStartEvent) => setActiveIncidentId(String(e.active.id))}
+          onDragEnd={handleIncidentDragEnd}
+          onDragCancel={() => setActiveIncidentId(null)}
+        >
+          <div className="grid grid-cols-5 gap-4">
+            {KANBAN_STATUSES.map((status) => (
+              <IncidentColumn
+                key={status}
+                status={status}
+                incidents={sorted.filter((i) => i.status === status)}
+                clientNames={clientNames}
+                onOpen={(id) => navigate(`/support/${id}`)}
+              />
+            ))}
+          </div>
+          <DragOverlay>
+            {activeIncidentId && (() => {
+              const inc = incidents.find((i) => i.id === activeIncidentId)
+              return inc ? <IncidentCard incident={inc} clientLabel={clientNames(inc.clientIds)} ghost /> : null
+            })()}
+          </DragOverlay>
+        </DndContext>
       ) : (
         <div className="rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
           <table className="w-full text-sm">
