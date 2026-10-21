@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useEntryOpenerStore } from '@/stores/useEntryOpenerStore'
 import { Badge } from '@/components/ui/Badge'
 import { isEntryMine, isIncidentMine } from '@/utils/involvement'
 import { Entry, Incident, IncidentStatus, Project } from '@/types'
@@ -53,6 +54,8 @@ function buildMyTasks(projects: Project[], incidents: Incident[], userId?: strin
 export default function DashboardPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  // Clicar numa tarefa abre a tarefa (o modal, por cima da página inicial), não o projeto ou incidente dela.
+  const openEntry = useEntryOpenerStore((s) => s.open)
   const { projects, incidents } = useAppStore()
   const { user, profile } = useAuthStore()
 
@@ -73,7 +76,7 @@ export default function DashboardPage() {
           label: `${task.entry.name} · ${task.scopeName}`,
           date: due,
           days,
-          onClick: () => navigate(task.projectId ? `/projects/${task.projectId}` : `/support/${task.incidentId}`),
+          onClick: () => openEntry(task.entry.id),
         })
       }
     }
@@ -85,7 +88,7 @@ export default function DashboardPage() {
       }
     }
     return items.sort((a, b) => a.days - b.days)
-  }, [myTasks, myIncidents, navigate])
+  }, [myTasks, myIncidents, navigate, openEntry])
 
   const sortedTasks = [...myTasks].sort((a, b) => {
     const da = taskDueDate(a.entry); const db = taskDueDate(b.entry)
@@ -148,7 +151,7 @@ export default function DashboardPage() {
               {sortedTasks.slice(0, 8).map((task) => (
                 <button
                   key={task.entry.id}
-                  onClick={() => navigate(task.projectId ? `/projects/${task.projectId}` : `/support/${task.incidentId}`)}
+                  onClick={() => openEntry(task.entry.id)}
                   className="w-full flex flex-col text-left text-sm py-1.5 rounded hover:bg-[var(--surface-subtle)] px-1 -mx-1 min-w-0"
                 >
                   <span className="truncate w-full" style={{ color: 'var(--text-primary)' }}>{task.entry.name}</span>
