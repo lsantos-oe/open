@@ -51,10 +51,16 @@ export interface PromptContext {
   userName?: string
 }
 
+/** Instruções extras de quem hospeda o assistente (o Discord, por exemplo). Vazio no painel do Open. */
+let promptAddendum = ''
+export function setPromptAddendum(text: string): void {
+  promptAddendum = text
+}
+
 /** Prompt do sistema + contexto do momento (data e usuário) + as memórias do usuário (se houver). */
 export function buildSystemPrompt(memoryBlock: string, ctx?: PromptContext): string {
   const context = ctx
     ? `\n\n# Contexto desta conversa\nHoje é ${ctx.today}.${ctx.userName ? ` Você está falando com ${ctx.userName} — "meus projetos", "minhas tarefas" e "eu" se referem a essa pessoa (use mine=true nas tools que aceitam).` : ''}`
     : ''
-  return `${SYSTEM_PROMPT}${context}${memoryBlock ? `\n\n${memoryBlock}` : ''}`
+  return `${SYSTEM_PROMPT}${context}${promptAddendum ? `\n\n${promptAddendum}` : ''}${memoryBlock ? `\n\n${memoryBlock}` : ''}`
 }

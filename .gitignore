@@ -35,3 +35,4 @@ yarn-error.log*
 
 # Supabase CLI local state (project link, cached versions) — machine-specific
 supabase/.temp/
+supabase/functions/discord-ai/runtime.mjs

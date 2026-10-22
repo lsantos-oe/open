@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:discord-ai": "node scripts/build-discord-ai.mjs",
+    "deploy:discord-ai": "node scripts/build-discord-ai.mjs && supabase functions deploy discord-ai --no-verify-jwt"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
