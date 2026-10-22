@@ -1,4 +1,4 @@
-// GERADO por tools/sync-domain.ts — NÃO EDITAR. Origem: src/utils/businessDays.ts (sha256 f9699ba0bcb41137f9a075d028622ba7d1b9990528455f3ab86faa3488586afb)
+// GERADO por tools/sync-domain.ts — NÃO EDITAR. Origem: src/utils/businessDays.ts (sha256 2544dd8203396e09ff450b072fee71a92d27d37505ab6e7d8f8928e98fc7d0c2)
 import { addDays, isSameDay, parseISO, differenceInCalendarDays, format } from 'date-fns'
 import { Workdays } from './types.ts'
 

@@ -1,4 +1,4 @@
-// GERADO por tools/sync-domain.ts — NÃO EDITAR. Origem: src/utils/projectStats.ts (sha256 1794b38fbd04816fccd0aaa8e2b46325fc43ef401f5205b1dfdd5b295a69dd47)
+// GERADO por tools/sync-domain.ts — NÃO EDITAR. Origem: src/utils/projectStats.ts (sha256 f3115549c82e12cf3f3525729ced2913bcb60b2351ec5d730f037b318ef17694)
 import { parseISO } from 'date-fns'
 import { Project, Entry } from './types.ts'
 import { workdaysBetween, parseHolidays } from './businessDays.ts'

@@ -1,4 +1,4 @@
-// GERADO por tools/sync-domain.ts — NÃO EDITAR. Origem: src/utils/statusCalc.ts (sha256 e3b70d78c24d012397ab367554d507f1b4af34276ca95ead9e3b416bfbf7d54e)
+// GERADO por tools/sync-domain.ts — NÃO EDITAR. Origem: src/utils/statusCalc.ts (sha256 3dccf591911f2aee8d889ddc847d01750051f63b57741c00273f5e8956d80b18)
 import { Entry, EntryStatus } from './types.ts'
 
 const BOARD_STATUSES: readonly EntryStatus[] = ['pending', 'todo', 'in_progress', 'validation', 'done', 'blocked']

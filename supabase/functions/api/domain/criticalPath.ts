@@ -1,4 +1,4 @@
-// GERADO por tools/sync-domain.ts — NÃO EDITAR. Origem: src/utils/criticalPath.ts (sha256 28adc408939f275d67c380e09910393006c04a6d32f6f01fb5caf0a7c73066da)
+// GERADO por tools/sync-domain.ts — NÃO EDITAR. Origem: src/utils/criticalPath.ts (sha256 2c101ef2a23aba922dddf0a03875a1e70a469f2210de42e59c9a34be9e0ba4ce)
 import { parseISO, differenceInCalendarDays } from 'date-fns'
 import { Entry, Phase } from './types.ts'
 

@@ -1,4 +1,4 @@
-// GERADO por tools/sync-domain.ts — NÃO EDITAR. Origem: src/types/index.ts (sha256 e30122604be7a2a41e55331c57f7d663e5325eeef7b38588d47155aee26d10ab)
+// GERADO por tools/sync-domain.ts — NÃO EDITAR. Origem: src/types/index.ts (sha256 73de02094ae62e582143bb95a714d1279b7acd3c43c24842ec7369a4d4d1f8cd)
 export type EntryType = 'task' | 'milestone' | 'meeting'
 export type RiskFlag = 'none' | 'warning' | 'critical'
 export type EntryStatus = 'pending' | 'todo' | 'in_progress' | 'validation' | 'done' | 'blocked' | 'overdue'

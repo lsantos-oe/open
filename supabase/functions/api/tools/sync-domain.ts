@@ -34,7 +34,8 @@ let drift = 0;
 await Deno.mkdir(OUT, { recursive: true });
 
 for (const [from, to] of Object.entries(FILES)) {
-  const source = await Deno.readTextFile(new URL(from, ROOT));
+  // quebra de linha normalizada: o hash é o mesmo no Windows (autocrlf → CRLF) e no CI (Linux, LF)
+  const source = (await Deno.readTextFile(new URL(from, ROOT))).replace(/\r\n/g, "\n");
   const hash = await sha256(source);
   const header = `// GERADO por tools/sync-domain.ts — NÃO EDITAR. Origem: ${from} (sha256 ${hash})\n`;
   const target = new URL(to, OUT);

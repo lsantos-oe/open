@@ -1,4 +1,4 @@
-// GERADO por tools/sync-domain.ts — NÃO EDITAR. Origem: src/utils/dateEngine.ts (sha256 150d8ef5af7566ff042788f211155b21c85c74c74fcaa12f2336baa9adfdc8d5)
+// GERADO por tools/sync-domain.ts — NÃO EDITAR. Origem: src/utils/dateEngine.ts (sha256 69fd55051488dfb646215e94c8cb1f7b4ea00d10f1e6456caca990537889676c)
 import { parseISO } from 'date-fns'
 import { Entry, Phase } from './types.ts'
 import { addWorkdays, parseHolidays, toISODate, workdaysBetween } from './businessDays.ts'

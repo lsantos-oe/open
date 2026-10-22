@@ -23,7 +23,8 @@ API para integrações e agentes de IA acessarem o Open, no padrão **OData v4**
 1. **Não altera o app.** Nenhum arquivo de `src/` nem tabela/policy/função/trigger existente é modificado. O que é novo no
    banco vive no schema `open_api` (User-Keys, login OAuth do conector, auditoria, idempotência, rate limit, templates),
    que não é exposto pelo PostgREST nem acessível por `anon`/`authenticated`. Única alteração fora da pasta da API: novas
-   regras no `vercel.json` (encaminham `/api/*` e a descoberta OAuth para a função).
+   regras no `vercel.json` (encaminham `/api/*` e a descoberta OAuth para a função) e o bloco `[functions.api]` no
+   `supabase/config.toml`.
 2. **Como o usuário.** Toda leitura/escrita roda numa transação com `set local role authenticated` + as claims de quem
    está chamando (dono da User-Key ou do login do conector). O RLS, o `auth.uid()` e os triggers do app (notificações, menções, fila do Discord, documentos colaborativos)
    funcionam exatamente como na tela — e com a autoria certa.
@@ -100,8 +101,8 @@ Abra `http://localhost:8787/api/docs`.
    ```bash
    npx supabase functions deploy api --no-verify-jwt --project-ref <ref>
    ```
-   Recomendado ao mantenedor: adicionar `[functions.api] verify_jwt = false` em `supabase/config.toml` para deploys futuros
-   não esquecerem a flag (não foi feito aqui para não alterar arquivos existentes).
+   O `supabase/config.toml` já declara `[functions.api] verify_jwt = false` (como as funções do Discord), então a flag
+   `--no-verify-jwt` é redundante, mas não custa manter.
 4. **Endereço público do Open** (esconde o provedor): o `vercel.json` encaminha `https://openploo.vercel.app/api/*` para a
    função (o merge na `main` publica isso). Configure também:
    - em Authentication → URL Configuration → Redirect URLs: `https://openploo.vercel.app/api/minha-chave` e

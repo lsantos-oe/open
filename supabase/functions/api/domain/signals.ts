@@ -1,4 +1,4 @@
-// GERADO por tools/sync-domain.ts — NÃO EDITAR. Origem: src/utils/signals.ts (sha256 3b9984980fd473bf464a9be74f16c99a4ae3692ddad4ac8ea1fc4f2569631cf7)
+// GERADO por tools/sync-domain.ts — NÃO EDITAR. Origem: src/utils/signals.ts (sha256 8455c973a06e90e70c9ba96cfba462a8cf818678e2f2aa4215da1d3d1a764d5c)
 import { differenceInCalendarDays } from 'date-fns'
 import { Entry, EntrySignal } from './types.ts'
 
