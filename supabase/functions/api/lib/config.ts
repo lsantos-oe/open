@@ -15,6 +15,11 @@ export const config = {
   allowedOrigins: env("API_ALLOWED_ORIGINS").split(",").map((s) => s.trim()).filter(Boolean),
   /** Segredo extra misturado no hash dos tokens. Trocar invalida todos os tokens. */
   tokenPepper: env("API_TOKEN_PEPPER"),
+  /**
+   * Domínio de e-mail exigido para usar a API e o MCP (padrão ploomes.com; "*" desliga). Defesa própria da API: não
+   * depende do app marcar contas externas como inativas nem do tipo de tela de consentimento do Google.
+   */
+  allowedEmailDomain: (env("API_ALLOWED_EMAIL_DOMAIN") || "ploomes.com").toLowerCase(),
   /** Requisições por minuto por token. */
   rateLimitPerMinute: Number(env("API_RATE_LIMIT") || "120"),
   /** Fuso usado para "hoje" (atraso, auto-status) — o mesmo do banco/app. */

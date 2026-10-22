@@ -2,7 +2,7 @@
 // Nunca toca no seed (ids fixos 00000000-0000-4000-8000-…) nem em dados de outras pessoas.
 import type postgres from "postgres";
 
-const TEST_EMAILS = ["ana.teste@ploomes.com", "bruno.teste@ploomes.com", "carla.inativa@ploomes.com", "dani.limite@ploomes.com"];
+const TEST_EMAILS = ["ana.teste@ploomes.com", "bruno.teste@ploomes.com", "carla.inativa@ploomes.com", "dani.limite@ploomes.com", "eva.externa@example.com"];
 const SEED = "00000000-0000-4000-8000-%";
 
 export async function cleanupTestData(sql: postgres.Sql, since: Date | string): Promise<Record<string, number>> {

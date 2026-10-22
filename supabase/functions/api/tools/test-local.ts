@@ -55,6 +55,7 @@ try {
     API_TEST_KEY_BRUNO: await keyFor("bruno.teste@ploomes.com"), // membro
     API_TEST_KEY_INACTIVE: await keyFor("carla.inativa@ploomes.com"),
     API_TEST_KEY_LIMIT: await keyFor("dani.limite@ploomes.com"), // só para o teste de rate limit
+    API_TEST_KEY_EXTERNAL: await keyFor("eva.externa@example.com"), // conta externa ativa: deve ser recusada
     API_TEST_KEY_OLD: await keyFor("ana.teste@ploomes.com"), // será trocada: vira chave antiga
     API_TEST_KEY_FAKE: generateUserKey(), // formato válido, nunca cadastrada
   };

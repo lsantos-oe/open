@@ -1,7 +1,7 @@
 // Utilitários dos testes de integração (API + MCP). As variáveis são preenchidas por tools/test-local.ts.
 // deno-lint-ignore-file no-explicit-any
 
-export const env: Record<"url" | "write" | "read" | "inactive" | "old" | "fake" | "limit" | "sessionAna" | "sessionBruno", string> = {
+export const env: Record<"url" | "write" | "read" | "inactive" | "old" | "fake" | "limit" | "external" | "sessionAna" | "sessionBruno", string> = {
   url: Deno.env.get("API_TEST_URL") ?? "",
   write: Deno.env.get("API_TEST_KEY_ANA") ?? "", // Ana: admin
   read: Deno.env.get("API_TEST_KEY_BRUNO") ?? "", // Bruno: membro (lê e grava, não é admin)
@@ -9,6 +9,7 @@ export const env: Record<"url" | "write" | "read" | "inactive" | "old" | "fake" 
   old: Deno.env.get("API_TEST_KEY_OLD") ?? "", // chave que já foi trocada
   fake: Deno.env.get("API_TEST_KEY_FAKE") ?? "", // formato válido, nunca cadastrada
   limit: Deno.env.get("API_TEST_KEY_LIMIT") ?? "", // usuária só para estourar o rate limit
+  external: Deno.env.get("API_TEST_KEY_EXTERNAL") ?? "", // conta de fora da empresa, ativa no app
   sessionAna: Deno.env.get("API_TEST_SESSION_ANA") ?? "", // JWT de login (página /minha-chave)
   sessionBruno: Deno.env.get("API_TEST_SESSION_BRUNO") ?? "",
 };

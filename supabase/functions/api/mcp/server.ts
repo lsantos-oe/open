@@ -271,7 +271,8 @@ function buildServer(user: AuthUser, root: string): McpServer {
 
   tool("list_tasks", {
     title: "Listar tarefas",
-    description: "Tarefas com filtros comuns (para filtros livres use odata_query). Traz sinais: atrasada, parada, bloqueada.",
+    description:
+      "Tarefas com filtros comuns (para filtros livres use odata_query). Traz sinais: atrasada, parada, bloqueada. Como no app, tarefas de projetos em Backlog ficam de fora das listas gerais (use includeBacklogProjects ou projectId para vê-las).",
     inputSchema: {
       projectId: guid.optional(),
       incidentId: guid.optional(),
@@ -283,6 +284,7 @@ function buildServer(user: AuthUser, root: string): McpServer {
       overdueOnly: z.boolean().optional(),
       stalledOnly: z.boolean().optional(),
       includeDone: z.boolean().optional(),
+      includeBacklogProjects: z.boolean().optional().describe("Inclui tarefas de projetos em Backlog (o app as esconde por padrão)."),
       dueBefore: z.string().optional(),
       dueAfter: z.string().optional(),
       text: z.string().optional(),
@@ -299,6 +301,7 @@ function buildServer(user: AuthUser, root: string): McpServer {
     else if (!a.includeDone) f.push("Status ne 'Done'");
     const owner = a.ownerUserId ?? (a.mine ? user.id : undefined);
     if (owner) f.push(`Owners/any(o: o/UserId eq ${owner})`);
+    if (!a.projectId && !a.includeBacklogProjects) f.push("(Scope ne 'Project' or Project/Status ne 'Backlog')");
     if (a.overdueOnly) f.push("IsOverdue");
     if (a.stalledOnly) f.push("IsStalled");
     if (a.dueBefore) f.push(`DueDate le ${a.dueBefore}`);

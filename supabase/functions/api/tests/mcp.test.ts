@@ -1,7 +1,7 @@
 // Servidor MCP ponta a ponta (rodar via tools/test-local.ts, contra STAGING).
 // deno-lint-ignore-file no-explicit-any
 import { assert, assertEquals, assertMatch } from "@std/assert";
-import { api, EMAIL, env, IDS, ignore, mcp, tool, uniq } from "./_helpers.ts";
+import { api, create, EMAIL, env, IDS, ignore, mcp, tool, uniq } from "./_helpers.ts";
 
 const t = (name: string, fn: () => Promise<void>) => Deno.test({ name: `[mcp] ${name}`, ignore, fn, sanitizeResources: false, sanitizeOps: false });
 
@@ -45,6 +45,20 @@ t("GET/DELETE /mcp → 405 (servidor sem estado; evita o cliente reabrir stream 
     assertEquals(res.headers.get("allow"), "POST");
     await res.body?.cancel();
   }
+});
+
+t("list_tasks: como no app, tarefas de projeto em Backlog ficam fora das listas gerais", async () => {
+  const p = await create("Projects", {
+    Name: uniq("Projeto Backlog"),
+    Pm: { Email: EMAIL.ana },
+    StartDate: "2026-12-07",
+    Phases: [{ Name: "Fase", Tasks: [{ Ref: "a", Name: uniq("Tarefa de backlog"), DurationDays: 1, Owners: [{ Email: EMAIL.ana }] }] }],
+  });
+  assertEquals((await api(`/Projects(${p.Id})`, { method: "PATCH", body: { Status: "Backlog" } })).status, 200);
+  const ids = (r: any) => (r.data?.value ?? []).map((x: any) => x.ProjectId);
+  assert(!ids(await tool("list_tasks", { mine: true, top: 200 })).includes(p.Id), "apareceu sem pedir");
+  assert(ids(await tool("list_tasks", { mine: true, includeBacklogProjects: true, top: 200 })).includes(p.Id), "não apareceu com includeBacklogProjects");
+  assert(ids(await tool("list_tasks", { projectId: p.Id })).includes(p.Id), "não apareceu pedindo o projeto");
 });
 
 t("todas as tools de leitura respondem sem erro", async () => {

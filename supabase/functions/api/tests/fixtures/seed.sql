@@ -14,7 +14,9 @@ values
   ('00000000-0000-4000-8000-00000000a003', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
    'carla.inativa@ploomes.com', '{"full_name":"Carla Inativa"}', now(), now(), now()),
   ('00000000-0000-4000-8000-00000000a004', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'dani.limite@ploomes.com', '{"full_name":"Dani Limite"}', now(), now(), now())
+   'dani.limite@ploomes.com', '{"full_name":"Dani Limite"}', now(), now(), now()),
+  ('00000000-0000-4000-8000-00000000a005', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+   'eva.externa@example.com', '{"full_name":"Eva Externa"}', now(), now(), now())
 on conflict (id) do nothing;
 
 -- Campos que o Supabase Auth (GoTrue) espera como texto vazio (nulos quebram o login com "Database error querying
@@ -25,16 +27,18 @@ update auth.users set
   email_change_token_current = coalesce(email_change_token_current, ''), phone_change = coalesce(phone_change, ''),
   phone_change_token = coalesce(phone_change_token, ''), reauthentication_token = coalesce(reauthentication_token, ''),
   raw_app_meta_data = coalesce(raw_app_meta_data, '{"provider":"email","providers":["email"]}'::jsonb)
-where email like '%.teste@ploomes.com' or email in ('carla.inativa@ploomes.com', 'dani.limite@ploomes.com');
+where email like '%.teste@ploomes.com' or email in ('carla.inativa@ploomes.com', 'dani.limite@ploomes.com', 'eva.externa@example.com');
 
 insert into auth.identities (provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
 select u.id::text, u.id, jsonb_build_object('sub', u.id::text, 'email', u.email, 'email_verified', true), 'email', now(), now(), now()
 from auth.users u
-where (u.email like '%.teste@ploomes.com' or u.email in ('carla.inativa@ploomes.com', 'dani.limite@ploomes.com'))
+where (u.email like '%.teste@ploomes.com' or u.email in ('carla.inativa@ploomes.com', 'dani.limite@ploomes.com', 'eva.externa@example.com'))
   and not exists (select 1 from auth.identities i where i.user_id = u.id and i.provider = 'email');
 
 update public.profiles set role = 'admin' where id = '00000000-0000-4000-8000-00000000a001';
 update public.profiles set active = false where id = '00000000-0000-4000-8000-00000000a003';
+-- Eva: conta de fora da empresa ATIVA (como a produção cria hoje, com o handle_new_user antigo) → a API deve recusar
+update public.profiles set active = true where id = '00000000-0000-4000-8000-00000000a005';
 -- Bruno com Discord ligado (id fictício) para testar a fila do Discord
 update public.profiles set discord_user_id = '100000000000000001', discord_username = 'bruno.teste'
 where id = '00000000-0000-4000-8000-00000000a002';

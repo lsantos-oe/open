@@ -7,6 +7,7 @@
 // O login da pessoa é o mesmo do Open (Google) — ou a própria User-Key —, e o token age como ela: mesmas
 // permissões, profiles.active checado a cada requisição.
 import { admin } from "./db.ts";
+import { config } from "./config.ts";
 import { generateUserKey, hashUserKey } from "./userkeys.ts";
 
 export const ACCESS_TTL_S = 3600;
@@ -247,8 +248,12 @@ async function issueTokens(familyId: string, clientId: string, userId: string, r
 }
 
 async function assertActive(userId: string) {
-  const [p] = await admin()<{ active: boolean }[]>`select active from public.profiles where id = ${userId}`;
+  const [p] = await admin()<{ active: boolean; email: string | null }[]>`select active, email from public.profiles where id = ${userId}`;
   if (!p?.active) throw new OAuthError("invalid_grant", "Usuário desativado no Open.");
+  const domain = config.allowedEmailDomain;
+  if (domain !== "*" && !(p.email ?? "").toLowerCase().endsWith(`@${domain}`)) {
+    throw new OAuthError("invalid_grant", `A API do Open é só para contas @${domain}.`);
+  }
 }
 
 /** POST /oauth/token (application/x-www-form-urlencoded). */

@@ -52,7 +52,7 @@ a mesma chave **ou** o login do conector do Claude (veja *MCP*). Só \`/health\`
   existir no Open). Um admin gera com \`POST {{ROOT}}/admin/user-keys/rotate\` \`{"Email": "open-bot@ploomes.com"}\`.
 - **Na API OData não use \`Authorization: Bearer\`** — ela responde 401 explicando que o header é \`User-Key\`.
 
-**Segurança aplicada a cada requisição:** chave existente; dono com acesso **ativo** no Open (usuário desligado perde
+**Segurança aplicada a cada requisição:** chave existente; conta **@ploomes.com** com acesso **ativo** no Open (usuário desligado perde
 acesso na hora); limite de **120 requisições/minuto** por pessoa (\`429\` + \`Retry-After\`); auditoria de toda
 chamada (sem o corpo). Nunca coloque a chave em URL, código versionado ou prints.
 

@@ -75,6 +75,19 @@ t("admin gera chave de usuário-robô; a nova funciona e a antiga não", async (
   assertEquals((await api("/Me", { token: oldKey })).status, 401); // a chave anterior caiu na hora
 });
 
+t("conta de fora do domínio da empresa é recusada mesmo ativa no app (API, MCP e Vincular)", async () => {
+  if (!env.external) return;
+  const r = await api("/Me", { token: env.external });
+  assertEquals(r.status, 403);
+  assertMatch(r.body.error.message, /@ploomes\.com/);
+  const m = await fetch(`${env.url}/mcp`, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream", "User-Key": env.external }, body: "{}" });
+  assertEquals(m.status, 403);
+  await m.body?.cancel();
+  const ap = await fetch(`${env.url}/oauth/approve`, { method: "POST", headers: { "Content-Type": "application/json", "User-Key": env.external }, body: "{}" });
+  assertEquals(ap.status, 403);
+  await ap.body?.cancel();
+});
+
 t("página /minha-chave e endpoints de sessão", async () => {
   const page = await fetch(`${env.url}/minha-chave`);
   const html = await page.text();

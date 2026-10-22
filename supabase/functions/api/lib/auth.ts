@@ -3,7 +3,7 @@
 // API OData e MCP: header `User-Key: ouk_...` (como na API do Ploomes). A chave age como a pessoa, com o mesmo
 // acesso dela no Open (admin só se ela for admin no app). A cada request: chave existente, dono com
 // profiles.active = true (usuário desligado perde acesso na hora, mesmo que o RLS do app não cheque isso),
-// rate limit e auditoria.
+// e-mail do domínio da empresa (API_ALLOWED_EMAIL_DOMAIN), rate limit e auditoria.
 //
 // MCP: também aceita `Authorization: Bearer oat_...`, o token OAuth emitido quando a pessoa clica em "Vincular"
 // no conector do Claude (lib/oauth.ts). Mesmas regras: age como a pessoa, active checado, rate limit.
@@ -38,6 +38,10 @@ interface ProfileRow {
 
 function toUser(p: ProfileRow, kind: AuthUser["kind"]): AuthUser {
   if (!p.active) throw forbidden("Usuário desativado no Open.");
+  const domain = config.allowedEmailDomain;
+  if (domain !== "*" && !(p.email ?? "").toLowerCase().endsWith(`@${domain}`)) {
+    throw forbidden(`A API do Open é só para contas @${domain}.`);
+  }
   const scopes: Scope[] = ["read", "write"];
   if (p.role === "admin") scopes.push("admin");
   return { id: p.id, email: p.email, name: p.name, avatarUrl: p.avatar_url, role: p.role, scopes: new Set(scopes), kind };

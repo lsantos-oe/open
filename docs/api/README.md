@@ -124,6 +124,7 @@ Abra `http://localhost:8787/api/docs`.
 | `APP_URL` | não | URL do app para links (padrão `https://openploo.vercel.app`). |
 | `API_WRITE_ENABLED` | não | `false` = somente leitura (kill switch). |
 | `API_ALLOWED_ORIGINS` | não | CORS para browsers (vírgula). Vazio = nenhum (agentes não precisam). |
+| `API_ALLOWED_EMAIL_DOMAIN` | não | Domínio exigido para usar a API/MCP (padrão `ploomes.com`; `*` desliga). Recusa contas externas mesmo que estejam ativas no app. |
 | `API_RATE_LIMIT` | não | Requisições/minuto por pessoa (padrão 120). |
 | `API_PUBLIC_URL` | sim (produção) | URL pública: `https://openploo.vercel.app/api`. Links `@odata.*`, docs, OpenAPI e a página usam este endereço. |
 | `SUPABASE_URL`, `SUPABASE_ANON_KEY` | sim (login) | Usadas só no servidor para o login Google (página `/minha-chave` e "Vincular"); injetadas na Edge Function. Nunca vão para o navegador. |
@@ -140,7 +141,7 @@ Abra `http://localhost:8787/api/docs`.
   (`open_api.oauth_*`). A pessoa entra com o login Google do Open (ou a própria User-Key) e aprova numa tela de
   consentimento; "Desconectar apps" em `/minha-chave` revoga tudo. O token OAuth não abre a API OData.
 - Automações usam a chave de um usuário-robô (admin gera em `POST /admin/user-keys/rotate`).
-- A cada requisição: dono ativo em `profiles` (usuário desligado perde acesso na hora, mesmo que o RLS do app não cheque
+- A cada requisição: e-mail do domínio da empresa (`@ploomes.com`, mesmo que o app tenha ativado uma conta externa), dono ativo em `profiles` (usuário desligado perde acesso na hora, mesmo que o RLS do app não cheque
   isso), rate limit e auditoria em `open_api.request_log` (sem corpo; retenção de 90 dias).
 - SQL sempre parametrizado; identificadores só do modelo (whitelist). Payloads validados com zod (`strict`).
 - Escrita: `Prefer: dry-run`, `Idempotency-Key`, `If-Match` (ETag = `xmin`), sem DELETE de entidades de negócio.
