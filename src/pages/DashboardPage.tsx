@@ -6,7 +6,9 @@ import { useAuthStore } from '@/stores/useAuthStore'
 import { useEntryOpenerStore } from '@/stores/useEntryOpenerStore'
 import { Badge } from '@/components/ui/Badge'
 import { isEntryMine, isIncidentMine } from '@/utils/involvement'
-import { Entry, Incident, IncidentStatus, Project } from '@/types'
+import { useBacklogTasksPref } from '@/stores/useBacklogTasksPref'
+import { entryClientIds } from '@/utils/entryClients'
+import { Client, Entry, Incident, IncidentStatus, Project } from '@/types'
 
 interface MyTask {
   entry: Entry
@@ -29,10 +31,15 @@ function daysUntil(iso: string): number {
   return Math.round((d.getTime() - today.getTime()) / 86400000)
 }
 
-function buildMyTasks(projects: Project[], incidents: Incident[], userId?: string): MyTask[] {
+function buildMyTasks(
+  projects: Project[], incidents: Incident[], standaloneTasks: Entry[], clients: Client[], userId: string | undefined,
+  includeBacklogProjects: boolean,
+): MyTask[] {
   const tasks: MyTask[] = []
   for (const p of projects) {
     if (p.archived) continue
+    // Projeto em Backlog ainda não começou: as tarefas dele só entram se o usuário pedir.
+    if (p.status === 'backlog' && !includeBacklogProjects) continue
     for (const ph of p.phases) {
       for (const e of ph.entries) {
         if (e.parentEntryId) continue
@@ -48,6 +55,13 @@ function buildMyTasks(projects: Project[], incidents: Incident[], userId?: strin
       if (isEntryMine(e, userId)) tasks.push({ entry: e, incidentId: i.id, scopeName: i.title })
     }
   }
+  // Tarefas soltas (sem projeto nem incidente): o "escopo" é o cliente, ou "Tarefa solta" quando não há.
+  for (const e of standaloneTasks) {
+    if (e.parentEntryId || e.status === 'done') continue
+    if (!isEntryMine(e, userId)) continue
+    const clientNames = entryClientIds(e).map((id) => clients.find((c) => c.id === id)?.name).filter(Boolean).join(', ')
+    tasks.push({ entry: e, scopeName: clientNames || 'Tarefa solta' })
+  }
   return tasks
 }
 
@@ -56,10 +70,20 @@ export default function DashboardPage() {
   const navigate = useNavigate()
   // Clicar numa tarefa abre a tarefa (o modal, por cima da página inicial), não o projeto ou incidente dela.
   const openEntry = useEntryOpenerStore((s) => s.open)
-  const { projects, incidents } = useAppStore()
+  const { projects, incidents, standaloneTasks, clients } = useAppStore()
   const { user, profile } = useAuthStore()
+  const showBacklogProjectTasks = useBacklogTasksPref((s) => s.showBacklogProjectTasks)
+  const setShowBacklogProjectTasks = useBacklogTasksPref((s) => s.setShowBacklogProjectTasks)
 
-  const myTasks = useMemo(() => buildMyTasks(projects, incidents, user?.id), [projects, incidents, user])
+  const myTasks = useMemo(
+    () => buildMyTasks(projects, incidents, standaloneTasks, clients, user?.id, showBacklogProjectTasks),
+    [projects, incidents, standaloneTasks, clients, user, showBacklogProjectTasks],
+  )
+  // Quantas tarefas minhas estão escondidas por serem de projetos em backlog (para avisar, em vez de sumirem em silêncio).
+  const hiddenBacklogCount = useMemo(
+    () => (showBacklogProjectTasks ? 0 : buildMyTasks(projects, incidents, standaloneTasks, clients, user?.id, true).length - myTasks.length),
+    [projects, incidents, standaloneTasks, clients, user, showBacklogProjectTasks, myTasks.length],
+  )
   const myIncidents = useMemo(
     () => incidents.filter((i) => isIncidentMine(i, user?.id) && i.status !== 'resolved' && i.status !== 'closed'),
     [incidents, user],
@@ -144,6 +168,17 @@ export default function DashboardPage() {
             <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('dashboard.myOpenTasks')}</p>
             <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{sortedTasks.length}</span>
           </div>
+          {(showBacklogProjectTasks || hiddenBacklogCount > 0) && (
+            <label className="flex items-center gap-2 text-xs cursor-pointer mb-3" style={{ color: 'var(--text-tertiary)' }}>
+              <input
+                type="checkbox"
+                className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]"
+                checked={showBacklogProjectTasks}
+                onChange={(e) => setShowBacklogProjectTasks(e.target.checked)}
+              />
+              Incluir projetos em backlog{!showBacklogProjectTasks ? ` (${hiddenBacklogCount} ${hiddenBacklogCount === 1 ? 'tarefa oculta' : 'tarefas ocultas'})` : ''}
+            </label>
+          )}
           {sortedTasks.length === 0 ? (
             <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>{t('dashboard.noOpenTasks')}</p>
           ) : (

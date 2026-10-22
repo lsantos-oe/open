@@ -29,6 +29,7 @@ import { Field } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { MineToggle } from '@/components/ui/MineToggle'
+import { useBacklogTasksPref } from '@/stores/useBacklogTasksPref'
 import { ViewToggle } from '@/components/ui/ViewToggle'
 import { ListIcon, KanbanIcon, CheckCircleIcon, ChatBubbleIcon, LinkIcon, ExternalLinkIcon, UsersGroupIcon } from '@/components/ui/icons'
 import { SignalBadges, signalRowTint } from '@/components/ui/SignalBadges'
@@ -110,11 +111,13 @@ function entryOwners(entry: Entry): EntryOwner[] {
   return []
 }
 
-function buildCards(projects: Project[], incidents: Incident[], standaloneTasks: Entry[], clients: Client[]): GlobalCard[] {
+function buildCards(projects: Project[], incidents: Incident[], standaloneTasks: Entry[], clients: Client[], includeBacklogProjects: boolean): GlobalCard[] {
   const cards: GlobalCard[] = []
   for (let i = 0; i < projects.length; i++) {
     const proj = projects[i]
     if (proj.archived) continue
+    // Projeto em Backlog ainda não começou: as tarefas dele só entram se o usuário pedir.
+    if (proj.status === 'backlog' && !includeBacklogProjects) continue
     const color = projectColor(proj, i)
     for (const ph of proj.phases) {
       for (const entry of ph.entries) {
@@ -359,9 +362,11 @@ export default function TasksPage() {
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   )
 
+  const showBacklogProjectTasks = useBacklogTasksPref((s) => s.showBacklogProjectTasks)
+  const setShowBacklogProjectTasks = useBacklogTasksPref((s) => s.setShowBacklogProjectTasks)
   const allCards = useMemo(
-    () => buildCards(projects, incidents, standaloneTasks, clients),
-    [projects, incidents, standaloneTasks, clients],
+    () => buildCards(projects, incidents, standaloneTasks, clients, showBacklogProjectTasks),
+    [projects, incidents, standaloneTasks, clients, showBacklogProjectTasks],
   )
 
   // Deep link from a copied task link (?entry=<id>) — wait for allCards to be
@@ -879,6 +884,11 @@ export default function TasksPage() {
           ]}
         />
         <MineToggle active={onlyMine} onClick={() => setOnlyMine((v) => !v)} />
+        <MineToggle
+          active={showBacklogProjectTasks}
+          onClick={() => setShowBacklogProjectTasks(!showBacklogProjectTasks)}
+          label="Incluir projetos em backlog"
+        />
         {view !== 'capacity' && (
           <select
             value={dateSortMode}
