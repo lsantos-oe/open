@@ -1,0 +1,60 @@
+# CI da Open API / MCP (supabase/functions/api). Não toca no build do app (Vite/Vercel).
+name: open-api
+
+on:
+  pull_request:
+    paths:
+      - "supabase/functions/api/**"
+      - "supabase/migrations/*open_api*"
+      - "src/types/index.ts"
+      - "src/utils/businessDays.ts"
+      - "src/utils/statusCalc.ts"
+      - "src/utils/dateEngine.ts"
+      - "src/utils/criticalPath.ts"
+      - "src/utils/signals.ts"
+      - "src/utils/projectStats.ts"
+      - "docs/api/**"
+      - ".github/workflows/open-api.yml"
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/api/**"
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: supabase/functions/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Regras do app copiadas estão em dia (domain/ ↔ src/)
+        run: deno run -A tools/sync-domain.ts --check
+      - name: Tipos
+        run: deno check index.ts tools/*.ts tests/*.ts
+      - name: Lint
+        run: deno lint
+      - name: Testes unitários (parser OData, SQL, $metadata, OpenAPI)
+        run: deno test -A tests/odata.test.ts
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Segredos no código (gitleaks) — relatório
+        continue-on-error: true
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.21.2 detect --source /repo --no-banner --redact --exit-code 1
+      - name: Semgrep (OWASP) — bloqueia só na pasta da API
+        run: |
+          docker run --rm -v "$PWD:/src" semgrep/semgrep:1.99.0 semgrep scan \
+            --config p/owasp-top-ten --config p/typescript --config p/secrets \
+            --error --metrics=off supabase/functions/api
