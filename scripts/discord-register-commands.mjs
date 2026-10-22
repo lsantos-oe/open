@@ -13,8 +13,9 @@ const commands = [
     name: 'open',
     type: 1,
     description: 'Pergunte ou peça algo ao assistente do Open',
-    // 0 = servidor, 1 = mensagem direta com o bot, 2 = conversa privada; vale também fora do servidor onde o bot foi instalado
-    contexts: [0, 1, 2],
+    // 0 = canais do servidor onde o bot está instalado, 1 = mensagem direta com o bot. Grupos e conversas privadas entre
+    // pessoas (contexto 2) só existem para aplicativos instalados na conta de cada pessoa (integration_types com 1): não é o caso.
+    contexts: [0, 1],
     integration_types: [0],
     options: [
       { type: 3, name: 'mensagem', description: 'O que você quer saber ou fazer', required: true, max_length: 1500 },
@@ -24,7 +25,7 @@ const commands = [
     name: 'open-novo',
     type: 1,
     description: 'Começa uma conversa nova com o assistente do Open',
-    contexts: [0, 1, 2],
+    contexts: [0, 1],
     integration_types: [0],
   },
 ]
