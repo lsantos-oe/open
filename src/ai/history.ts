@@ -41,7 +41,20 @@ export function mergeSameRole(messages: ChatMessage[]): ChatMessage[] {
     if (prev && prev.role === m.role) out[out.length - 1] = { ...prev, content: [...prev.content, ...m.content] }
     else out.push(m)
   }
-  return out
+  return out.map(dedupeToolResults)
+}
+
+/** A API exige exatamente UM resultado por tool_use, e os resultados vêm antes de qualquer outro bloco do usuário.
+ *  Uma conversa que ficou com dois (ex.: um resultado de "ação não concluída" gravado e, depois, o da confirmação)
+ *  é consertada aqui: vale o ÚLTIMO resultado de cada ferramenta. */
+function dedupeToolResults(m: ChatMessage): ChatMessage {
+  if (m.role !== 'user' || !hasToolResult(m)) return m
+  const last = new Map<string, ChatContentBlock>()
+  for (const b of m.content) if (b.type === 'tool_result') last.set(b.tool_use_id, b)
+  const results = [...last.values()]
+  const rest = m.content.filter((b) => b.type !== 'tool_result')
+  if (results.length + rest.length === m.content.length && results.every((r, i) => m.content[i] === r)) return m
+  return { ...m, content: [...results, ...rest] }
 }
 
 const hasToolResult = (m: ChatMessage) => m.content.some((b) => b.type === 'tool_result')

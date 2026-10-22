@@ -46,6 +46,7 @@ function friendlyKeyError(): void {
 }
 
 function handleAnthropicError(err: unknown): void {
+  console.error('[assistente] erro ao falar com o modelo:', err)
   if (err instanceof ChatApiError) {
     const billingLike = err.status === 400 && /credit|balance|billing|insufficient|chave/i.test(err.message ?? '')
     if (err.status === 401 || err.status === 403 || billingLike) {

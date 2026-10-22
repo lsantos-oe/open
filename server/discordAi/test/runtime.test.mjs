@@ -11,6 +11,7 @@ const db = {
   entries: [
     { id: 'e1', project_id: 'p1', phase_id: 'ph1', type: 'task', name: 'Configurar funil', status: 'in_progress', planned_start: '2026-10-01', planned_end: '2026-10-10', responsible: 'Ana Souza', responsible_member_id: U, owners: [{ id: 'o1', type: 'member', memberId: U, name: 'Ana Souza', kind: 'executor' }], depends_on: [], subtasks: [], links: [], risk_flag: 'none', order: 0 },
   ],
+  status_report_links: [{ id: 'rl1', project_id: 'p1', storage_path: 'p1/abc123.html', label: 'Relatório', created_at: '2026-10-01T00:00:00Z' }],
   clients: [], contacts: [], incidents: [], settings: [], invited_users: [], ai_memories: [],
   ai_conversations: [], ai_messages: [], discord_ai_pending: [],
 }
@@ -78,6 +79,17 @@ globalThis.fetch = async (input, init = {}) => {
   if (url.pathname === '/functions/v1/ai-chat') {
     const payload = JSON.parse(bodyText)
     modelCalls.push({ auth: req.headers.get('authorization'), system: payload.system, messages: payload.messages, toolCount: payload.tools?.length })
+    // Como a API de verdade: cada tool_use precisa de exatamente um tool_result na mensagem seguinte do usuário.
+    const msgs = payload.messages
+    for (let i = 0; i < msgs.length; i++) {
+      const uses = msgs[i].role === 'assistant' ? msgs[i].content.filter((b) => b.type === 'tool_use').map((b) => b.id) : []
+      const results = msgs[i + 1]?.role === 'user' ? msgs[i + 1].content.filter((b) => b.type === 'tool_result').map((b) => b.tool_use_id) : []
+      const bad = uses.length !== results.length || uses.some((id) => results.filter((r) => r === id).length !== 1)
+      if (uses.length && bad) return new Response(JSON.stringify({ type: 'error', status: 400, message: 'tool_use sem tool_result único: ' + uses.join(',') }) + '\n', { headers: { 'Content-Type': 'application/x-ndjson' } })
+      if (!uses.length && msgs[i].role === 'user' && msgs[i].content.some((b) => b.type === 'tool_result') && !(msgs[i - 1]?.content ?? []).some((b) => b.type === 'tool_use')) {
+        return new Response(JSON.stringify({ type: 'error', status: 400, message: 'tool_result órfão' }) + '\n', { headers: { 'Content-Type': 'application/x-ndjson' } })
+      }
+    }
     const next = modelScript.shift()
     if (!next) return json({ error: 'sem resposta roteirizada' }, 500)
     const message = { id: 'm', type: 'message', role: 'assistant', model: 'x', stop_reason: next.stop_reason ?? 'end_turn', content: next.content, usage: {} }
@@ -111,6 +123,7 @@ check('a ferramenta rodou com os dados do Open e voltou para o modelo', JSON.str
 check('o prompt tem a instrução do Discord e a data', modelCalls[0].system.includes('Você está no Discord') && /Hoje é \d{4}-\d{2}-\d{2}/.test(modelCalls[0].system))
 check('o prompt chama a pessoa pelo nome (meus projetos = dela)', modelCalls[0].system.includes('Ana Souza'))
 check('sem confirmação pendente em leitura', !r.confirmation)
+check('carregar o projeto com link de relatório não dá erro (no servidor não existe window)', r.warnings.length === 0, r.warnings)
 check('conversa do Discord criada e marcada como tal', db.ai_conversations.length === 1 && db.ai_conversations[0].source === 'discord' && db.ai_conversations[0].user_id === U, db.ai_conversations)
 check('histórico gravado (pergunta, passo da ferramenta, resultado, resposta)', db.ai_messages.length === 4, db.ai_messages.length)
 
@@ -150,6 +163,34 @@ let twice = null
 try { await rt.decide(cfg, U, pendingId, true) } catch (e) { twice = e }
 check('segundo clique recebe aviso, sem repetir a ação', twice?.name === 'RuntimeError', twice?.message)
 check('a tarefa criada gravou só uma vez', requests.filter((q) => q.method === 'POST' && q.path.startsWith('/rest/v1/entries')).length === 1)
+
+console.log('[mensagem nova no meio de uma confirmação]')
+modelScript = [{ stop_reason: 'tool_use', content: [text('Vou criar.'), toolUse('tu5', 'create_task', { name: 'Tarefa velha', executorName: 'Ana Souza' })] }]
+r = await rt.ask(cfg, U, 'cria a tarefa velha')
+const oldPending = r.confirmation.pendingId
+modelScript = [{ content: [text('Certo, outra coisa então.')] }]
+r = await rt.ask(cfg, U, 'esquece, outra pergunta')
+check('a conversa segue sem erro depois de ignorar os botões', r.text.includes('outra coisa') && r.warnings.length === 0, r)
+check('a confirmação antiga deixa de existir', !db.discord_ai_pending.some((p) => p.id === oldPending))
+let stale = null
+try { await rt.decide(cfg, U, oldPending, true) } catch (e) { stale = e }
+check('clicar no botão antigo é recusado, sem gravar', stale?.name === 'RuntimeError' && !requests.some((q) => q.method === 'POST' && q.path.startsWith('/rest/v1/entries') && q.body.includes('Tarefa velha')), stale?.message)
+
+console.log('[conversa que já ficou com resultado duplicado (estrago antigo)]')
+{
+  const conv = db.ai_conversations.filter((c) => c.source === 'discord').sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)))[0]
+  const msgs = db.ai_messages.filter((m) => m.conversation_id === conv.id)
+  let pos = Math.max(...msgs.map((m) => m.position ?? 0)) + 1
+  const add = (role, content) => db.ai_messages.push({ id: crypto.randomUUID(), conversation_id: conv.id, user_id: U, role, content, position: pos++, created_at: new Date().toISOString() })
+  add('user', [{ type: 'text', text: 'cria dup' }])
+  add('assistant', [toolUse('dup1', 'create_task', { name: 'Dup' })])
+  add('user', [{ type: 'tool_result', tool_use_id: 'dup1', content: 'A ação não foi concluída (repair).', is_error: true }])
+  add('user', [{ type: 'tool_result', tool_use_id: 'dup1', content: '{"success":true}' }])
+  add('assistant', [text('Criei.')])
+  modelScript = [{ content: [text('Seguimos normalmente.')] }]
+  r = await rt.ask(cfg, U, 'e agora?')
+  check('a conversa com resultado duplicado é consertada e responde', r.text.includes('Seguimos') && r.warnings.length === 0, r)
+}
 
 console.log('[cancelar]')
 modelScript = [

@@ -184,10 +184,17 @@ function dbCharterToStore(db: DbCharter): ProjectCharter {
  *  depending on how Supabase Storage serves the file's Content-Type/
  *  Content-Disposition for direct navigation, and keeps the link on our own
  *  origin so it stays valid regardless of which Supabase project backs it. */
+/** Endereço do Open. No navegador vem da página; no servidor (assistente no Discord) não há página, então o runtime
+ *  informa o endereço em `__APP_ORIGIN__`. */
+function appOrigin(): string {
+  if (typeof window !== 'undefined' && window.location?.origin) return window.location.origin
+  return (globalThis as { __APP_ORIGIN__?: string }).__APP_ORIGIN__ ?? ''
+}
+
 function dbReportLinkToStore(row: DbReportLink): ReportLink {
   const fileId = row.storage_path.split('/').pop()?.replace(/\.html$/i, '')
   const url = row.project_id && fileId
-    ? `${window.location.origin}/report/${row.project_id}/${fileId}`
+    ? `${appOrigin()}/report/${row.project_id}/${fileId}`
     : undefined
   return {
     id: row.id,

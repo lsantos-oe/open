@@ -123,6 +123,29 @@ function collectWarnings(): string[] {
   return useToastStore.getState().toasts.filter((t) => t.type === 'error').map((t) => t.message)
 }
 
+/** Abre a conversa SEM "consertar" um tool_use pendente (o que `openConversation` faz). Na confirmação, o último
+ *  recado do assistente é justamente a ação esperando o clique: consertar gravaria um resultado de erro para ela e o
+ *  clique mandaria um segundo resultado para a mesma ação — a API recusa (um resultado por tool_use). */
+async function openConversationAsIs(id: string): Promise<void> {
+  const { data, error } = await supabase
+    .from('ai_messages')
+    .select('id, role, content, created_at')
+    .eq('conversation_id', id)
+    .order('position', { ascending: true, nullsFirst: true })
+    .order('created_at', { ascending: true })
+  if (error) throw new RuntimeError(`Não consegui abrir a conversa (${error.message}).`)
+  const messages: ChatMessage[] = (data ?? []).map((m) => ({
+    id: m.id as string,
+    role: m.role as 'user' | 'assistant',
+    content: m.content as ChatContentBlock[],
+    createdAt: m.created_at as string,
+  }))
+  const chat = useAiChatStore.getState()
+  chat.reset()
+  chat.setConversationId(id)
+  chat.setMessages(messages)
+}
+
 async function findOrCreateConversation(userId: string, forceNew: boolean): Promise<string> {
   if (!forceNew) {
     const { data } = await supabase
@@ -190,11 +213,15 @@ export function ask(cfg: RuntimeConfig, userId: string, text: string, opts: { ne
   return exclusive(async () => {
     resetStores()
     const { name } = await signInAs(cfg, userId)
+    ;(globalThis as { __APP_ORIGIN__?: string }).__APP_ORIGIN__ = cfg.appUrl.replace(/\/+$/, '')
     setPromptAddendum(DISCORD_ADDENDUM)
     await loadData()
 
     const conversationId = await findOrCreateConversation(userId, !!opts.newConversation)
     await openConversation(conversationId)
+    // Uma mensagem nova substitui qualquer confirmação que ficou sem resposta nesta conversa (o `openConversation`
+    // acima já registrou essa ação como não concluída): os botões antigos deixam de valer.
+    await admin(cfg).from('discord_ai_pending').delete().eq('conversation_id', conversationId)
     const fromIndex = useAiChatStore.getState().messages.length
 
     const message: ChatMessage = {
@@ -240,12 +267,17 @@ export function decide(cfg: RuntimeConfig, userId: string, pendingId: string, ap
 
     resetStores()
     await signInAs(cfg, userId)
+    ;(globalThis as { __APP_ORIGIN__?: string }).__APP_ORIGIN__ = cfg.appUrl.replace(/\/+$/, '')
     setPromptAddendum(DISCORD_ADDENDUM)
     await loadData()
-    await openConversation(row.conversation_id as string)
+    await openConversationAsIs(row.conversation_id as string)
     const fromIndex = useAiChatStore.getState().messages.length
 
     const state = row.state as { pending: PendingWriteConfirmation; queued: PendingWriteConfirmation[]; pendingToolResults: ChatContentBlock[] }
+    // A conversa precisa estar exatamente onde a confirmação parou: o último recado é o do assistente com esta ação.
+    const last = useAiChatStore.getState().messages.at(-1)
+    const waiting = last?.role === 'assistant' && last.content.some((b) => b.type === 'tool_use' && b.id === state.pending?.toolUseId)
+    if (!waiting) throw new RuntimeError('Essa confirmação não vale mais, porque a conversa seguiu. Peça de novo com /open.')
     const chat = useAiChatStore.getState()
     chat.setPendingToolResults(state.pendingToolResults ?? [])
     chat.setQueuedConfirmations(state.queued ?? [])
