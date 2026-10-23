@@ -1,0 +1,402 @@
+// GERADO por tools/sync-domain.ts — NÃO EDITAR. Origem: src/types/index.ts (sha256 73de02094ae62e582143bb95a714d1279b7acd3c43c24842ec7369a4d4d1f8cd)
+export type EntryType = 'task' | 'milestone' | 'meeting'
+export type RiskFlag = 'none' | 'warning' | 'critical'
+export type EntryStatus = 'pending' | 'todo' | 'in_progress' | 'validation' | 'done' | 'blocked' | 'overdue'
+/** Tracking signal, always computed live (never read from the `status` column
+ *  — see utils/signals.ts). Independent of and can coexist with EntryStatus. */
+export type EntrySignal = 'overdue' | 'stalled' | 'blocked'
+export type ProjectStatus = 'backlog' | 'planning' | 'in_progress' | 'done'
+export type ProjectType = 'nova_conta' | 'novo_projeto'
+export type AppLanguage = 'pt' | 'en' | 'es'
+export type DateFormat = 'DD/MM/YYYY' | 'MM/DD/YYYY'
+export type Workdays = 'mon-fri' | 'mon-sat'
+export type Probability = 'low' | 'medium' | 'high'
+export type Impact = 'low' | 'medium' | 'high'
+export type DelayResponsibility = 'internal' | 'client_business' | 'client_it' | 'client_provider'
+export type DelayType = 'execution' | 'definition' | 'planning'
+
+export interface EntryComment {
+  id: string
+  author: string
+  text: string
+  createdAt: string
+  /** Quem escreveu (perfil). Ausente em comentários antigos: qualquer um pode editá-los. */
+  authorId?: string
+  authorAvatar?: string
+  /** Resposta a outro comentário (um nível: respostas de respostas ficam na cadeia do comentário original). */
+  parentId?: string
+  /** Preenchido quando o texto foi editado. */
+  updatedAt?: string
+}
+
+export interface Link {
+  id: string
+  label: string
+  url: string
+}
+
+export interface EntryOwner {
+  id: string
+  type: 'member' | 'text' | 'contact'
+  memberId?: string
+  contactId?: string
+  name: string
+  role?: string
+  /** Assignment kind on an Entry — executor (required) vs validador (optional).
+   *  Unrelated to `role` above, which is a free-text job title. */
+  kind?: 'executor' | 'validator'
+}
+
+export interface Entry {
+  id: string
+  type: EntryType
+  name: string
+  description?: string
+  /** Set only on a standalone task (no project/incident) — the clients it's
+   *  optionally scoped to (one or more). Always empty for project- or incident-owned entries. */
+  clientIds?: string[]
+  /** Legacy singular — mirrors clientIds[0]. See utils/entryClients.ts. */
+  clientId?: string
+  responsible: string
+  dependsOn: string[]
+  isCritical: boolean
+  plannedStart?: string
+  plannedEnd?: string
+  baselineStart?: string
+  baselineEnd?: string
+  plannedDate?: string
+  baselineDate?: string
+  actualStart?: string
+  actualEnd?: string
+  durationDays?: number
+  durationHours?: number
+  riskFlag: RiskFlag
+  status: EntryStatus
+  statusOverride?: boolean
+  responsibleMemberId?: string
+  responsibleMode?: 'member' | 'free'
+  owners?: EntryOwner[]
+  hiddenFromPlan?: boolean
+  subtasks: Entry[]
+  comments: EntryComment[]
+  links: Link[]
+  order: number
+  parentEntryId?: string
+  createdAt?: string
+  updatedAt?: string
+  createdById?: string
+  updatedById?: string
+  /** Last time something that counts as real activity happened on this entry
+   *  (status/owner/date/description change, or a comment) — set explicitly by
+   *  the store actions that represent that activity, never by a blanket
+   *  "any write" trigger. Powers the "parado" (stalled) signal. */
+  lastActivityAt?: string
+}
+
+export interface Phase {
+  id: string
+  name: string
+  order: number
+  entries: Entry[]
+  /** Hidden bucket phase, auto-created per project to hold tasks that are
+   *  hiddenFromPlan and have no real phase — never shown in phase pickers. */
+  isUnassigned?: boolean
+}
+
+export interface ActionTask {
+  id: string
+  description: string
+  responsible?: string
+  dueDate?: string
+  done: boolean
+}
+
+export interface Risk {
+  id: string
+  description: string
+  probability: Probability
+  impact: Impact
+  score: number
+  status: string
+  owner: string
+  dueDate?: string
+  linkedEntryIds: string[]
+  actionTasks: ActionTask[]
+}
+
+export interface ReportLink {
+  id: string
+  storagePath: string
+  label: string
+  generatedAt: string
+  createdBy?: string
+  /** Set client-side from the storage path — never persisted. */
+  url?: string
+}
+
+export interface DelayLogEntry {
+  id: string
+  date: string
+  entryId: string
+  entryName: string
+  days: number
+  responsibility: DelayResponsibility
+  type: DelayType
+  description: string
+  comments: string
+  triggeredBy: 'manual' | 'cascade'
+}
+
+export interface TeamMember {
+  id: string
+  name: string
+  role: string
+  email?: string
+  userId?: string
+}
+
+export interface DiaryComment {
+  id: string
+  author: string
+  text: string
+  createdAt: string
+}
+
+export interface FileAttachment {
+  id: string
+  name: string
+  url: string
+  size?: number
+  uploadedAt: string
+  uploadedBy?: string
+}
+
+export type OpenPointStatus = 'open' | 'resolved'
+export type OpenPointPriority = 'low' | 'medium' | 'high'
+
+export interface OpenPoint {
+  id: string
+  title: string
+  description?: string
+  status: OpenPointStatus
+  priority: OpenPointPriority
+  responsible?: string
+  dueDate?: string
+  resolvedAt?: string
+  resolvedBy?: string
+  resolution?: string
+  linkedEntryId?: string
+  comments: DiaryComment[]
+  attachments: FileAttachment[]
+  createdAt: string
+  createdBy?: string
+}
+
+export interface MeetingItem {
+  id: string
+  text: string
+  done: boolean
+  type: 'action' | 'decision' | 'info'
+  responsible?: string
+  dueDate?: string
+  promotedToOpenPointId?: string
+  promotedToEntryId?: string
+}
+
+export interface MeetingLog {
+  id: string
+  title: string
+  date: string
+  participants: EntryOwner[]
+  notes?: string
+  items: MeetingItem[]
+  comments: DiaryComment[]
+  attachments: FileAttachment[]
+  createdAt: string
+  createdBy?: string
+}
+
+export type HistoryEventType =
+  | 'project_created'
+  | 'name_changed'
+  | 'status_changed'
+  | 'baseline_set'
+  | 'risk_added'
+  | 'delay_logged'
+  | 'member_added'
+  | 'meeting_held'
+  | 'open_point_resolved'
+  | 'note'
+
+export interface HistoryEntry {
+  id: string
+  event: HistoryEventType
+  title: string
+  detail?: string
+  linkedId?: string
+  linkedType?: 'entry' | 'risk' | 'meeting' | 'open_point'
+  isManualNote?: boolean
+  comments: DiaryComment[]
+  createdAt: string
+  createdBy?: string
+}
+
+export interface ClientContact {
+  id: string
+  name: string
+  role?: string
+  email?: string
+  phone?: string
+  /** Contacts are a shared base — the same person can be linked to more than
+   *  one client, and is also pickable as an EntryOwner{type:'contact'}. */
+  clientIds: string[]
+  createdAt?: string
+}
+
+export interface ClientCsAssignment {
+  id: string
+  owner: EntryOwner
+  assignedAt: string
+  note?: string
+}
+
+export type ClientStatus = 'pre_venda' | 'implantacao' | 'sustentacao_novos_projetos'
+
+export interface Client {
+  id: string
+  name: string
+  country?: string
+  ploomesLink?: string
+  notes?: string
+  status: ClientStatus
+  owners: EntryOwner[]
+  csHistory: ClientCsAssignment[]
+  createdAt: string
+  archived?: boolean
+}
+
+export type IncidentStatus = 'open' | 'in_progress' | 'waiting_on_client' | 'resolved' | 'closed'
+
+export interface Incident {
+  id: string
+  title: string
+  description?: string
+  owner?: EntryOwner
+  status: IncidentStatus
+  statusChangedAt: string
+  resolvedAt?: string
+  priority: Probability
+  impact: Impact
+  deadline?: string
+  clientIds: string[]
+  projectIds: string[]
+  stakeholders: EntryOwner[]
+  entries: Entry[]
+  openPoints: OpenPoint[]
+  history: HistoryEntry[]
+  createdAt: string
+  createdBy?: string
+}
+
+export interface ProjectCharter {
+  sponsor: string
+  objectives: string
+  scope: string
+  outOfScope: string
+  successCriteria: string
+  constraints: string
+  assumptions: string
+  budget?: string
+}
+
+export interface Project {
+  id: string
+  name: string
+  client: string          // deprecated free-text — derived from clientIds[0], kept for legacy consumers
+  clientId?: string       // deprecated singular — derived from clientIds[0], kept for legacy consumers
+  clientIds: string[]     // real source of truth — a project can have multiple linked clients
+  type: ProjectType
+  pm: string
+  pmMemberId?: string
+  color?: string
+  archived?: boolean
+  hidden?: boolean
+  devLead?: string
+  devLeadMemberId?: string
+  devType?: 'integration' | 'application'
+  devIntegration?: string
+  language: AppLanguage
+  status: ProjectStatus
+  baselineSetAt?: string
+  columnVisibility?: Record<string, boolean>
+  csvColumnPrefs?: Record<string, boolean>
+  reportPrefs?: { sections: Record<string, boolean>; planColumns: Record<string, boolean> }
+  phases: Phase[]
+  risks: Risk[]
+  reportLinks: ReportLink[]
+  delayLog: DelayLogEntry[]
+  team: TeamMember[]
+  links: Link[]
+  overview?: string
+  charter?: ProjectCharter
+  /** Documento do charter em Markdown (editor de blocos). É uma projeção do documento colaborativo: só é
+   *  gravado por setProjectCharterDoc (nunca pela sincronização geral da linha do projeto). */
+  charterDoc?: string
+  proposalLink?: string
+  dealLink?: string
+  openPoints?: OpenPoint[]
+  meetings?: MeetingLog[]
+  history?: HistoryEntry[]
+}
+
+// Template structures
+export interface TemplateEntry {
+  id: string
+  type: EntryType
+  name: string
+  nameKey?: string  // i18n key resolved at project creation using project.language
+  responsible: string
+  dependsOn: string[]
+  durationDays?: number
+  durationHours?: number
+  order: number
+  subtasks: TemplateEntry[]
+}
+
+export interface TemplatePhase {
+  id: string
+  name: string
+  nameKey?: string  // i18n key resolved at project creation using project.language
+  order: number
+  entries: TemplateEntry[]
+}
+
+export interface ProjectTemplate {
+  id: string
+  name: string
+  type: ProjectType
+  phases: TemplatePhase[]
+}
+
+// Settings
+export interface IncidentTemplate {
+  id: string
+  name: string
+  priority: Probability
+  impact: Probability
+  taskTitles: string[]
+  /** Descrição padrão do incidente (Markdown). Entra preenchida no formulário de novo incidente. */
+  description?: string
+}
+
+export interface AppSettings {
+  holidays: string[]                    // ISO date strings for calculations
+  holidayNames: Record<string, string>  // ISO date → display name
+  templates: ProjectTemplate[]
+  templatesVersion?: number
+  incidentTemplates: IncidentTemplate[]
+  defaultLanguage: AppLanguage
+  dateFormat: DateFormat
+  workdays: Workdays
+  sidebarCollapsed?: boolean
+}

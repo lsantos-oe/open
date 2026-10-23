@@ -1,0 +1,15 @@
+{
+  "name": "open",
+  "displayName": "Open",
+  "version": "1.0.0",
+  "description": "Conecta o Claude ao Open, a ferramenta de gestão do time de Onboarding/Expansão da Ploomes: projetos, tarefas, incidentes, clientes e diário — com login próprio de cada pessoa, sem chave.",
+  "author": { "name": "Victor Santos", "email": "victor.santos@ploomes.com" },
+  "homepage": "https://openploo.vercel.app/api/docs",
+  "keywords": ["open", "ploomes", "onboarding", "projetos", "tarefas", "incidentes", "mcp"],
+  "mcpServers": {
+    "open": {
+      "type": "http",
+      "url": "https://openploo.vercel.app/api/mcp"
+    }
+  }
+}

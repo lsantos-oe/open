@@ -14,3 +14,8 @@ verify_jwt = false
 [functions.discord-ai]
 # Chamada pelo próprio Discord (sem JWT de usuário): a proteção é a assinatura Ed25519 conferida dentro da função.
 verify_jwt = false
+
+[functions.api]
+# Open API (OData) e MCP: chamada por integrações e pelo Claude, sem JWT do Supabase. A proteção é a User-Key ou o
+# token OAuth do conector, conferidos dentro da função.
+verify_jwt = false

@@ -1,6 +1,22 @@
 {
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://fgzxmcvvahoasisgoqjr.supabase.co/functions/v1/api/:path*"
+    },
+    {
+      "source": "/.well-known/oauth-authorization-server/api",
+      "destination": "https://fgzxmcvvahoasisgoqjr.supabase.co/functions/v1/api/.well-known/oauth-authorization-server"
+    },
+    {
+      "source": "/.well-known/openid-configuration/api",
+      "destination": "https://fgzxmcvvahoasisgoqjr.supabase.co/functions/v1/api/.well-known/openid-configuration"
+    },
+    {
+      "source": "/.well-known/oauth-protected-resource/api/:path*",
+      "destination": "https://fgzxmcvvahoasisgoqjr.supabase.co/functions/v1/api/.well-known/oauth-protected-resource/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
