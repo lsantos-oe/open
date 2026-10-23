@@ -219,7 +219,7 @@ app.get("/oauth/authorize", async (c) => {
     if (!(e instanceof OAuthError)) throw e;
     const { redirectUri, state } = e as OAuthError & { redirectUri?: string; state?: string };
     if (redirectUri) return c.redirect(redirectWith(redirectUri, { error: e.error, error_description: e.description, state, iss: root }), 302);
-    return c.html(oauthErrorHtml(e.description), 400);
+    return c.html(oauthErrorHtml(e.description, root), 400);
   }
 });
 app.get("/oauth/callback", (c) => {

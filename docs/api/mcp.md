@@ -11,7 +11,8 @@ OData — pegue em `/api/minha-chave`).
 O plugin fica em [`claude-plugin/`](../../claude-plugin) e traz o conector, uma skill e comandos prontos. Não tem chave
 dentro: cada pessoa faz o próprio login.
 
-1. Compacte a pasta `claude-plugin` em `.zip` e, no Claude, vá em **Plugins → Adicionar → Fazer upload de plugin**
+1. Baixe **https://openploo.vercel.app/downloads/open-plugin.zip** (gerado a partir de `claude-plugin/` a cada deploy do app; ou
+   compacte a pasta `claude-plugin` você mesmo) e, no Claude, vá em **Plugins → Adicionar → Fazer upload de plugin**
    (ou instale pela lista, se ele já tiver sido compartilhado com você).
 2. No plugin, aba **Conectores → open → Vincular** → entre com o Google do Open → **Permitir**.
    No Claude Code: `/mcp` → **open** → **Authenticate**.

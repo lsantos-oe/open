@@ -327,8 +327,7 @@ export function docsHtml(root: string): string {
 <body>
   <header class="oe-bar">
     <a class="oe-brand" href="${root}/docs">
-      <svg width="24" height="24" viewBox="0 0 100 100" aria-hidden="true"><path fill="#E65100" fill-rule="evenodd" d="${OPEN_ICON_PATH}"/></svg>
-      Open <small>API e MCP</small>
+<span style="font-weight:800;letter-spacing:-0.01em">op<span style="color:var(--oe)">en</span></span> <small>API e MCP</small>
     </a>
     <nav class="oe-links">
       <a class="oe-hide-sm" href="${root}/openapi.json" target="_blank" rel="noopener">OpenAPI</a>

@@ -6,7 +6,8 @@ plugin: cada pessoa faz o próprio login.
 
 ## Instalar
 
-1. Compacte esta pasta (`claude-plugin`) em `.zip`. No Claude: **Plugins → Adicionar → Fazer upload de plugin**
+1. Baixe o plugin em **https://openploo.vercel.app/downloads/open-plugin.zip** (ou compacte esta pasta, `claude-plugin`, em `.zip`).
+   No Claude: **Plugins → Adicionar → Fazer upload de plugin** e escolha o arquivo, sem descompactar
    (ou instale pela lista de plugins, se ele já tiver sido compartilhado com você).
 2. Abra o plugin → aba **Conectores** → **open** → **Vincular**.
 3. Entre com a sua conta Google do Open e clique em **Permitir**.

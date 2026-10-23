@@ -2,59 +2,62 @@
 // permite que o app (Claude) acesse o Open como ela. Igual à página da chave, o navegador só fala com a API.
 //   /api/oauth/authorize?…  valida o pedido e mostra login/consentimento
 //   /api/oauth/callback     volta do login Google: guarda a sessão nesta aba e retoma o pedido salvo
+import { appUrlOf, BASE_CSS, esc, FAVICON, GOOGLE_ICON, topBar } from "./brand.ts";
 
-const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
-
-const STYLE = `
-  :root { --bg:#FBFAF8; --card:#FFFFFF; --text:#1C1815; --muted:#5A5347; --line:#E8E3DC; --accent:#D9530E; --accent-hover:#B8440A; --warn:#A8790A; --err:#D14343; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#131110; --card:#1C1815; --text:#F2EEE8; --muted:#C7BFB2; --line:#322C24; --accent:#E8642A; --accent-hover:#D9530E; --warn:#D6A93B; --err:#E5716A; } }
-  * { box-sizing: border-box; }
-  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px 16px;
-    font:15px/1.55 -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; background:var(--bg); color:var(--text); }
-  .card { width:100%; max-width:440px; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:28px; }
-  .brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:18px; margin-bottom:20px; }
-  .brand svg { width:28px; height:28px; }
-  h1 { font-size:20px; margin:0 0 8px; } p { color:var(--muted); margin:6px 0; }
-  .who { margin:16px 0; padding:12px 14px; border:1px solid var(--line); border-radius:10px; }
-  ul { color:var(--muted); padding-left:20px; margin:8px 0 16px; }
-  .row { display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
-  button, a.btn { font:inherit; border-radius:10px; padding:10px 16px; border:1px solid var(--line); background:var(--card); color:var(--text);
-    cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
-  button.primary, a.btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; flex:1; }
-  button.primary:hover, a.btn.primary:hover { background:var(--accent-hover); }
-  button:disabled { opacity:.6; cursor:default; }
-  input { width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--text); font:inherit; }
-  details { margin-top:18px; } summary { cursor:pointer; color:var(--muted); font-size:14px; }
-  .msg { font-size:14px; margin-top:12px; } .err { color:var(--err); } .warn { color:var(--warn); }
-  .small { font-size:13px; } code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:13px; }
+const STYLE = `${BASE_CSS}
+  main { max-width:440px; margin:0 auto; padding:40px 16px 64px; }
+  .panel { text-align:center; padding:32px 28px; margin-top:0; }
+  .panel .wordmark { margin-bottom:14px; }
+  .panel h1 { font-size:20px; margin-bottom:8px; }
+  .panel p { color:var(--text-tertiary); font-size:13px; }
+  .left { text-align:left; }
+  .who { display:flex; align-items:center; gap:12px; margin:18px 0; padding:12px 14px; border:0.5px solid var(--border-default); border-radius:var(--radius-md); background:var(--surface-subtle); text-align:left; }
+  .avatar { flex:0 0 34px; height:34px; border-radius:999px; background:var(--oe-primary); color:#fff; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .who b { display:block; font-size:13.5px; overflow-wrap:anywhere; } .who small { color:var(--text-tertiary); font-size:12px; }
+  ul.perm { list-style:none; margin:0 0 16px; padding:0; display:grid; gap:8px; text-align:left; }
+  ul.perm li { display:flex; gap:10px; color:var(--text-secondary); font-size:13.5px; }
+  ul.perm li::before { content:"✓"; flex:0 0 20px; height:20px; border-radius:999px; background:var(--success-bg); color:var(--success-text); font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-top:1px; }
+  .small { font-size:12.5px; }
+  .buttons { display:flex; gap:8px; margin-top:20px; } .buttons button { flex:1; padding:10px 16px; font-size:14px; }
+  a.btn.wide { width:100%; padding:10px 20px; font-size:14px; margin-top:20px; }
+  details { margin-top:18px; text-align:left; } summary { cursor:pointer; color:var(--text-tertiary); font-size:13px; }
+  .keyrow { display:flex; gap:8px; margin-top:10px; } .keyrow input { flex:1; }
+  .alert { margin-top:16px; padding:10px 14px; border-radius:var(--radius-md); background:var(--danger-bg); color:var(--danger-text); font-size:13px; text-align:left; }
+  .spin { width:22px; height:22px; margin:6px auto 14px; border-radius:999px; border:2.5px solid var(--border-default); border-top-color:var(--oe-primary); animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spin { animation:none; } }
 `;
 
-const LOGO = `<svg viewBox="0 0 100 100" aria-hidden="true"><path fill="#D9530E" d="M50 0C77.61 0 100 22.39 100 50C100 77.61 77.61 100 50 100C22.39 100 0 77.61 0 50C0 22.39 22.39 0 50 0ZM50 20C33.43 20 20 33.43 20 50C20 66.57 33.43 80 50 80C64.5 80 76.5 69.7 79.3 56L40 56C38 56 36 54 36 52L36 44C36 42 38 40 40 40L79.3 40C76.5 28.3 64.5 20 50 20Z"/></svg>`;
-
-function shell(title: string, body: string): string {
+function shell(title: string, body: string, root: string): string {
+  const appUrl = appUrlOf(root);
   return `<!doctype html>
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="referrer" content="no-referrer" />
+<meta name="color-scheme" content="light dark" />
 <title>${esc(title)} — Open</title>
+<link rel="icon" href="${FAVICON}" />
 <style>${STYLE}</style>
 </head>
 <body>
-<main class="card">
-  <div class="brand">${LOGO}<span>Open</span></div>
-  ${body}
+${topBar(appUrl, `<a href="${esc(root)}/docs">Documentação</a>`)}
+<main>
+  <div class="card panel">
+    <div class="wordmark"><span>op</span><span class="en">en</span></div>
+    ${body}
+  </div>
 </main>
 </body>
 </html>`;
 }
 
-export function oauthErrorHtml(message: string): string {
+export function oauthErrorHtml(message: string, root = ""): string {
   return shell("Não foi possível conectar", `
   <h1>Não foi possível conectar</h1>
-  <p class="err">${esc(message)}</p>
-  <p class="small">Volte ao Claude, remova o conector do Open e vincule de novo.</p>`);
+  <div class="alert" role="alert">${esc(message)}</div>
+  <p class="small" style="margin-top:16px">Volte ao Claude, remova o conector do Open e vincule de novo.</p>`, root);
 }
 
 export function oauthAuthorizeHtml(opts: { root: string; clientName: string; redirectHost: string }): string {
@@ -64,30 +67,30 @@ export function oauthAuthorizeHtml(opts: { root: string; clientName: string; red
   <div id="login" hidden>
     <h1>Conectar ${esc(app)} ao Open</h1>
     <p>Entre com a sua conta do Open para continuar.</p>
-    <div class="row"><a class="btn primary" id="btn-google" href="${esc(opts.root)}/auth/google?to=oauth">Entrar com Google</a></div>
+    <a class="btn wide" id="btn-google" href="${esc(opts.root)}/auth/google?to=oauth">${GOOGLE_ICON}Entrar com Google</a>
     <details>
       <summary>Prefiro usar a minha User-Key</summary>
       <p class="small" style="margin-top:8px">Cole a chave da página <a href="${esc(opts.root)}/minha-chave" target="_blank" rel="noopener">Minha chave</a>.</p>
-      <div class="row"><input id="key" type="password" placeholder="ouk_..." autocomplete="off" /><button id="btn-key">Continuar</button></div>
+      <div class="keyrow"><input id="key" type="password" placeholder="ouk_..." autocomplete="off" aria-label="User-Key" /><button id="btn-key">Continuar</button></div>
     </details>
-    <div class="msg" id="msg-login" role="status"></div>
+    <div class="msg err" id="msg-login" role="status"></div>
   </div>
 
   <div id="consent" hidden>
     <h1>Permitir acesso ao Open?</h1>
     <p><strong>${esc(app)}</strong> quer acessar o Open como você:</p>
-    <div class="who" id="who"></div>
-    <ul>
-      <li>ler e gravar projetos, tarefas, incidentes e clientes, com as suas permissões;</li>
-      <li>o que for gravado aparece no app com o seu nome.</li>
+    <div class="who"><span class="avatar" id="avatar" aria-hidden="true"></span><span><b id="who"></b><small>Conta do Open</small></span></div>
+    <ul class="perm">
+      <li>Ler e gravar projetos, tarefas, incidentes e clientes, com as suas permissões.</li>
+      <li>O que for gravado aparece no app com o seu nome.</li>
     </ul>
-    <p class="small">Depois da aprovação, você volta para <code>${esc(opts.redirectHost)}</code>. Para desconectar, use a página <a href="${esc(opts.root)}/minha-chave" target="_blank" rel="noopener">Minha chave</a>.</p>
-    <div class="row">
+    <p class="small left">Depois da aprovação, você volta para <code>${esc(opts.redirectHost)}</code>. Para desconectar, use a página <a href="${esc(opts.root)}/minha-chave" target="_blank" rel="noopener">Minha chave</a>.</p>
+    <div class="buttons">
       <button id="btn-deny">Cancelar</button>
       <button class="primary" id="btn-allow">Permitir</button>
     </div>
-    <p class="small" style="margin-top:12px"><a href="#" id="btn-switch">Usar outra conta</a></p>
-    <div class="msg" id="msg" role="status"></div>
+    <p class="small" style="margin-top:14px"><a href="#" id="btn-switch">Usar outra conta</a></p>
+    <div class="msg err" id="msg" role="status"></div>
   </div>
 <script type="module">
 const CFG = ${cfg};
@@ -110,7 +113,7 @@ function show() {
   const t = session();
   if (!cred && t) cred = { header: "Authorization", value: "Bearer " + t, label: emailOf(t) || "sua conta do Open" };
   $("login").hidden = !!cred; $("consent").hidden = !cred;
-  if (cred) $("who").textContent = cred.label;
+  if (cred) { $("who").textContent = cred.label; $("avatar").textContent = (cred.label.trim()[0] || "?").toUpperCase(); }
 }
 async function decide(allow) {
   $("btn-allow").disabled = $("btn-deny").disabled = true;
@@ -135,14 +138,15 @@ $("btn-allow").onclick = () => decide(true);
 $("btn-deny").onclick = () => decide(false);
 $("btn-switch").onclick = (e) => { e.preventDefault(); try { sessionStorage.removeItem(STORE); } catch {} cred = null; show(); };
 show();
-</script>`);
+</script>`, opts.root);
 }
 
 /** Volta do login Google (#access_token=…): guarda a sessão nesta aba e retoma o pedido de autorização salvo. */
 export function oauthCallbackHtml(root: string): string {
   const cfg = JSON.stringify({ root });
   return shell("Entrando", `
-  <p id="msg">Entrando…</p>
+  <div class="spin" id="spin" aria-hidden="true"></div>
+  <p id="msg" role="status">Entrando…</p>
 <script type="module">
 const CFG = ${cfg};
 const h = new URLSearchParams(location.hash.slice(1));
@@ -152,8 +156,9 @@ if (h.get("access_token")) {
 }
 let q = null;
 try { q = sessionStorage.getItem("open-oauth-request"); } catch {}
-if (h.get("error_description")) document.getElementById("msg").textContent = h.get("error_description");
+const fail = (m) => { document.getElementById("spin").hidden = true; document.getElementById("msg").textContent = m; };
+if (h.get("error_description")) fail(h.get("error_description"));
 else if (q) location.replace(CFG.root + "/oauth/authorize" + q);
-else document.getElementById("msg").textContent = "Pedido de conexão não encontrado nesta aba. Volte ao Claude e clique em Vincular de novo.";
-</script>`);
+else fail("Pedido de conexão não encontrado nesta aba. Volte ao Claude e clique em Vincular de novo.");
+</script>`, root);
 }
