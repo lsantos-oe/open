@@ -5,9 +5,11 @@ export interface DiscordLinkResult {
   discord_username: string | null
 }
 
-async function call(body: Record<string, unknown>): Promise<Record<string, unknown>> {
+const SESSION_EXPIRED = 'Sua sessão no Open expirou. Saia (menu do avatar → Sair), entre de novo e tente conectar outra vez.'
+
+async function call(body: Record<string, unknown>, retried = false): Promise<Record<string, unknown>> {
   const { data: { session } } = await supabase.auth.getSession()
-  if (!session) throw new Error('Sessão expirada. Faça login novamente.')
+  if (!session) throw new Error(SESSION_EXPIRED)
   const res = await fetch(`${supabaseUrl}/functions/v1/discord-link`, {
     method: 'POST',
     headers: {
@@ -18,6 +20,15 @@ async function call(body: Record<string, unknown>): Promise<Record<string, unkno
     body: JSON.stringify(body),
   })
   const json = await res.json().catch(() => ({})) as Record<string, unknown>
+  if (res.status === 401) {
+    // O Supabase recusou o token: vencido (aba aberta há muito tempo, computador dormindo) ou revogado. Renova a sessão
+    // e tenta uma vez; se ainda assim recusar, a pessoa precisa entrar de novo.
+    if (!retried) {
+      const { data } = await supabase.auth.refreshSession()
+      if (data.session) return call(body, true)
+    }
+    throw new Error(SESSION_EXPIRED)
+  }
   if (!res.ok) {
     // 404 da função = ainda não publicada no Supabase
     const fallback = res.status === 404 ? 'A integração com o Discord ainda não foi publicada no servidor.' : `Erro ao falar com o Discord (status ${res.status}).`
