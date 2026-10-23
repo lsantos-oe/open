@@ -163,8 +163,61 @@ const SECTIONS: Section[] = [
         <p>Os números vêm dos dados do Open (ele informa qual métrica usou). Os <strong>retros ficam de fora</strong>, para preservar o sigilo dos cards. Ele analisa o que está carregado na sua sessão — recarregue a página antes de uma análise importante.</p>
         <p><strong>Ações:</strong> criar e editar projetos, tarefas, incidentes, clientes e contatos. Toda escrita aparece num cartão para você <strong>aprovar ou cancelar</strong> antes de executar. Dá para colar um texto, uma imagem ou um PDF (e-mail, conversa, print) e pedir que ele extraia as tarefas.</p>
         <p><strong>Histórico:</strong> as conversas ficam salvas por usuário e a última é retomada quando você abre o painel. No cabeçalho: <strong>+</strong> começa uma conversa nova, <strong>Histórico</strong> lista, abre ou apaga conversas anteriores.</p>
-        <p><strong>No Discord:</strong> com o Discord conectado no perfil (Editar perfil → Alertas no Discord), use <strong>/open</strong> seguido da mensagem para falar com o assistente — perguntas, análises e também criar ou alterar itens. Ações de escrita mostram os botões <strong>Confirmar</strong> e <strong>Cancelar</strong> (só quem pediu decide). A resposta aparece onde você usou o comando, num canal ou na mensagem direta com o bot. <strong>/open-novo</strong> começa uma conversa nova. Anexos não são aceitos pelo Discord: cole o texto.</p>
+        <p><strong>No Discord:</strong> o mesmo assistente responde ao comando <strong>/open</strong>. Veja a seção "Bot do Discord".</p>
                 <p><strong>Memória pessoal:</strong> o assistente guarda notas curtas sobre você — preferências, correções e fatos duradouros — para não recomeçar do zero, e avisa sempre que anota ou esquece algo. Você pode pedir "lembre que…" ou "esqueça isso". Veja, edite, adicione e apague tudo em <strong>Configurações → Memória do assistente</strong>. As memórias são só suas: ninguém do time as vê.</p>
+      </>
+    ),
+  },
+  {
+    id: 'discord',
+    title: 'Bot do Discord (alertas e /open)',
+    summary: 'Conecte seu Discord, receba avisos das suas tarefas e fale com o assistente com /open.',
+    icon: <ChatBubbleIcon className="w-5 h-5" />,
+    content: (
+      <>
+        <p>O bot <strong>Open</strong> no Discord faz duas coisas: manda <strong>avisos das suas tarefas</strong> por mensagem direta e responde ao comando <strong>/open</strong>, que é o assistente de IA do Open dentro do Discord. As duas coisas dependem de você <strong>conectar o seu Discord ao seu perfil</strong>.</p>
+
+        <p><strong>1. Conectar (uma vez):</strong></p>
+        <Ul>
+          <li>Entre no <strong>servidor do Discord do time</strong> e, nas configurações de privacidade do servidor, ative <strong>"Permitir mensagens diretas de membros do servidor"</strong> — sem isso o bot não consegue falar com você.</li>
+          <li>No Open, clique no seu avatar → <strong>Editar perfil</strong> → <strong>Alertas no Discord</strong>. Informe o seu <strong>@ do Discord</strong> (o nome de usuário, não o apelido) e clique em <strong>Conectar</strong>. Se o @ não for encontrado, use o ID numérico da sua conta (no Discord, com o Modo desenvolvedor ligado: clique no seu perfil → Copiar ID do usuário).</li>
+          <li>Chega uma <strong>mensagem de teste</strong> no seu Discord: é a confirmação de que tudo funciona. Cada conta do Discord só pode estar ligada a um usuário do Open. Para desligar, use <strong>Desconectar</strong> no mesmo lugar.</li>
+        </Ul>
+
+        <p><strong>2. Avisos das suas tarefas.</strong> Depois de conectar, escolha no mesmo lugar quais avisos quer receber:</p>
+        <Ul>
+          <li><strong>Tarefa atribuída a você</strong> (ou criada já com você como responsável).</li>
+          <li><strong>Tarefa sua alterada por outra pessoa</strong> — status, prazo, nome, descrição, risco, ou você ter saído da tarefa. Várias mudanças seguidas na mesma tarefa chegam juntas.</li>
+          <li><strong>Vencimento</strong>: 1 dia antes e no dia, às 8h (horário de Brasília). Tarefas concluídas e de projetos arquivados não avisam.</li>
+        </Ul>
+        <p>Você <strong>nunca é avisado do que você mesmo fez</strong>. Uma importação grande não vira dezenas de mensagens: chega um resumo com os links. Cada aviso traz o link que abre a tarefa direto no Open. Os avisos chegam em até 1 minuto.</p>
+
+        <p><strong>3. Falar com o assistente: /open.</strong> No Discord, digite <strong>/open</strong>, escolha o comando, escreva o que precisa no campo <strong>mensagem</strong> e envie. Exemplos: <em>"quais são minhas tarefas atrasadas?"</em>, <em>"como está o projeto da ACME?"</em>, <em>"cria uma tarefa solta para ligar para o cliente, prazo sexta"</em>.</p>
+        <Ul>
+          <li>É o mesmo assistente do painel do Open: consulta os dados, dá insights e cria ou altera itens <strong>como você</strong> — o que ele gravar aparece no Open com o seu nome. Ele também usa a sua <strong>memória pessoal</strong>.</li>
+          <li>O Discord mostra <strong>"pensando…"</strong> enquanto ele trabalha; a primeira resposta pode levar alguns segundos. Em seguida a mensagem é substituída pela resposta.</li>
+          <li><strong>Para escrever (criar ou mudar algo), ele pede confirmação:</strong> mostra o resumo da ação e os botões <strong>Confirmar</strong> e <strong>Cancelar</strong>. Só quem pediu pode clicar. Se você ignorar os botões e escrever outra coisa, eles deixam de valer; uma confirmação também expira em 1 hora.</li>
+          <li>A conversa é contínua: o assistente lembra do que vocês já falaram. Depois de <strong>24 horas sem uso</strong> ela recomeça sozinha. Para começar do zero a qualquer momento, use <strong>/open-novo</strong>. As conversas do Discord ficam no histórico do assistente no Open, com o título "Discord: …".</li>
+          <li>Para falar de novo, use <strong>/open</strong> a cada recado — mensagens soltas digitadas no chat do bot não são lidas.</li>
+        </Ul>
+
+        <p><strong>Onde funciona e quem vê:</strong></p>
+        <Ul>
+          <li><strong>/open</strong> funciona nos <strong>canais do servidor</strong> e na <strong>mensagem direta com o bot</strong> (você e o bot). Não funciona em grupos de mensagens diretas nem em conversas privadas entre pessoas.</li>
+          <li><strong>A resposta aparece onde você usou o comando.</strong> Num canal, ela fica visível para todo mundo que está nele — dados do Open (projetos, tarefas, nomes) incluídos. Para assuntos reservados, use a mensagem direta com o bot.</li>
+          <li>Os <strong>avisos das tarefas</strong> sempre chegam só para você, por mensagem direta.</li>
+        </Ul>
+
+        <p><strong>Limites:</strong> o Discord não aceita anexos nesse fluxo — para extrair tarefas de um e-mail, <strong>cole o texto</strong> no comando. Os retros ficam de fora do assistente, como no painel. O limite de uma mensagem do Discord é de 2.000 caracteres; respostas longas vêm em várias mensagens.</p>
+
+        <p><strong>Se algo não funcionar:</strong></p>
+        <Ul>
+          <li><em>"Seu Discord ainda não está ligado ao Open"</em> — faça o passo 1.</li>
+          <li><strong>Não chegou a mensagem de teste</strong> — confira a privacidade do servidor (passo 1) e se você está mesmo no servidor onde o bot foi instalado.</li>
+          <li><strong>O comando /open não aparece</strong> — peça a quem administra o servidor para autorizar o aplicativo com o escopo de comandos e conferir em quais canais e cargos o <strong>/open</strong> está liberado.</li>
+          <li><em>"Essa confirmação já foi respondida ou não existe mais"</em> — o botão já foi usado, expirou ou foi substituído por uma mensagem nova. Peça de novo com <strong>/open</strong>.</li>
+          <li><strong>Resposta com um aviso amarelo</strong> (⚠️) — o assistente não conseguiu concluir; tente de novo. Se repetir, avise quem cuida do Open.</li>
+        </Ul>
       </>
     ),
   },
@@ -245,14 +298,14 @@ const SECTIONS: Section[] = [
   {
     id: 'settings',
     title: 'Configurações',
-    summary: 'Idioma, feriados, templates, preferências, memória do IA, importação e alertas no Discord.',
+    summary: 'Idioma, feriados, templates, preferências, memória do IA, importação e conexão com o Discord.',
     icon: <GearIcon className="w-5 h-5" />,
     content: (
       <>
         <p>Idioma, formato de data, dias úteis, feriados, <strong>templates de projeto</strong> e de <strong>incidente</strong> (com descrição padrão) e a lista de projetos arquivados (com opção de desarquivar ou excluir da lista).</p>
         <p>A seção <strong>Preferências pessoais</strong> guarda sua aba inicial preferida ao abrir um projeto — só neste navegador.</p>
         <p><strong>Memória do assistente</strong> leva à página onde você gerencia o que o assistente de IA guarda sobre você. <strong>Importação em massa</strong> abre a importação por Excel. Admins também configuram aqui a chave do assistente de IA, compartilhada pelo time.</p>
-        <p><strong>Alertas no Discord:</strong> em <strong>Editar perfil</strong> (menu do seu avatar), informe seu @ do Discord e clique em <strong>Conectar</strong> — chega uma mensagem de teste. Depois escolha quais avisos quer receber por mensagem direta: quando uma tarefa for <strong>atribuída a você</strong> (ou criada já com você), quando <strong>outra pessoa alterar</strong> uma tarefa sua (status, prazo, nome, descrição, risco ou sua saída da tarefa) e quando uma tarefa sua <strong>vencer</strong> (1 dia antes e no dia, às 8h). Você nunca é avisado do que você mesmo fez. Para funcionar, você precisa estar no servidor do Discord do time e permitir mensagens diretas dos membros dele.</p>
+        <p><strong>Alertas no Discord:</strong> em <strong>Editar perfil</strong> (menu do seu avatar) você conecta o seu Discord e escolhe quais avisos das suas tarefas quer receber. Passo a passo na seção "Bot do Discord".</p>
       </>
     ),
   },
