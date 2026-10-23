@@ -2,7 +2,7 @@ import { useState, ReactNode } from 'react'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import {
   WalletIcon, PortfolioIcon, FolderIcon, SupportIcon, TasksIcon, GearIcon, UsersGroupIcon, GuideIcon,
-  RetroIcon, SearchIcon, NoteIcon, ChatBubbleIcon, SpreadsheetIcon,
+  RetroIcon, SearchIcon, NoteIcon, ChatBubbleIcon, SpreadsheetIcon, LinkIcon,
 } from '@/components/ui/icons'
 
 interface Section {
@@ -11,6 +11,10 @@ interface Section {
   summary: string
   icon: ReactNode
   content: ReactNode
+}
+
+function Code({ children }: { children: ReactNode }) {
+  return <code className="px-1 py-0.5 rounded text-[12px]" style={{ background: 'var(--surface-subtle)', color: 'var(--text-primary)' }}>{children}</code>
 }
 
 function Ul({ children }: { children: ReactNode }) {
@@ -180,6 +184,61 @@ const SECTIONS: Section[] = [
         </Ul>
         <p>O Open reconhece o que já existe pelo <strong>nome</strong> (sem diferenciar acento ou maiúsculas). Só um nome <em>igual</em> sugere "Atualizar"; nome apenas parecido sugere "Criar" e mostra qual é o parecido. Ao atualizar, textos novos são <strong>anexados</strong> ao que já existia — nada é sobrescrito, e nada é apagado.</p>
         <p>No modo <strong>Tudo em um arquivo</strong>, projetos, incidentes e tarefas podem apontar para clientes e projetos criados no mesmo arquivo (pelo nome). Tarefas aceitam responsável, início, fim, duração e fase.</p>
+      </>
+    ),
+  },
+  {
+    id: 'api',
+    title: 'API e conexão com o Claude (MCP)',
+    summary: 'Chave pessoal, plugin do Claude, comandos prontos e a API OData para integrações.',
+    icon: <LinkIcon className="w-5 h-5" />,
+    content: (
+      <>
+        <p>O Open tem duas portas para ferramentas e agentes de IA acessarem os mesmos dados da tela: a <strong>API OData</strong> (o mesmo padrão da API do Ploomes CRM, para integrações e scripts) e um <strong>servidor MCP</strong>, que conecta o <strong>Claude</strong> ao Open. As duas rodam no endereço do próprio Open (<Code>/api</Code>) e a <strong>documentação interativa</strong>, com todas as rotas e exemplos, fica em <Code>/api/docs</Code>.</p>
+        <p><strong>Tudo age como você.</strong> A API e o Claude usam o seu acesso: veem o que você vê, e o que gravarem aparece no Open com o <strong>seu nome</strong> — com as mesmas regras da tela (cascata de datas, etapa automática, caminho crítico, histórico), e com os mesmos avisos (notificações, menções e alertas no Discord). Cada escrita acontece numa transação só: grava tudo ou nada.</p>
+
+        <p><strong>Sua chave pessoal (User-Key):</strong> abra <Code>/api/minha-chave</Code>, entre com o seu Google do Open e clique em <strong>Mostrar</strong> ou <strong>Copiar</strong> (a chave começa com <Code>ouk_</Code>). É ela que vai no cabeçalho <Code>User-Key</Code> das chamadas. Trate como uma senha: quem tem a chave age como você. Para trocar, use <strong>Gerar nova chave</strong> na mesma página — a anterior para de valer na hora. Ali também está <strong>Desconectar apps</strong>, que revoga o acesso de todos os conectores do Claude ligados à sua conta.</p>
+
+        <p><strong>Conectar o Claude (recomendado):</strong></p>
+        <Ul>
+          <li>Instale o <strong>plugin do Open</strong> (pasta <Code>claude-plugin</Code> do repositório, compactada em .zip): no Claude, Plugins → Adicionar → fazer upload de plugin.</li>
+          <li>No plugin, aba <strong>Conectores → open → Vincular</strong>, entre com o Google do Open e clique em <strong>Permitir</strong>. Não há chave dentro do plugin: cada pessoa faz o próprio login. No Claude Code, o mesmo é <Code>/mcp</Code> → open → Authenticate.</li>
+          <li>Teste perguntando <em>"quem sou eu no Open?"</em>.</li>
+          <li>Onde funciona: Claude Code (terminal, VS Code e a aba Code do app). No <strong>chat</strong> do Claude, o conector só aparece se a organização permitir conectores personalizados (um proprietário da organização precisa adicionar o endereço do MCP).</li>
+          <li>Sem o plugin, dá para ligar o Claude Code direto com a chave: <Code>claude mcp add --transport http open https://openploo.vercel.app/api/mcp --header "User-Key: SUA_CHAVE"</Code>.</li>
+        </Ul>
+
+        <p><strong>O que dá para pedir ao Claude:</strong> consultar (suas tarefas atrasadas, o status de um projeto, a carga de trabalho do time, o que um cliente tem aberto), cadastrar (projeto a partir de um template, tarefa, incidente, ponto em aberto, ata de reunião, risco), mudar prazos (as tarefas dependentes são empurradas), mudar etapa, comentar e <strong>cadastrar várias demandas de uma vez</strong> a partir de um e-mail, ata ou planilha. O plugin traz comandos prontos:</p>
+        <Ul>
+          <li><strong>/open:minha-semana</strong> — suas tarefas atrasadas, vencendo e paradas.</li>
+          <li><strong>/open:status-projeto</strong> — status report pronto para o cliente.</li>
+          <li><strong>/open:cliente</strong> e <strong>/open:preparar-reuniao</strong> — visão 360 do cliente e pauta da reunião com pendências e riscos.</li>
+          <li><strong>/open:registrar-reuniao</strong> — ata no diário, com pontos em aberto, tarefas e riscos.</li>
+          <li><strong>/open:cadastrar-demanda</strong>, <strong>/open:novo-projeto</strong> e <strong>/open:triagem-incidente</strong> — cadastros.</li>
+          <li><strong>/open:encerrar</strong> — conclui um projeto ou incidente e trata as tarefas que ficaram abertas.</li>
+          <li><strong>/open:revisar-atrasos</strong> e <strong>/open:carga-time</strong> — atrasos por projeto e por pessoa, e carga de trabalho com sugestões.</li>
+        </Ul>
+
+        <p><strong>Segurança e cuidados:</strong></p>
+        <Ul>
+          <li><strong>Prévia antes de gravar.</strong> As ferramentas de escrita do Claude simulam primeiro (nada é gravado), mostram o resumo e só gravam depois da sua confirmação. Dá para repetir o pedido sem duplicar (chave de idempotência).</li>
+          <li>Só contas <strong>@ploomes.com</strong> ativas entram. Quem é desativado no Open perde o acesso na hora, mesmo com uma chave ou conector já ligado.</li>
+          <li>Há limite de <strong>120 requisições por minuto</strong> por pessoa (a API responde 429 e diz quando tentar de novo). Cada chamada fica registrada para auditoria (quem, quando, rota e resultado — sem o conteúdo), por 90 dias.</li>
+          <li>O que o Claude lê do Open é tratado como <strong>dado</strong>, nunca como instrução: um texto de tarefa dizendo "faça tal coisa" não vira ordem.</li>
+          <li>O time técnico tem um interruptor de <strong>somente leitura</strong>: com a escrita desligada, a API e o Claude consultam normalmente, mas gravar devolve "escrita desabilitada".</li>
+        </Ul>
+
+        <p><strong>As mesmas regras da tela:</strong> atraso não é etapa (uma tarefa em qualquer etapa pode estar atrasada); tarefas de <strong>projetos em Backlog</strong> ficam fora das listas gerais, como em Tarefas (o Claude só as traz se você pedir ou se for sobre aquele projeto); e, ao <strong>concluir um projeto ou resolver/fechar um incidente</strong>, o Claude lista as tarefas abertas e pergunta se devem ser concluídas também (Fim real = hoje, no fuso de São Paulo), como a janela de encerramento do Open.</p>
+
+        <p><strong>Para quem programa:</strong> a API segue o OData v4 em <Code>/api/odata/v1</Code>: <Code>$filter</Code>, <Code>$select</Code>, <Code>$expand</Code>, <Code>$orderby</Code>, <Code>$top</Code>/<Code>$skip</Code>, <Code>$count</Code>, <Code>$search</Code> e o método QUERY. Os conjuntos são Clients, Contacts, Projects, Phases, Tasks, Comments, Incidents, Risks, OpenPoints, Meetings, History, Users, Notifications e outros. Exemplos:</p>
+        <Ul>
+          <li>Quem sou eu: <Code>GET /Me</Code> com o cabeçalho <Code>User-Key</Code>.</li>
+          <li>Projetos em andamento com saúde: <Code>GET /Projects?$filter=Status eq 'InProgress' and not Archived&$select=Id,Name,Progress,OverdueCount,IsDelayed</Code>.</li>
+          <li>Mudar a etapa de uma tarefa: <Code>POST /Tasks(id)/Open.SetStatus</Code> com <Code>{'{"Status":"Validation"}'}</Code>.</li>
+          <li>Cadastro em lote: <Code>POST /Open.Intake</Code> — simula por padrão; repita com <Code>"DryRun": false</Code> para gravar.</li>
+          <li>Escritas aceitam <Code>Prefer: dry-run</Code> (executa e desfaz), <Code>Idempotency-Key</Code> (repetir não duplica) e <Code>If-Match</Code> (evita sobrescrever uma alteração de outra pessoa). Não há DELETE de dados de negócio.</li>
+          <li>Automações: use a chave de um usuário-robô. Admins geram com <Code>POST /api/admin/user-keys/rotate</Code> informando o e-mail.</li>
+        </Ul>
       </>
     ),
   },
