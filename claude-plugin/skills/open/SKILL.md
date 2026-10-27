@@ -1,8 +1,8 @@
 ---
 name: open
 description: >-
-  Use quando o pedido envolver o Open (openploo.vercel.app), a ferramenta de gestão do time de Onboarding/Expansão da
-  Ploomes — projetos de implantação, fases, tarefas, prazos, atrasos, baseline, incidentes de sustentação, clientes da
+  Use quando o pedido envolver o Open (openploo.vercel.app), a ferramenta de gestão do time de Operações
+  Enterprise da Ploomes — projetos de implantação, fases, tarefas, prazos, atrasos, baseline, incidentes de sustentação, clientes da
   carteira, contatos, pontos em aberto, atas, riscos, histórico, status report ou cadastro de demandas. Vale mesmo sem a
   palavra "Open": "minhas tarefas", "o que está atrasado", "status do projeto da ACME", "abre um incidente",
   "cadastra esse projeto", "quem está sobrecarregado", "prepara a reunião com o cliente".
@@ -10,7 +10,7 @@ description: >-
 
 # Open
 
-O Open é onde o time de Onboarding/Expansão da Ploomes acompanha a carteira de clientes, os projetos de implantação
+O Open é onde o time de Operações Enterprise da Ploomes acompanha a carteira de clientes, os projetos de implantação
 (fases, tarefas, marcos, reuniões, baseline, caminho crítico), os incidentes de sustentação e o diário (pontos em
 aberto, atas, histórico). As ferramentas do conector **open** leem e gravam no Open **como a própria pessoa**: mesmas
 permissões, e tudo que for gravado aparece no app com o nome dela.

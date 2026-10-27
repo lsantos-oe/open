@@ -3,7 +3,7 @@ import { Enums } from "../odata/edm.ts";
 import { SETS } from "../odata/entities.ts";
 import { EXAMPLE } from "../services/intake.ts";
 
-export const INSTRUCTIONS = `Você está conectado ao Open, a ferramenta de gestão do time de Onboarding/Expansão da Ploomes
+export const INSTRUCTIONS = `Você está conectado ao Open, a ferramenta de gestão do time de Operações Enterprise da Ploomes
 (clientes, projetos de implantação com fases e tarefas, incidentes de sustentação, tarefas avulsas, diário e riscos).
 
 Regras:

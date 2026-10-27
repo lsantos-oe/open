@@ -2,7 +2,7 @@
 // O guia abaixo vira a introdução da página (cada "##" vira uma seção navegável).
 
 export const GUIDE = `
-A **Open API** expõe o Open (gestão de clientes, projetos, tarefas e incidentes do time de Onboarding/Expansão da Ploomes)
+A **Open API** expõe o Open (gestão de clientes, projetos, tarefas e incidentes do time de Operações Enterprise da Ploomes)
 para integrações e **agentes de IA**. Ela segue o padrão **OData v4** — o mesmo da API do Ploomes CRM — e tem um
 **servidor MCP** para conectar o Claude diretamente.
 
