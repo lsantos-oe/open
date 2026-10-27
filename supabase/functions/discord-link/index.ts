@@ -73,7 +73,10 @@ Deno.serve(async (req: Request) => {
     if (error) return json({ error: error.message }, 500)
     return json({ ok: true, discord_user_id: member.id, discord_username: member.username })
   } catch (e) {
-    const msg = e instanceof DiscordError ? e.message : 'Erro inesperado ao falar com o Discord.'
+    // 401 do Discord = o token do bot (secret DISCORD_BOT_TOKEN) é inválido ou foi redefinido: não adianta a pessoa tentar de novo.
+    const msg = e instanceof DiscordError && e.status === 401
+      ? 'A integração com o Discord está com a credencial do bot inválida. Avise quem administra o Open.'
+      : e instanceof DiscordError ? e.message : 'Erro inesperado ao falar com o Discord.'
     console.error('[discord-link]', e)
     return json({ error: msg }, e instanceof DiscordError && e.status < 500 ? 502 : 500)
   }
