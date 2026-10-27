@@ -5,6 +5,8 @@
     "home": "Início",
     "contacts": "Contatos",
     "guide": "Guia",
+    "apiDocs": "API",
+    "apiDocsTooltip": "Documentação da API do Open (abre em nova aba)",
     "projects": "Projetos",
     "tasks": "Tarefas",
     "retros": "Retros",

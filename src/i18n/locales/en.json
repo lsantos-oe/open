@@ -5,6 +5,8 @@
     "home": "Home",
     "contacts": "Contacts",
     "guide": "Guide",
+    "apiDocs": "API",
+    "apiDocsTooltip": "Open API documentation (opens in a new tab)",
     "projects": "Projects",
     "tasks": "Tasks",
     "retros": "Retros",

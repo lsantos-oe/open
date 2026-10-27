@@ -5,7 +5,7 @@ import { useAppStore } from '@/store/useAppStore'
 import { useRetroStore } from '@/stores/useRetroStore'
 import { RETRO_PHASE_STYLE, formatRetroDate } from '@/utils/retro'
 import { Project, Incident } from '@/types'
-import { HomeIcon, WalletIcon, ContactsIcon, SupportIcon, PortfolioIcon, TasksIcon, GuideIcon, GearIcon, RetroIcon } from '@/components/ui/icons'
+import { HomeIcon, WalletIcon, ContactsIcon, SupportIcon, PortfolioIcon, TasksIcon, GuideIcon, GearIcon, RetroIcon, ApiIcon } from '@/components/ui/icons'
 
 const INCIDENT_STATUS_COLOR: Record<Incident['status'], string> = {
   open: 'var(--text-tertiary)',
@@ -143,6 +143,11 @@ export function Sidebar() {
           <span className="shrink-0 w-4 h-4 flex items-center justify-center"><GuideIcon /></span>
           {!collapsed && <span>{t('nav.guide')}</span>}
         </NavLink>
+        {/* Documentação da Open API (página da própria API, fora do app): abre em nova aba */}
+        <a href="/api/docs" target="_blank" rel="noopener noreferrer" className={navLinkCls({ isActive: false })} title={t('nav.apiDocsTooltip')}>
+          <span className="shrink-0 w-4 h-4 flex items-center justify-center"><ApiIcon /></span>
+          {!collapsed && <span>{t('nav.apiDocs')}</span>}
+        </a>
       </nav>
 
       {/* Divider */}
