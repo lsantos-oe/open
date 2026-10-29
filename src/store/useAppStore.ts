@@ -1,3 +1,4 @@
+import { isDocumentationName } from '@/utils/documentation'
 import { CloseOutTarget, isClosingIncidentStatus, localTodayISO, openTasksOfIncident, openTasksOfProject } from '@/utils/closeOut'
 import { normalizeEntryClients } from '@/utils/entryClients'
 import { create } from 'zustand'
@@ -117,7 +118,7 @@ const DEFAULT_TEMPLATES: ProjectTemplate[] = [
         entries: [
           { id: 'pe9', type: 'task', nameKey: 'tpl.np.e9', name: 'Treinamento', responsible: 'OE', dependsOn: ['pe5'], durationDays: 3, order: 0, subtasks: [] },
           { id: 'pe10', type: 'task', nameKey: 'tpl.np.e10', name: 'Deploy', responsible: 'Dev', dependsOn: ['pe8'], durationDays: 2, order: 1, subtasks: [] },
-          { id: 'pe11', type: 'task', nameKey: 'tpl.np.e11', name: 'Documentação', responsible: 'OE', dependsOn: ['pe5'], durationDays: 3, order: 2, subtasks: [] },
+          { id: 'pe11', type: 'task', nameKey: 'tpl.np.e11', name: 'Documentação', isDocumentation: true, responsible: 'OE', dependsOn: ['pe5'], durationDays: 3, order: 2, subtasks: [] },
           { id: 'pe12', type: 'milestone', nameKey: 'tpl.np.e12', name: 'Go live', responsible: 'OE', dependsOn: ['pe8', 'pe9', 'pe10', 'pe11'], order: 3, subtasks: [] },
         ],
       },
@@ -1217,6 +1218,8 @@ export const useAppStore = create<AppStore>()(
                 id: newId,
                 type: te.type,
                 name: te.nameKey ? i18n.t(te.nameKey, { lng: data.language }) : te.name,
+                // Templates antigos (salvos nas configurações) não trazem o marcador: o nome Documentação também vale.
+                isDocumentation: te.type === 'task' && (te.isDocumentation || isDocumentationName(te.nameKey ? i18n.t(te.nameKey, { lng: data.language }) : te.name)) ? true : undefined,
                 responsible: te.responsible,
                 dependsOn: [],
                 isCritical: false,

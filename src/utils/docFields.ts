@@ -8,6 +8,7 @@ export type DocFieldKind =
   | 'meeting.notes'
   | 'openpoint.description'
   | 'history.detail'
+  | 'documentation.body'
 
 export const DOC_FIELDS: Record<DocFieldKind, { table: string; column: string; prefix: string; field: string }> = {
   'incident.description': { table: 'incidents', column: 'description', prefix: 'incident', field: 'description' },
@@ -16,6 +17,7 @@ export const DOC_FIELDS: Record<DocFieldKind, { table: string; column: string; p
   'meeting.notes': { table: 'meeting_logs', column: 'notes', prefix: 'diary', field: 'meeting_notes' },
   'openpoint.description': { table: 'open_points', column: 'description', prefix: 'diary', field: 'op_description' },
   'history.detail': { table: 'history', column: 'detail', prefix: 'diary', field: 'history_detail' },
+  'documentation.body': { table: 'documentation_items', column: 'body', prefix: 'doc', field: 'body' },
 }
 
 export function docIdFor(kind: DocFieldKind, id: string): string {

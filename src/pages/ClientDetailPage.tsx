@@ -1,3 +1,4 @@
+import DocumentationPanel from '@/components/docs/DocumentationPanel'
 import { useState, useMemo, ReactNode } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAppStore } from '@/store/useAppStore'
@@ -27,7 +28,7 @@ const STATUS_LABEL: Record<ClientStatus, string> = {
 
 const STATUSES: ClientStatus[] = ['pre_venda', 'implantacao', 'sustentacao_novos_projetos']
 
-type Tab = 'overview' | 'contacts' | 'csHistory' | 'timeline'
+type Tab = 'overview' | 'contacts' | 'docs' | 'csHistory' | 'timeline'
 
 const EVENT_ICONS: Record<string, ReactNode> = {
   project_created: <RocketIcon className="w-4 h-4" />,
@@ -172,6 +173,7 @@ export default function ClientDetailPage() {
   const TABS: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'contacts', label: `Contatos${clientContacts.length ? ` (${clientContacts.length})` : ''}` },
+    { id: 'docs', label: 'Documentação' },
     { id: 'csHistory', label: 'Histórico de CS' },
     { id: 'timeline', label: 'Timeline' },
   ]
@@ -286,6 +288,10 @@ export default function ClientDetailPage() {
               </div>
             )}
           </div>
+        </CollapsibleSection>
+
+        <CollapsibleSection id="docs" title="Documentação" open={openSections.has('docs')} onToggle={() => toggleSection('docs')}>
+          {openSections.has('docs') && <DocumentationPanel scope={{ kind: 'client', id: client.id }} />}
         </CollapsibleSection>
 
         <CollapsibleSection id="csHistory" title="Histórico de CS" open={openSections.has('csHistory')} onToggle={() => toggleSection('csHistory')}>

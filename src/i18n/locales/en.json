@@ -181,7 +181,8 @@
     "kanban": "Kanban",
     "risks": "Risks",
     "delayLog": "Delay Log",
-    "diary": "Diary"
+    "diary": "Diary",
+    "docs": "Documentation"
   },
   "overview": {
     "notes": "Project Notes",

@@ -55,6 +55,7 @@ const HOMEPAGE_OPTIONS: { value: string; label: string }[] = [
   { value: 'plan', label: 'Plano' },
   { value: 'kanban', label: 'Kanban' },
   { value: 'diary', label: 'Diário' },
+  { value: 'docs', label: 'Documentação' },
 ]
 
 type SettingsTab = 'general' | 'holidays' | 'templates' | 'users' | 'archived'

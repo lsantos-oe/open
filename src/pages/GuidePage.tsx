@@ -31,6 +31,7 @@ const SECTIONS: Section[] = [
       <>
         <p>É a base de clientes da empresa. Cada cliente tem nome, país, link do registro no Ploomes, <strong>status</strong> (Pré-venda, Implantação ou Sustentação e novos projetos), responsáveis (CS) com o histórico de trocas, contatos e <strong>notas</strong>.</p>
         <p>As notas usam o <strong>editor de blocos</strong> (veja a seção "Editor de blocos e edição em conjunto") e podem ser editadas por várias pessoas ao mesmo tempo.</p>
+        <p>A seção <strong>Documentação</strong> do cliente reúne a documentação de <strong>todos os projetos ligados a ele</strong> (cada projeto numa subseção, com link para abri-lo) e também permite adicionar documentos <strong>direto no cliente</strong>: links, arquivos e textos, com público técnico/executivo e etiquetas, como na aba do projeto.</p>
         <p>É daqui que vêm os clientes disponíveis ao criar um projeto ou um incidente — não existe texto livre de cliente. Para cadastrar muitos de uma vez, use <strong>Importar → Clientes</strong>.</p>
         <p>Na página do cliente você vê os projetos vinculados e a linha do tempo do que aconteceu neles.</p>
       </>
@@ -54,7 +55,7 @@ const SECTIONS: Section[] = [
   {
     id: 'project',
     title: 'Página de um projeto',
-    summary: 'Overview, Plano, Tarefas (kanban), Riscos e Diário.',
+    summary: 'Overview, Plano, Tarefas (kanban), Riscos, Diário e Documentação.',
     icon: <FolderIcon className="w-5 h-5" />,
     content: (
       <>
@@ -63,6 +64,7 @@ const SECTIONS: Section[] = [
         <p>A aba <strong>Tarefas</strong> mostra o kanban do projeto (ou uma tabela). Para criar uma tarefa nova: botão <strong>+ Tarefa</strong> na barra ou <strong>duplo clique</strong> numa raia (num espaço vazio) — a tarefa já nasce no projeto e no status da raia. Arrastar um card muda o status.</p>
         <p>A aba <strong>Riscos</strong> lista os riscos do projeto com probabilidade, impacto, score, responsável, prazo e tarefas de mitigação.</p>
         <p>O <strong>Diário</strong> reúne <strong>Pontos em aberto</strong>, <strong>Reuniões</strong> (notas/ata e itens de ação, decisão e informação), <strong>Log de atrasos</strong> e <strong>Histórico</strong> do projeto, com comentários e anexos. Notas de reunião, descrição de ponto em aberto e notas do histórico também usam o editor de blocos.</p>
+        <p>A aba <strong>Documentação</strong> reúne os documentos do projeto: <strong>links</strong>, <strong>arquivos</strong> (até 25 MB) e <strong>textos</strong> (caixas de texto com o editor de blocos, que várias pessoas editam juntas). Ela se alimenta de dois lugares: o que você adicionar direto na aba (botões <strong>+ Link</strong>, <strong>+ Arquivo</strong> e <strong>+ Texto</strong>) e os <strong>links e anexos das tarefas de documentação</strong> do projeto, que aparecem aqui sozinhos — sem copiar: o conteúdo continua na tarefa, e para trocar ou remover um deles você usa a tarefa (o botão <strong>Tarefa</strong> do item abre ela). Para marcar uma tarefa como de documentação, abra a tarefa e ative <strong>Tarefa de documentação</strong> (pode haver mais de uma por projeto; a tarefa "Documentação" do template Nova Conta já vem marcada). Cada documento tem o <strong>público</strong> (<em>técnico</em>, <em>executivo</em> ou <em>técnico e executivo</em>) e <strong>etiquetas</strong> livres; use os filtros no topo para achar rápido, e <strong>Classificar</strong> para definir público e etiquetas dos itens que moram numa tarefa.</p>
         <p>Você escolhe qual aba abre primeiro em Configurações → Preferências pessoais.</p>
       </>
     ),

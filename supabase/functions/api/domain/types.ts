@@ -1,4 +1,4 @@
-// GERADO por tools/sync-domain.ts — NÃO EDITAR. Origem: src/types/index.ts (sha256 73de02094ae62e582143bb95a714d1279b7acd3c43c24842ec7369a4d4d1f8cd)
+// GERADO por tools/sync-domain.ts — NÃO EDITAR. Origem: src/types/index.ts (sha256 c398c68bdb317794c274dbd2d4a765fffc1e4fd19e71519ba9254d7099386ad6)
 export type EntryType = 'task' | 'milestone' | 'meeting'
 export type RiskFlag = 'none' | 'warning' | 'critical'
 export type EntryStatus = 'pending' | 'todo' | 'in_progress' | 'validation' | 'done' | 'blocked' | 'overdue'
@@ -77,6 +77,8 @@ export interface Entry {
   responsibleMode?: 'member' | 'free'
   owners?: EntryOwner[]
   hiddenFromPlan?: boolean
+  /** Tarefa de projeto cujos links e arquivos alimentam a aba Documentação (do projeto e do cliente). */
+  isDocumentation?: boolean
   subtasks: Entry[]
   comments: EntryComment[]
   links: Link[]
@@ -355,6 +357,8 @@ export interface TemplateEntry {
   type: EntryType
   name: string
   nameKey?: string  // i18n key resolved at project creation using project.language
+  /** Vira tarefa de documentação ao criar o projeto (também detectada pelo nome: Documentação). */
+  isDocumentation?: boolean
   responsible: string
   dependsOn: string[]
   durationDays?: number

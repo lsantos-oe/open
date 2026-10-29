@@ -76,6 +76,8 @@ export interface Entry {
   responsibleMode?: 'member' | 'free'
   owners?: EntryOwner[]
   hiddenFromPlan?: boolean
+  /** Tarefa de projeto cujos links e arquivos alimentam a aba Documentação (do projeto e do cliente). */
+  isDocumentation?: boolean
   subtasks: Entry[]
   comments: EntryComment[]
   links: Link[]
@@ -354,6 +356,8 @@ export interface TemplateEntry {
   type: EntryType
   name: string
   nameKey?: string  // i18n key resolved at project creation using project.language
+  /** Vira tarefa de documentação ao criar o projeto (também detectada pelo nome: Documentação). */
+  isDocumentation?: boolean
   responsible: string
   dependsOn: string[]
   durationDays?: number

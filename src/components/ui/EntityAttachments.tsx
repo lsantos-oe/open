@@ -3,11 +3,12 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useToastStore } from '@/stores/useToastStore'
 import { FileAttachment } from '@/types'
+import { DOC_MAX_FILE_BYTES } from '@/utils/documentation'
 import { ImageIcon, FileIcon, NoteIcon, SpreadsheetIcon, ArchiveIcon, PaperclipIcon } from '@/components/ui/icons'
 
 const BUCKET = 'project-files'
 const SIGNED_URL_TTL = 60 * 60 * 24 * 7 // 7 days
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB — keeps this "small attachments only", not a document repository
+const MAX_FILE_SIZE = DOC_MAX_FILE_BYTES // 25 MB (era 10): documentação costuma ter PDFs e apresentações maiores
 
 type EntityType = 'project' | 'incident' | 'entry'
 

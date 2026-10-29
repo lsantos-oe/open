@@ -25,9 +25,10 @@ import KanbanPage from './KanbanPage'
 import RisksPage from './RisksPage'
 import OverviewTab from './tabs/OverviewTab'
 import DiaryTab from './tabs/DiaryTab'
+import DocumentationPanel from '@/components/docs/DocumentationPanel'
 import { AnchorNav } from '@/components/ui/AnchorNav'
 
-const TAB_IDS = ['overview', 'plan', 'kanban', 'risks', 'diary'] as const
+const TAB_IDS = ['overview', 'plan', 'kanban', 'risks', 'diary', 'docs'] as const
 type TabId = typeof TAB_IDS[number]
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -611,6 +612,7 @@ export default function ProjectDetailPage() {
           <RisksPage projectId={project.id} focusRiskId={focusRiskId} onFocusConsumed={() => setFocusRiskId(null)} />
         )}
         {activeTab === 'diary' && <DiaryTab project={project} />}
+        {activeTab === 'docs' && <DocumentationPanel scope={{ kind: 'project', id: project.id }} />}
       </div>
 
       {/* ── Footer metadata bar ── */}

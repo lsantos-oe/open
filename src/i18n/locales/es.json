@@ -181,7 +181,8 @@
     "kanban": "Kanban",
     "risks": "Riesgos",
     "delayLog": "Registro de Retrasos",
-    "diary": "Diario"
+    "diary": "Diario",
+    "docs": "Documentación"
   },
   "overview": {
     "notes": "Notas del Proyecto",

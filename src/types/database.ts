@@ -195,6 +195,7 @@ export interface DbEntry {
   links: DbLink[] | null              // JSONB
   owners: any[] | null                // JSONB — EntryOwner[]
   hidden_from_plan: boolean | null
+  is_documentation?: boolean | null
   created_at: string | null
   created_by: string | null
   updated_at: string | null

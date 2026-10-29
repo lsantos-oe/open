@@ -65,6 +65,7 @@ type Form = {
   subtaskOf: string
   links: Link[]
   hiddenFromPlan: boolean
+  isDocumentation: boolean
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -103,6 +104,7 @@ function emptyForm(
     subtaskOf: parentId ?? '',
     links: [],
     hiddenFromPlan: false,
+    isDocumentation: false,
   }
 }
 
@@ -144,6 +146,7 @@ function entryToForm(entry: Entry, projectId: string, phaseId: string): Form {
     subtaskOf: '',
     links: entry.links.map((l) => ({ ...l })),
     hiddenFromPlan: entry.hiddenFromPlan ?? false,
+    isDocumentation: entry.isDocumentation ?? false,
   }
 }
 
@@ -454,6 +457,7 @@ export default function EntryModal({
       parentEntryId: form.type === 'meeting' && form.linkedParentId ? form.linkedParentId : undefined,
       links: form.links,
       hiddenFromPlan: form.hiddenFromPlan || undefined,
+      isDocumentation: (form.type === 'task' && form.isDocumentation) || undefined,
     }
   }
 
@@ -570,6 +574,7 @@ export default function EntryModal({
         durationHours: form.type === 'meeting' ? form.durationHours : undefined,
         links: form.links,
         hiddenFromPlan: form.hiddenFromPlan || undefined,
+        isDocumentation: (form.type === 'task' && form.isDocumentation) || undefined,
       })
       if (form.type === 'task') {
         if (form.plannedStart && form.plannedStart !== (entry.plannedStart ?? ''))
@@ -1011,6 +1016,24 @@ export default function EntryModal({
                     {t('entry.hiddenFromPlanHint')}
                   </p>
                 )}
+              </div>
+            </label>
+          )}
+
+          {/* Tarefa de documentação (tarefa de projeto): os links e arquivos dela alimentam a aba Documentação */}
+          {!!form.projectId && form.type === 'task' && (
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={form.isDocumentation}
+                onChange={(e) => set('isDocumentation', e.target.checked)}
+                style={{ marginTop: 2, flexShrink: 0 }}
+              />
+              <div>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>Tarefa de documentação</span>
+                <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>
+                  Os links e arquivos desta tarefa aparecem na aba Documentação do projeto e do cliente.
+                </p>
               </div>
             </label>
           )}
