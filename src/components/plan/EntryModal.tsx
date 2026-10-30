@@ -655,7 +655,7 @@ export default function EntryModal({
         onClick={mode === 'edit' ? handleSaveEdit : handleSaveCreate}
         disabled={!canSave}
       >
-        {mode === 'edit' ? t('entry.saveChanges') : t('actions.confirm')}
+        {mode === 'edit' ? t('entry.saveChanges') : t('actions.create')}
       </Button>
     </div>
   )

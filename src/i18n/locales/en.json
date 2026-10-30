@@ -856,6 +856,8 @@
     "confirm": "Confirm",
     "cancel": "Cancel",
     "save": "Save",
+    "create": "Create",
+    "apply": "Apply",
     "add": "Add",
     "remove": "Remove",
     "onlyMine": "Mine",

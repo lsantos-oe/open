@@ -338,7 +338,7 @@ export default function OpenPointsTab({ scope, openPoints, phases }: Props) {
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowAdd(false)}>{t('actions.cancel')}</Button>
-            <Button onClick={handleSaveAdd} disabled={!form.title.trim()}>{t('actions.confirm')}</Button>
+            <Button onClick={handleSaveAdd} disabled={!form.title.trim()}>{t('actions.add')}</Button>
           </>
         }
       >

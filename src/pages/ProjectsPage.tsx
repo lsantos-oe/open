@@ -633,7 +633,7 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
                     placeholder={t('project.newClient')}
                     className="flex-1"
                   />
-                  <Button type="button" size="sm" onClick={commitNewClient}>{t('actions.confirm')}</Button>
+                  <Button type="button" size="sm" onClick={commitNewClient}>{t('actions.add')}</Button>
                   <button
                     type="button"
                     onClick={() => { setIsAddingClient(false); setNewClientName('') }}
@@ -1281,7 +1281,7 @@ export default function ProjectsPage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setBulkPmOpen(false)}>{t('actions.cancel')}</Button>
-            <Button onClick={applyBulkPm} disabled={!bulkPm.trim()}>{t('actions.confirm')}</Button>
+            <Button onClick={applyBulkPm} disabled={!bulkPm.trim()}>{t('actions.apply')}</Button>
           </>
         }
       >
@@ -1298,7 +1298,7 @@ export default function ProjectsPage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setBulkClientOpen(false)}>{t('actions.cancel')}</Button>
-            <Button onClick={applyBulkClient} disabled={!bulkClientId}>{t('actions.confirm')}</Button>
+            <Button onClick={applyBulkClient} disabled={!bulkClientId}>{t('actions.apply')}</Button>
           </>
         }
       >

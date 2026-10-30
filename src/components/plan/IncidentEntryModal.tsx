@@ -239,7 +239,7 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, defa
       {mode === 'create' && <div style={{ flex: 1 }} />}
       <Button variant="secondary" onClick={onClose}>{t('actions.cancel')}</Button>
       <Button onClick={mode === 'edit' ? handleSaveEdit : handleSaveCreate} disabled={!form.name.trim() || !form.owners.some((o) => o.kind === 'executor')}>
-        {mode === 'edit' ? t('entry.saveChanges') : t('actions.confirm')}
+        {mode === 'edit' ? t('entry.saveChanges') : t('actions.create')}
       </Button>
     </div>
   )

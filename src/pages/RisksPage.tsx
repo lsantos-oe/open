@@ -203,7 +203,7 @@ function RiskPanel({ projectId, risk, riskIndex, allEntries, onClose }: RiskPane
           )}
 
           <div className="flex justify-end">
-            <Button size="sm" onClick={handleSave}>É basicamente isso</Button>
+            <Button size="sm" onClick={handleSave}>Salvar</Button>
           </div>
         </div>
 
@@ -344,7 +344,7 @@ function AddRiskModal({ projectId, allEntries, onClose }: AddRiskModalProps) {
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>{t('actions.cancel')}</Button>
-          <Button onClick={handleSave} disabled={!form.description.trim()}>{t('actions.confirm')}</Button>
+          <Button onClick={handleSave} disabled={!form.description.trim()}>{t('actions.save')}</Button>
         </>
       }
     >

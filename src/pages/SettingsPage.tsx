@@ -459,7 +459,7 @@ export default function SettingsPage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowIncidentTemplate(false)}>Cancelar</Button>
-            <Button onClick={saveIncidentTemplate} disabled={!itName.trim()}>É basicamente isso</Button>
+            <Button onClick={saveIncidentTemplate} disabled={!itName.trim()}>Salvar</Button>
           </>
         }
       >

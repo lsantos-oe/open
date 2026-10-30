@@ -303,7 +303,7 @@ export default function MeetingsTab({ projectId, meetings, phases, teamMembers }
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowAdd(false)}>{t('actions.cancel')}</Button>
-            <Button onClick={handleSaveAdd} disabled={!form.title.trim() || !form.date}>{t('actions.confirm')}</Button>
+            <Button onClick={handleSaveAdd} disabled={!form.title.trim() || !form.date}>{t('actions.add')}</Button>
           </>
         }
       >

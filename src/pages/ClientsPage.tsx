@@ -374,7 +374,7 @@ export default function ClientsPage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowAdd(false)}>{t('actions.cancel')}</Button>
-            <Button onClick={handleCreate} disabled={!name.trim()}>{t('actions.confirm')}</Button>
+            <Button onClick={handleCreate} disabled={!name.trim()}>{t('actions.create')}</Button>
           </>
         }
       >
@@ -469,7 +469,7 @@ export default function ClientsPage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setBulkOwnersOpen(false)}>{t('actions.cancel')}</Button>
-            <Button onClick={applyBulkOwners} disabled={bulkOwners.length === 0}>{t('actions.confirm')}</Button>
+            <Button onClick={applyBulkOwners} disabled={bulkOwners.length === 0}>{t('actions.apply')}</Button>
           </>
         }
       >

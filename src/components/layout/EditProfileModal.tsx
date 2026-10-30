@@ -90,7 +90,7 @@ export function EditProfileModal({ open, onClose }: Props) {
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={!name.trim() || saving}>É basicamente isso</Button>
+          <Button onClick={handleSave} disabled={!name.trim() || saving}>Salvar</Button>
         </>
       }
     >

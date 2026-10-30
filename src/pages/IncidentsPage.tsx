@@ -540,7 +540,7 @@ export default function IncidentsPage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowAdd(false)}>{t('actions.cancel')}</Button>
-            <Button onClick={handleCreate} disabled={!title.trim() || newClientIds.length === 0 || !newOwners[0]}>{t('actions.confirm')}</Button>
+            <Button onClick={handleCreate} disabled={!title.trim() || newClientIds.length === 0 || !newOwners[0]}>{t('actions.create')}</Button>
           </>
         }
       >
@@ -690,7 +690,7 @@ export default function IncidentsPage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setBulkOwnersOpen(false)}>{t('actions.cancel')}</Button>
-            <Button onClick={applyBulkOwner} disabled={!bulkOwners[0]}>{t('actions.confirm')}</Button>
+            <Button onClick={applyBulkOwner} disabled={!bulkOwners[0]}>{t('actions.apply')}</Button>
           </>
         }
       >
@@ -705,7 +705,7 @@ export default function IncidentsPage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setBulkClientOpen(false)}>{t('actions.cancel')}</Button>
-            <Button onClick={applyBulkClient} disabled={!bulkClientId}>{t('actions.confirm')}</Button>
+            <Button onClick={applyBulkClient} disabled={!bulkClientId}>{t('actions.apply')}</Button>
           </>
         }
       >

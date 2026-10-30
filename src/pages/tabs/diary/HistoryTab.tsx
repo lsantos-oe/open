@@ -185,7 +185,7 @@ export default function HistoryTab({ scope, history }: Props) {
         footer={
           <>
             <Button variant="secondary" onClick={() => setShowAddNote(false)}>{t('actions.cancel')}</Button>
-            <Button onClick={handleAddNote} disabled={!noteTitle.trim()}>{t('actions.confirm')}</Button>
+            <Button onClick={handleAddNote} disabled={!noteTitle.trim()}>{t('actions.add')}</Button>
           </>
         }
       >

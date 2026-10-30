@@ -1845,7 +1845,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
             <OwnersField owners={bulkOwners} onChange={setBulkOwners} teamMembers={directoryAsTeam} contacts={projectContacts} newContactClientIds={project.clientIds} />
             <div className="flex justify-end gap-2 mt-4">
               <button onClick={() => setBulkOwnersOpen(false)} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)]" style={{ color: 'var(--text-secondary)' }}>Cancelar</button>
-              <button onClick={applyBulkOwners} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)] text-white" style={{ background: 'var(--oe-primary)' }}>É basicamente isso</button>
+              <button onClick={applyBulkOwners} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)] text-white" style={{ background: 'var(--oe-primary)' }}>Aplicar</button>
             </div>
           </div>
         </div>
@@ -1863,7 +1863,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
             />
             <div className="flex justify-end gap-2 mt-4">
               <button onClick={() => setBulkDateOpen(false)} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)]" style={{ color: 'var(--text-secondary)' }}>Cancelar</button>
-              <button onClick={applyBulkDate} disabled={!bulkDate} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)] text-white disabled:opacity-40" style={{ background: 'var(--oe-primary)' }}>É basicamente isso</button>
+              <button onClick={applyBulkDate} disabled={!bulkDate} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)] text-white disabled:opacity-40" style={{ background: 'var(--oe-primary)' }}>Aplicar</button>
             </div>
           </div>
         </div>
@@ -1876,7 +1876,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
             <Textarea autoFocus value={bulkCommentText} onChange={(e) => setBulkCommentText(e.target.value)} rows={3} placeholder="Escreva o comentário..." />
             <div className="flex justify-end gap-2 mt-4">
               <button onClick={() => setBulkCommentOpen(false)} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)]" style={{ color: 'var(--text-secondary)' }}>Cancelar</button>
-              <button onClick={applyBulkComment} disabled={!bulkCommentText.trim()} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)] text-white disabled:opacity-40" style={{ background: 'var(--oe-primary)' }}>É basicamente isso</button>
+              <button onClick={applyBulkComment} disabled={!bulkCommentText.trim()} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)] text-white disabled:opacity-40" style={{ background: 'var(--oe-primary)' }}>Aplicar</button>
             </div>
           </div>
         </div>

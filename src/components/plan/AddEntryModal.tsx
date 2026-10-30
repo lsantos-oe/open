@@ -162,7 +162,7 @@ export default function AddEntryModal({
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>{t('actions.cancel')}</Button>
-          <Button onClick={handleSave} disabled={!form.name.trim()}>{t('actions.confirm')}</Button>
+          <Button onClick={handleSave} disabled={!form.name.trim()}>{t('actions.create')}</Button>
         </>
       }
     >

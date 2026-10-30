@@ -114,7 +114,7 @@ function ExternalLinkField({
       {editing ? (
         <div className="flex gap-2">
           <Input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="https://..." />
-          <Button size="sm" onClick={save}>É basicamente isso</Button>
+          <Button size="sm" onClick={save}>Salvar</Button>
           <Button size="sm" variant="secondary" onClick={() => setEditing(false)}>Cancelar</Button>
         </div>
       ) : value ? (
@@ -607,7 +607,7 @@ export default function OverviewTab({ project }: Props) {
         footer={
           <>
             <Button variant="secondary" onClick={() => setLinkModal(false)}>{t('actions.cancel')}</Button>
-            <Button onClick={handleAddLink} disabled={!linkForm.url}>{t('actions.confirm')}</Button>
+            <Button onClick={handleAddLink} disabled={!linkForm.url}>{t('actions.add')}</Button>
           </>
         }
       >
