@@ -172,7 +172,7 @@ export default function DashboardPage() {
             <label className="flex items-center gap-2 text-xs cursor-pointer mb-3" style={{ color: 'var(--text-tertiary)' }}>
               <input
                 type="checkbox"
-                className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]"
+                className="rounded border-[var(--border-default)] accent-[var(--text-primary)]"
                 checked={showBacklogProjectTasks}
                 onChange={(e) => setShowBacklogProjectTasks(e.target.checked)}
               />

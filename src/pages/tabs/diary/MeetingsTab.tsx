@@ -207,7 +207,7 @@ export default function MeetingsTab({ projectId, meetings, phases, teamMembers }
                           <span
                             key={p.id}
                             className="inline-flex items-center px-2 py-0.5 rounded-[var(--radius-pill)] text-xs font-medium"
-                            style={{ background: 'var(--oe-primary-light)', color: 'var(--oe-primary)' }}
+                            style={{ background: 'var(--oe-primary-light)', color: 'var(--text-secondary)' }}
                           >
                             {p.name}
                           </span>

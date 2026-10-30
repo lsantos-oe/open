@@ -298,7 +298,7 @@ export default function ClientsPage() {
                     onMouseLeave={e => (e.currentTarget.style.background = '')}
                   >
                     <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                      <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]" checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} />
+                      <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--text-primary)]" checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} />
                     </td>
                     <td className="px-4 py-3 font-medium" style={{ maxWidth: 220 }}>
                       <span className="block truncate" style={{ color: 'var(--text-primary)' }} title={c.name}>{c.name}</span>
@@ -329,10 +329,10 @@ export default function ClientsPage() {
           {STATUSES.map((s) => {
             const cards = sorted.filter((c) => c.status === s)
             return (
-              <div key={s} className="border rounded-[var(--radius-lg)] p-3 min-h-[300px]" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-subtle)' }}>
+              <div key={s} className="rounded-[var(--radius-xl)] p-3 min-h-[300px]" style={{ background: 'var(--surface-subtle)' }}>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>{STATUS_LABEL[s]}</span>
-                  <span className="rounded-[var(--radius-pill)] text-xs px-2 py-0.5 font-medium border" style={{ background: 'var(--surface-card)', color: 'var(--text-secondary)', borderColor: 'var(--border-default)' }}>
+                  <span className="rounded-[var(--radius-pill)] text-xs px-2 py-0.5 font-medium" style={{ background: 'var(--surface-card)', color: 'var(--text-secondary)' }}>
                     {cards.length}
                   </span>
                 </div>
@@ -342,15 +342,15 @@ export default function ClientsPage() {
                       key={c.id}
                       onClick={() => navigate(`/wallet/${c.id}`)}
                       role="button"
-                      className="relative w-full text-left rounded-[var(--radius-lg)] p-3 shadow-sm border hover:border-[var(--oe-primary)] hover:shadow transition-all cursor-pointer"
-                      style={{ background: 'var(--surface-card)', borderColor: 'var(--border-default)' }}
+                      className="relative w-full text-left rounded-[var(--radius-xl)] p-3 hover:shadow-[var(--shadow-sm)] transition-all cursor-pointer"
+                      style={{ background: 'var(--surface-card)' }}
                     >
                       <input
                         type="checkbox"
                         checked={selected.has(c.id)}
                         onClick={(e) => e.stopPropagation()}
                         onChange={() => toggleSelect(c.id)}
-                        className="absolute top-2 right-2 rounded border-[var(--border-default)] accent-[var(--oe-primary)]"
+                        className="absolute top-2 right-2 rounded border-[var(--border-default)] accent-[var(--text-primary)]"
                       />
                       <p className="font-medium text-sm mb-1 pr-5" style={{ color: 'var(--text-primary)' }}>{c.name}</p>
                       <p className="text-xs mb-2" style={{ color: 'var(--text-tertiary)' }}>{findCountry(c.country)?.name ?? '—'}</p>

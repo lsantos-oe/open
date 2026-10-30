@@ -256,7 +256,7 @@ const SECTIONS: Section[] = [
 
         <p><strong>Conectar o Claude (recomendado):</strong></p>
         <Ul>
-          <li><strong>Baixe o plugin do Open</strong>: <a href="/downloads/open-plugin.zip" download className="font-medium" style={{ color: 'var(--oe-primary)' }}>open-plugin.zip</a> (sem precisar abrir o repositório). Depois, no Claude: Plugins → Adicionar → fazer upload de plugin, e escolha o arquivo baixado — sem descompactar.</li>
+          <li><strong>Baixe o plugin do Open</strong>: <a href="/downloads/open-plugin.zip" download className="font-medium" style={{ color: 'var(--text-secondary)' }}>open-plugin.zip</a> (sem precisar abrir o repositório). Depois, no Claude: Plugins → Adicionar → fazer upload de plugin, e escolha o arquivo baixado — sem descompactar.</li>
           <li>No plugin, aba <strong>Conectores → open → Vincular</strong>, entre com o Google do Open e clique em <strong>Permitir</strong>. Não há chave dentro do plugin: cada pessoa faz o próprio login. No Claude Code, o mesmo é <Code>/mcp</Code> → open → Authenticate.</li>
           <li>Teste perguntando <em>"quem sou eu no Open?"</em>.</li>
           <li>Onde funciona: Claude Code (terminal, VS Code e a aba Code do app). No <strong>chat</strong> do Claude, o conector só aparece se a organização permitir conectores personalizados (um proprietário da organização precisa adicionar o endereço do MCP).</li>
@@ -343,7 +343,7 @@ export default function GuidePage() {
         <div className="flex items-center gap-2.5 mb-1.5">
           <span
             className="w-8 h-8 rounded-[var(--radius-md)] flex items-center justify-center shrink-0"
-            style={{ background: 'var(--oe-primary-light)', color: 'var(--oe-primary)' }}
+            style={{ background: 'var(--oe-primary-light)', color: 'var(--text-secondary)' }}
           >
             <GuideIcon className="w-4 h-4" />
           </span>

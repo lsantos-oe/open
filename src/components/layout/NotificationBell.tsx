@@ -69,7 +69,7 @@ export function NotificationBell() {
           <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '0.5px solid var(--border-default)' }}>
             <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Notificações</span>
             {unreadCount > 0 && (
-              <button onClick={() => markAllNotificationsRead()} className="text-xs" style={{ color: 'var(--oe-primary)' }}>
+              <button onClick={() => markAllNotificationsRead()} className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                 Marcar todas como lidas
               </button>
             )}

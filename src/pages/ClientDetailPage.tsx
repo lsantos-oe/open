@@ -91,7 +91,7 @@ export default function ClientDetailPage() {
     return (
       <div className="p-6">
         <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Cliente não encontrado.</p>
-        <Link to="/wallet" className="text-sm" style={{ color: 'var(--oe-primary)' }}>← Voltar pra Carteira</Link>
+        <Link to="/wallet" className="text-sm" style={{ color: 'var(--text-secondary)' }}>← Voltar pra Carteira</Link>
       </div>
     )
   }
@@ -235,7 +235,7 @@ export default function ClientDetailPage() {
                   <button onClick={() => { setLinkDraft(client.ploomesLink ?? ''); setEditingLink(true) }} className="text-xs" style={{ color: 'var(--text-tertiary)' }}>editar</button>
                 </div>
               ) : (
-                <button onClick={() => { setLinkDraft(''); setEditingLink(true) }} className="text-sm" style={{ color: 'var(--oe-primary)' }}>+ Adicionar link</button>
+                <button onClick={() => { setLinkDraft(''); setEditingLink(true) }} className="text-sm" style={{ color: 'var(--text-secondary)' }}>+ Adicionar link</button>
               )}
             </Field>
 
@@ -249,7 +249,7 @@ export default function ClientDetailPage() {
               ) : (
                 <div className="space-y-1">
                   {clientProjects.map((p) => (
-                    <Link key={p.id} to={`/projects/${p.id}`} className="block text-sm py-1" style={{ color: 'var(--oe-primary)' }}>
+                    <Link key={p.id} to={`/projects/${p.id}`} className="block text-sm py-1" style={{ color: 'var(--text-secondary)' }}>
                       {p.name}
                     </Link>
                   ))}
@@ -262,7 +262,7 @@ export default function ClientDetailPage() {
         {tab === 'contacts' && (<div className="max-w-5xl">
           <div>
             <div className="flex items-center justify-between mb-3">
-              <Link to="/contacts" className="text-xs" style={{ color: 'var(--oe-primary)' }}>Ver todos os contatos →</Link>
+              <Link to="/contacts" className="text-xs" style={{ color: 'var(--text-secondary)' }}>Ver todos os contatos →</Link>
               <Button size="sm" onClick={openAddContact}>{t('addBtn.contact')}</Button>
             </div>
             {clientContacts.length === 0 ? (
@@ -314,7 +314,7 @@ export default function ClientDetailPage() {
                   <div key={a.id} className="flex items-center gap-3 p-3 rounded-[var(--radius-lg)] border group" style={{ background: i === 0 ? 'var(--oe-primary-light)' : 'var(--surface-subtle)', borderColor: i === 0 ? 'var(--oe-primary-mid)' : 'var(--border-default)' }}>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                        {a.owner.name} {i === 0 && <span className="text-xs font-normal" style={{ color: 'var(--oe-primary)' }}>· atual</span>}
+                        {a.owner.name} {i === 0 && <span className="text-xs font-normal" style={{ color: 'var(--text-secondary)' }}>· atual</span>}
                       </p>
                       <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>desde {a.assignedAt}{a.note ? ` · ${a.note}` : ''}</p>
                     </div>
@@ -341,7 +341,7 @@ export default function ClientDetailPage() {
                       </div>
                       <div className="p-3 rounded-[var(--radius-lg)]" style={{ background: 'var(--surface-card)', border: '1px solid var(--border-default)' }}>
                         <div className="flex items-baseline gap-2 flex-wrap">
-                          <Link to={`/projects/${e.projectId}`} className="text-xs font-medium px-1.5 py-0.5 rounded" style={{ background: 'var(--surface-subtle)', color: 'var(--oe-primary)' }}>
+                          <Link to={`/projects/${e.projectId}`} className="text-xs font-medium px-1.5 py-0.5 rounded" style={{ background: 'var(--surface-subtle)', color: 'var(--text-secondary)' }}>
                             {e.projectName}
                           </Link>
                           <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{e.title}</span>
@@ -445,29 +445,24 @@ export default function ClientDetailPage() {
             <button
               type="button"
               onClick={() => setCsMode('directory')}
-              className={`flex-1 text-xs font-medium px-3 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${csMode === 'directory' ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}
+              className={`flex-1 text-xs font-medium px-3 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${csMode === 'directory' ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}
             >
               Usuário
             </button>
             <button
               type="button"
               onClick={() => setCsMode('text')}
-              className={`flex-1 text-xs font-medium px-3 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${csMode === 'text' ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}
+              className={`flex-1 text-xs font-medium px-3 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${csMode === 'text' ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}
             >
               Texto livre
             </button>
           </div>
           {csMode === 'directory' ? (
             <Field label="Usuário" required>
-              <select
-                value={csUserId}
-                onChange={(e) => setCsUserId(e.target.value)}
-                className="block w-full rounded-[var(--radius-md)] border px-3 py-2 text-sm focus:outline-none"
-                style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: 'var(--text-primary)' }}
-              >
+              <Select value={csUserId} onChange={(e) => setCsUserId(e.target.value)}>
                 <option value="">Selecione...</option>
                 {teamDirectory.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name ?? p.email}</option>)}
-              </select>
+              </Select>
             </Field>
           ) : (
             <Field label="Nome" required>

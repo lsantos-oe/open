@@ -104,7 +104,7 @@ export default function RetroCardItem({ card, mine, canEditText, canLink, links,
                 </span>
               )}
               {actions?.canAdd && !addingAction && (
-                <button type="button" onClick={() => setAddingAction(true)} className="text-[11px] hover:underline" style={{ color: 'var(--oe-primary)' }}>
+                <button type="button" onClick={() => setAddingAction(true)} className="text-[11px] hover:underline" style={{ color: 'var(--text-secondary)' }}>
                   {t('retro.addAction')}
                 </button>
               )}

@@ -193,7 +193,7 @@ function RiskPanel({ projectId, risk, riskIndex, allEntries, onClose }: RiskPane
                       type="checkbox"
                       checked={form.linkedEntryIds.includes(e.id)}
                       onChange={() => toggleLinked(e.id)}
-                      className="rounded border-[var(--border-default)] text-[var(--oe-primary)]"
+                      className="rounded border-[var(--border-default)] text-[var(--text-secondary)]"
                     />
                     <span className="text-sm text-[var(--text-secondary)]">{e.name}</span>
                   </label>
@@ -231,7 +231,7 @@ function RiskPanel({ projectId, risk, riskIndex, allEntries, onClose }: RiskPane
                   type="checkbox"
                   checked={task.done}
                   onChange={() => toggleActionTask(projectId, risk.id, task.id)}
-                  className="mt-0.5 rounded border-[var(--border-default)] text-[var(--oe-primary)] shrink-0"
+                  className="mt-0.5 rounded border-[var(--border-default)] text-[var(--text-secondary)] shrink-0"
                 />
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm ${task.done ? 'line-through text-[var(--text-tertiary)]' : 'text-[var(--text-secondary)]'}`}>
@@ -397,7 +397,7 @@ function AddRiskModal({ projectId, allEntries, onClose }: AddRiskModalProps) {
                     type="checkbox"
                     checked={form.linkedEntryIds.includes(e.id)}
                     onChange={() => toggleLinked(e.id)}
-                    className="rounded border-[var(--border-default)] text-[var(--oe-primary)]"
+                    className="rounded border-[var(--border-default)] text-[var(--text-secondary)]"
                   />
                   <span className="text-sm text-[var(--text-secondary)]">{e.name}</span>
                 </label>

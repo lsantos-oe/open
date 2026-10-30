@@ -13,9 +13,9 @@ export function MineToggle({ active, onClick, label }: MineToggleProps) {
     <button
       type="button"
       onClick={onClick}
-      className="h-8 px-3 text-[13px] font-medium rounded-[var(--radius-md)] transition-colors whitespace-nowrap"
+      className="h-8 px-3 text-[13px] font-medium rounded-[var(--radius-pill)] transition-colors whitespace-nowrap"
       style={active
-        ? { background: 'var(--oe-primary)', color: 'white' }
+        ? { background: 'var(--text-primary)', color: 'var(--surface-page)' }
         : { background: 'var(--surface-subtle)', color: 'var(--text-secondary)' }}
     >
       {label ?? t('actions.onlyMine')}

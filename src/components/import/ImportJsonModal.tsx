@@ -105,7 +105,7 @@ export default function ImportJsonModal({ initialTab, projectId, onClose }: Prop
               disabled={t2 === 'update' && !projectId}
               className="px-4 py-2 text-[13px] font-[500] border-b-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
-                borderBottomColor: tab === t2 ? 'var(--oe-primary)' : 'transparent',
+                borderBottomColor: tab === t2 ? 'var(--text-primary)' : 'transparent',
                 color: tab === t2 ? 'var(--text-primary)' : 'var(--text-tertiary)',
                 marginBottom: -1,
               }}
@@ -145,7 +145,7 @@ export default function ImportJsonModal({ initialTab, projectId, onClose }: Prop
               color: 'var(--text-primary)',
               lineHeight: 1.5,
             }}
-            onFocus={e => { if (!blurError) e.currentTarget.style.borderColor = 'var(--oe-primary)' }}
+            onFocus={e => { if (!blurError) e.currentTarget.style.borderColor = 'var(--text-tertiary)' }}
           />
           {blurError && (
             <p className="mt-1 text-[11px]" style={{ color: 'var(--color-danger-text)' }}>{blurError}</p>
@@ -235,7 +235,7 @@ export default function ImportJsonModal({ initialTab, projectId, onClose }: Prop
                 value="replace"
                 checked={mergeMode === 'replace'}
                 onChange={() => setMergeMode('replace')}
-                className="mt-0.5 accent-[var(--oe-primary)]"
+                className="mt-0.5 accent-[var(--text-primary)]"
               />
               <div>
                 <p className="text-[13px] text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">
@@ -253,7 +253,7 @@ export default function ImportJsonModal({ initialTab, projectId, onClose }: Prop
                 value="merge"
                 checked={mergeMode === 'merge'}
                 onChange={() => setMergeMode('merge')}
-                className="mt-0.5 accent-[var(--oe-primary)]"
+                className="mt-0.5 accent-[var(--text-primary)]"
               />
               <div>
                 <p className="text-[13px] text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">

@@ -171,7 +171,7 @@ export default function RetroDetailPage() {
             </InfoRow>
             <InfoRow label={t('retro.recording')}>
               {retro.recordingLink ? (
-                <a href={retro.recordingLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:underline" style={{ color: 'var(--oe-primary)' }}>
+                <a href={retro.recordingLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:underline" style={{ color: 'var(--text-secondary)' }}>
                   {t('retro.openRecording')} <ExternalLinkIcon className="w-3 h-3" />
                 </a>
               ) : '—'}
@@ -184,7 +184,7 @@ export default function RetroDetailPage() {
                   {previous && (
                     <div>
                       <span className="text-xs mr-1.5" style={{ color: 'var(--text-tertiary)' }}>{t('retro.previousRetro')}:</span>
-                      <Link to={`/retros/${previous.id}`} className="hover:underline" style={{ color: 'var(--oe-primary)' }}>{previous.title}</Link>
+                      <Link to={`/retros/${previous.id}`} className="hover:underline" style={{ color: 'var(--text-secondary)' }}>{previous.title}</Link>
                     </div>
                   )}
                   {followUps.length > 0 && (
@@ -193,7 +193,7 @@ export default function RetroDetailPage() {
                       {followUps.map((f, i) => (
                         <span key={f.id}>
                           {i > 0 && ', '}
-                          <Link to={`/retros/${f.id}`} className="hover:underline" style={{ color: 'var(--oe-primary)' }}>{f.title}</Link>
+                          <Link to={`/retros/${f.id}`} className="hover:underline" style={{ color: 'var(--text-secondary)' }}>{f.title}</Link>
                         </span>
                       ))}
                     </div>

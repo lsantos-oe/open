@@ -125,7 +125,7 @@ function ExternalLinkField({
           <button onClick={() => { setDraft(value); setEditing(true) }} className="text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]">editar</button>
         </div>
       ) : (
-        <button onClick={() => { setDraft(''); setEditing(true) }} className="text-sm text-[var(--oe-primary)] hover:underline">+ Adicionar link</button>
+        <button onClick={() => { setDraft(''); setEditing(true) }} className="text-sm text-[var(--text-secondary)] hover:underline">+ Adicionar link</button>
       )}
     </Field>
   )
@@ -148,7 +148,7 @@ function ReportLinkRow({ link, onDelete }: { link: ReportLink; onDelete: () => v
         <p className="text-sm text-[var(--text-primary)] truncate">{link.label}</p>
         <p className="text-[11px] text-[var(--text-tertiary)]">{fmtGeneratedAt(link.generatedAt)}</p>
       </div>
-      <button onClick={copy} className="text-xs font-medium text-[var(--oe-primary)] hover:underline shrink-0">
+      <button onClick={copy} className="text-xs font-medium text-[var(--text-secondary)] hover:underline shrink-0">
         {copied ? t('report.linkCopied') : t('report.linkCopy')}
       </button>
       <a
@@ -201,7 +201,7 @@ function EditableClientsField({
                   type="checkbox"
                   checked={draft.includes(o.id)}
                   onChange={() => toggle(o.id)}
-                  className="rounded border-[var(--border-strong)] accent-[var(--oe-primary)]"
+                  className="rounded border-[var(--border-strong)] accent-[var(--text-primary)]"
                 />
                 <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{o.label}</span>
               </label>
@@ -281,7 +281,7 @@ function EditableDevField({ project, onSave }: {
                     onClick={() => setDevType(v)}
                     className="flex-1 px-3 py-1.5 rounded-[var(--radius-md)] border text-xs font-medium"
                     style={devType === v
-                      ? { background: 'var(--oe-primary)', color: 'white', borderColor: 'var(--oe-primary)' }
+                      ? { background: 'var(--text-primary)', color: 'var(--surface-page)', borderColor: 'var(--text-primary)' }
                       : { background: 'var(--surface-card)', color: 'var(--text-secondary)', borderColor: 'var(--border-default)' }}
                   >
                     {t(`project.${v}`)}
@@ -512,7 +512,7 @@ export default function OverviewTab({ project }: Props) {
               <div className="border-t pt-4" style={{ borderColor: 'var(--border-default)' }}>
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>{t('overview.links')}</p>
-                  <button onClick={() => setLinkModal(true)} className="text-xs font-medium text-[var(--oe-primary)] hover:underline">+ {t('overview.addLink')}</button>
+                  <button onClick={() => setLinkModal(true)} className="text-xs font-medium text-[var(--text-secondary)] hover:underline">+ {t('overview.addLink')}</button>
                 </div>
                 {project.links.length === 0 ? (
                   <p className="text-sm text-[var(--text-tertiary)]">{t('overview.noLinks')}</p>
@@ -520,7 +520,7 @@ export default function OverviewTab({ project }: Props) {
                   <ul className="space-y-1.5">
                     {project.links.map((link) => (
                       <li key={link.id} className="flex items-center gap-2 group">
-                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--oe-primary)] hover:underline flex-1 truncate">
+                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--text-secondary)] hover:underline flex-1 truncate">
                           {link.label}
                         </a>
                         <button

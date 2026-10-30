@@ -10,21 +10,21 @@ const variants: Record<Variant, string> = {
   secondary: 'bg-[var(--surface-card)] text-[var(--text-secondary)] border border-[var(--border-default)] hover:bg-[var(--surface-subtle)]',
   ghost:     'text-[var(--text-tertiary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-secondary)]',
   danger:    'bg-[var(--color-danger-bg)] text-[var(--color-danger-text)] border border-[var(--border-default)] hover:bg-red-100',
-  pill:      'bg-[var(--surface-card)] text-[var(--text-secondary)] border border-[var(--border-default)] hover:text-[var(--oe-primary)] hover:border-[var(--oe-primary-mid)]',
+  pill:      'bg-[var(--surface-card)] text-[var(--text-secondary)] border border-[var(--border-default)] hover:text-[var(--text-secondary)] hover:border-[var(--oe-primary-mid)]',
 }
 
 const radii: Record<Variant, string> = {
-  primary:   'var(--radius-md)',
-  secondary: 'var(--radius-md)',
-  ghost:     'var(--radius-md)',
-  danger:    'var(--radius-md)',
+  primary:   'var(--radius-pill)',
+  secondary: 'var(--radius-pill)',
+  ghost:     'var(--radius-pill)',
+  danger:    'var(--radius-pill)',
   pill:      'var(--radius-pill)',
 }
 
 const sizes: Record<Size, string> = {
-  xs: 'px-2.5 py-[3px] text-[11px]',
-  sm: 'px-2.5 py-[5px] text-[12px]',
-  md: 'px-3.5 py-[7px] text-[13px]',
+  xs: 'px-3 py-[3px] text-[11px]',
+  sm: 'px-3.5 py-[5px] text-[12px]',
+  md: 'px-4 py-[7px] text-[13px]',
 }
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

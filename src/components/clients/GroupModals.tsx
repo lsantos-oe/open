@@ -190,7 +190,7 @@ export function GroupContactModal({ open, onClose, group }: { open: boolean; onC
       aria-pressed={mode === m}
       className="px-3 py-1.5 text-xs font-medium rounded-[var(--radius-md)] border transition-colors"
       style={mode === m
-        ? { background: 'var(--oe-primary)', color: 'white', borderColor: 'var(--oe-primary)' }
+        ? { background: 'var(--text-primary)', color: 'var(--surface-page)', borderColor: 'var(--text-primary)' }
         : { background: 'var(--surface-card)', color: 'var(--text-secondary)', borderColor: 'var(--border-default)' }}
     >{label}</button>
   )

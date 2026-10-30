@@ -11,7 +11,7 @@ const variants: Record<BadgeVariant, { bg: string; fg: string }> = {
   red:     { bg: 'var(--badge-red-bg)',    fg: 'var(--color-danger-text)' },
   yellow:  { bg: 'var(--badge-amber-bg)',  fg: 'var(--color-warning-text)' },
   violet:  { bg: 'var(--badge-violet-bg)', fg: 'var(--color-violet-text)' },
-  primary: { bg: 'var(--oe-primary-light)', fg: 'var(--oe-primary)' },
+  primary: { bg: 'var(--oe-primary-light)', fg: 'var(--text-primary)' },
   gray:    { bg: 'var(--badge-gray-bg)',   fg: 'var(--text-secondary)' },
   // nomes antigos, mantidos por compatibilidade
   orange:  { bg: 'var(--badge-gray-bg)',   fg: 'var(--text-secondary)' },

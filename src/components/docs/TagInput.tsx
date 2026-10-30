@@ -28,7 +28,7 @@ export function TagInput({ value, onChange, suggestions = [] }: Props) {
         style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', borderRadius: 'var(--radius-md)' }}
       >
         {value.map((t) => (
-          <span key={t} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-[var(--radius-pill)]" style={{ background: 'var(--oe-primary-light)', color: 'var(--oe-primary)' }}>
+          <span key={t} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-[var(--radius-pill)]" style={{ background: 'var(--oe-primary-light)', color: 'var(--text-secondary)' }}>
             {t}
             <button type="button" aria-label={`Remover ${t}`} onClick={() => onChange(value.filter((x) => x !== t))} className="leading-none hover:opacity-70">×</button>
           </span>
@@ -58,7 +58,7 @@ export function TagInput({ value, onChange, suggestions = [] }: Props) {
               key={s}
               type="button"
               onClick={() => onChange(normalizeTags([...value, s]))}
-              className="text-[11px] px-2 py-0.5 rounded-[var(--radius-pill)] border hover:border-[var(--oe-primary)]"
+              className="text-[11px] px-2 py-0.5 rounded-[var(--radius-pill)] border hover:border-[var(--text-tertiary)]"
               style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)', background: 'var(--surface-card)' }}
             >
               + {s}

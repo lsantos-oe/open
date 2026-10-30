@@ -6,7 +6,7 @@
   /* Primary — deepened accent (reforma Linear/Notion-inspired) */
   --oe-primary: #D9530E;
   --oe-primary-hover: #B8440A;
-  --oe-primary-light: #FBEAE0;
+  --oe-primary-light: rgba(28, 24, 21, 0.06);
   --oe-primary-mid: #E8905F;
 
   /* Surfaces — warm neutrals instead of pure gray */
@@ -42,16 +42,17 @@
   --color-danger-text: #D14343;
   --color-warning-bg: #FBF1DC;
   --color-warning-text: #A8790A;
-  --color-info-bg: #EAF0FC;
-  --color-info-text: #3568C4;
-  --color-violet-bg: #F5F3FF;
-  --color-violet-text: #5B21B6;
+  /* Azul e violeta saíram da interface: "em curso" é tinta (neutro forte) e o resto é cinza. */
+  --color-info-bg: rgba(28, 24, 21, 0.08);
+  --color-info-text: #2E2924;
+  --color-violet-bg: rgba(110, 102, 92, 0.12);
+  --color-violet-text: #5A5347;
   --badge-gray-bg: rgba(110, 102, 92, 0.12);
-  --badge-blue-bg: rgba(53, 104, 196, 0.12);
+  --badge-blue-bg: rgba(28, 24, 21, 0.08);
   --badge-green-bg: rgba(26, 136, 80, 0.13);
   --badge-amber-bg: rgba(168, 121, 10, 0.14);
   --badge-red-bg: rgba(209, 67, 67, 0.12);
-  --badge-violet-bg: rgba(91, 33, 182, 0.1);
+  --badge-violet-bg: rgba(110, 102, 92, 0.12);
 
   /* Radii */
   --radius-sm: 6px;
@@ -71,7 +72,7 @@
     /* Primary — brightened for dark backgrounds */
     --oe-primary: #E8642A;
     --oe-primary-hover: #F27A44;
-    --oe-primary-light: rgba(217, 83, 14, 0.18);
+    --oe-primary-light: rgba(255, 255, 255, 0.08);
     --oe-primary-mid: #C96A3E;
 
     /* Surfaces — each one step lighter, warm-tinted. Steps widened vs the
@@ -102,16 +103,16 @@
     --color-danger-text: #E5716A;
     --color-warning-bg: rgba(168, 121, 10, 0.2);
     --color-warning-text: #D6A93B;
-    --color-info-bg: rgba(53, 104, 196, 0.2);
-    --color-info-text: #6C97DE;
-    --color-violet-bg: rgba(124, 58, 237, 0.2);
-    --color-violet-text: #A78BFA;
+    --color-info-bg: rgba(255, 255, 255, 0.1);
+    --color-info-text: #EDE8E1;
+    --color-violet-bg: rgba(255, 255, 255, 0.07);
+    --color-violet-text: #B9B0A5;
     --badge-gray-bg: rgba(255, 255, 255, 0.08);
-    --badge-blue-bg: rgba(108, 151, 222, 0.16);
+    --badge-blue-bg: rgba(255, 255, 255, 0.1);
     --badge-green-bg: rgba(63, 190, 128, 0.15);
     --badge-amber-bg: rgba(214, 169, 59, 0.16);
     --badge-red-bg: rgba(229, 113, 106, 0.16);
-    --badge-violet-bg: rgba(167, 139, 250, 0.16);
+    --badge-violet-bg: rgba(255, 255, 255, 0.07);
 
     /* Shadows — darker backgrounds need stronger shadows to read */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);

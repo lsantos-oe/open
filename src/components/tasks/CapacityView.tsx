@@ -108,7 +108,7 @@ export function CapacityView({ tasks, today, onSeePerson }: Props) {
               type="number" min={1} max={50} value={limit}
               onChange={(e) => { const v = Math.round(Number(e.target.value)); if (v >= 1 && v <= 50) setLimit(v) }}
               aria-label="Limite de tarefas simultâneas por pessoa"
-              className="w-16 h-8 text-center text-[13px] rounded-[var(--radius-md)] outline-none border border-transparent focus:border-[var(--oe-primary)]"
+              className="w-16 h-8 text-center text-[13px] rounded-[var(--radius-md)] outline-none border border-transparent focus:border-[var(--text-tertiary)]"
               style={{ background: 'var(--surface-subtle)', color: 'var(--text-primary)' }}
             />
           </label>
@@ -160,7 +160,7 @@ export function CapacityView({ tasks, today, onSeePerson }: Props) {
                     )
                   })}
                   <td className="px-3 py-2.5 text-right">
-                    <button onClick={() => onSeePerson(p.key)} className="text-[12px] opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity whitespace-nowrap" style={{ color: 'var(--oe-primary)' }}>
+                    <button onClick={() => onSeePerson(p.key)} className="text-[12px] opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
                       Ver tarefas →
                     </button>
                   </td>

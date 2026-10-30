@@ -10,7 +10,7 @@
 .oe-doc ul { list-style: disc; padding-left: 20px; }
 .oe-doc ol { list-style: decimal; padding-left: 20px; }
 .oe-doc li > p { margin: 0; }
-.oe-doc a { color: var(--oe-primary); text-decoration: underline; }
+.oe-doc a { color: var(--text-primary); text-decoration: underline; }
 .oe-doc blockquote { border-left: 3px solid var(--border-default); padding-left: 10px; color: var(--text-tertiary); }
 .oe-doc code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: var(--surface-subtle); padding: 1px 4px; border-radius: 3px; }
 .oe-doc pre { background: var(--surface-subtle); padding: 8px 10px; border-radius: var(--radius-md); overflow-x: auto; }

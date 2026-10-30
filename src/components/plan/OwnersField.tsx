@@ -116,7 +116,7 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind, 
       <Avatar name={name} size={24} />
       <span className="flex-1 truncate">{name}</span>
       {role && <span className="text-[11px] shrink-0 truncate max-w-[40%]" style={{ color: 'var(--text-tertiary)' }}>{role}</span>}
-      {already && <span style={{ fontSize: 11, color: 'var(--oe-primary)' }}>✓</span>}
+      {already && <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>✓</span>}
     </button>
   )
 
@@ -181,7 +181,7 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind, 
                   if (e.key === 'Escape') setOpen(false)
                 }}
                 placeholder="Nome…"
-                className="flex-1 min-w-0 focus:outline-none focus:border-[var(--oe-primary)] text-[13px]"
+                className="flex-1 min-w-0 focus:outline-none focus:border-[var(--text-tertiary)] text-[13px]"
                 style={{ ...field, padding: '6px 10px' }}
               />
               <button
@@ -197,13 +197,13 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind, 
             <div className="space-y-1.5">
               <input autoFocus value={newContact.name} onChange={(e) => setNewContact({ ...newContact, name: e.target.value })} placeholder="Nome do contato" aria-label="Nome do contato"
                 onKeyDown={(e) => { if (e.key === 'Enter') void saveNewContact() }}
-                className="w-full focus:outline-none focus:border-[var(--oe-primary)] text-[13px]" style={{ ...field, padding: '6px 10px' }} />
+                className="w-full focus:outline-none focus:border-[var(--text-tertiary)] text-[13px]" style={{ ...field, padding: '6px 10px' }} />
               <div className="flex gap-1.5">
                 <input value={newContact.role} onChange={(e) => setNewContact({ ...newContact, role: e.target.value })} placeholder="Cargo" aria-label="Cargo"
-                  className="flex-1 min-w-0 focus:outline-none focus:border-[var(--oe-primary)] text-[13px]" style={{ ...field, padding: '6px 10px' }} />
+                  className="flex-1 min-w-0 focus:outline-none focus:border-[var(--text-tertiary)] text-[13px]" style={{ ...field, padding: '6px 10px' }} />
                 <input type="email" value={newContact.email} onChange={(e) => setNewContact({ ...newContact, email: e.target.value })} placeholder="E-mail" aria-label="E-mail"
                   onKeyDown={(e) => { if (e.key === 'Enter') void saveNewContact() }}
-                  className="flex-1 min-w-0 focus:outline-none focus:border-[var(--oe-primary)] text-[13px]" style={{ ...field, padding: '6px 10px' }} />
+                  className="flex-1 min-w-0 focus:outline-none focus:border-[var(--text-tertiary)] text-[13px]" style={{ ...field, padding: '6px 10px' }} />
               </div>
               {newContactClientIds && newContactClientIds.length > 0 && (
                 <p className="text-[11px] px-0.5" style={{ color: 'var(--text-tertiary)' }}>Fica ligado ao(s) cliente(s) deste item.</p>
@@ -223,7 +223,7 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind, 
                 onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false) }}
                 placeholder={tab === 'member' ? 'Buscar pessoa…' : 'Buscar contato…'}
                 aria-label="Buscar"
-                className="w-full mb-1.5 focus:outline-none focus:border-[var(--oe-primary)] text-[13px]"
+                className="w-full mb-1.5 focus:outline-none focus:border-[var(--text-tertiary)] text-[13px]"
                 style={{ ...field, padding: '6px 10px' }}
               />
               <div className="max-h-52 overflow-y-auto space-y-0.5">
@@ -244,7 +244,7 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind, 
                 <button
                   onClick={() => { setNewContact({ name: query.trim(), role: '', email: '' }); setCreating(true) }}
                   className={`${row} mt-1`}
-                  style={{ fontSize: 13, color: 'var(--oe-primary)' }}
+                  style={{ fontSize: 13, color: 'var(--text-secondary)' }}
                 >
                   <span className="inline-flex items-center justify-center shrink-0" style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--oe-primary-light)' }}>+</span>
                   <span>{query.trim() ? `Criar contato "${query.trim()}"` : 'Criar novo contato'}</span>

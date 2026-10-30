@@ -110,7 +110,7 @@ export default function ReportConfigModal({ projectId, onGenerate, onGenerateLin
                   value={layout}
                   checked={config.layout === layout}
                   onChange={() => setConfig(prev => ({ ...prev, layout }))}
-                  className="w-3.5 h-3.5 accent-[var(--oe-primary)]"
+                  className="w-3.5 h-3.5 accent-[var(--text-primary)]"
                 />
                 <span className="text-[13px] text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">
                   {t(`report.layout_${layout}`)}
@@ -131,7 +131,7 @@ export default function ReportConfigModal({ projectId, onGenerate, onGenerateLin
                   type="checkbox"
                   checked={config.sections[key]}
                   onChange={() => toggleSection(key)}
-                  className="w-3.5 h-3.5 rounded accent-[var(--oe-primary)]"
+                  className="w-3.5 h-3.5 rounded accent-[var(--text-primary)]"
                 />
                 <span className="text-[13px] text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">
                   {label}
@@ -157,7 +157,7 @@ export default function ReportConfigModal({ projectId, onGenerate, onGenerateLin
                     type="checkbox"
                     checked={config.planColumns[key]}
                     onChange={() => toggleColumn(key)}
-                    className="w-3.5 h-3.5 rounded accent-[var(--oe-primary)]"
+                    className="w-3.5 h-3.5 rounded accent-[var(--text-primary)]"
                   />
                   <span className="text-[13px] text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">
                     {label}

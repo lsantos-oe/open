@@ -111,7 +111,7 @@ export function Topbar() {
             className="flex items-center gap-1.5 transition-colors"
             style={{
               height: 28, padding: '0 10px', borderRadius: 'var(--radius-md)', fontSize: 12.5,
-              background: showImport ? 'var(--oe-primary)' : 'var(--surface-subtle)',
+              background: showImport ? 'var(--text-primary)' : 'var(--surface-subtle)',
               color: showImport ? 'white' : 'var(--text-secondary)',
               border: '1px solid var(--border-default)',
             }}
@@ -166,7 +166,7 @@ export function Topbar() {
             className="flex items-center justify-center transition-colors"
             style={{
               width: 28, height: 28, borderRadius: 'var(--radius-md)',
-              background: showQuickCreate ? 'var(--oe-primary)' : 'var(--surface-subtle)',
+              background: showQuickCreate ? 'var(--text-primary)' : 'var(--surface-subtle)',
               color: showQuickCreate ? 'white' : 'var(--text-secondary)',
               border: '1px solid var(--border-default)',
             }}

@@ -26,7 +26,7 @@ import { ColumnsMenu } from '@/components/ui/ColumnsMenu'
 import { SortableHeader } from '@/components/ui/SortableHeader'
 import { MultiSelect } from '@/components/ui/MultiSelect'
 import { EmptyState as SharedEmptyState } from '@/components/ui/EmptyState'
-import { Field } from '@/components/ui/Input'
+import { Field, Select } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { MineToggle } from '@/components/ui/MineToggle'
@@ -55,12 +55,12 @@ const KANBAN_COLS: { status: EntryStatus; labelKey: string }[] = [
 ]
 
 const COL_STYLE: Record<string, { header: string; bg: string }> = {
-  pending:     { header: 'var(--text-secondary)',     bg: 'var(--surface-subtle)' },
-  todo:        { header: 'var(--color-violet-text)',  bg: 'var(--color-violet-bg)' },
-  in_progress: { header: 'var(--oe-primary)',         bg: 'var(--oe-primary-light)' },
-  validation:  { header: 'var(--color-warning-text)', bg: 'var(--color-warning-bg)' },
-  done:        { header: 'var(--color-success-text)', bg: 'var(--color-success-bg)' },
-  blocked:     { header: 'var(--color-danger-text)',  bg: 'var(--color-danger-bg)' },
+  pending:     { header: 'var(--text-secondary)', bg: 'var(--surface-subtle)' },
+  todo:        { header: 'var(--text-secondary)', bg: 'var(--surface-subtle)' },
+  in_progress: { header: 'var(--text-primary)',   bg: 'var(--surface-subtle)' },
+  validation:  { header: 'var(--text-secondary)', bg: 'var(--surface-subtle)' },
+  done:        { header: 'var(--text-tertiary)',  bg: 'var(--surface-subtle)' },
+  blocked:     { header: 'var(--color-danger-text)', bg: 'var(--surface-subtle)' },
 }
 
 const COLUMNS: ColumnDef[] = [
@@ -177,11 +177,9 @@ function TaskCard({ card, onClick, ghost = false }: {
       onClick={onClick}
       style={{
         background: 'var(--surface-card)',
-        border: '0.5px solid var(--border-default)',
-        borderLeft: `3px solid ${card._scopeColor}`,
-        borderRadius: 'var(--radius-md)',
+        borderRadius: 'var(--radius-xl)',
         padding: 12,
-        boxShadow: ghost ? '0 4px 16px rgba(0,0,0,0.14)' : '0 1px 3px rgba(0,0,0,0.04)',
+        boxShadow: ghost ? '0 4px 16px rgba(0,0,0,0.14)' : undefined,
         cursor: ghost ? 'grabbing' : 'pointer',
         opacity: ghost ? 0.95 : 1,
         userSelect: 'none',
@@ -689,7 +687,7 @@ export default function TasksPage() {
     return (
       <tr className="transition-colors group" style={{ background: signalRowTint(card, today) }}>
         <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
-          <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]" checked={selected.has(card.id)} onChange={() => toggleSelect(card.id)} />
+          <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--text-primary)]" checked={selected.has(card.id)} onChange={() => toggleSelect(card.id)} />
         </td>
         <td className="px-3 py-2.5" style={{ maxWidth: 260, position: 'sticky', left: 0, background: 'inherit' }}>
           {editingCell?.id === card.id && editingCell.field === 'name' ? (
@@ -699,7 +697,7 @@ export default function TasksPage() {
               onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== card.name) patchCard(card, { name: v }); setEditingCell(null) }}
               onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setEditingCell(null) }}
               className="w-full text-sm rounded px-1.5 py-1 border"
-              style={{ borderColor: 'var(--oe-primary)', background: 'var(--surface-input)', color: 'var(--text-primary)' }}
+              style={{ borderColor: 'var(--text-tertiary)', background: 'var(--surface-input)', color: 'var(--text-primary)' }}
             />
           ) : (
             <div className="flex items-center gap-1.5">
@@ -731,18 +729,11 @@ export default function TasksPage() {
               <span className="block truncate" title={scopeLabel(card)}>{scopeLabel(card)}</span>
             ) : editingCell?.id === card.id && editingCell.field === 'origin' ? (
               card._scopeType === 'project' ? (
-                <select
-                  autoFocus
-                  defaultValue={card._phaseId}
-                  onChange={(e) => { moveEntryToPhase(card._scopeId, card._phaseId!, e.target.value, card.id); setEditingCell(null) }}
-                  onBlur={() => setEditingCell(null)}
-                  className="text-xs rounded px-1 py-0.5 border max-w-[160px]"
-                  style={{ borderColor: 'var(--oe-primary)' }}
-                >
+                <Select autoFocus defaultValue={card._phaseId} onChange={(e) => { moveEntryToPhase(card._scopeId, card._phaseId!, e.target.value, card.id); setEditingCell(null) }} onBlur={() => setEditingCell(null)} className="!py-1.5">
                   {(projects.find((p) => p.id === card._scopeId)?.phases ?? [])
                     .filter((ph) => !ph.isUnassigned)
                     .map((ph) => <option key={ph.id} value={ph.id}>{ph.name}</option>)}
-                </select>
+                </Select>
               ) : (
                 <div className="min-w-[160px]" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null) && !document.querySelector('[data-oe-nested-popover]')) setEditingCell(null) }}>
                   <MultiSelect
@@ -750,7 +741,7 @@ export default function TasksPage() {
                     onChange={(ids) => updateStandaloneTask(card.id, { clientIds: ids })}
                     options={[...clients].sort((a, b) => a.name.localeCompare(b.name)).map((c) => ({ id: c.id, label: c.name }))}
                     placeholder="— Sem cliente —"
-                    className="flex items-center justify-between gap-2 w-full border border-[var(--oe-primary)] bg-[var(--surface-input)] px-2 py-0.5 text-xs text-left rounded"
+                    className="flex items-center justify-between gap-2 w-full border border-[var(--text-tertiary)] bg-[var(--surface-input)] px-2 py-0.5 text-xs text-left rounded"
                   />
                 </div>
               )
@@ -805,7 +796,7 @@ export default function TasksPage() {
                 defaultValue={card.plannedEnd ?? ''}
                 onBlur={(e) => { if (e.target.value) changeCardDate(card, 'plannedEnd', e.target.value); setEditingCell(null) }}
                 className="text-xs rounded px-1 py-0.5 border"
-                style={{ borderColor: 'var(--oe-primary)' }}
+                style={{ borderColor: 'var(--text-tertiary)' }}
               />
             ) : (
               <span
@@ -822,9 +813,9 @@ export default function TasksPage() {
           <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)' }} onClick={(e) => e.stopPropagation()}>
             {!isEditableType ? '—' : editingCell?.id === card.id && editingCell.field === 'actual' ? (
               <div className="flex items-center gap-1">
-                <input type="date" defaultValue={card.actualStart ?? ''} onBlur={(e) => { if (e.target.value) changeCardDate(card, 'actualStart', e.target.value) }} className="text-xs rounded px-1 py-0.5 border" style={{ borderColor: 'var(--oe-primary)', width: 112 }} title="Início real" />
+                <input type="date" defaultValue={card.actualStart ?? ''} onBlur={(e) => { if (e.target.value) changeCardDate(card, 'actualStart', e.target.value) }} className="text-xs rounded px-1 py-0.5 border" style={{ borderColor: 'var(--text-tertiary)', width: 112 }} title="Início real" />
                 <span style={{ color: 'var(--text-disabled)' }}>→</span>
-                <input type="date" defaultValue={card.actualEnd ?? ''} onBlur={(e) => { if (e.target.value) changeCardDate(card, 'actualEnd', e.target.value) }} className="text-xs rounded px-1 py-0.5 border" style={{ borderColor: 'var(--oe-primary)', width: 112 }} title="Fim real" />
+                <input type="date" defaultValue={card.actualEnd ?? ''} onBlur={(e) => { if (e.target.value) changeCardDate(card, 'actualEnd', e.target.value) }} className="text-xs rounded px-1 py-0.5 border" style={{ borderColor: 'var(--text-tertiary)', width: 112 }} title="Fim real" />
                 <button onClick={() => setEditingCell(null)} style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }} aria-label="Concluir edição">×</button>
               </div>
             ) : (
@@ -876,45 +867,27 @@ export default function TasksPage() {
           label="Incluir projetos em backlog"
         />
         {view !== 'capacity' && (
-          <select
-            value={dateSortMode}
-            onChange={(e) => setDateSortMode(e.target.value as typeof dateSortMode)}
-            className="text-xs rounded-[var(--radius-md)] px-2 py-1.5 border"
-            style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)', color: 'var(--text-secondary)' }}
-            aria-label="Ordenar por data"
-          >
+          <Select value={dateSortMode} onChange={(e) => setDateSortMode(e.target.value as typeof dateSortMode)} aria-label="Ordenar por data" className="!py-1.5">
             <option value="none">Sem ordenar por data</option>
             <option value="task">Ordenar por data da tarefa</option>
             <option value="parent">Ordenar por data do projeto/incidente</option>
-          </select>
+          </Select>
         )}
         <div style={{ flex: 1 }} />
 
         {view === 'table' && (
           <>
-            <select
-              value={groupBy}
-              onChange={(e) => setGroupBy(e.target.value as typeof groupBy)}
-              className="text-xs rounded-[var(--radius-md)] px-2 py-1.5 border"
-              style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)', color: 'var(--text-secondary)' }}
-              aria-label="Agrupar por"
-            >
+            <Select value={groupBy} onChange={(e) => setGroupBy(e.target.value as typeof groupBy)} aria-label="Agrupar por" className="!py-1.5">
               <option value="responsible">Agrupar por responsável</option>
               <option value="origin">Agrupar por origem</option>
               <option value="none">Sem agrupamento</option>
-            </select>
+            </Select>
             {groupBy === 'responsible' && (
-              <select
-                value={responsibleRole}
-                onChange={(e) => setResponsibleRole(e.target.value as typeof responsibleRole)}
-                className="text-xs rounded-[var(--radius-md)] px-2 py-1.5 border"
-                style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)', color: 'var(--text-secondary)' }}
-                aria-label="Papel considerado no agrupamento"
-              >
+              <Select value={responsibleRole} onChange={(e) => setResponsibleRole(e.target.value as typeof responsibleRole)} aria-label="Papel considerado no agrupamento" className="!py-1.5">
                 <option value="executor">Executor</option>
                 <option value="validator">Validador</option>
                 <option value="both">Ambos</option>
-              </select>
+              </Select>
             )}
             <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />
           </>
@@ -965,7 +938,7 @@ export default function TasksPage() {
           <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
             <input
               type="checkbox"
-              className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]"
+              className="rounded border-[var(--border-default)] accent-[var(--text-primary)]"
               checked={onlyOverdue}
               onChange={(e) => setOnlyOverdue(e.target.checked)}
             />
@@ -1131,15 +1104,10 @@ export default function TasksPage() {
       )}
 
       <SelectionBar count={selected.size} onClear={() => setSelected(new Set())}>
-        <select
-          onChange={(e) => { if (e.target.value) applyBulkStatus(e.target.value as EntryStatus) }}
-          value=""
-          className="text-xs rounded-[var(--radius-md)] px-2 py-1"
-          style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
-        >
+        <Select onChange={(e) => { if (e.target.value) applyBulkStatus(e.target.value as EntryStatus) }} value="" className="!py-1.5">
           <option value="" disabled>Alterar status...</option>
           {KANBAN_COLS.map((col) => <option key={col.status} value={col.status}>{t(col.labelKey as any)}</option>)}
-        </select>
+        </Select>
         <button
           onClick={() => { setBulkOwners([]); setBulkOwnersOpen(true) }}
           className="text-xs px-2 py-1 rounded-[var(--radius-md)]"

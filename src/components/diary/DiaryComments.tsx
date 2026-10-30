@@ -105,7 +105,7 @@ export default function DiaryComments({ scope, parentType, parentId, comments }:
           onClick={() => setAdding(true)}
           className="mt-2 text-xs"
           style={{ color: 'var(--text-tertiary)' }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--oe-primary)')}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
           onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}
         >
           + {t('diary.addComment')}

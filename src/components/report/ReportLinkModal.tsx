@@ -97,7 +97,7 @@ export default function ReportLinkModal({ project, settings, config, onClose }: 
             target="_blank"
             rel="noreferrer"
             className="text-[12px] underline inline-block"
-            style={{ color: 'var(--oe-primary)' }}
+            style={{ color: 'var(--text-secondary)' }}
           >
             {t('report.linkOpen')} ↗
           </a>
@@ -135,7 +135,7 @@ export default function ReportLinkModal({ project, settings, config, onClose }: 
                     name="target"
                     checked={target === 'new'}
                     onChange={() => selectTarget('new')}
-                    className="w-3.5 h-3.5 accent-[var(--oe-primary)]"
+                    className="w-3.5 h-3.5 accent-[var(--text-primary)]"
                   />
                   <span className="text-[13px] text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">
                     {t('report.linkNew')}
@@ -149,7 +149,7 @@ export default function ReportLinkModal({ project, settings, config, onClose }: 
                     name="target"
                     checked={target === l.id}
                     onChange={() => selectTarget(l.id)}
-                    className="w-3.5 h-3.5 accent-[var(--oe-primary)]"
+                    className="w-3.5 h-3.5 accent-[var(--text-primary)]"
                   />
                   <span className="text-[13px] text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">
                     {t('report.linkOverwrite')}: {l.label}{' '}

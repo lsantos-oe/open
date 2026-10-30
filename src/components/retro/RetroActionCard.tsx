@@ -42,7 +42,7 @@ export default function RetroActionCard({ card, subActions, links, addresses, co
       tabIndex={0}
       onClick={() => onOpen(card.id)}
       onKeyDown={(e) => { if (e.key === 'Enter') onOpen(card.id) }}
-      className="p-2.5 text-[13px] rounded-[var(--radius-md)] border cursor-pointer hover:border-[var(--oe-primary)] transition-colors"
+      className="p-2.5 text-[13px] rounded-[var(--radius-md)] border cursor-pointer hover:border-[var(--text-tertiary)] transition-colors"
       style={{ background: 'var(--surface-card)', borderColor: 'var(--border-default)', color: 'var(--text-primary)', opacity: faded ? 0.75 : 1 }}
     >
       <div className="flex items-start justify-between gap-2">

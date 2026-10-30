@@ -47,10 +47,10 @@ const STATUS_COLOR: Record<ProjectStatus, string> = {
 const KANBAN_STATUSES: ProjectStatus[] = ['backlog', 'planning', 'in_progress', 'done']
 
 const KANBAN_BG: Record<ProjectStatus, string> = {
-  backlog: 'bg-[var(--surface-page)] border-dashed border-[var(--border-default)]',
-  planning: 'bg-[var(--surface-subtle)] border-[var(--border-default)]',
-  in_progress: 'bg-[var(--color-info-bg)] border-[var(--border-default)]',
-  done: 'bg-[var(--color-success-bg)] border-[var(--border-default)]',
+  backlog: 'bg-[var(--surface-subtle)]',
+  planning: 'bg-[var(--surface-subtle)]',
+  in_progress: 'bg-[var(--surface-subtle)]',
+  done: 'bg-[var(--surface-subtle)]',
 }
 
 const COLUMNS: ColumnDef[] = [
@@ -149,7 +149,7 @@ function FilterBar({ filters, setFilters, clients, pms }: FilterBarProps) {
               key={v}
               onClick={() => setFilters({ ...filters, type: v })}
               className={`flex-1 px-2 py-1.5 text-xs font-medium transition-colors ${
-                filters.type === v ? 'bg-[var(--oe-primary)] text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'
+                filters.type === v ? 'bg-[var(--text-primary)] text-[var(--surface-page)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'
               }`}
             >
               {l}
@@ -165,7 +165,7 @@ function FilterBar({ filters, setFilters, clients, pms }: FilterBarProps) {
               key={v}
               onClick={() => setFilters({ ...filters, dev: v })}
               className={`flex-1 px-2 py-1.5 text-xs font-medium transition-colors ${
-                filters.dev === v ? 'bg-[var(--oe-primary)] text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'
+                filters.dev === v ? 'bg-[var(--text-primary)] text-[var(--surface-page)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'
               }`}
             >
               {l}
@@ -249,7 +249,7 @@ function ListView({ projects, holidays, onOpen, selected, onToggle, sortField, s
                 className={`transition-colors ${isArchived ? 'opacity-60 cursor-default' : 'hover:bg-[var(--surface-subtle)] cursor-pointer'}`}
               >
                 <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                  <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]" checked={selected.has(p.id)} onChange={() => onToggle(p.id)} />
+                  <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--text-primary)]" checked={selected.has(p.id)} onChange={() => onToggle(p.id)} />
                 </td>
                 <td className="px-4 py-3" style={{ maxWidth: 240 }}>
                   <div className="flex items-center gap-2 min-w-0">
@@ -334,7 +334,7 @@ function KanbanView({ projects, holidays, onOpen, selected, onToggle, onCreate }
             key={status}
             onDoubleClick={(e) => { if (!(e.target as HTMLElement).closest('[role="button"], button, a, input, select, textarea')) onCreate(status) }}
             title={t('plan.dblClickToAdd')}
-            className={`border ${KANBAN_BG[status]} rounded-[var(--radius-lg)] p-3 min-h-[300px] select-none`}
+            className={`${KANBAN_BG[status]} rounded-[var(--radius-xl)] p-3 min-h-[300px] select-none`}
           >
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">{t(`project.${status}`)}</span>
@@ -352,14 +352,14 @@ function KanbanView({ projects, holidays, onOpen, selected, onToggle, onCreate }
                     key={p.id}
                     onClick={() => onOpen(p.id)}
                     role="button"
-                    className="relative w-full text-left bg-[var(--surface-card)] rounded-[var(--radius-lg)] p-3 shadow-sm border border-[var(--border-default)] hover:border-[var(--oe-primary)] hover:shadow transition-all cursor-pointer"
+                    className="relative w-full text-left bg-[var(--surface-card)] rounded-[var(--radius-lg)] p-3 shadow-sm border border-[var(--border-default)] hover:border-[var(--text-tertiary)] hover:shadow transition-all cursor-pointer"
                   >
                     <input
                       type="checkbox"
                       checked={selected.has(p.id)}
                       onClick={(e) => e.stopPropagation()}
                       onChange={() => onToggle(p.id)}
-                      className="absolute top-2 right-2 rounded border-[var(--border-default)] accent-[var(--oe-primary)]"
+                      className="absolute top-2 right-2 rounded border-[var(--border-default)] accent-[var(--text-primary)]"
                     />
                     <p className="font-medium text-[var(--text-primary)] text-sm mb-1 line-clamp-2 pr-5">{p.name}</p>
                     <p className="text-xs text-[var(--text-tertiary)] mb-2">{p.client}</p>
@@ -518,16 +518,16 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
                   onClick={() => { setBlank(false); setSelectedType(tpl.type) }}
                   className={`text-left p-4 rounded-[var(--radius-lg)] border-2 transition-all ${
                     isActive
-                      ? 'border-[var(--oe-primary)] bg-[var(--color-info-bg)]'
-                      : 'border-[var(--border-default)] hover:border-[var(--oe-primary)] bg-[var(--surface-card)]'
+                      ? 'border-[var(--text-tertiary)] bg-[var(--color-info-bg)]'
+                      : 'border-[var(--border-default)] hover:border-[var(--text-tertiary)] bg-[var(--surface-card)]'
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`w-8 h-8 rounded-[var(--radius-lg)] flex items-center justify-center text-sm shrink-0 ${isActive ? 'bg-[var(--oe-primary)] text-white' : 'bg-[var(--surface-subtle)] text-[var(--text-tertiary)]'}`}>
+                    <div className={`w-8 h-8 rounded-[var(--radius-lg)] flex items-center justify-center text-sm shrink-0 ${isActive ? 'bg-[var(--text-primary)] text-[var(--surface-page)]' : 'bg-[var(--surface-subtle)] text-[var(--text-tertiary)]'}`}>
                       {tpl.type === 'nova_conta' ? '🏢' : '🔧'}
                     </div>
                     <div>
-                      <p className={`font-semibold text-sm ${isActive ? 'text-[var(--oe-primary)]' : 'text-[var(--text-secondary)]'}`}>
+                      <p className={`font-semibold text-sm ${isActive ? 'text-[var(--text-secondary)]' : 'text-[var(--text-secondary)]'}`}>
                         {t(`project.${tpl.type}`)}
                       </p>
                       <p className="text-xs text-[var(--text-tertiary)] mt-0.5">
@@ -551,16 +551,16 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
               onClick={() => setBlank(true)}
               className={`text-left p-4 rounded-[var(--radius-lg)] border-2 transition-all col-span-2 ${
                 blank
-                  ? 'border-[var(--oe-primary)] bg-[var(--color-info-bg)]'
-                  : 'border-[var(--border-default)] hover:border-[var(--oe-primary)] bg-[var(--surface-card)]'
+                  ? 'border-[var(--text-tertiary)] bg-[var(--color-info-bg)]'
+                  : 'border-[var(--border-default)] hover:border-[var(--text-tertiary)] bg-[var(--surface-card)]'
               }`}
             >
               <div className="flex items-start gap-3">
-                <div className={`w-8 h-8 rounded-[var(--radius-lg)] flex items-center justify-center text-sm shrink-0 ${blank ? 'bg-[var(--oe-primary)] text-white' : 'bg-[var(--surface-subtle)] text-[var(--text-tertiary)]'}`}>
+                <div className={`w-8 h-8 rounded-[var(--radius-lg)] flex items-center justify-center text-sm shrink-0 ${blank ? 'bg-[var(--text-primary)] text-[var(--surface-page)]' : 'bg-[var(--surface-subtle)] text-[var(--text-tertiary)]'}`}>
                   ＋
                 </div>
                 <div>
-                  <p className={`font-semibold text-sm ${blank ? 'text-[var(--oe-primary)]' : 'text-[var(--text-secondary)]'}`}>{t('project.blankTemplate')}</p>
+                  <p className={`font-semibold text-sm ${blank ? 'text-[var(--text-secondary)]' : 'text-[var(--text-secondary)]'}`}>{t('project.blankTemplate')}</p>
                   <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{t('project.blankTemplateHint')}</p>
                 </div>
               </div>
@@ -578,7 +578,7 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
                   style={{
                     borderColor: selectedType === ty ? 'var(--oe-primary)' : 'var(--border-default)',
                     background: selectedType === ty ? 'var(--color-info-bg)' : 'transparent',
-                    color: selectedType === ty ? 'var(--oe-primary)' : 'var(--text-secondary)',
+                    color: selectedType === ty ? 'var(--text-primary)' : 'var(--text-secondary)',
                   }}
                 >
                   {t(`project.${ty}`)}
@@ -617,7 +617,7 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
                         type="checkbox"
                         checked={clientIds.includes(c.id)}
                         onChange={() => toggleClient(c.id)}
-                        className="rounded border-[var(--border-strong)] accent-[var(--oe-primary)]"
+                        className="rounded border-[var(--border-strong)] accent-[var(--text-primary)]"
                       />
                       <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{c.name}</span>
                     </label>
@@ -644,7 +644,7 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
                 <button
                   type="button"
                   onClick={() => setIsAddingClient(true)}
-                  className="text-xs font-medium text-[var(--oe-primary)] hover:underline mt-1.5"
+                  className="text-xs font-medium text-[var(--text-secondary)] hover:underline mt-1.5"
                 >
                   + {t('project.newClient')}
                 </button>
@@ -665,14 +665,10 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
 
             {/* Líder */}
             <Field label={t('project.pm')} required>
-              <select
-                value={pmMemberId}
-                onChange={(e) => setPmMemberId(e.target.value)}
-                className={`block w-full rounded-[var(--radius-md)] border bg-[var(--surface-input)] text-[var(--text-primary)] px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] ${errors.pm ? 'border-red-400' : 'border-[var(--border-default)]'}`}
-              >
+              <Select value={pmMemberId} onChange={(e) => setPmMemberId(e.target.value)}>
                 <option value="">{t('project.pmPlaceholder')}</option>
                 {teamMembers.map((m) => <option key={m.id} value={m.userId ?? ''}>{m.name}</option>)}
-              </select>
+              </Select>
               {errors.pm && <p className="text-xs text-[var(--color-danger-text)] mt-1">{errors.pm}</p>}
             </Field>
 
@@ -685,7 +681,7 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
                     type="button"
                     onClick={() => setLanguage(l)}
                     className={`flex-1 py-2 text-xs font-medium rounded-[var(--radius-md)] border transition-colors ${
-                      language === l ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--oe-primary)]'
+                      language === l ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--text-tertiary)]'
                     }`}
                   >
                     {label}
@@ -706,7 +702,7 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
             <button
               type="button"
               onClick={() => setHasDev((v) => !v)}
-              className={`relative w-11 h-6 rounded-[var(--radius-pill)] transition-colors ${hasDev ? 'bg-[var(--oe-primary)]' : 'bg-[var(--border-default)]'}`}
+              className={`relative w-11 h-6 rounded-[var(--radius-pill)] transition-colors ${hasDev ? 'bg-[var(--text-primary)]' : 'bg-[var(--border-default)]'}`}
             >
               <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-[var(--radius-pill)] shadow transition-transform ${hasDev ? 'translate-x-5' : ''}`} />
             </button>
@@ -723,7 +719,7 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
                       type="button"
                       onClick={() => setDevType(v)}
                       className={`flex-1 py-1.5 text-xs font-medium rounded-[var(--radius-md)] border transition-colors ${
-                        devType === v ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--oe-primary)]'
+                        devType === v ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--text-tertiary)]'
                       }`}
                     >
                       {t(`project.${v}`)}
@@ -734,14 +730,10 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
 
               {/* Dev lead */}
               <Field label={t('project.devLead')}>
-                <select
-                  value={devLeadMemberId}
-                  onChange={(e) => setDevLeadMemberId(e.target.value)}
-                  className="block w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-input)] text-[var(--text-primary)] px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)]"
-                >
+                <Select value={devLeadMemberId} onChange={(e) => setDevLeadMemberId(e.target.value)}>
                   <option value="">{t('project.devLeadPlaceholder')}</option>
                   {teamMembers.map((m) => <option key={m.id} value={m.userId ?? ''}>{m.name}</option>)}
-                </select>
+                </Select>
               </Field>
 
               {devType === 'integration' && (
@@ -869,7 +861,7 @@ function PmoDashboard({ projects, clients, holidays }: { projects: Project[]; cl
               <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Nenhum cliente cadastrado.</p>
             ) : activeClients.map((c) => (
               <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                <input type="checkbox" className="accent-[var(--oe-primary)]" checked={clientIds.has(c.id)} onChange={() => toggleClientId(c.id)} />
+                <input type="checkbox" className="accent-[var(--text-primary)]" checked={clientIds.has(c.id)} onChange={() => toggleClientId(c.id)} />
                 {c.name}
               </label>
             ))}
@@ -950,7 +942,7 @@ function PmoDashboard({ projects, clients, holidays }: { projects: Project[]; cl
             <ul className="space-y-1">
               {withoutBaseline.slice(0, 6).map((p) => (
                 <li key={p.id}>
-                  <button className="text-xs hover:underline text-left" style={{ color: 'var(--oe-primary)' }} onClick={() => navigate(`/projects/${p.id}`)}>
+                  <button className="text-xs hover:underline text-left" style={{ color: 'var(--text-secondary)' }} onClick={() => navigate(`/projects/${p.id}`)}>
                     {p.name} <span style={{ color: 'var(--text-tertiary)' }}>· {p.client}</span>
                   </button>
                 </li>
@@ -968,7 +960,7 @@ function PmoDashboard({ projects, clients, holidays }: { projects: Project[]; cl
             <ul className="space-y-1">
               {upcomingGoLives.slice(0, 6).map(({ project, date }) => (
                 <li key={project.id} className="flex items-center justify-between">
-                  <button className="text-xs hover:underline text-left" style={{ color: 'var(--oe-primary)' }} onClick={() => navigate(`/projects/${project.id}`)}>
+                  <button className="text-xs hover:underline text-left" style={{ color: 'var(--text-secondary)' }} onClick={() => navigate(`/projects/${project.id}`)}>
                     {project.name} <span style={{ color: 'var(--text-tertiary)' }}>· {project.client}</span>
                   </button>
                   <span className="text-xs shrink-0 ml-2" style={{ color: 'var(--text-secondary)' }}>{date.split('-').reverse().join('/')}</span>
@@ -1247,15 +1239,10 @@ export default function ProjectsPage() {
         >
           Arquivar
         </button>
-        <select
-          onChange={(e) => { if (e.target.value) applyBulkStatus(e.target.value as ProjectStatus) }}
-          value=""
-          className="text-xs rounded-[var(--radius-md)] px-2 py-1"
-          style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
-        >
+        <Select onChange={(e) => { if (e.target.value) applyBulkStatus(e.target.value as ProjectStatus) }} value="" className="!py-1.5">
           <option value="" disabled>Alterar status...</option>
           {KANBAN_STATUSES.map((s) => <option key={s} value={s}>{t(`project.${s}`)}</option>)}
-        </select>
+        </Select>
         <button
           onClick={() => { setBulkPm(''); setBulkPmOpen(true) }}
           className="text-xs px-2 py-1 rounded-[var(--radius-md)]"

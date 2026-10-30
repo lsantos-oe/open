@@ -177,8 +177,8 @@ export default function AddEntryModal({
                 onClick={() => set('type', type)}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[var(--radius-lg)] border-2 text-sm font-medium transition-colors ${
                   form.type === type
-                    ? 'border-[var(--oe-primary)] bg-[var(--color-info-bg)] text-[var(--color-info-text)]'
-                    : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[var(--oe-primary)]'
+                    ? 'border-[var(--text-tertiary)] bg-[var(--color-info-bg)] text-[var(--color-info-text)]'
+                    : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[var(--text-tertiary)]'
                 }`}
               >
                 <span>{TYPE_ICONS[type]}</span>
@@ -286,7 +286,7 @@ export default function AddEntryModal({
                     type="checkbox"
                     checked={form.dependsOn.includes(dep.id)}
                     onChange={() => toggleDep(dep.id)}
-                    className="rounded border-[var(--border-default)] text-[var(--oe-primary)]"
+                    className="rounded border-[var(--border-default)] text-[var(--text-secondary)]"
                   />
                   <span className="text-xs text-[var(--text-tertiary)] shrink-0">{dep.phaseName}</span>
                   <span className="text-sm text-[var(--text-secondary)]">{dep.name}</span>

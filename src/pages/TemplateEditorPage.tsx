@@ -135,7 +135,7 @@ function EntryModal({ entry, allDeps, depGraph, onSave, onClose }: EntryModalPro
               onClick={() => setForm((f) => ({ ...f, type: t }))}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[var(--radius-lg)] border-2 text-sm font-medium transition-colors ${
                 form.type === t
-                  ? 'border-[var(--oe-primary)] bg-[var(--oe-primary-light)] text-[var(--oe-primary)]'
+                  ? 'border-[var(--text-tertiary)] bg-[var(--oe-primary-light)] text-[var(--text-secondary)]'
                   : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[var(--border-strong)]'
               }`}
             >
@@ -190,7 +190,7 @@ function EntryModal({ entry, allDeps, depGraph, onSave, onClose }: EntryModalPro
                     type="checkbox"
                     checked={form.dependsOn.includes(dep.id)}
                     onChange={() => toggleDep(dep.id)}
-                    className="rounded border-[var(--border-strong)] accent-[var(--oe-primary)]"
+                    className="rounded border-[var(--border-strong)] accent-[var(--text-primary)]"
                   />
                   <span className="text-xs text-[var(--text-tertiary)] shrink-0">{dep.phaseName}</span>
                   <span className="text-sm text-[var(--text-secondary)]">{dep.name}</span>
@@ -246,7 +246,7 @@ function SortableEntryRow({ entry, allDeps, onEdit, onDelete }: SortableEntryPro
       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           onClick={() => onEdit(entry)}
-          className="text-xs text-[var(--text-tertiary)] hover:text-[var(--oe-primary)] px-1.5 py-1 rounded hover:bg-[var(--oe-primary-light)] transition-colors"
+          className="text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] px-1.5 py-1 rounded hover:bg-[var(--oe-primary-light)] transition-colors"
         >
           Editar
         </button>
@@ -327,7 +327,7 @@ function SortablePhase({
         ) : (
           <button
             onDoubleClick={() => setEditing(true)}
-            className="flex-1 text-sm font-semibold text-[var(--text-primary)] text-left hover:text-[var(--oe-primary)] transition-colors"
+            className="flex-1 text-sm font-semibold text-[var(--text-primary)] text-left hover:text-[var(--text-secondary)] transition-colors"
             title="Duplo clique para renomear"
           >
             {phase.name}
@@ -336,7 +336,7 @@ function SortablePhase({
         <span className="text-xs text-[var(--text-tertiary)]">{phase.entries.length} entr.</span>
         <button
           onClick={() => onAddEntry(phase.id)}
-          className="text-xs text-[var(--oe-primary)] hover:text-[var(--oe-primary-hover)] font-medium px-2 py-1 rounded hover:bg-[var(--oe-primary-light)] transition-colors"
+          className="text-xs text-[var(--text-secondary)] hover:text-[var(--oe-primary-hover)] font-medium px-2 py-1 rounded hover:bg-[var(--oe-primary-light)] transition-colors"
         >
           + Entrada
         </button>
@@ -482,7 +482,7 @@ export default function TemplateEditorPage() {
           value={templateName}
           onChange={(e) => setTemplateName(e.target.value)}
           onBlur={() => save(phases, templateName.trim() || template.name)}
-          className="text-2xl font-bold text-[var(--text-primary)] bg-transparent border-b-2 border-transparent hover:border-[var(--border-default)] focus:border-[var(--oe-primary)] focus:outline-none transition-colors"
+          className="text-2xl font-bold text-[var(--text-primary)] bg-transparent border-b-2 border-transparent hover:border-[var(--border-default)] focus:border-[var(--text-tertiary)] focus:outline-none transition-colors"
         />
       </div>
 
@@ -518,7 +518,7 @@ export default function TemplateEditorPage() {
 
         <button
           onClick={handleAddPhase}
-          className="w-full py-3 rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--border-strong)] text-sm text-[var(--text-tertiary)] hover:border-[var(--oe-primary-mid)] hover:text-[var(--oe-primary)] transition-colors"
+          className="w-full py-3 rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--border-strong)] text-sm text-[var(--text-tertiary)] hover:border-[var(--oe-primary-mid)] hover:text-[var(--text-secondary)] transition-colors"
         >
           + Fase
         </button>

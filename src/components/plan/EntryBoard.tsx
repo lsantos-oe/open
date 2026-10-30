@@ -23,12 +23,12 @@ const KANBAN_COLS: { status: EntryStatus; labelKey: string }[] = [
 ]
 
 const COL_STYLE: Record<string, { header: string; bg: string }> = {
-  pending:     { header: 'var(--text-secondary)',     bg: 'var(--surface-subtle)' },
-  todo:        { header: 'var(--color-violet-text)',  bg: 'var(--color-violet-bg)' },
-  in_progress: { header: 'var(--oe-primary)',         bg: 'var(--oe-primary-light)' },
-  validation:  { header: 'var(--color-warning-text)', bg: 'var(--color-warning-bg)' },
-  done:        { header: 'var(--color-success-text)', bg: 'var(--color-success-bg)' },
-  blocked:     { header: 'var(--color-danger-text)',  bg: 'var(--color-danger-bg)' },
+  pending:     { header: 'var(--text-secondary)', bg: 'var(--surface-subtle)' },
+  todo:        { header: 'var(--text-secondary)', bg: 'var(--surface-subtle)' },
+  in_progress: { header: 'var(--text-primary)',   bg: 'var(--surface-subtle)' },
+  validation:  { header: 'var(--text-secondary)', bg: 'var(--surface-subtle)' },
+  done:        { header: 'var(--text-tertiary)',  bg: 'var(--surface-subtle)' },
+  blocked:     { header: 'var(--color-danger-text)', bg: 'var(--surface-subtle)' },
 }
 
 // ─── types ────────────────────────────────────────────────────────────────────
@@ -71,7 +71,7 @@ function OwnerAvatars({ entry }: { entry: Entry }) {
           key={owner.id}
           style={{
             width: 20, height: 20, borderRadius: '50%',
-            background: 'var(--oe-primary)', color: 'white',
+            background: 'var(--badge-gray-bg)', color: 'var(--text-secondary)',
             fontSize: 8, fontWeight: 600, display: 'flex',
             alignItems: 'center', justifyContent: 'center',
             marginLeft: i > 0 ? -6 : 0,
@@ -125,10 +125,9 @@ function BoardEntryCard({ card, onClick, ghost = false }: {
       onClick={onClick}
       style={{
         background: 'var(--surface-card)',
-        border: '0.5px solid var(--border-default)',
-        borderRadius: 'var(--radius-md)',
+        borderRadius: 'var(--radius-xl)',
         padding: 12,
-        boxShadow: ghost ? '0 4px 16px rgba(0,0,0,0.14)' : '0 1px 3px rgba(0,0,0,0.04)',
+        boxShadow: ghost ? '0 4px 16px rgba(0,0,0,0.14)' : undefined,
         cursor: ghost ? 'grabbing' : 'pointer',
         opacity: ghost ? 0.95 : 1,
         userSelect: 'none',

@@ -38,8 +38,8 @@ function ToggleGroup<T extends string>({
           onClick={() => onChange(opt.value)}
           className={`px-4 py-2 rounded-[var(--radius-lg)] text-sm font-medium border transition-colors ${
             value === opt.value
-              ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]'
-              : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-strong)] hover:border-[var(--oe-primary)]'
+              ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]'
+              : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-strong)] hover:border-[var(--text-tertiary)]'
           }`}
         >
           {opt.label}
@@ -181,7 +181,7 @@ export default function SettingsPage() {
             onClick={() => setTab(tb.id)}
             className="px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap"
             style={{
-              borderBottomColor: tab === tb.id ? 'var(--oe-primary)' : 'transparent',
+              borderBottomColor: tab === tb.id ? 'var(--text-primary)' : 'transparent',
               color: tab === tb.id ? 'var(--text-primary)' : 'var(--text-tertiary)',
               marginBottom: -1,
             }}
@@ -398,7 +398,7 @@ export default function SettingsPage() {
                 key={v}
                 onClick={() => setArchivedFilter(v)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-[var(--radius-pill)] border transition-colors ${
-                  archivedFilter === v ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'
+                  archivedFilter === v ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'
                 }`}
               >
                 {l}

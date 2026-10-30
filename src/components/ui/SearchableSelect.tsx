@@ -21,7 +21,7 @@ interface Props {
   style?: CSSProperties
 }
 
-const DEFAULT_CLASS = 'block w-full border border-[var(--border-default)] bg-[var(--surface-input)] px-3 py-2 text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] disabled:bg-[var(--surface-subtle)] transition-colors'
+const DEFAULT_CLASS = 'block w-full border border-transparent bg-[var(--surface-subtle)] px-4 py-2 text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:border-[var(--text-tertiary)] focus:outline-none disabled:bg-[var(--surface-subtle)] transition-colors'
 
 function optionStyle(active: boolean): CSSProperties {
   return {
@@ -78,7 +78,7 @@ export function SearchableSelect({ value, onChange, options, placeholder, emptyO
         onFocus={() => setOpen(true)}
         placeholder={placeholder ?? selected?.label ?? ''}
         className={`${className} pr-8`}
-        style={{ borderRadius: 'var(--radius-md)', cursor: disabled ? 'default' : 'text', ...style }}
+        style={{ borderRadius: 'var(--radius-pill)', cursor: disabled ? 'default' : 'text', ...style }}
       />
       <SelectChevron className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
       {open && !disabled && createPortal(

@@ -149,7 +149,7 @@ export function EntityAttachments({ entityType, entityId }: Props) {
           onClick={() => inputRef.current?.click()}
           disabled={uploading || loading}
           className="text-xs transition-colors disabled:opacity-50"
-          style={{ color: 'var(--oe-primary)' }}
+          style={{ color: 'var(--text-secondary)' }}
         >
           {uploading ? 'Enviando...' : '+ Anexar'}
         </button>
@@ -174,7 +174,7 @@ export function EntityAttachments({ entityType, entityId }: Props) {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs max-w-[140px] truncate"
-                style={{ color: 'var(--oe-primary)' }}
+                style={{ color: 'var(--text-secondary)' }}
                 title={att.name}
               >
                 {att.name}

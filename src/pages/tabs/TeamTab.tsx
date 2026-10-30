@@ -120,7 +120,7 @@ export default function TeamTab({ project }: Props) {
                   {member.role}
                 </span>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => openEdit(member)} className="text-[var(--text-tertiary)] hover:text-[var(--oe-primary)] text-xs px-1">✎</button>
+                  <button onClick={() => openEdit(member)} className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] text-xs px-1">✎</button>
                   <button onClick={() => removeTeamMember(project.id, member.id)} className="text-[var(--text-tertiary)] hover:text-[var(--color-danger-text)] text-xs px-1">✕</button>
                 </div>
               </div>
@@ -161,7 +161,7 @@ export default function TeamTab({ project }: Props) {
                   onClick={() => setForm((f) => ({ ...f, role: r }))}
                   className={`text-xs px-3 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${
                     form.role === r
-                      ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]'
+                      ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]'
                       : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-strong)] hover:border-[var(--oe-primary-mid)]'
                   }`}
                 >

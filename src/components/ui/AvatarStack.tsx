@@ -47,7 +47,7 @@ export function AvatarStack({ people, max = 3, size = 22 }: Props) {
             className="flex items-center justify-center rounded-full font-semibold shrink-0"
             style={{
               width: size, height: size, marginLeft: i === 0 ? 0 : -6,
-              border: '2px solid var(--surface-card)', background: 'var(--oe-primary)', color: 'white',
+              border: '2px solid var(--surface-card)', background: 'var(--surface-subtle)', color: 'var(--text-secondary)',
               fontSize: Math.round(size * 0.4), zIndex: visible.length - i,
             }}
           >

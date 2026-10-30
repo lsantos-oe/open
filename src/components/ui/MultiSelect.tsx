@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, CSSProperties } from 'react'
+import { Select } from '@/components/ui/Input'
 import { createPortal } from 'react-dom'
 import { useSmartPosition } from '@/hooks/useSmartPosition'
 import type { SearchableOption } from './SearchableSelect'
@@ -14,7 +15,7 @@ interface Props {
   style?: CSSProperties
 }
 
-const DEFAULT_CLASS = 'flex items-center justify-between gap-2 w-full border border-[var(--border-default)] bg-[var(--surface-input)] px-3 py-2 text-[13px] text-left focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] disabled:bg-[var(--surface-subtle)] transition-colors'
+const DEFAULT_CLASS = 'flex items-center justify-between gap-2 w-full border border-transparent bg-[var(--surface-subtle)] px-4 py-2 text-[13px] text-left focus:border-[var(--text-tertiary)] focus:outline-none disabled:bg-[var(--surface-subtle)] transition-colors'
 
 function rowStyle(): CSSProperties {
   return {
@@ -27,7 +28,7 @@ function rowStyle(): CSSProperties {
 /** Multi-value picker, styled like SearchableSelect but selecting keeps the
  *  dropdown open (checkboxes, not radio-like single-pick) — used for filter
  *  fields where "show items matching any of these" makes sense. Never uses
- *  the browser's native `<select multiple>` (ugly, needs ctrl/cmd+click). */
+ *  the browser's native `<Select multiple>` (ugly, needs ctrl/cmd+click). */
 export function MultiSelect({ values, onChange, options, placeholder, disabled, className = DEFAULT_CLASS, style }: Props) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -85,7 +86,7 @@ export function MultiSelect({ values, onChange, options, placeholder, disabled, 
         onClick={() => setOpen((v) => !v)}
         className={className}
         style={{
-          borderRadius: 'var(--radius-md)', cursor: disabled ? 'default' : 'pointer',
+          borderRadius: 'var(--radius-pill)', cursor: disabled ? 'default' : 'pointer',
           color: values.length > 0 ? 'var(--text-primary)' : 'var(--text-tertiary)',
           ...style,
         }}
@@ -133,7 +134,7 @@ export function MultiSelect({ values, onChange, options, placeholder, disabled, 
                       type="checkbox"
                       checked={checked}
                       onChange={() => toggle(o.id)}
-                      className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]"
+                      className="rounded border-[var(--border-default)] accent-[var(--text-primary)]"
                     />
                     <span style={{ flex: 1 }}>{o.label}</span>
                     {o.sublabel && <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{o.sublabel}</span>}

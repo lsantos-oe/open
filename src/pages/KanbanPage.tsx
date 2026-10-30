@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Select } from '@/components/ui/Input'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
 import { Entry, EntryStatus, Phase } from '@/types'
@@ -86,25 +87,20 @@ export default function KanbanPage({ projectId }: { projectId: string }) {
             <button
               onClick={() => changeView('kanban')}
               className="px-3 py-1.5 text-xs font-medium transition-colors"
-              style={{ background: view === 'kanban' ? 'var(--oe-primary)' : 'var(--surface-card)', color: view === 'kanban' ? 'white' : 'var(--text-secondary)' }}
+              style={{ background: view === 'kanban' ? 'var(--text-primary)' : 'var(--surface-card)', color: view === 'kanban' ? 'var(--surface-page)' : 'var(--text-secondary)' }}
             >
               {t('actions.viewKanban')}
             </button>
             <button
               onClick={() => changeView('table')}
               className="px-3 py-1.5 text-xs font-medium transition-colors"
-              style={{ background: view === 'table' ? 'var(--oe-primary)' : 'var(--surface-card)', color: view === 'table' ? 'white' : 'var(--text-secondary)' }}
+              style={{ background: view === 'table' ? 'var(--text-primary)' : 'var(--surface-card)', color: view === 'table' ? 'var(--surface-page)' : 'var(--text-secondary)' }}
             >
               {t('actions.viewTable')}
             </button>
           </div>
 
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="text-xs rounded-[var(--radius-md)] px-2 py-1.5 border"
-            style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)', color: 'var(--text-secondary)' }}
-          >
+          <Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="!py-1.5">
             <option value="">{t('tasks.filterStatus')}</option>
             <option value="pending">{t('entry.pending')}</option>
             <option value="todo">{t('entry.todo')}</option>
@@ -112,17 +108,12 @@ export default function KanbanPage({ projectId }: { projectId: string }) {
             <option value="validation">{t('entry.validation')}</option>
             <option value="done">{t('entry.done')}</option>
             <option value="blocked">{t('entry.blocked')}</option>
-          </select>
+          </Select>
 
-          <select
-            value={filterResponsible}
-            onChange={(e) => setFilterResponsible(e.target.value)}
-            className="text-xs rounded-[var(--radius-md)] px-2 py-1.5 border"
-            style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)', color: 'var(--text-secondary)' }}
-          >
+          <Select value={filterResponsible} onChange={(e) => setFilterResponsible(e.target.value)} className="!py-1.5">
             <option value="">{t('tasks.filterMember')}</option>
             {allResponsibles.map((name) => <option key={name} value={name}>{name}</option>)}
-          </select>
+          </Select>
 
           <Button size="sm" className="ml-auto" onClick={() => setNewTaskStatus('pending')}>{t('plan.addTask')}</Button>
         </div>

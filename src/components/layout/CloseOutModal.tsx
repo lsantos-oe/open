@@ -103,7 +103,7 @@ export function CloseOutModal() {
                 <input
                   type="checkbox"
                   aria-label="Selecionar todas as tarefas"
-                  className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]"
+                  className="rounded border-[var(--border-default)] accent-[var(--text-primary)]"
                   checked={allSelected}
                   onChange={() => setSelected(allSelected ? new Set() : new Set(tasks.map((x) => x.id)))}
                 />
@@ -127,7 +127,7 @@ export function CloseOutModal() {
                   <input
                     type="checkbox"
                     aria-label={`Concluir ${task.name}`}
-                    className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]"
+                    className="rounded border-[var(--border-default)] accent-[var(--text-primary)]"
                     checked={selected.has(task.id)}
                     onChange={() => toggle(task.id)}
                   />

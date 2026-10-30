@@ -2,9 +2,9 @@ import { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes, useS
 import { createPortal } from 'react-dom'
 import { useSmartPosition } from '@/hooks/useSmartPosition'
 
-const base = 'block w-full border border-[var(--border-default)] bg-[var(--surface-input)] px-3 py-2 text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] disabled:bg-[var(--surface-subtle)] transition-colors'
+const base = 'block w-full border border-transparent bg-[var(--surface-subtle)] px-4 py-2 text-[13px] text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:border-[var(--text-tertiary)] focus:outline-none disabled:bg-[var(--surface-subtle)] transition-colors'
 
-const radius = { borderRadius: 'var(--radius-md)' }
+const radius = { borderRadius: 'var(--radius-pill)' }
 
 export function Input({ className = '', style, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={`${base} ${className}`} style={{ ...radius, ...style }} {...rest} />
@@ -23,16 +23,16 @@ export function SelectChevron({ className = '' }: { className?: string }) {
 export function Select({ className = '', style, children, wrapperClassName = '', ...rest }: SelectHTMLAttributes<HTMLSelectElement> & { wrapperClassName?: string }) {
   return (
     <div className={`relative ${wrapperClassName}`}>
-      <select className={`${base} appearance-none pr-8 cursor-pointer ${className}`} style={{ ...radius, ...style }} {...rest}>
+      <select className={`${base} appearance-none pr-9 cursor-pointer ${className}`} style={{ ...radius, ...style }} {...rest}>
         {children}
       </select>
-      <SelectChevron className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+      <SelectChevron className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
     </div>
   )
 }
 
 export function Textarea({ className = '', style, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={`${base} ${className}`} style={{ ...radius, ...style }} rows={3} {...rest} />
+  return <textarea className={`${base} ${className}`} style={{ borderRadius: 'var(--radius-lg)', ...style }} rows={3} {...rest} />
 }
 
 function HintIcon({ hint }: { hint: string }) {

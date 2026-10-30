@@ -285,7 +285,7 @@ export function ChatPanel() {
         {pendingConfirmation && (
           <div
             style={{
-              border: '1px solid var(--oe-primary)',
+              border: '1px solid var(--border-strong)',
               background: 'var(--oe-primary-light)',
               borderRadius: 'var(--radius-lg)',
               padding: 12,
@@ -324,7 +324,7 @@ export function ChatPanel() {
               onClick={() => { navigate(actionLink.to); setActionLink(null); setOpen(false) }}
               style={{
                 fontSize: 12.5, fontWeight: 500, padding: '6px 12px', borderRadius: 'var(--radius-pill)',
-                border: '1px solid var(--oe-primary)', background: 'var(--oe-primary-light)', color: 'var(--oe-primary)',
+                border: '1px solid var(--border-strong)', background: 'var(--oe-primary-light)', color: 'var(--text-secondary)',
                 cursor: 'pointer',
               }}
             >

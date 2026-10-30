@@ -44,7 +44,7 @@ export default function DiaryTab({ project }: Props) {
             onClick={() => setSub(tab.id)}
             className="px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap"
             style={{
-              borderBottomColor: sub === tab.id ? 'var(--oe-primary)' : 'transparent',
+              borderBottomColor: sub === tab.id ? 'var(--text-primary)' : 'transparent',
               color: sub === tab.id ? 'var(--text-primary)' : 'var(--text-tertiary)',
               marginBottom: -1,
             }}

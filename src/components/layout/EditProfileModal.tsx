@@ -140,7 +140,7 @@ export function EditProfileModal({ open, onClose }: Props) {
               <label key={opt.key} className="flex items-center gap-2 text-[13px] cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
                 <input
                   type="checkbox"
-                  className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]"
+                  className="rounded border-[var(--border-default)] accent-[var(--text-primary)]"
                   checked={prefs[opt.key]}
                   disabled={!linked}
                   onChange={(e) => setPrefs((p) => ({ ...p, [opt.key]: e.target.checked }))}

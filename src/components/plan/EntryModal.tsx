@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, CSSProperties, ReactNode } from 'react'
+import { Select } from '@/components/ui/Input'
 import { EntityCode } from '@/components/ui/CodeBadge'
 import RichTextInput from '@/components/editor/RichTextInput'
 import EntryComments from './EntryComments'
@@ -703,7 +704,7 @@ export default function EntryModal({
                     flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
                     gap: 6, padding: '10px 0',
                     borderRadius: 'var(--radius-lg)',
-                    border: form.type === type ? '2px solid var(--oe-primary)' : '2px solid var(--border-default)',
+                    border: form.type === type ? '2px solid var(--text-primary)' : '2px solid var(--border-default)',
                     background: form.type === type ? 'var(--color-info-bg)' : 'transparent',
                     color: form.type === type ? 'var(--color-info-text)' : 'var(--text-secondary)',
                     fontSize: 13, fontWeight: 500, cursor: 'pointer',
@@ -730,7 +731,7 @@ export default function EntryModal({
               outline: 'none', background: 'transparent',
               color: 'var(--text-primary)', paddingBottom: 8, boxSizing: 'border-box',
             }}
-            onFocus={e => (e.currentTarget.style.borderBottomColor = 'var(--oe-primary)')}
+            onFocus={e => (e.currentTarget.style.borderBottomColor = 'var(--text-tertiary)')}
             onBlur={e => (e.currentTarget.style.borderBottomColor = 'var(--border-default)')}
           />
 
@@ -834,17 +835,12 @@ export default function EntryModal({
           {/* Linked parent task (meeting) */}
           {form.type === 'meeting' && (
             <FieldBox label={t('plan.linkedTask')}>
-              <select
-                value={form.linkedParentId}
-                onChange={e => set('linkedParentId', e.target.value)}
-                disabled={!!defaultParentEntryId}
-                style={{ ...inputStyle, cursor: 'pointer' }}
-              >
+              <Select value={form.linkedParentId} onChange={e => set('linkedParentId', e.target.value)} disabled={!!defaultParentEntryId}>
                 <option value="">— {t('plan.linkedTaskNone')} —</option>
                 {availableParentTasks.map(task => (
                   <option key={task.id} value={task.id}>{task.name}</option>
                 ))}
-              </select>
+              </Select>
               {parentEndWarning && (
                 <p style={{ fontSize: 11, color: 'var(--color-warning-text)', marginTop: 3 }}>
                   ⚠ {t('plan.childMeetingOutOfRange')}
@@ -856,16 +852,12 @@ export default function EntryModal({
           {/* Subtask of (create, task, no preset parent) */}
           {mode === 'create' && form.type === 'task' && !defaultParentId && availableParentTasks.length > 0 && (
             <FieldBox label={t('entry.subtaskOf')}>
-              <select
-                value={form.subtaskOf}
-                onChange={e => set('subtaskOf', e.target.value)}
-                style={{ ...inputStyle, cursor: 'pointer' }}
-              >
+              <Select value={form.subtaskOf} onChange={e => set('subtaskOf', e.target.value)}>
                 <option value="">— {t('plan.linkedTaskNone')} —</option>
                 {availableParentTasks.map(task => (
                   <option key={task.id} value={task.id}>{task.name}</option>
                 ))}
-              </select>
+              </Select>
             </FieldBox>
           )}
 
@@ -882,7 +874,7 @@ export default function EntryModal({
               >
                 {depsOpen ? '▾' : '▸'} {t('plan.dependencies')}
                 {form.dependsOn.length > 0 && (
-                  <span style={{ fontSize: 10, background: 'var(--oe-primary-light)', color: 'var(--oe-primary)', borderRadius: 'var(--radius-pill)', padding: '1px 6px' }}>
+                  <span style={{ fontSize: 10, background: 'var(--oe-primary-light)', color: 'var(--text-secondary)', borderRadius: 'var(--radius-pill)', padding: '1px 6px' }}>
                     {form.dependsOn.length}
                   </span>
                 )}
@@ -953,18 +945,14 @@ export default function EntryModal({
           {/* Phase (project tasks only — standalone tasks have no plan/phase) */}
           {!isSubtask && !!form.projectId && (
             <FieldBox label={t('plan.phase')}>
-              <select
-                value={selectedProject?.phases.find(ph => ph.id === form.phaseId)?.isUnassigned ? '' : form.phaseId}
-                onChange={e => set('phaseId', e.target.value)}
-                style={{ ...inputStyle, cursor: 'pointer' }}
-              >
+              <Select value={selectedProject?.phases.find(ph => ph.id === form.phaseId)?.isUnassigned ? '' : form.phaseId} onChange={e => set('phaseId', e.target.value)}>
                 {form.hiddenFromPlan && (
                   <option value="">— {t('entry.noPhase' as any)} —</option>
                 )}
                 {visiblePhases.map(ph => (
                   <option key={ph.id} value={ph.id}>{ph.name}</option>
                 ))}
-              </select>
+              </Select>
               {phaseChanged && (
                 <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 4 }}>
                   ↳ {t('entry.moveToPhase', { phase: visiblePhases.find(p => p.id === form.phaseId)?.name ?? t('entry.noPhase' as any) })}
@@ -975,31 +963,23 @@ export default function EntryModal({
 
           {/* Status */}
           <FieldBox label={t('entry.status')}>
-            <select
-              value={form.status}
-              onChange={e => set('status', e.target.value as EntryStatus)}
-              style={{ ...inputStyle, cursor: 'pointer' }}
-            >
+            <Select value={form.status} onChange={e => set('status', e.target.value as EntryStatus)}>
               <option value="pending">{t('entry.pending')}</option>
               <option value="todo">{t('entry.todo')}</option>
               <option value="in_progress">{t('entry.in_progress')}</option>
               <option value="validation">{t('entry.validation')}</option>
               <option value="done">{t('entry.done')}</option>
               <option value="blocked">{t('entry.blocked')}</option>
-            </select>
+            </Select>
           </FieldBox>
 
           {/* Risk flag */}
           <FieldBox label={t('entry.riskFlag')}>
-            <select
-              value={form.riskFlag}
-              onChange={e => set('riskFlag', e.target.value as RiskFlag)}
-              style={{ ...inputStyle, cursor: 'pointer' }}
-            >
+            <Select value={form.riskFlag} onChange={e => set('riskFlag', e.target.value as RiskFlag)}>
               <option value="none">{t('entry.none')}</option>
               <option value="warning">{t('entry.warning')}</option>
               <option value="critical">{t('entry.critical')}</option>
-            </select>
+            </Select>
           </FieldBox>
 
           {/* Show in plan toggle (project tasks only — a standalone task has no plan to show in) */}
@@ -1061,7 +1041,7 @@ export default function EntryModal({
                       href={l.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ flex: 1, fontSize: 12, color: 'var(--oe-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                      style={{ flex: 1, fontSize: 12, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                     >
                       {l.label}
                     </a>

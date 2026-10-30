@@ -197,7 +197,7 @@ export default function ContactsPage() {
                   onMouseLeave={e => (e.currentTarget.style.background = '')}
                 >
                   <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                    <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]" checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} />
+                    <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--text-primary)]" checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} />
                   </td>
                   <td className="px-4 py-3 font-medium" style={{ maxWidth: 220 }}>
                     <span
@@ -262,7 +262,7 @@ export default function ContactsPage() {
                   <label key={cl.id} className="flex items-center gap-2 text-sm px-1 py-0.5 cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
                     <input
                       type="checkbox"
-                      className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]"
+                      className="rounded border-[var(--border-default)] accent-[var(--text-primary)]"
                       checked={linkedClientIds.has(cl.id)}
                       onChange={() => toggleLinkedClient(cl.id)}
                     />

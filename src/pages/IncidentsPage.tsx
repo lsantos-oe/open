@@ -74,8 +74,8 @@ function IncidentCard({ incident, clientLabel, onClick, ghost = false }: {
     <div
       onClick={onClick}
       role="button"
-      className="w-full text-left rounded-[var(--radius-lg)] p-3 shadow-sm border hover:border-[var(--oe-primary)] hover:shadow transition-all"
-      style={{ background: 'var(--surface-card)', borderColor: 'var(--border-default)', boxShadow: ghost ? 'var(--shadow-md)' : undefined }}
+      className="w-full text-left rounded-[var(--radius-xl)] p-3 hover:shadow-[var(--shadow-sm)] transition-all"
+      style={{ background: 'var(--surface-card)', boxShadow: ghost ? 'var(--shadow-md)' : undefined }}
     >
       <p className="font-medium text-sm mb-1 line-clamp-2" style={{ color: 'var(--text-primary)' }}>{incident.title}</p>
       <p className="text-xs mb-2" style={{ color: 'var(--text-tertiary)' }}>{clientLabel}</p>
@@ -113,15 +113,15 @@ function IncidentColumn({ status, incidents, clientNames, onOpen }: {
   const { setNodeRef, isOver } = useDroppable({ id: status })
   return (
     <div
-      className="border rounded-[var(--radius-lg)] p-3 min-h-[300px] flex flex-col"
+      className="rounded-[var(--radius-xl)] p-3 min-h-[300px] flex flex-col"
       style={{
-        borderColor: 'var(--border-default)', background: 'var(--surface-subtle)', minWidth: 0,
-        outline: isOver ? '2px solid var(--oe-primary)' : '2px solid transparent', transition: 'outline 0.1s',
+        background: 'var(--surface-subtle)', minWidth: 0,
+        outline: isOver ? '2px solid var(--text-primary)' : '2px solid transparent', transition: 'outline 0.1s',
       }}
     >
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>{t(`incident.status_${status}`)}</span>
-        <span className="rounded-[var(--radius-pill)] text-xs px-2 py-0.5 font-medium border" style={{ background: 'var(--surface-card)', color: 'var(--text-secondary)', borderColor: 'var(--border-default)' }}>
+        <span className="rounded-[var(--radius-pill)] text-xs px-2 py-0.5 font-medium" style={{ background: 'var(--surface-card)', color: 'var(--text-secondary)' }}>
           {incidents.length}
         </span>
       </div>
@@ -501,7 +501,7 @@ export default function IncidentsPage() {
                   onMouseLeave={e => (e.currentTarget.style.background = '')}
                 >
                   <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                    <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]" checked={selected.has(i.id)} onChange={() => toggleSelect(i.id)} />
+                    <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--text-primary)]" checked={selected.has(i.id)} onChange={() => toggleSelect(i.id)} />
                   </td>
                   <td className="px-4 py-3 font-medium" style={{ maxWidth: 260 }}>
                     <span className="block truncate" style={{ color: 'var(--text-primary)' }} title={i.title}>{i.title}</span>
@@ -580,7 +580,7 @@ export default function IncidentsPage() {
                       type="checkbox"
                       checked={newClientIds.includes(c.id)}
                       onChange={() => toggleNewClient(c.id)}
-                      className="rounded border-[var(--border-strong)] accent-[var(--oe-primary)]"
+                      className="rounded border-[var(--border-strong)] accent-[var(--text-primary)]"
                     />
                     <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{c.name}</span>
                   </label>
@@ -607,7 +607,7 @@ export default function IncidentsPage() {
                       type="checkbox"
                       checked={newProjectIds.includes(p.id)}
                       onChange={() => toggleNewProject(p.id)}
-                      className="rounded border-[var(--border-strong)] accent-[var(--oe-primary)]"
+                      className="rounded border-[var(--border-strong)] accent-[var(--text-primary)]"
                     />
                     <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{p.name}</span>
                   </label>
@@ -644,28 +644,18 @@ export default function IncidentsPage() {
       </Modal>
 
       <SelectionBar count={selected.size} onClear={() => setSelected(new Set())}>
-        <select
-          onChange={(e) => { if (e.target.value) applyBulkStatus(e.target.value as IncidentStatus) }}
-          value=""
-          className="text-xs rounded-[var(--radius-md)] px-2 py-1"
-          style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
-        >
+        <Select onChange={(e) => { if (e.target.value) applyBulkStatus(e.target.value as IncidentStatus) }} value="" className="!py-1.5">
           <option value="" disabled>Alterar status...</option>
           {(['open', 'in_progress', 'waiting_on_client', 'resolved', 'closed'] as IncidentStatus[]).map((s) => (
             <option key={s} value={s}>{t(`incident.status_${s}`)}</option>
           ))}
-        </select>
-        <select
-          onChange={(e) => { if (e.target.value) applyBulkPriority(e.target.value as Probability) }}
-          value=""
-          className="text-xs rounded-[var(--radius-md)] px-2 py-1"
-          style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
-        >
+        </Select>
+        <Select onChange={(e) => { if (e.target.value) applyBulkPriority(e.target.value as Probability) }} value="" className="!py-1.5">
           <option value="" disabled>Alterar prioridade...</option>
           <option value="low">{t('risk.low')}</option>
           <option value="medium">{t('risk.medium')}</option>
           <option value="high">{t('risk.high')}</option>
-        </select>
+        </Select>
         <button
           onClick={() => { setBulkOwners([]); setBulkOwnersOpen(true) }}
           className="text-xs px-2 py-1 rounded-[var(--radius-md)]"

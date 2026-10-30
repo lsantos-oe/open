@@ -166,7 +166,7 @@ function DateCell({ iso, isActual, isOverdue, isBaseline, editable = true, onCom
         autoFocus
         defaultValue={iso ?? ''}
         className="text-[11px] rounded px-1 py-0.5 w-28 focus:outline-none"
-        style={{ border: '1px solid var(--oe-primary)', color: 'var(--text-primary)' }}
+        style={{ border: '1px solid var(--border-strong)', color: 'var(--text-primary)' }}
         onBlur={(e) => { if (e.target.value) onCommit(e.target.value); setEditing(false) }}
         onKeyDown={(e) => { if (e.key === 'Escape') setEditing(false) }}
       />
@@ -287,7 +287,7 @@ function RiskCell({ flag, linkedRiskId, onChange, onNavigateToRisk }: {
               key={f}
               onClick={() => { onChange(f); setOpen(false) }}
               className="w-full text-left px-3 py-1.5 flex items-center gap-2"
-              style={{ fontSize: 12, color: flag === f ? 'var(--oe-primary)' : 'var(--text-secondary)' }}
+              style={{ fontSize: 12, color: flag === f ? 'var(--text-primary)' : 'var(--text-secondary)' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
               onMouseLeave={e => (e.currentTarget.style.background = '')}
             >
@@ -300,7 +300,7 @@ function RiskCell({ flag, linkedRiskId, onChange, onNavigateToRisk }: {
               {f === 'warning' && <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 1, background: 'var(--color-warning-text)', flexShrink: 0 }} />}
               {f === 'critical' && <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 1, background: 'var(--color-danger-text)', flexShrink: 0 }} />}
               <span className="flex-1">{f === 'none' ? 'OK' : t(f === 'warning' ? 'risk.tooltipWarning' : 'risk.tooltipCritical')}</span>
-              {flag === f && <span style={{ color: 'var(--oe-primary)', fontSize: 10 }}>✓</span>}
+              {flag === f && <span style={{ color: 'var(--text-secondary)', fontSize: 10 }}>✓</span>}
             </button>
           ))}
         </div>,
@@ -366,7 +366,7 @@ function LinksCell({ entry, projectId }: { entry: Entry; projectId: string }) {
         {count > 0 && (
           <span
             className="absolute -top-1 -right-1 flex items-center justify-center"
-            style={{ minWidth: 13, height: 13, background: 'var(--oe-primary-light)', color: 'var(--oe-primary)', fontSize: 9, borderRadius: 'var(--radius-pill)', padding: '0 3px', fontWeight: 500 }}
+            style={{ minWidth: 13, height: 13, background: 'var(--oe-primary-light)', color: 'var(--text-secondary)', fontSize: 9, borderRadius: 'var(--radius-pill)', padding: '0 3px', fontWeight: 500 }}
           >
             {count}
           </span>
@@ -387,7 +387,7 @@ function LinksCell({ entry, projectId }: { entry: Entry; projectId: string }) {
           {entry.links.map((l) => (
             <div key={l.id} className="flex items-center gap-2 group mb-1">
               <a href={l.url} target="_blank" rel="noopener noreferrer"
-                className="flex-1 truncate hover:underline" style={{ fontSize: 12, color: 'var(--oe-primary)' }}>{l.label}</a>
+                className="flex-1 truncate hover:underline" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{l.label}</a>
               <button onClick={() => removeEntryLink(projectId, entry.id, l.id)}
                 className="opacity-0 group-hover:opacity-100 text-xs transition-opacity"
                 style={{ color: 'var(--text-disabled)' }}
@@ -400,13 +400,13 @@ function LinksCell({ entry, projectId }: { entry: Entry; projectId: string }) {
               placeholder="Label (opcional)"
               className="w-full focus:outline-none"
               style={{ fontSize: 12, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '4px 8px', color: 'var(--text-primary)' }}
-              onFocus={e => (e.currentTarget.style.borderColor = 'var(--oe-primary)')}
+              onFocus={e => (e.currentTarget.style.borderColor = 'var(--text-tertiary)')}
               onBlur={e => (e.currentTarget.style.borderColor = 'var(--border-default)')} />
             <input value={addUrl} onChange={(e) => setAddUrl(e.target.value)}
               placeholder="URL *"
               className="w-full focus:outline-none"
               style={{ fontSize: 12, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '4px 8px', color: 'var(--text-primary)' }}
-              onFocus={e => (e.currentTarget.style.borderColor = 'var(--oe-primary)')}
+              onFocus={e => (e.currentTarget.style.borderColor = 'var(--text-tertiary)')}
               onBlur={e => (e.currentTarget.style.borderColor = 'var(--border-default)')}
               onKeyDown={(e) => e.key === 'Enter' && handleAdd()} />
             <button
@@ -446,7 +446,7 @@ function CommentsCell({ entry, onOpen }: { entry: Entry; onOpen: () => void }) {
       {count > 0 && (
         <span
           className="absolute -top-1 -right-1 flex items-center justify-center"
-          style={{ minWidth: 13, height: 13, background: 'var(--oe-primary-light)', color: 'var(--oe-primary)', fontSize: 9, borderRadius: 'var(--radius-pill)', padding: '0 3px', fontWeight: 500 }}
+          style={{ minWidth: 13, height: 13, background: 'var(--oe-primary-light)', color: 'var(--text-secondary)', fontSize: 9, borderRadius: 'var(--radius-pill)', padding: '0 3px', fontWeight: 500 }}
         >
           {count > 9 ? '9+' : count}
         </span>
@@ -823,7 +823,7 @@ function PlanTableRow({ entryId, disabled, className, style, onMouseEnter, onMou
     <tr
       ref={setNodeRef}
       className={className}
-      style={{ ...style, outline: isOver ? '2px solid var(--oe-primary)' : 'none', outlineOffset: -2 }}
+      style={{ ...style, outline: isOver ? '2px solid var(--text-primary)' : 'none', outlineOffset: -2 }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
@@ -845,7 +845,7 @@ function PhaseHeader({ phase, phaseNumber, colSpan, collapsed, onToggle, onAdd, 
   const { setNodeRef, isOver } = useDroppable({ id: `phase-${phase.id}` })
 
   return (
-    <tr ref={setNodeRef} className="select-none" style={{ background: isOver ? 'var(--oe-primary-light)' : 'var(--surface-subtle)', borderBottom: isOver ? '0.5px solid var(--oe-primary)' : '0.5px solid var(--border-default)', outline: isOver ? '2px solid var(--oe-primary)' : 'none', outlineOffset: -2, transition: 'background 0.1s' }}>
+    <tr ref={setNodeRef} className="select-none" style={{ background: isOver ? 'var(--oe-primary-light)' : 'var(--surface-subtle)', borderBottom: isOver ? '0.5px solid var(--oe-primary)' : '0.5px solid var(--border-default)', outline: isOver ? '2px solid var(--text-primary)' : 'none', outlineOffset: -2, transition: 'background 0.1s' }}>
       <td colSpan={colSpan} style={{ padding: '5px 12px' }}>
         <div className="flex items-center gap-3">
           <button onClick={onToggle}
@@ -861,7 +861,7 @@ function PhaseHeader({ phase, phaseNumber, colSpan, collapsed, onToggle, onAdd, 
               onBlur={() => { onRename(draft); setEditing(false) }}
               onKeyDown={(e) => { if (e.key === 'Enter') { onRename(draft); setEditing(false) } if (e.key === 'Escape') { setDraft(phase.name); setEditing(false) } }}
               className="text-[11px] rounded px-2 py-0.5 outline-none min-w-0 flex-1"
-              style={{ background: 'var(--surface-card)', border: '1px solid var(--oe-primary)', color: 'var(--text-primary)' }}
+              style={{ background: 'var(--surface-card)', border: '1px solid var(--border-strong)', color: 'var(--text-primary)' }}
             />
           ) : (
             <span
@@ -880,7 +880,7 @@ function PhaseHeader({ phase, phaseNumber, colSpan, collapsed, onToggle, onAdd, 
             <button onClick={onAdd}
               className="text-[11px] px-2 py-0.5 rounded transition-colors"
               style={{ color: 'var(--text-tertiary)' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--oe-primary)')}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
               {t('plan.addEntry')}
             </button>
@@ -1255,7 +1255,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
       cell: ({ row }) => (
         <input
           type="checkbox"
-          className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]"
+          className="rounded border-[var(--border-default)] accent-[var(--text-primary)]"
           checked={selected.has(row.original.id)}
           onChange={() => toggleSelect(row.original.id)}
         />
@@ -1451,7 +1451,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
                 onClick={() => setAddModal({ type: 'task', phaseId, parentId: e.id })}
                 className="w-5 h-5 flex items-center justify-center rounded transition-colors"
                 style={{ fontSize: 12, color: 'var(--text-tertiary)' }}
-                onMouseEnter={ev => { ev.currentTarget.style.color = 'var(--oe-primary)'; ev.currentTarget.style.background = 'var(--oe-primary-light)' }}
+                onMouseEnter={ev => { ev.currentTarget.style.color = 'var(--text-primary)'; ev.currentTarget.style.background = 'var(--oe-primary-light)' }}
                 onMouseLeave={ev => { ev.currentTarget.style.color = 'var(--text-tertiary)'; ev.currentTarget.style.background = '' }}
                 title={t('entry.addSubtask')}
               >+</button>
@@ -1671,7 +1671,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
           {draggingId && (
             <div
               className="text-xs font-medium px-3 py-1.5 rounded-[var(--radius-md)]"
-              style={{ background: 'var(--surface-card)', border: '1px solid var(--oe-primary)', color: 'var(--text-primary)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
+              style={{ background: 'var(--surface-card)', border: '1px solid var(--border-strong)', color: 'var(--text-primary)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
             >
               {entryNameMap.get(draggingId) ?? ''}
             </div>
@@ -1752,12 +1752,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
       )}
 
       <SelectionBar count={selected.size} onClear={() => setSelected(new Set())}>
-        <select
-          onChange={(e) => { if (e.target.value) applyBulkStatus(e.target.value as EntryStatus) }}
-          value=""
-          className="text-xs rounded-[var(--radius-md)] px-2 py-1"
-          style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
-        >
+        <Select onChange={(e) => { if (e.target.value) applyBulkStatus(e.target.value as EntryStatus) }} value="" className="!py-1.5">
           <option value="" disabled>Alterar status...</option>
           <option value="pending">{t('status.pending')}</option>
           <option value="todo">{t('status.todo')}</option>
@@ -1765,49 +1760,29 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
           <option value="validation">{t('status.validation')}</option>
           <option value="done">{t('status.done')}</option>
           <option value="blocked">{t('status.blocked')}</option>
-        </select>
-        <select
-          onChange={(e) => { if (e.target.value) applyBulkMovePhase(e.target.value) }}
-          value=""
-          className="text-xs rounded-[var(--radius-md)] px-2 py-1"
-          style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
-        >
+        </Select>
+        <Select onChange={(e) => { if (e.target.value) applyBulkMovePhase(e.target.value) }} value="" className="!py-1.5">
           <option value="" disabled>Mover para fase...</option>
           {project.phases.filter((ph) => !ph.isUnassigned).map((ph) => <option key={ph.id} value={ph.id}>{ph.name}</option>)}
-        </select>
-        <select
-          onChange={(e) => { if (e.target.value) applyBulkType(e.target.value as EntryType) }}
-          value=""
-          className="text-xs rounded-[var(--radius-md)] px-2 py-1"
-          style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
-        >
+        </Select>
+        <Select onChange={(e) => { if (e.target.value) applyBulkType(e.target.value as EntryType) }} value="" className="!py-1.5">
           <option value="" disabled>Alterar tipo...</option>
           <option value="task">{t('entry.task')}</option>
           <option value="milestone">{t('entry.milestone')}</option>
           <option value="meeting">{t('entry.meeting')}</option>
-        </select>
-        <select
-          onChange={(e) => { if (e.target.value) applyBulkConvertToSubtask(e.target.value) }}
-          value=""
-          className="text-xs rounded-[var(--radius-md)] px-2 py-1"
-          style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
-        >
+        </Select>
+        <Select onChange={(e) => { if (e.target.value) applyBulkConvertToSubtask(e.target.value) }} value="" className="!py-1.5">
           <option value="" disabled>Virar subtarefa de...</option>
           {project.phases.flatMap((ph) => ph.entries
             .filter((e) => !selected.has(e.id))
             .map((e) => <option key={e.id} value={e.id}>{ph.name} · {e.name}</option>))}
-        </select>
-        <select
-          onChange={(e) => { if (e.target.value) applyBulkAddDependency(e.target.value) }}
-          value=""
-          className="text-xs rounded-[var(--radius-md)] px-2 py-1"
-          style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
-        >
+        </Select>
+        <Select onChange={(e) => { if (e.target.value) applyBulkAddDependency(e.target.value) }} value="" className="!py-1.5">
           <option value="" disabled>Adicionar dependência...</option>
           {project.phases.flatMap((ph) => ph.entries
             .filter((e) => !selected.has(e.id))
             .map((e) => <option key={e.id} value={e.id}>{ph.name} · {e.name}</option>))}
-        </select>
+        </Select>
         <button
           onClick={() => { setBulkOwners([]); setBulkOwnersOpen(true) }}
           className="text-xs px-2 py-1 rounded-[var(--radius-md)]"

@@ -97,7 +97,7 @@ export default function IncidentDetailPage() {
     return (
       <div className="p-6">
         <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>{t('incident.notFound')}</p>
-        <Link to="/support" className="text-sm" style={{ color: 'var(--oe-primary)' }}>← {t('incident.title')}</Link>
+        <Link to="/support" className="text-sm" style={{ color: 'var(--text-secondary)' }}>← {t('incident.title')}</Link>
       </div>
     )
   }
@@ -200,7 +200,7 @@ export default function IncidentDetailPage() {
                 if (e.key === 'Escape') setEditingTitle(false)
               }}
               className="text-base font-semibold bg-transparent outline-none border-b min-w-0"
-              style={{ color: 'var(--text-primary)', borderColor: 'var(--oe-primary)' }}
+              style={{ color: 'var(--text-primary)', borderColor: 'var(--text-tertiary)' }}
             />
           ) : (
             <h1
@@ -327,25 +327,20 @@ export default function IncidentDetailPage() {
                     <button
                       onClick={() => changeTaskView('kanban')}
                       className="px-3 py-1.5 text-xs font-medium transition-colors"
-                      style={{ background: taskView === 'kanban' ? 'var(--oe-primary)' : 'var(--surface-card)', color: taskView === 'kanban' ? 'white' : 'var(--text-secondary)' }}
+                      style={{ background: taskView === 'kanban' ? 'var(--text-primary)' : 'var(--surface-card)', color: taskView === 'kanban' ? 'var(--surface-page)' : 'var(--text-secondary)' }}
                     >
                       {t('actions.viewKanban')}
                     </button>
                     <button
                       onClick={() => changeTaskView('table')}
                       className="px-3 py-1.5 text-xs font-medium transition-colors"
-                      style={{ background: taskView === 'table' ? 'var(--oe-primary)' : 'var(--surface-card)', color: taskView === 'table' ? 'white' : 'var(--text-secondary)' }}
+                      style={{ background: taskView === 'table' ? 'var(--text-primary)' : 'var(--surface-card)', color: taskView === 'table' ? 'var(--surface-page)' : 'var(--text-secondary)' }}
                     >
                       {t('actions.viewTable')}
                     </button>
                   </div>
 
-                  <select
-                    value={taskFilterStatus}
-                    onChange={(e) => setTaskFilterStatus(e.target.value)}
-                    className="text-xs rounded-[var(--radius-md)] px-2 py-1.5 border"
-                    style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)', color: 'var(--text-secondary)' }}
-                  >
+                  <Select value={taskFilterStatus} onChange={(e) => setTaskFilterStatus(e.target.value)} className="!py-1.5">
                     <option value="">{t('tasks.filterStatus')}</option>
                     <option value="pending">{t('entry.pending')}</option>
                     <option value="todo">{t('entry.todo')}</option>
@@ -353,17 +348,12 @@ export default function IncidentDetailPage() {
                     <option value="validation">{t('entry.validation')}</option>
                     <option value="done">{t('entry.done')}</option>
                     <option value="blocked">{t('entry.blocked')}</option>
-                  </select>
+                  </Select>
 
-                  <select
-                    value={taskFilterResponsible}
-                    onChange={(e) => setTaskFilterResponsible(e.target.value)}
-                    className="text-xs rounded-[var(--radius-md)] px-2 py-1.5 border"
-                    style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)', color: 'var(--text-secondary)' }}
-                  >
+                  <Select value={taskFilterResponsible} onChange={(e) => setTaskFilterResponsible(e.target.value)} className="!py-1.5">
                     <option value="">{t('tasks.filterMember')}</option>
                     {allTaskResponsibles.map((name) => <option key={name} value={name}>{name}</option>)}
-                  </select>
+                  </Select>
                 </>
               )}
             </div>
@@ -472,9 +462,9 @@ export default function IncidentDetailPage() {
       >
         <div className="space-y-3">
           <div className="flex gap-2">
-            <button type="button" onClick={() => setStakeholderMode('member')} className={`flex-1 text-xs font-medium px-2 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${stakeholderMode === 'member' ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}>{t('entry.fromUser')}</button>
-            <button type="button" onClick={() => setStakeholderMode('contact')} className={`flex-1 text-xs font-medium px-2 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${stakeholderMode === 'contact' ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}>{t('incident.fromContact')}</button>
-            <button type="button" onClick={() => setStakeholderMode('text')} className={`flex-1 text-xs font-medium px-2 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${stakeholderMode === 'text' ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}>{t('entry.freeText')}</button>
+            <button type="button" onClick={() => setStakeholderMode('member')} className={`flex-1 text-xs font-medium px-2 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${stakeholderMode === 'member' ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}>{t('entry.fromUser')}</button>
+            <button type="button" onClick={() => setStakeholderMode('contact')} className={`flex-1 text-xs font-medium px-2 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${stakeholderMode === 'contact' ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}>{t('incident.fromContact')}</button>
+            <button type="button" onClick={() => setStakeholderMode('text')} className={`flex-1 text-xs font-medium px-2 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${stakeholderMode === 'text' ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}>{t('entry.freeText')}</button>
           </div>
           {stakeholderMode === 'member' && (
             <Field label={t('entry.fromUser')}>
@@ -495,14 +485,14 @@ export default function IncidentDetailPage() {
                   <button
                     type="button"
                     onClick={() => setContactCreateMode(false)}
-                    className={`flex-1 text-xs font-medium px-2 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${!contactCreateMode ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}
+                    className={`flex-1 text-xs font-medium px-2 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${!contactCreateMode ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}
                   >
                     Contato existente
                   </button>
                   <button
                     type="button"
                     onClick={() => setContactCreateMode(true)}
-                    className={`flex-1 text-xs font-medium px-2 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${contactCreateMode ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}
+                    className={`flex-1 text-xs font-medium px-2 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${contactCreateMode ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}
                   >
                     + Novo contato
                   </button>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, CSSProperties, ReactNode } from 'react'
+import { Select } from '@/components/ui/Input'
 import RichTextInput from '@/components/editor/RichTextInput'
 import EntryComments from './EntryComments'
 import { useTranslation } from 'react-i18next'
@@ -282,7 +283,7 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, defa
                 style={{
                   flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 0',
                   borderRadius: 'var(--radius-lg)',
-                  border: form.type === type ? '2px solid var(--oe-primary)' : '2px solid var(--border-default)',
+                  border: form.type === type ? '2px solid var(--text-primary)' : '2px solid var(--border-default)',
                   background: form.type === type ? 'var(--color-info-bg)' : 'transparent',
                   color: form.type === type ? 'var(--color-info-text)' : 'var(--text-secondary)',
                   fontSize: 13, fontWeight: 500, cursor: 'pointer',
@@ -369,21 +370,21 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, defa
 
         <div className="grid grid-cols-2 gap-4">
           <FieldBox label={t('entry.status')}>
-            <select value={form.status} onChange={(e) => set('status', e.target.value as EntryStatus)} style={{ ...inputStyle, cursor: 'pointer' }}>
+            <Select value={form.status} onChange={(e) => set('status', e.target.value as EntryStatus)}>
               <option value="pending">{t('entry.pending')}</option>
               <option value="todo">{t('entry.todo')}</option>
               <option value="in_progress">{t('entry.in_progress')}</option>
               <option value="validation">{t('entry.validation')}</option>
               <option value="done">{t('entry.done')}</option>
               <option value="blocked">{t('entry.blocked')}</option>
-            </select>
+            </Select>
           </FieldBox>
           <FieldBox label={t('entry.riskFlag')}>
-            <select value={form.riskFlag} onChange={(e) => set('riskFlag', e.target.value as RiskFlag)} style={{ ...inputStyle, cursor: 'pointer' }}>
+            <Select value={form.riskFlag} onChange={(e) => set('riskFlag', e.target.value as RiskFlag)}>
               <option value="none">{t('entry.none')}</option>
               <option value="warning">{t('entry.warning')}</option>
               <option value="critical">{t('entry.critical')}</option>
-            </select>
+            </Select>
           </FieldBox>
         </div>
 
@@ -406,7 +407,7 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, defa
             <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
               {form.links.map((l) => (
                 <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <a href={l.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1, fontSize: 12, color: 'var(--oe-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.label}</a>
+                  <a href={l.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1, fontSize: 12, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.label}</a>
                   <button onClick={() => removeLink(l.id)} style={{ fontSize: 14, color: 'var(--text-disabled)', background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
                 </div>
               ))}

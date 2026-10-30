@@ -43,10 +43,10 @@ export function FilterMenu({ activeCount, onClear, children }: Props) {
       <button
         ref={triggerRef as any}
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 h-8 text-[13px] font-medium px-3 rounded-[var(--radius-md)] transition-colors whitespace-nowrap"
+        className="flex items-center gap-1.5 h-8 text-[13px] font-medium px-4 rounded-[var(--radius-pill)] transition-colors whitespace-nowrap"
         style={{
           background: activeCount > 0 ? 'var(--oe-primary-light)' : 'var(--surface-subtle)',
-          color: activeCount > 0 ? 'var(--oe-primary)' : 'var(--text-secondary)',
+          color: activeCount > 0 ? 'var(--text-primary)' : 'var(--text-secondary)',
         }}
       >
         <FilterIcon />
@@ -54,7 +54,7 @@ export function FilterMenu({ activeCount, onClear, children }: Props) {
         {activeCount > 0 && (
           <span
             className="flex items-center justify-center rounded-[var(--radius-pill)] text-white"
-            style={{ width: 16, height: 16, fontSize: 10, fontWeight: 700, background: 'var(--oe-primary)' }}
+            style={{ width: 16, height: 16, fontSize: 10, fontWeight: 700, background: 'var(--text-primary)', color: 'var(--surface-page)' }}
           >
             {activeCount}
           </span>

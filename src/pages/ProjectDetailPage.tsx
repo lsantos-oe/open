@@ -6,7 +6,7 @@ import { useAppStore } from '@/store/useAppStore'
 import { useToastStore } from '@/stores/useToastStore'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
-import { Input, Field } from '@/components/ui/Input'
+import { Input, Field, Select } from '@/components/ui/Input'
 import StatusBadge from '@/components/StatusBadge'
 import { SearchIcon } from '@/components/ui/icons'
 import { ProjectStatus, Project, Entry, AppLanguage, TeamMember } from '@/types'
@@ -288,32 +288,21 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
                 >×</button>
               </div>
             ) : (
-              <select
-                value={clientId}
-                onChange={(e) => {
-                  if (e.target.value === '__new__') { setIsNewClient(true); setClientId('') }
-                  else setClientId(e.target.value)
-                }}
-                className={`block w-full rounded-[var(--radius-md)] border bg-[var(--surface-input)] text-[var(--text-primary)] px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] ${errors.client ? 'border-red-400' : 'border-[var(--border-default)]'}`}
-              >
+              <Select value={clientId} onChange={(e) => { if (e.target.value === '__new__') { setIsNewClient(true); setClientId('') } else setClientId(e.target.value) }}>
                 <option value="">{t('project.selectClient')}</option>
                 {[...storeClients].sort((a, b) => a.name.localeCompare(b.name)).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 <option value="__new__">{t('project.newClient')}</option>
-              </select>
+              </Select>
             )}
             {errors.client && <p className="text-xs text-[var(--color-danger-text)] mt-1">{errors.client}</p>}
           </Field>
 
           {/* Líder */}
           <Field label={t('project.pm')} required>
-            <select
-              value={pmMemberId}
-              onChange={(e) => setPmMemberId(e.target.value)}
-              className={`block w-full rounded-[var(--radius-md)] border bg-[var(--surface-input)] text-[var(--text-primary)] px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)] ${errors.pm ? 'border-red-400' : 'border-[var(--border-default)]'}`}
-            >
+            <Select value={pmMemberId} onChange={(e) => setPmMemberId(e.target.value)}>
               <option value="">{t('project.pmPlaceholder')}</option>
               {teamMembers.map((m) => <option key={m.id} value={m.userId ?? ''}>{m.name}</option>)}
-            </select>
+            </Select>
             {errors.pm && <p className="text-xs text-[var(--color-danger-text)] mt-1">{errors.pm}</p>}
           </Field>
 
@@ -326,7 +315,7 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
                   type="button"
                   onClick={() => setLanguage(l)}
                   className={`flex-1 py-2 text-xs font-medium rounded-[var(--radius-md)] border transition-colors ${
-                    language === l ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--oe-primary)]'
+                    language === l ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--text-tertiary)]'
                   }`}
                 >
                   {label}
@@ -346,7 +335,7 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
             <button
               type="button"
               onClick={() => setHasDev((v) => !v)}
-              className={`relative w-11 h-6 rounded-[var(--radius-pill)] transition-colors ${hasDev ? 'bg-[var(--oe-primary)]' : 'bg-[var(--border-default)]'}`}
+              className={`relative w-11 h-6 rounded-[var(--radius-pill)] transition-colors ${hasDev ? 'bg-[var(--text-primary)]' : 'bg-[var(--border-default)]'}`}
             >
               <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-[var(--radius-pill)] shadow transition-transform ${hasDev ? 'translate-x-5' : ''}`} />
             </button>
@@ -362,7 +351,7 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
                       type="button"
                       onClick={() => setDevType(v)}
                       className={`flex-1 py-1.5 text-xs font-medium rounded-[var(--radius-md)] border transition-colors ${
-                        devType === v ? 'bg-[var(--oe-primary)] text-white border-[var(--oe-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--oe-primary)]'
+                        devType === v ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--text-tertiary)]'
                       }`}
                     >
                       {t(`project.${v}`)}
@@ -372,14 +361,10 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
               </Field>
 
               <Field label={t('project.devLead')}>
-                <select
-                  value={devLeadMemberId}
-                  onChange={(e) => setDevLeadMemberId(e.target.value)}
-                  className="block w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-input)] text-[var(--text-primary)] px-3 py-2 text-sm focus:border-[var(--oe-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--oe-primary)]"
-                >
+                <Select value={devLeadMemberId} onChange={(e) => setDevLeadMemberId(e.target.value)}>
                   <option value="">{t('project.devLeadPlaceholder')}</option>
                   {teamMembers.map((m) => <option key={m.id} value={m.userId ?? ''}>{m.name}</option>)}
-                </select>
+                </Select>
               </Field>
 
               {devType === 'integration' && (
@@ -515,7 +500,7 @@ export default function ProjectDetailPage() {
                 if (e.key === 'Escape') setEditingName(false)
               }}
               className="text-[15px] font-[500] bg-transparent outline-none border-b"
-              style={{ color: 'var(--text-primary)', borderColor: 'var(--oe-primary)', width: `${Math.min(60, Math.max(10, nameDraft.length + 2))}ch` }}
+              style={{ color: 'var(--text-primary)', borderColor: 'var(--text-tertiary)', width: `${Math.min(60, Math.max(10, nameDraft.length + 2))}ch` }}
             />
           ) : (
             <span

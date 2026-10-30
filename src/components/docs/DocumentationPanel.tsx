@@ -41,7 +41,7 @@ function Segmented<T extends string>({ value, onChange, options, label }: { valu
           onClick={() => onChange(o.value)}
           className="px-3 py-1.5 text-xs font-medium transition-colors"
           style={value === o.value
-            ? { background: 'var(--oe-primary)', color: 'white' }
+            ? { background: 'var(--text-primary)', color: 'var(--surface-page)' }
             : { background: 'var(--surface-card)', color: 'var(--text-secondary)' }}
         >
           {o.label}
@@ -187,7 +187,7 @@ export default function DocumentationPanel({ scope }: Props) {
                     onClick={() => setFilters((f) => ({ ...f, tag: active ? null : t }))}
                     className="text-[11px] px-2 py-0.5 rounded-[var(--radius-pill)] border transition-colors"
                     style={active
-                      ? { background: 'var(--oe-primary)', color: 'white', borderColor: 'var(--oe-primary)' }
+                      ? { background: 'var(--text-primary)', color: 'var(--surface-page)', borderColor: 'var(--text-primary)' }
                       : { background: 'var(--surface-card)', color: 'var(--text-secondary)', borderColor: 'var(--border-default)' }}
                   >
                     {t}
@@ -229,10 +229,10 @@ export default function DocumentationPanel({ scope }: Props) {
                   <h3 className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>{sec.title}</h3>
                   <span className="text-[11px]" style={{ color: 'var(--text-disabled)' }}>{sec.items.length}</span>
                   {sec.projectId && (
-                    <button className="text-[11px] underline" style={{ color: 'var(--oe-primary)' }} onClick={() => navigate(`/projects/${sec.projectId}`)}>Abrir projeto</button>
+                    <button className="text-[11px] underline" style={{ color: 'var(--text-secondary)' }} onClick={() => navigate(`/projects/${sec.projectId}`)}>Abrir projeto</button>
                   )}
                   {sec.clientId && (
-                    <button className="text-[11px] underline" style={{ color: 'var(--oe-primary)' }} onClick={() => navigate(`/wallet/${sec.clientId}`)}>Abrir cliente</button>
+                    <button className="text-[11px] underline" style={{ color: 'var(--text-secondary)' }} onClick={() => navigate(`/wallet/${sec.clientId}`)}>Abrir cliente</button>
                   )}
                 </div>
               )}
@@ -324,7 +324,7 @@ function DocRow({
     >
       <span
         className="w-9 h-9 shrink-0 flex items-center justify-center"
-        style={{ background: 'var(--oe-primary-light)', color: 'var(--oe-primary)', borderRadius: 'var(--radius-md)' }}
+        style={{ background: 'var(--oe-primary-light)', color: 'var(--text-secondary)', borderRadius: 'var(--radius-md)' }}
         title={KIND_LABEL[item.kind]}
         aria-label={KIND_LABEL[item.kind]}
       >
@@ -350,7 +350,7 @@ function DocRow({
                 key={t}
                 type="button"
                 onClick={() => onTag(t)}
-                className="text-[11px] px-2 py-0.5 rounded-[var(--radius-pill)] border hover:border-[var(--oe-primary)]"
+                className="text-[11px] px-2 py-0.5 rounded-[var(--radius-pill)] border hover:border-[var(--text-tertiary)]"
                 style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)', background: 'var(--surface-subtle)' }}
                 title={`Filtrar por "${t}"`}
               >

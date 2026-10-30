@@ -31,7 +31,7 @@ export default function VoteButton({ count, voted, disabled, title, onToggle }: 
         border: '1px solid',
         borderColor: voted ? 'var(--oe-primary)' : 'var(--border-default)',
         background: voted ? 'var(--oe-primary-light, var(--surface-subtle))' : 'transparent',
-        color: voted ? 'var(--oe-primary)' : 'var(--text-secondary)',
+        color: voted ? 'var(--text-primary)' : 'var(--text-secondary)',
         fontWeight: voted ? 600 : 400,
         cursor: disabled ? 'default' : 'pointer',
         opacity: disabled && !voted ? 0.7 : 1,

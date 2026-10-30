@@ -36,7 +36,7 @@ export default function ResolveCodePage() {
             <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
               Não há nada com o código <span className="font-mono">{normalizeCode(raw)}</span> — ele pode ter sido apagado ou digitado errado. O formato é uma letra, o ano (2 dígitos) e 6 dígitos, como C26000123.
             </p>
-            <Link to="/" className="text-sm" style={{ color: 'var(--oe-primary)' }}>Voltar ao início</Link>
+            <Link to="/" className="text-sm" style={{ color: 'var(--text-secondary)' }}>Voltar ao início</Link>
           </>
         )}
     </div>

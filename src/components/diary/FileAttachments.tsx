@@ -93,7 +93,7 @@ export default function FileAttachments({ scopeId, parentId, attachments, onAdd,
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
           className="text-xs transition-colors disabled:opacity-50"
-          style={{ color: 'var(--oe-primary)' }}
+          style={{ color: 'var(--text-secondary)' }}
         >
           {uploading ? 'Enviando...' : '+ Anexar'}
         </button>
@@ -120,7 +120,7 @@ export default function FileAttachments({ scopeId, parentId, attachments, onAdd,
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs max-w-[140px] truncate"
-                style={{ color: 'var(--oe-primary)' }}
+                style={{ color: 'var(--text-secondary)' }}
                 title={att.name}
               >
                 {att.name}

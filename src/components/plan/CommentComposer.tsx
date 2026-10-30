@@ -104,7 +104,7 @@ export default function CommentComposer({ initialMarkdown, prefillMention, place
             border: '1px solid var(--border-default)', borderRadius: 18, padding: '7px 12px',
             color: 'var(--text-primary)', background: 'var(--surface-input)', outline: 'none',
           }}
-          onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--oe-primary)')}
+          onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--text-tertiary)')}
           onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border-default)')}
         />
         {onCancel && (

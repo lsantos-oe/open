@@ -11,7 +11,7 @@ export function Avatar({ name, size = 20 }: { name: string; size?: number }) {
   return (
     <span
       className="inline-flex items-center justify-center shrink-0 font-semibold select-none"
-      style={{ width: size, height: size, borderRadius: '50%', background: 'var(--oe-primary-light)', color: 'var(--oe-primary)', fontSize: Math.round(size * 0.42) }}
+      style={{ width: size, height: size, borderRadius: '50%', background: 'var(--oe-primary-light)', color: 'var(--text-secondary)', fontSize: Math.round(size * 0.42) }}
       aria-hidden="true"
     >
       {initials(name)}

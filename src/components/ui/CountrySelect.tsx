@@ -41,8 +41,8 @@ export default function CountrySelect({ value, onChange }: Props) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-2 rounded-[var(--radius-md)] border px-3 py-2 text-[13px] text-left transition-colors focus:outline-none focus:border-[var(--oe-primary)] focus:ring-1 focus:ring-[var(--oe-primary)]"
-        style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: selected ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
+        className="w-full flex items-center justify-between gap-2 rounded-[var(--radius-pill)] border border-transparent px-4 py-2 text-[13px] text-left transition-colors focus:outline-none focus:border-[var(--text-tertiary)]"
+        style={{ background: 'var(--surface-subtle)', color: selected ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
       >
         <span className="truncate">{selected ? selected.name : 'Selecione o país...'}</span>
         <SelectChevron />
@@ -81,7 +81,7 @@ export default function CountrySelect({ value, onChange }: Props) {
                     type="button"
                     onClick={() => { onChange(c.code); setOpen(false) }}
                     className="w-full text-left px-3 py-1.5 text-sm transition-colors"
-                    style={{ color: c.code === value ? 'var(--oe-primary)' : 'var(--text-secondary)' }}
+                    style={{ color: c.code === value ? 'var(--text-primary)' : 'var(--text-secondary)' }}
                     onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
                     onMouseLeave={e => (e.currentTarget.style.background = '')}
                   >

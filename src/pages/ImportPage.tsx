@@ -247,7 +247,7 @@ export default function ImportPage() {
                 background: active ? 'var(--color-info-bg)' : 'var(--surface-card)',
               }}
             >
-              <p className="text-sm font-semibold" style={{ color: active ? 'var(--oe-primary)' : 'var(--text-primary)' }}>{c.title}</p>
+              <p className="text-sm font-semibold" style={{ color: active ? 'var(--text-primary)' : 'var(--text-primary)' }}>{c.title}</p>
               <p className="text-[11.5px] mt-1" style={{ color: 'var(--text-tertiary)' }}>{c.description}</p>
             </button>
           )

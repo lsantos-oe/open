@@ -41,11 +41,11 @@ export function ColumnsMenu({ columns, isVisible, onToggle }: Props) {
       <button
         ref={triggerRef as any}
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 h-8 text-[13px] font-medium px-3 rounded-[var(--radius-md)] transition-colors whitespace-nowrap"
+        className="flex items-center justify-center h-8 w-8 rounded-full transition-colors"
         style={{ background: 'var(--surface-subtle)', color: 'var(--text-secondary)' }}
+        aria-label="Colunas" title="Colunas"
       >
         <ColumnsIcon />
-        Colunas
       </button>
 
       {open && createPortal(
@@ -68,7 +68,7 @@ export function ColumnsMenu({ columns, isVisible, onToggle }: Props) {
             >
               <input
                 type="checkbox"
-                className="rounded border-[var(--border-default)] accent-[var(--oe-primary)]"
+                className="rounded border-[var(--border-default)] accent-[var(--text-primary)]"
                 checked={col.locked || isVisible(col.key)}
                 disabled={col.locked}
                 onChange={() => onToggle(col.key)}

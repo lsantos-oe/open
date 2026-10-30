@@ -48,7 +48,7 @@ export function AnchorNav({ items, onNavigate, active: controlledActive, backgro
             role="tab"
             aria-selected={on}
             onClick={() => handleClick(item.id)}
-            className="px-3 py-1.5 text-[13px] font-medium rounded-[var(--radius-md)] transition-colors whitespace-nowrap hover:text-[var(--text-primary)]"
+            className="px-3 py-1.5 text-[13px] font-medium rounded-[var(--radius-pill)] transition-colors whitespace-nowrap hover:text-[var(--text-primary)]"
             style={{
               color: on ? 'var(--text-primary)' : 'var(--text-tertiary)',
               background: on ? 'var(--surface-subtle)' : 'transparent',
