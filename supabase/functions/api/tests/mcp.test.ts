@@ -221,3 +221,26 @@ t("encerramento pelo MCP: list_open_tasks → complete_open_tasks (com prévia)"
   const done = await tool("complete_open_tasks", { kind: "incident", id: inc.data.Id, dryRun: false });
   assertEquals(done.data.Completed, 1);
 });
+
+t("grupos, documentação e códigos: tools existem e respondem (somente leitura)", async () => {
+  const names = (await mcp("tools/list")).result.tools.map((x: any) => x.name);
+  for (const n of ["list_client_groups", "get_client_group", "list_documentation", "resolve_code", "find_client_group"]) assert(names.includes(n), n);
+  const groups = await tool("list_client_groups", {});
+  assert(!groups.isError, groups.text);
+  assert(Array.isArray(groups.data));
+  const cli = await tool("find_client", { name: "Cliente" });
+  const some = (cli.data?.matches ?? [])[0];
+  if (some) {
+    assertMatch(some.Code ?? "", /^C[0-9]{8}$/); // código curto no formato novo
+    const r = await tool("resolve_code", { code: some.Code });
+    assertEquals(r.data.EntitySet, "Clients");
+    assertMatch(r.data.Link, /\/r\/C[0-9]{8}$/);
+  }
+  const bad = await tool("resolve_code", { code: "C-2026-000123" });
+  assert(bad.isError);
+  const docs = await tool("list_documentation", { projectId: IDS.project });
+  assert(!docs.isError, docs.text);
+  assert(Array.isArray(docs.data.items));
+  const noScope = await tool("list_documentation", {});
+  assert(noScope.isError);
+});

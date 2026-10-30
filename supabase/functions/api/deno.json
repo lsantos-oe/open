@@ -5,6 +5,7 @@
     "postgres": "npm:postgres@3.4.5",
     "zod": "npm:zod@3.25.76",
     "date-fns": "npm:date-fns@3.6.0",
+    "@electric-sql/pglite": "npm:@electric-sql/pglite@0.5.13",
     "@modelcontextprotocol/sdk/": "npm:/@modelcontextprotocol/sdk@1.32.1/",
     "@std/assert": "jsr:@std/assert@1.0.13",
     "@std/cli/parse-args": "jsr:@std/cli@1.0.6/parse-args"
@@ -14,7 +15,7 @@
   },
   "tasks": {
     "dev": "deno run -A --watch --env-file=.env.local index.ts",
-    "test": "deno test -A tests/odata.test.ts",
+    "test": "deno test -A tests/odata.test.ts tests/groups_docs.test.ts",
     "test:all": "deno run -A --env-file=.env.local tools/test-local.ts",
     "check": "deno check index.ts && deno run -A tools/sync-domain.ts --check",
     "sync-domain": "deno run -A tools/sync-domain.ts"

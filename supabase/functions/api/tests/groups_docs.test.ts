@@ -3,7 +3,7 @@
 // Aplica as migrations de grupos e de códigos sobre um schema mínimo e roda as leituras OData/serviços de verdade.
 // deno-lint-ignore-file no-explicit-any
 import { assert, assertEquals, assertMatch, assertRejects } from "@std/assert";
-import { PGlite } from "npm:@electric-sql/pglite@0.5.13";
+import { PGlite } from "@electric-sql/pglite";
 import type { Ctx } from "../lib/context.ts";
 import { getSet } from "../odata/entities.ts";
 import { parseOptions } from "../odata/filter.ts";
@@ -46,7 +46,7 @@ async function setup() {
     create table incidents (id uuid primary key default gen_random_uuid(), title text, status text default 'open', priority text default 'medium', impact text default 'medium', deadline date, created_at timestamptz default now(), status_changed_at timestamptz default now());
     create table incident_clients (incident_id uuid references incidents(id) on delete cascade, client_id uuid references clients(id) on delete cascade);
     create table entries (id uuid primary key default gen_random_uuid(), type text default 'task', name text, project_id uuid, phase_id uuid, incident_id uuid, status text default 'pending',
-      planned_start date, planned_end date, planned_date date, actual_end date, hidden_from_plan boolean, "order" int default 0, subtasks jsonb default '[]', links jsonb default '[]',
+      planned_start date, planned_end date, planned_date date, actual_end date, hidden_from_plan boolean, "order" int default 0, client_ids uuid[], responsible text, subtasks jsonb default '[]', links jsonb default '[]',
       is_documentation boolean not null default false, created_at timestamptz default now(), updated_at timestamptz default now());
     create table risks (id uuid primary key default gen_random_uuid(), project_id uuid, description text, created_at timestamptz default now());
     create table attachments (id uuid primary key default gen_random_uuid(), entity_type text, entity_id uuid, storage_path text, name text, size bigint, uploaded_by uuid, created_at timestamptz default now());

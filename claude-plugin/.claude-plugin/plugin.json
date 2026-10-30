@@ -1,11 +1,24 @@
 {
   "name": "open",
   "displayName": "Open",
-  "version": "1.0.1",
-  "description": "Conecta o Claude ao Open, a ferramenta de gestão do time de Operações Enterprise da Ploomes: projetos, tarefas, incidentes, clientes e diário — com login próprio de cada pessoa, sem chave.",
-  "author": { "name": "Victor Santos", "email": "victor.santos@ploomes.com" },
+  "version": "1.1.0",
+  "description": "Conecta o Claude ao Open, a ferramenta de gestão do time de Operações Enterprise da Ploomes: projetos, tarefas, incidentes, clientes, grupos de clientes, documentação e diário — com login próprio de cada pessoa, sem chave.",
+  "author": {
+    "name": "Victor Santos",
+    "email": "victor.santos@ploomes.com"
+  },
   "homepage": "https://openploo.vercel.app/api/docs",
-  "keywords": ["open", "ploomes", "operacoes-enterprise", "projetos", "tarefas", "incidentes", "mcp"],
+  "keywords": [
+    "open",
+    "ploomes",
+    "operacoes-enterprise",
+    "projetos",
+    "tarefas",
+    "incidentes",
+    "mcp",
+    "grupos-de-clientes",
+    "documentacao"
+  ],
   "mcpServers": {
     "open": {
       "type": "http",

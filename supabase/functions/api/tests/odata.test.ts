@@ -125,6 +125,26 @@ Deno.test("$metadata tem todos os entity sets e actions", () => {
   for (const s of ["Tasks", "Projects", "Clients", "Incidents", "OpenPoints"]) assertMatch(x, new RegExp(`EntitySet Name="${s}"`));
   assertMatch(x, /Action Name="ChangeDates" IsBound="true"/);
   assertMatch(x, /ActionImport Name="Intake"/);
+  for (const s of ["ClientGroups", "DocumentationItems"]) assertMatch(x, new RegExp(`EntitySet Name="${s}"`));
+  assertMatch(x, /FunctionImport Name="ResolveCode"/);
+});
+
+Deno.test("grupos e documentação: filtros traduzem (membros, etiquetas, público) e Code existe nas entidades principais", () => {
+  const groups = getSet("ClientGroups");
+  const g = tr("ClientIds/any(c: c eq 00000000-0000-4000-8000-0000000c0001) and BelowMinimum eq false", groups);
+  assertMatch(g.sql, /unnest\(/);
+  assertEquals(g.params, ["00000000-0000-4000-8000-0000000c0001", false]);
+  assertMatch(g.sql, /< 2/);
+  const docs = getSet("DocumentationItems");
+  const d = tr("Audience in ('Technical','Both') and Tags/any(t: tolower(t) eq 'api') and Source eq 'Task'", docs);
+  assertEquals(d.params, ["technical", "both", "api", "task"]);
+  assertMatch(d.sql, /unnest\(/);
+  assertMatch(tr("Groups/any(g: g/Name eq 'X')", getSet("Clients")).sql, /client_group_members/);
+  assertMatch(tr("Documentation/any(d: d/Kind eq 'Link')", getSet("Projects")).sql, /documentation_items/);
+  for (const s of ["Clients", "Projects", "Tasks", "Incidents", "Contacts", "Risks", "ClientGroups", "DocumentationItems"]) {
+    assert(getSet(s).props.some((p) => p.name === "Code"), `${s} sem Code`);
+  }
+  assertThrows(() => tr("Status eq 'Link'", docs), Error); // Status não existe em DocumentationItems
 });
 
 Deno.test("OpenAPI 3.2 válido estruturalmente (com operação QUERY e exemplos por status)", () => {

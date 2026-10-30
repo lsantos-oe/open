@@ -1,7 +1,7 @@
 # Plugin do Open para o Claude
 
 Conecta o Claude ao [Open](https://openploo.vercel.app): consultar e cadastrar projetos, tarefas, incidentes e clientes
-conversando. Tudo é feito **como você** — com as suas permissões e o seu nome no histórico do app. Não há chave dentro do
+conversando — inclusive grupos de clientes e a documentação de projetos e clientes. Tudo é feito **como você** — com as suas permissões e o seu nome no histórico do app. Não há chave dentro do
 plugin: cada pessoa faz o próprio login.
 
 ## Instalar
@@ -23,7 +23,7 @@ Para desconectar: **https://openploo.vercel.app/api/minha-chave** → **Desconec
 
 ## O que vem no plugin
 
-- **Conector do Open** (`/api/mcp`) — cerca de 60 ferramentas de leitura e escrita.
+- **Conector do Open** (`/api/mcp`) — cerca de 65 ferramentas de leitura e escrita.
 - **Skill `open`** — o Claude sabe quando e como usar o Open.
 - **Comandos:**
 
@@ -40,6 +40,8 @@ Para desconectar: **https://openploo.vercel.app/api/minha-chave** → **Desconec
 | `/open:encerrar <projeto ou incidente>` | conclui e trata as tarefas que ficaram abertas |
 | `/open:revisar-atrasos [foco]` | atrasos por projeto e por pessoa |
 | `/open:carga-time [foco]` | carga de trabalho por pessoa, com sugestões |
+| `/open:grupo <grupo ou cliente>` | visão compilada do grupo de clientes: contatos, projetos, incidentes e documentação |
+| `/open:documentacao <projeto, cliente ou grupo> [técnica/executiva] [etiqueta]` | documentação reunida, filtrada por público e etiqueta |
 
 ## Segurança
 

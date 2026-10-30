@@ -559,6 +559,7 @@
     "dependencies": [
       "jsr:@std/assert@1.0.13",
       "jsr:@std/cli@1.0.6",
+      "npm:@electric-sql/pglite@0.5.13",
       "npm:@modelcontextprotocol/sdk@1.32.1",
       "npm:date-fns@3.6.0",
       "npm:hono@4.13.13",
