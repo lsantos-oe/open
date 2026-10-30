@@ -1,9 +1,10 @@
 import { boardStatus } from '@/utils/statusCalc'
+import { CapacityView } from '@/components/tasks/CapacityView'
+import type { CapTask } from '@/utils/capacity'
 import { entryClientIds } from '@/utils/entryClients'
 import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { endOfWeek } from 'date-fns'
 import {
   DndContext, DragEndEvent, DragStartEvent, DragOverlay,
   PointerSensor, useSensor, useSensors,
@@ -658,37 +659,21 @@ export default function TasksPage() {
     return result
   }, [groupBy, responsibleRole, filteredCards, sortedCards, today, dateSortMode, projects, incidents])
 
-  // ── Resource management (§3 of the proposal) — per-executor active load,
-  // split into "has a date this week or earlier" (probably freeing up soon)
-  // vs. "no date at all" (a visibility gap, not a data-quality bug — normal
-  // for Incident/Solta). Deliberately NOT a "free which weekday" heatmap: that
-  // idea assumed every active task has a plannedEnd, which isn't true outside
-  // Projeto. Reuses the same filteredCards as the table, so it respects
-  // whatever client/project/status filters are already active. ─────────────
-  type CapacityPerson = { key: string; name: string; total: number; dueSoon: GlobalCard[]; noDate: GlobalCard[] }
-
-  const weekEndIso = useMemo(() => endOfWeek(new Date(), { weekStartsOn: 1 }).toISOString().split('T')[0], [])
-
-  const capacityData: CapacityPerson[] = useMemo(() => {
-    const map = new Map<string, CapacityPerson>()
-    for (const c of filteredCards) {
-      if (c.status === 'done') continue
-      const owners = entryOwners(c)
-      // Same legacy fallback as elsewhere: a row saved before Executor/
-      // Validador existed has no `kind` at all — treat its only owner as
-      // the executor rather than dropping it from every load count.
-      const executor = owners.find((o) => o.kind === 'executor') ?? (owners.every((o) => !o.kind) ? owners[0] : undefined)
-      if (!executor) continue
-      const key = ownerKey(executor)
-      if (!map.has(key)) map.set(key, { key, name: executor.name, total: 0, dueSoon: [], noDate: [] })
-      const person = map.get(key)!
-      person.total++
-      const end = c.type === 'task' ? c.plannedEnd : c.plannedDate
-      if (!end) person.noDate.push(c)
-      else if (end <= weekEndIso) person.dueSoon.push(c)
+  // Visão "Carga": cada tarefa ativa vira um item mínimo (executor, validadores, datas) e a análise de capacidade
+  // (utils/capacity.ts) calcula pessoa a pessoa. Respeita os mesmos filtros da tabela.
+  const capacityTasks: CapTask[] = useMemo(() => filteredCards.map((c) => {
+    const owners = entryOwners(c)
+    // Linhas antigas, de antes de Executor/Validador existirem, não têm `kind`: o único responsável é o executor.
+    const executor = owners.find((o) => o.kind === 'executor') ?? (owners.every((o) => !o.kind) ? owners[0] : undefined)
+    return {
+      id: c.id, type: c.type, status: c.status,
+      start: c.type === 'task' ? c.plannedStart : c.plannedDate,
+      end: c.type === 'task' ? c.plannedEnd : c.plannedDate,
+      executorKey: executor ? ownerKey(executor) : undefined,
+      executorName: executor?.name,
+      validatorKeys: owners.filter((o) => o.kind === 'validator').map(ownerKey),
     }
-    return [...map.values()].sort((a, b) => b.total - a.total)
-  }, [filteredCards, weekEndIso])
+  }), [filteredCards])
 
   // ── One row of the tracking table — inline-editable per §4 of the proposal.
   // Nome/Previsto/Duração real are simple controlled-on-blur inputs gated by
@@ -1072,49 +1057,11 @@ export default function TasksPage() {
           </table>
         </div>
       ) : view === 'capacity' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {capacityData.length === 0 ? (
-            <p style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>Nenhuma tarefa ativa com executor no momento.</p>
-          ) : capacityData.map((person) => (
-            <div key={person.key} className="oe-card p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span style={{ fontWeight: 500, color: 'var(--text-primary)', fontSize: 13 }}>{person.name}</span>
-                <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{person.total} ativa{person.total !== 1 ? 's' : ''}</span>
-              </div>
-              {person.dueSoon.length > 0 && (
-                <div className="mb-3">
-                  <p style={{ fontSize: 11, fontWeight: 500, color: 'var(--color-success-text)', marginBottom: 4 }}>
-                    Com prazo até o fim da semana ({person.dueSoon.length})
-                  </p>
-                  <div className="space-y-1">
-                    {person.dueSoon.map((c) => (
-                      <button key={c.id} onClick={() => setEditCard(c)} className="block w-full text-left truncate text-xs" style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                        {c.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {person.noDate.length > 0 && (
-                <div>
-                  <p style={{ fontSize: 11, fontWeight: 500, color: 'var(--color-warning-text)', marginBottom: 4 }}>
-                    Sem previsão de prazo ({person.noDate.length})
-                  </p>
-                  <div className="space-y-1">
-                    {person.noDate.map((c) => (
-                      <button key={c.id} onClick={() => setEditCard(c)} className="block w-full text-left truncate text-xs" style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                        {c.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {person.dueSoon.length === 0 && person.noDate.length === 0 && (
-                <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>Só tarefas com prazo mais distante.</p>
-              )}
-            </div>
-          ))}
-        </div>
+        <CapacityView
+          tasks={capacityTasks}
+          today={today}
+          onSeePerson={(key) => { setFilterMember([key]); setView('table') }}
+        />
       ) : (
         <DndContext
           sensors={sensors}
