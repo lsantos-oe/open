@@ -325,7 +325,7 @@ export default function ClientsPage() {
           </table>
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="oe-kanban gap-4" style={{ gridTemplateColumns: 'repeat(3, minmax(272px, 1fr))' }}>
           {STATUSES.map((s) => {
             const cards = sorted.filter((c) => c.status === s)
             return (

@@ -155,6 +155,18 @@
   }
 }
 
+/* Kanban: colunas com largura mínima e barra de rolagem lateral discreta, em vez de espremer as raias. */
+.oe-kanban {
+  display: grid;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.oe-kanban::-webkit-scrollbar { height: 8px; }
+.oe-kanban::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+.oe-kanban::-webkit-scrollbar-track { background: transparent; }
+
 /* Caixa padrão: só um tom de fundo e cantos suaves — sem borda nem sombra. */
 .oe-card {
   background: var(--surface-card);

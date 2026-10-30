@@ -326,7 +326,7 @@ function KanbanView({ projects, holidays, onOpen, selected, onToggle, onCreate }
   if (projects.length === 0) return <EmptyFiltered />
 
   return (
-    <div className="grid grid-cols-4 gap-4">
+    <div className="oe-kanban gap-4" style={{ gridTemplateColumns: 'repeat(4, minmax(272px, 1fr))' }}>
       {KANBAN_STATUSES.map((status) => {
         const cards = projects.filter((p) => p.status === status)
         return (

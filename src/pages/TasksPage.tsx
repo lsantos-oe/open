@@ -1069,7 +1069,7 @@ export default function TasksPage() {
           onDragEnd={handleDragEnd}
           onDragCancel={() => setActiveId(null)}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${KANBAN_COLS.length}, 1fr)`, gap: 12 }}>
+          <div className="oe-kanban" style={{ gridTemplateColumns: `repeat(${KANBAN_COLS.length}, minmax(272px, 1fr))`, gap: 12 }}>
             {KANBAN_COLS.map(col => (
               <KanbanColumn
                 key={col.status}

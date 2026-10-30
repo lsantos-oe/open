@@ -437,7 +437,7 @@ export default function IncidentsPage() {
           onDragEnd={handleIncidentDragEnd}
           onDragCancel={() => setActiveIncidentId(null)}
         >
-          <div className="grid grid-cols-5 gap-4">
+          <div className="oe-kanban gap-4" style={{ gridTemplateColumns: 'repeat(5, minmax(272px, 1fr))' }}>
             {KANBAN_STATUSES.map((status) => (
               <IncidentColumn
                 key={status}
