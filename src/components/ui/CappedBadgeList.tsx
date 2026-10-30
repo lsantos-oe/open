@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useSmartPosition } from '@/hooks/useSmartPosition'
+import { Badge } from './Badge'
 
 interface Props {
   items: string[]
@@ -32,23 +33,17 @@ export function CappedBadgeList({ items, max = 2 }: Props) {
   const rest = items.slice(max)
 
   return (
-    <div className="flex flex-nowrap items-center gap-1 overflow-hidden">
+    <div className="flex flex-nowrap items-center gap-1 min-w-0">
       {shown.map((name) => (
-        <span
-          key={name}
-          className="text-xs px-1.5 py-0.5 rounded-[var(--radius-pill)] whitespace-nowrap shrink-0"
-          style={{ background: 'var(--surface-subtle)', color: 'var(--text-secondary)' }}
-        >
-          {name}
-        </span>
+        <Badge key={name} size="sm" className="min-w-0 shrink" title={name}>{name}</Badge>
       ))}
       {rest.length > 0 && (
         <>
           <button
             ref={triggerRef as any}
             onClick={(e) => { e.stopPropagation(); setOpen((v) => !v) }}
-            className="text-xs px-1.5 py-0.5 rounded-[var(--radius-pill)] font-semibold shrink-0"
-            style={{ background: 'var(--border-default)', color: 'var(--text-tertiary)' }}
+            className="text-[11.5px] h-5 px-2 rounded-[var(--radius-pill)] font-medium shrink-0"
+            style={{ background: 'var(--badge-gray-bg)', color: 'var(--text-secondary)' }}
           >
             +{rest.length}
           </button>
@@ -59,8 +54,8 @@ export function CappedBadgeList({ items, max = 2 }: Props) {
               className="p-2 flex flex-col gap-1"
               style={{
                 position: 'fixed', ...position, zIndex: 1000, minWidth: 160,
-                background: 'var(--surface-card)', border: '1px solid var(--border-default)',
-                borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)',
+                background: 'var(--surface-card)',
+                borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)',
               }}
             >
               {items.map((name) => (

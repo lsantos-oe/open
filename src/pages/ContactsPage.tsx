@@ -20,7 +20,6 @@ import { ClientContact } from '@/types'
 
 const COLUMNS: ColumnDef[] = [
   { key: 'name', label: 'Nome', locked: true },
-  { key: 'role', label: 'Cargo' },
   { key: 'contact', label: 'Contato' },
   { key: 'clients', label: 'Clientes vinculados' },
 ]
@@ -170,11 +169,6 @@ export default function ContactsPage() {
                 <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
                   <SortableHeader label={t('contacts.colName')} field="name" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
                 </th>
-                {isVisible('role') && (
-                  <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                    <SortableHeader label={t('contacts.colRole')} field="role" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
-                  </th>
-                )}
                 {isVisible('contact') && (
                   <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--text-tertiary)' }}>
                     <SortableHeader label={t('contacts.colContact')} field="contact" sortField={sortField} sortDir={sortDir} onSort={toggleSort} />
@@ -199,25 +193,18 @@ export default function ContactsPage() {
                   <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                     <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--text-primary)]" checked={selected.has(c.id)} onChange={() => toggleSelect(c.id)} />
                   </td>
-                  <td className="px-4 py-3 font-medium" style={{ maxWidth: 220 }}>
-                    <span
-                      className="block truncate"
-                      style={{ color: 'var(--text-primary)' }}
-                      title={c.name}
-                    >
-                      {c.name}
-                    </span>
+                  <td className="px-4 py-2" style={{ maxWidth: 280 }}>
+                    <span className="block truncate font-medium leading-5" style={{ color: 'var(--text-primary)' }} title={c.name}>{c.name}</span>
+                    <span className="block truncate text-[11.5px] leading-4" style={{ color: 'var(--text-tertiary)' }} title={c.role ?? ''}>{c.role || '\u00A0'}</span>
                   </td>
-                  {isVisible('role') && (
-                    <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>{c.role ?? '—'}</td>
-                  )}
                   {isVisible('contact') && (
-                    <td className="px-4 py-3" style={{ color: 'var(--text-secondary)' }}>
-                      {[c.email, c.phone].filter(Boolean).join(' · ') || '—'}
+                    <td className="px-4 py-2" style={{ maxWidth: 300 }}>
+                      <span className="block truncate leading-5" style={{ color: 'var(--text-secondary)' }} title={c.email ?? ''}>{c.email || '—'}</span>
+                      <span className="block truncate text-[11.5px] leading-4" style={{ color: 'var(--text-tertiary)' }}>{c.phone || '\u00A0'}</span>
                     </td>
                   )}
                   {isVisible('clients') && (
-                    <td className="px-4 py-3" style={{ maxWidth: 260 }}>
+                    <td className="px-4 py-2" style={{ maxWidth: 320 }}>
                       <CappedBadgeList items={clientNames(c)} />
                     </td>
                   )}
