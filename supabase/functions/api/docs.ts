@@ -60,7 +60,7 @@ chamada (sem o corpo). Nunca coloque a chave em URL, código versionado ou print
 
 Cada recurso é um *entity set*: \`Clients\`, \`Contacts\`, \`Projects\`, \`Phases\`, \`Tasks\`, \`Comments\`, \`Incidents\`,
 \`Risks\`, \`DelayLogs\`, \`OpenPoints\`, \`Meetings\`, \`History\`, \`Users\`, \`Notifications\`, \`CsAssignments\`,
-\`IncidentStakeholders\`.
+\`IncidentStakeholders\`, \`ClientGroups\` (grupos de clientes) e \`DocumentationItems\` (documentação).
 
 | Opção | Exemplo |
 |---|---|
@@ -89,6 +89,39 @@ DependsOn/any(d: d eq 9a2b...)                      -- tarefas que dependem de o
 **Campos calculados** (iguais aos da tela, no fuso de São Paulo): \`Tasks.IsOverdue\`, \`DaysOverdue\`, \`IsStalled\` (5+ dias
 sem atividade), \`DueDate\`, \`Scope\`; \`Projects.Progress\`, \`OverdueCount\`, \`GoLiveDate\`, \`PlannedEnd\`, \`VarianceDays\`
 e \`IsDelayed\` (os dois últimos não são filtráveis); \`Incidents.AgeDays\`, \`DaysInStatus\`, \`IsOverdue\`.
+
+### Códigos curtos
+
+Cada cliente, projeto, incidente, tarefa, contato, grupo, risco e item de documentação tem um **\`Code\`** legível: a
+letra da entidade + ano com 2 dígitos + sequência de 6 dígitos — \`C26000123\`. **C** cliente, **P** projeto, **I** incidente,
+**T** tarefa/marco/reunião, **K** contato, **G** grupo de clientes, **R** risco, **D** documentação. O código não muda e
+convive com o \`Id\` (Guid), que continua sendo a chave. O link curto \`<app>/r/<código>\` abre o registro no app.
+
+\`\`\`bash
+# achar pelo código (qualquer entity set tem Code)
+curl -G -H "User-Key: SUA_USER_KEY" "{{ROOT}}/odata/v1/Clients" --data-urlencode "\$filter=Code eq 'C26000123'"
+# ou resolver sem saber o tipo: devolve o registro e o link do app
+curl -H "User-Key: SUA_USER_KEY" "{{ROOT}}/odata/v1/Open.ResolveCode(code='D26000045')"
+\`\`\`
+
+### Grupos de clientes e documentação (somente leitura)
+
+\`ClientGroups\` reúne 2 ou mais clientes (ex.: empresas do mesmo conglomerado): \`ClientIds\` são os membros e
+\`ContactIds\` os contatos colocados **direto no grupo** — eles ficam ligados a **todos** os clientes membros. Um cliente
+só participa de um grupo, salvo se a configuração do sistema permitir vários; com menos de 2 clientes o app só avisa
+(\`BelowMinimum\`). Navegações: \`Clients\`, \`Contacts\`, \`Projects\`, \`Incidents\`, \`Documentation\`.
+
+\`DocumentationItems\` traz links, arquivos e textos, cada um com público (\`Audience\`: Technical, Executive ou Both) e
+\`Tags\`. \`Source=Direct\` são itens colocados direto na aba Documentação de um projeto ou cliente;
+\`Source=Task\` são os links e anexos das tarefas de documentação do projeto (espelhados; \`TaskId\` aponta a tarefa).
+Arquivos não são baixados pela API (\`HasFile\`): abra pelo link do app.
+
+\`\`\`text
+GET /ClientGroups?\$expand=Clients(\$select=Id,Name)            -- grupos com os membros
+GET /ClientGroups(<id>)/Documentation?\$filter=Audience ne 'Technical'   -- documentação executiva do grupo
+GET /DocumentationItems?\$filter=ProjectId eq <id> and Tags/any(t: tolower(t) eq 'api')
+GET /Clients(<id>)/Groups                                     -- em que grupo o cliente está
+\`\`\`
 
 ### Consultas longas: QUERY e $query
 
@@ -183,7 +216,8 @@ Com \`StartDate\`, as datas das tarefas são calculadas pelas durações (dias �
 ## MCP (Claude)
 
 O endpoint \`{{ROOT}}/mcp\` é um servidor **MCP Streamable HTTP**. Ele oferece as mesmas operações desta API como
-*tools* (\`search\`, \`odata_query\`, \`list_tasks\`, \`create_task\`, \`intake_preview\`, \`intake_commit\`...), *resources*
+*tools* (\`search\`, \`odata_query\`, \`list_tasks\`, \`create_task\`, \`intake_preview\`, \`intake_commit\`...; e, para grupos e documentação,
+\`list_client_groups\`, \`get_client_group\`, \`list_documentation\` e \`resolve_code\`), *resources*
 (\`open://projects/{id}\`, \`open://guide/model\`...) e *prompts* (\`cadastrar_demanda\`, \`status_report\`, \`minha_semana\`...).
 
 **Plugin do Open (recomendado):** instale o plugin no Claude e, na aba **Conectores**, clique em **Vincular** → entre com
@@ -227,6 +261,9 @@ Formato OData: \`{"error": {"code", "message", "target", "details", "innererror"
 | ClientStatus | PreVenda, Implantacao, SustentacaoNovosProjetos |
 | IncidentStatus | Open, InProgress, WaitingOnClient, Resolved, Closed |
 | Level (prioridade/impacto) | Low, Medium, High |
+| DocKind | Link, File, Text |
+| DocAudience | Technical, Executive, Both |
+| DocSource | Direct, Task |
 | RiskFlag | None, Warning, Critical |
 
 *Atraso não é etapa*: uma tarefa em qualquer etapa pode estar atrasada (\`IsOverdue\`). Datas são \`YYYY-MM-DD\`;
@@ -240,6 +277,10 @@ export const TAG_DOCS: Record<string, string> = {
     "Mude a etapa com `Open.SetStatus` e as datas com `Open.ChangeDates` (cascata nas dependentes). PATCH também aceita `Status` e datas, com as mesmas regras.",
   Projects: "POST aceita a estrutura completa (Phases → Tasks com Ref/DependsOn) ou um `TemplateId` + `StartDate`.",
   Incidents: "Status muda por `Open.SetStatus` (ou PATCH Status) e avisa owner e stakeholders.",
+  ClientGroups:
+    "Somente leitura. Contatos em `ContactIds` ficam ligados a todos os clientes membros. Um cliente só em um grupo, salvo configuração. Veja *Grupos de clientes e documentação* na introdução.",
+  DocumentationItems:
+    "Somente leitura. `Source=Direct` (aba do projeto/cliente) ou `Task` (links e anexos das tarefas de documentação). Público: Technical, Executive, Both.",
 };
 
 /** Ícone do Open (mesmo do app: public/favicon.svg). */

@@ -4,6 +4,7 @@
     "jsr:@std/assert@1.0.13": "1.0.13",
     "jsr:@std/cli@1.0.6": "1.0.6",
     "jsr:@std/internal@^1.0.6": "1.0.14",
+    "npm:@electric-sql/pglite@0.5.13": "0.5.13",
     "npm:@modelcontextprotocol/sdk@1.32.1": "1.32.1_zod@3.25.76",
     "npm:date-fns@3.6.0": "3.6.0",
     "npm:hono@4.13.13": "4.13.13",
@@ -25,6 +26,9 @@
     }
   },
   "npm": {
+    "@electric-sql/pglite@0.5.13": {
+      "integrity": "sha512-4rZuxK1k07w6sSpJzjMri0B9+HuXuC7V9pxVB51pR0T9KPqXg6TD0mdaEwBA9rkcL4jdht4tGDf/wYzAiGhT7g=="
+    },
     "@hono/node-server@2.1.5_hono@4.13.13": {
       "integrity": "sha512-MgP/I06GdvsilDspMk/qmRzpk8LOUStP6jFAbSRi40W09DhoyUn+Mj7eyKICPqeYKybOjVFLVIAQzvu1bfIa7Q==",
       "dependencies": [

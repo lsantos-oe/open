@@ -56,6 +56,7 @@
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
+  --radius-xl: 16px;
   --radius-pill: 999px;
 
   /* Shadows — warm-tinted */
@@ -118,6 +119,8 @@
 }
 
 @layer base {
+  /* Linhas (divide-y, border) com a cor do tema; sem isso o Tailwind usa cinza claro, que no escuro vira traço branco. */
+  *, ::before, ::after { border-color: var(--border-default); }
   * { box-sizing: border-box; }
   body {
     background-color: var(--surface-page);
@@ -146,4 +149,10 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+}
+
+/* Caixa padrão: só um tom de fundo e cantos suaves — sem borda nem sombra. */
+.oe-card {
+  background: var(--surface-card);
+  border-radius: var(--radius-xl);
 }

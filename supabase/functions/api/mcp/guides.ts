@@ -20,7 +20,17 @@ Regras:
 7. Para consultas que as tools prontas não cobrem, use describe_model + odata_query.
 8. Ao terminar uma gravação, informe os links do app devolvidos (campo Link ou os Ids).
 9. Ao concluir um projeto (Status Done) ou resolver/fechar um incidente, faça como o app: liste as tarefas abertas
-   (list_open_tasks) e pergunte se devem ser concluídas também; se sim, use complete_open_tasks.`;
+   (list_open_tasks) e pergunte se devem ser concluídas também; se sim, use complete_open_tasks.
+10. Tudo tem um código curto (ex.: C26000123): a letra diz o que é (C cliente, P projeto, I incidente, T tarefa,
+    K contato, G grupo de clientes, R risco, D documentação). Se a pessoa citar um código, use resolve_code. Ao citar
+    algo, mostre o código e o link do app (<app>/r/<código> abre qualquer um).
+11. Grupos de clientes: um grupo reúne 2 ou mais clientes; use list_client_groups/get_client_group (visão compilada:
+    clientes, contatos, projetos, incidentes e documentação). Um contato colocado direto no grupo vale para todos os
+    clientes membros. Um cliente só fica em um grupo, salvo se a configuração do sistema permitir mais. Grupos e
+    documentação são somente leitura por aqui — para alterar, a pessoa usa o app.
+12. Documentação (list_documentation): links, arquivos e textos de projetos e clientes, com público Technical,
+    Executive ou Both e etiquetas (Tags). Source=Task são links/anexos das tarefas de documentação do projeto. Não
+    invente conteúdo de arquivo: só resuma o que a listagem traz (título, URL, texto) e aponte o Link do app.`;
 
 export function modelGuide(): string {
   const lines = ["# Modelo de dados do Open", ""];
@@ -46,6 +56,9 @@ export function modelGuide(): string {
     "- Mudar a etapa para InProgress/Done preenche ActualStart/ActualEnd; voltar de Done limpa as datas reais.",
     "- Entrar em Validation avisa o validador; novos responsáveis são notificados (e recebem DM no Discord, se ligado).",
     "- Clientes: Status PreVenda, Implantacao ou SustentacaoNovosProjetos. Incidentes avisam owner e stakeholders a cada mudança de status.",
+    "- Códigos curtos: letra da entidade + ano (2 dígitos) + sequência de 6 dígitos (C26000123), estáveis. C cliente, P projeto, I incidente, T tarefa/marco/reunião, K contato, G grupo, R risco, D documentação. O app abre /r/<código>.",
+    "- Grupos de clientes: 2 ou mais clientes. Contato colocado direto no grupo (ContactIds) fica ligado a TODOS os clientes membros (inclusive os que entrarem depois); um cliente só em um grupo, salvo configuração. Abaixo de 2 clientes o app só avisa (BelowMinimum).",
+    "- Documentação (DocumentationItems): Source=Direct (item colocado na aba do projeto ou do cliente) ou Task (links e anexos das tarefas de documentação do projeto, espelhados). Público Technical/Executive/Both e etiquetas livres.",
   );
   return lines.join("\n");
 }

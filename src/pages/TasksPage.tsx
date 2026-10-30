@@ -1076,7 +1076,7 @@ export default function TasksPage() {
           {capacityData.length === 0 ? (
             <p style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>Nenhuma tarefa ativa com executor no momento.</p>
           ) : capacityData.map((person) => (
-            <div key={person.key} className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
+            <div key={person.key} className="oe-card p-4">
               <div className="flex items-center justify-between mb-3">
                 <span style={{ fontWeight: 500, color: 'var(--text-primary)', fontSize: 13 }}>{person.name}</span>
                 <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{person.total} ativa{person.total !== 1 ? 's' : ''}</span>

@@ -1,7 +1,7 @@
-// Códigos curtos das coisas (C-2026-000123): letra da entidade + ano + sequência de 6 dígitos.
+// Códigos curtos das coisas (C26000123): letra da entidade + ano (2 dígitos) + sequência de 6 dígitos, sem separadores.
 // A letra diz o que é; o banco gera e nunca muda (ver supabase/migrations/20261031_display_codes.sql).
 
-export const CODE_RE = /^[A-Z]-\d{4}-\d{6}$/
+export const CODE_RE = /^[A-Z]\d{8}$/
 
 export const normalizeCode = (s: string) => s.trim().toUpperCase()
 export const isCode = (s: string) => CODE_RE.test(normalizeCode(s))

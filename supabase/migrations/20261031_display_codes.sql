@@ -1,8 +1,8 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Códigos curtos (IDs de exibição).
 --
--- Cada coisa ganha, além do uuid interno, um código legível: letra da entidade + ano + sequência de 6 dígitos,
--- crescente dentro de cada letra e ano. Ex.: C-2026-000123 (cliente), P-2026-000045 (projeto).
+-- Cada coisa ganha, além do uuid interno, um código legível: letra da entidade + ano (2 dígitos) + sequência de 6 dígitos,
+-- crescente dentro de cada letra e ano. Ex.: C26000123 (cliente), P26000045 (projeto) — letra, ano com 2 dígitos e sequência de 6 dígitos, sem separadores.
 --
 --   C cliente · P projeto · I incidente · T tarefa/marco/reunião · K contato · G grupo de clientes
 --   R risco · D item de documentação
@@ -29,7 +29,7 @@ begin
   insert into display_counters (prefix, year, last) values (p_prefix, v_year, 1)
   on conflict (prefix, year) do update set last = display_counters.last + 1
   returning last into v_n;
-  return p_prefix || '-' || v_year || '-' || lpad(v_n::text, 6, '0');
+  return p_prefix || lpad((v_year % 100)::text, 2, '0') || lpad(v_n::text, 6, '0');
 end $$;
 revoke all on function public.next_display_code(text, timestamptz) from public, anon, authenticated;
 
@@ -103,14 +103,14 @@ create or replace function public.resolve_code(p_code text)
 returns jsonb language plpgsql stable security definer set search_path = public as $$
 declare
   v_code text := upper(btrim(p_code));
-  v_prefix text := split_part(v_code, '-', 1);
+  v_prefix text := substr(v_code, 1, 1);
   v_id uuid;
   v jsonb;
   m documentation_meta%rowtype;
   v_entry uuid;
 begin
   if auth.uid() is null then return null; end if;
-  if v_code !~ '^[A-Z]-[0-9]{4}-[0-9]{6}$' then return null; end if;
+  if v_code !~ '^[A-Z][0-9]{8}$' then return null; end if;
   case v_prefix
     when 'C' then select id into v_id from clients where code = v_code; if found then return jsonb_build_object('kind','client','id',v_id); end if;
     when 'P' then select id into v_id from projects where code = v_code; if found then return jsonb_build_object('kind','project','id',v_id); end if;

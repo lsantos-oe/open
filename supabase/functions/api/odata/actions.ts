@@ -8,6 +8,7 @@ import * as incidents from "../services/incidents.ts";
 import * as diary from "../services/diary.ts";
 import * as intake from "../services/intake.ts";
 import { searchAll } from "../services/search.ts";
+import { resolveCode } from "../services/groups.ts";
 import * as closeout from "../services/closeout.ts";
 
 // deno-lint-ignore no-explicit-any
@@ -385,6 +386,16 @@ export const ACTIONS: ActionDef[] = [
     description: "Busca textual em projetos, tarefas, incidentes, clientes, contatos e pontos em aberto.",
     params: [p("q", "Edm.String", true), p("top", "Edm.Int32")],
     run: (ctx, _id, b) => searchAll(ctx, String(b?.q ?? ""), Number(b?.top ?? 10)),
+  },
+  {
+    name: "ResolveCode",
+    kind: "function",
+    scope: "read",
+    returns: "Edm.Untyped",
+    description:
+      "Resolve um código curto (ex.: C26000123 — C cliente, P projeto, I incidente, T tarefa, K contato, G grupo, R risco, D documentação) no registro e no link do app (/r/<código>).",
+    params: [p("code", "Edm.String", true)],
+    run: (ctx, _id, b) => resolveCode(ctx, String(b?.code ?? "")),
   },
 ];
 

@@ -132,15 +132,15 @@ export default function DashboardPage() {
       <p className="text-sm mb-6" style={{ color: 'var(--text-tertiary)' }}>{t('dashboard.subtitle')}</p>
 
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
+        <div className="oe-card p-4">
           <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{myIncidents.length}</p>
           <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>{t('dashboard.myOpenIncidents')}</p>
         </div>
-        <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
+        <div className="oe-card p-4">
           <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{sortedTasks.length}</p>
           <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>{t('dashboard.myPendingTasks')}</p>
         </div>
-        <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
+        <div className="oe-card p-4">
           <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{activeProjectsCount}</p>
           <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>{t('dashboard.activeProjects')}</p>
         </div>
@@ -163,7 +163,7 @@ export default function DashboardPage() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
+        <div className="oe-card p-4">
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('dashboard.myOpenTasks')}</p>
             <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{sortedTasks.length}</span>
@@ -200,7 +200,7 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
+        <div className="oe-card p-4">
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{t('dashboard.myIncidentsCard')}</p>
             <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{myIncidents.length}</span>

@@ -25,6 +25,8 @@ const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });
 const NAMES: Record<string, { menu: string; one: string; many: string; de: string; ao: string }> = {
   Clients: { menu: "Clientes", one: "cliente", many: "clientes", de: "do cliente", ao: "ao cliente" },
   Contacts: { menu: "Contatos", one: "contato", many: "contatos", de: "do contato", ao: "ao contato" },
+  ClientGroups: { menu: "Grupos de clientes", one: "grupo de clientes", many: "grupos de clientes", de: "do grupo de clientes", ao: "ao grupo de clientes" },
+  DocumentationItems: { menu: "Documentação", one: "item de documentação", many: "itens de documentação", de: "do item de documentação", ao: "ao item de documentação" },
   CsAssignments: { menu: "Histórico de CS", one: "atribuição de CS", many: "atribuições de CS", de: "da atribuição de CS", ao: "à atribuição de CS" },
   Projects: { menu: "Projetos", one: "projeto", many: "projetos", de: "do projeto", ao: "ao projeto" },
   Phases: { menu: "Fases", one: "fase", many: "fases", de: "da fase", ao: "à fase" },
@@ -50,12 +52,14 @@ const NAV_LABEL: Record<string, string> = {
   Dependencies: "Predecessoras",
   Replies: "Respostas",
   CsHistory: "Histórico de CS",
+  Groups: "Grupos",
+  Documentation: "Documentação",
 };
 
 /** Títulos curtos das actions/functions (o texto longo vai na descrição). */
 function actionTitle(a: ActionDef): string {
   if (!a.boundTo) {
-    return ({ Intake: "Cadastrar demandas em lote (Intake)", Search: "Busca global", MarkNotificationsRead: "Marcar notificações como lidas" } as Record<string, string>)[a.name] ??
+    return ({ Intake: "Cadastrar demandas em lote (Intake)", Search: "Busca global", ResolveCode: "Resolver código curto", MarkNotificationsRead: "Marcar notificações como lidas" } as Record<string, string>)[a.name] ??
       a.name;
   }
   const n = nm(a.boundTo);
@@ -680,7 +684,8 @@ export function buildOpenApi(root: string): Json {
     // Menu lateral agrupado pelos módulos do app
     "x-tagGroups": [
       { name: "Começando", tags: ["Autenticação"] },
-      { name: "Carteira", tags: ["Clients", "Contacts", "CsAssignments"] },
+      { name: "Carteira", tags: ["Clients", "ClientGroups", "Contacts", "CsAssignments"] },
+      { name: "Documentação", tags: ["DocumentationItems"] },
       { name: "Portfólio", tags: ["Projects", "Phases", "Tasks", "Comments", "Risks", "DelayLogs", "Templates"] },
       { name: "Diário", tags: ["OpenPoints", "Meetings", "History"] },
       { name: "Sustentação", tags: ["Incidents", "IncidentStakeholders"] },

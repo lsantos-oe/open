@@ -771,7 +771,7 @@ const CLIENT_STATUS_LABEL: Record<ClientStatus, string> = {
 
 function KpiCard({ label, value, danger }: { label: string; value: string | number; danger?: boolean }) {
   return (
-    <div className="rounded-[var(--radius-lg)] border p-3" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
+    <div className="oe-card p-3">
       <p className="text-[11px] mb-1" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
       <p className="text-xl font-bold" style={{ color: danger ? 'var(--color-danger-text)' : 'var(--text-primary)' }}>{value}</p>
     </div>
@@ -889,7 +889,7 @@ function PmoDashboard({ projects, clients, holidays }: { projects: Project[]; cl
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Open risks */}
-        <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
+        <div className="oe-card p-4">
           <h3 className="text-xs font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>Riscos abertos ({openRisksTotal})</h3>
           {openRisksTotal === 0 ? (
             <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Nenhum risco aberto.</p>
@@ -910,7 +910,7 @@ function PmoDashboard({ projects, clients, holidays }: { projects: Project[]; cl
         </div>
 
         {/* Load by PM */}
-        <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
+        <div className="oe-card p-4">
           <h3 className="text-xs font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>Carga por líder</h3>
           {loadByPm.length === 0 ? (
             <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Sem projetos ativos.</p>
@@ -927,7 +927,7 @@ function PmoDashboard({ projects, clients, holidays }: { projects: Project[]; cl
         </div>
 
         {/* Clients by status */}
-        <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
+        <div className="oe-card p-4">
           <h3 className="text-xs font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>Clientes por status</h3>
           <div className="space-y-1.5">
             {(Object.keys(CLIENT_STATUS_LABEL) as ClientStatus[]).map((s) => (
@@ -942,7 +942,7 @@ function PmoDashboard({ projects, clients, holidays }: { projects: Project[]; cl
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* Projects without baseline */}
-        <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
+        <div className="oe-card p-4">
           <h3 className="text-xs font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>Em andamento sem baseline ({withoutBaseline.length})</h3>
           {withoutBaseline.length === 0 ? (
             <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Todos os projetos ativos têm baseline definida.</p>
@@ -960,7 +960,7 @@ function PmoDashboard({ projects, clients, holidays }: { projects: Project[]; cl
         </div>
 
         {/* Upcoming go-lives */}
-        <div className="rounded-[var(--radius-lg)] border p-4" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
+        <div className="oe-card p-4">
           <h3 className="text-xs font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>Go-lives nos próximos 60 dias ({upcomingGoLives.length})</h3>
           {upcomingGoLives.length === 0 ? (
             <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Nenhum go-live previsto no período.</p>

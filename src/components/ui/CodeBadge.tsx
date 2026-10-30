@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useEntityCode } from '@/hooks/useEntityCode'
 import { codeLink, CodeTable } from '@/utils/codes'
 
-/** Código curto da coisa (ex.: C-2026-000123). Clique copia o código; o botão ao lado copia o link curto. */
+/** Código curto da coisa (ex.: C26000123). Clique copia o código; o botão ao lado copia o link curto. */
 export function CodeBadge({ code, className = '' }: { code?: string; className?: string }) {
   const [copied, setCopied] = useState<'code' | 'link' | null>(null)
   if (!code) return null

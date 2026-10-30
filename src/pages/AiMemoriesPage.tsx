@@ -119,7 +119,7 @@ export default function AiMemoriesPage() {
         Você pode editar ou apagar qualquer uma.
       </p>
 
-      <section className="rounded-[var(--radius-lg)] border p-4 mb-6" style={{ background: 'var(--surface-card)', borderColor: 'var(--border-default)' }}>
+      <section className="oe-card p-4 mb-6">
         <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>Adicionar uma memória</p>
         <Textarea
           value={newText}
@@ -162,7 +162,7 @@ export default function AiMemoriesPage() {
       ) : visible.length === 0 ? (
         <p className="text-sm py-6 text-center" style={{ color: 'var(--text-tertiary)' }}>Nada encontrado.</p>
       ) : (
-        <ul className="rounded-[var(--radius-lg)] border" style={{ background: 'var(--surface-card)', borderColor: 'var(--border-default)' }}>
+        <ul className="oe-card">
           {visible.map((m) => <MemoryRow key={m.id} memory={m} />)}
         </ul>
       )}

@@ -179,17 +179,17 @@ export default function ClientsPage() {
           : <Button onClick={() => setNewGroupOpen(true)}>+ Grupo</Button>}
       </div>
 
-      <div className="flex gap-1 mb-5 border-b" style={{ borderColor: 'var(--border-default)' }} role="tablist" aria-label="Carteira">
+      <div className="flex gap-1 mb-5" role="tablist" aria-label="Carteira">
         {([['clients', `Clientes`, clients.length], ['groups', 'Grupos', clientGroups.length]] as const).map(([id, label, n]) => (
           <button
             key={id}
             role="tab"
             aria-selected={tab === id}
             onClick={() => { setSelected(new Set()); setSearchParams(id === 'groups' ? { tab: 'groups' } : {}, { replace: true }) }}
-            className="px-3 py-2 text-[13px] font-medium -mb-px border-b-2 transition-colors"
+            className="px-3 py-1.5 text-[13px] font-medium rounded-[var(--radius-md)] transition-colors hover:text-[var(--text-primary)]"
             style={tab === id
-              ? { borderColor: 'var(--oe-primary)', color: 'var(--oe-primary)' }
-              : { borderColor: 'transparent', color: 'var(--text-tertiary)' }}
+              ? { background: 'var(--surface-subtle)', color: 'var(--text-primary)' }
+              : { color: 'var(--text-tertiary)' }}
           >
             {label} <span className="text-[11px] font-normal ml-0.5" style={{ color: 'var(--text-tertiary)' }}>{n}</span>
           </button>

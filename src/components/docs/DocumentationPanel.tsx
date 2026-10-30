@@ -65,7 +65,7 @@ export default function DocumentationPanel({ scope }: Props) {
   const [textKey, setTextKey] = useState<string | null>(null)
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null)
 
-  // Link curto de um item (…?doc=D-2026-000123): rola até ele, destaca e, se for texto, abre.
+  // Link curto de um item (…?doc=D26000123): rola até ele, destaca e, se for texto, abre.
   const [searchParams, setSearchParams] = useSearchParams()
   const docParam = searchParams.get('doc')
   const [highlight, setHighlight] = useState<string | null>(null)

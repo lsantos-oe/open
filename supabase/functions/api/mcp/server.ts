@@ -18,6 +18,7 @@ import { readCollection, readOne, resolveSet } from "../odata/read.ts";
 import * as tasks from "../services/tasks.ts";
 import * as projects from "../services/projects.ts";
 import * as clients from "../services/clients.ts";
+import * as groups from "../services/groups.ts";
 import * as incidents from "../services/incidents.ts";
 import * as diary from "../services/diary.ts";
 import * as intake from "../services/intake.ts";
@@ -214,6 +215,7 @@ function buildServer(user: AuthUser, root: string): McpServer {
   finder("find_client", "Clients", ["Id", "Name", "Status", "Country", "Archived"], "clientes");
   finder("find_project", "Projects", ["Id", "Name", "Status", "Pm", "Archived"], "projetos");
   finder("find_incident", "Incidents", ["Id", "Title", "Status", "Priority"], "incidentes");
+  finder("find_client_group", "ClientGroups", ["Id", "Code", "Name", "ClientCount", "BelowMinimum"], "grupos de clientes");
   finder("find_contact", "Contacts", ["Id", "Name", "Email", "Role"], "contatos");
   finder("find_user", "Users", ["Id", "Name", "Email", "Active"], "pessoas do time");
 
@@ -375,6 +377,49 @@ function buildServer(user: AuthUser, root: string): McpServer {
     wrap(await read((ctx) =>
       readOne(ctx, getSet("Clients"), a.id, parseOptions((k) => k === "$expand" ? "Contacts,Projects($select=Id,Name,Status,Progress,OverdueCount),Incidents($select=Id,Title,Status,Priority),Tasks($filter=Status ne 'Done';$select=Id,Name,Status,DueDate),CsHistory" : undefined))
     )));
+
+  tool("list_client_groups", {
+    title: "Listar grupos de clientes",
+    description:
+      "Grupos de clientes (2 ou mais clientes, ex.: empresas do mesmo conglomerado), com os clientes membros. Filtre por clientId para saber em que grupo um cliente está.",
+    inputSchema: { text: z.string().optional(), clientId: guid.optional(), top: z.number().int().min(1).max(200).optional() },
+    annotations: R,
+  }, async (a) => wrap(await read((ctx) => groups.listClientGroups(ctx, a))));
+
+  tool("get_client_group", {
+    title: "Visão compilada do grupo de clientes",
+    description:
+      "Grupo com os clientes membros, contatos (DirectInGroup=true = contatos do grupo, ligados a todos os clientes; os demais vêm dos clientes), projetos, incidentes e a documentação reunida (com resumo por público). É a visão da página do grupo no app.",
+    inputSchema: { id: guid },
+    annotations: R,
+  }, async (a) => wrap(await read((ctx) => groups.getClientGroup(ctx, a.id))));
+
+  tool("list_documentation", {
+    title: "Listar documentação",
+    description:
+      "Documentação (links, arquivos e textos) de um projeto, de um cliente (itens do cliente + dos projetos dele) ou de um grupo de clientes (soma dos membros). Informe exatamente um entre projectId, clientId e groupId. Cada item tem Code (D26000123), Link do app, Audience (Technical/Executive/Both) e Tags. audience=Technical traz técnico e ambos; Executive traz executivo e ambos (como o filtro do app). Source=Task são links e anexos das tarefas de documentação do projeto. Arquivos não são baixados pela API; abra pelo Link.",
+    inputSchema: {
+      projectId: guid.optional(),
+      clientId: guid.optional(),
+      groupId: guid.optional(),
+      audience: z.enum(["Technical", "Executive", "Both"]).optional(),
+      tag: z.string().optional().describe("Etiqueta (sem diferenciar maiúsculas)."),
+      kind: z.enum(["Link", "File", "Text"]).optional(),
+      source: z.enum(["Direct", "Task"]).optional(),
+      text: z.string().optional().describe("Busca no título, link, texto e nome do arquivo."),
+      includeBody: z.boolean().optional().describe("Inclui o texto (Markdown) das caixas de texto. Padrão: não."),
+      top: z.number().int().min(1).max(200).optional(),
+    },
+    annotations: R,
+  }, async (a) => wrap(await read((ctx) => groups.listDocumentation(ctx, a))));
+
+  tool("resolve_code", {
+    title: "Resolver código curto",
+    description:
+      "Traduz um código curto do Open (C26000123) no registro e no link do app. A letra diz o que é: C cliente, P projeto, I incidente, T tarefa/marco/reunião, K contato, G grupo de clientes, R risco, D documentação. O link curto /r/<código> abre qualquer um deles no app.",
+    inputSchema: { code: z.string().min(9).max(12).describe("Ex.: C26000123") },
+    annotations: R,
+  }, async (a) => wrap(await read((ctx) => groups.resolveCode(ctx, a.code))));
 
   tool("list_open_points", {
     title: "Listar pontos em aberto",

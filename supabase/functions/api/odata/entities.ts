@@ -4,6 +4,12 @@ import { parseISO } from "date-fns";
 import { workdaysBetween, parseHolidays } from "../domain/businessDays.ts";
 import { col, Complex, type EntitySet, Enums, type Nav, p, type Prop, TODAY_SQL } from "./edm.ts";
 
+/** Código curto (C26000123): letra da entidade + ano (2 dígitos) + sequência de 6 dígitos. Estável; o app abre /r/<código>. */
+const codeProp = () =>
+  p("Code", "Edm.String", "code", {
+    description: "Código curto (ex.: C26000123): letra da entidade + ano (2 dígitos) + sequência de 6 dígitos. Não muda. O app abre /r/<código>.",
+  });
+
 const tz = (sql: string) => `(${sql} at time zone 'America/Sao_Paulo')::date`;
 const xmin = (a: string) => `${a}.xmin::text`;
 
@@ -49,6 +55,7 @@ const Tasks: EntitySet = {
   from: (a) => `public.entries ${a}`,
   props: [
     p("Id", "Edm.Guid", "id", { key: true, nullable: false }),
+    codeProp(),
     p("Type", "Edm.String", "type", { enum: Enums.TaskType, nullable: false }),
     p("Name", "Edm.String", "name", { nullable: false }),
     p("Description", "Edm.String", "description", { heavy: true, description: "Markdown." }),
@@ -140,6 +147,7 @@ const Projects: EntitySet = {
   from: (a) => `public.projects ${a}`,
   props: [
     p("Id", "Edm.Guid", "id", { key: true, nullable: false }),
+    codeProp(),
     p("Name", "Edm.String", "name", { nullable: false }),
     p("Type", "Edm.String", "type", { enum: Enums.ProjectType }),
     p("Status", "Edm.String", (a) => `coalesce(${a}.status, 'planning')`, { enum: Enums.ProjectStatus }),
@@ -235,6 +243,13 @@ const Projects: EntitySet = {
     },
     { name: "Risks", target: "Risks", many: true, from: (c) => `public.risks ${c}`, where: (p, c) => `${c}.project_id = ${p}.id` },
     {
+      name: "Documentation",
+      target: "DocumentationItems",
+      many: true,
+      from: (c) => docSource(c),
+      where: (p, c) => `${c}.project_id = ${p}.id`,
+    },
+    {
       name: "DelayLogs",
       target: "DelayLogs",
       many: true,
@@ -324,6 +339,7 @@ const Clients: EntitySet = {
   from: (a) => `public.clients ${a}`,
   props: [
     p("Id", "Edm.Guid", "id", { key: true, nullable: false }),
+    codeProp(),
     p("Name", "Edm.String", "name", { nullable: false }),
     p("Country", "Edm.String", "country", { description: "Código ISO-2 (ex.: BR)." }),
     p("Status", "Edm.String", "status", { enum: Enums.ClientStatus, nullable: false }),
@@ -372,6 +388,21 @@ const Clients: EntitySet = {
       where: (p, c) => `${p}.id = any(coalesce(${c}.client_ids, '{}'::uuid[])) and ${c}.project_id is null and ${c}.incident_id is null`,
     },
     {
+      name: "Groups",
+      target: "ClientGroups",
+      many: true,
+      from: (c) => `public.client_group_members ${c}_l join public.client_groups ${c} on ${c}.id = ${c}_l.group_id`,
+      where: (p, c) => `${c}_l.client_id = ${p}.id`,
+      orderBy: (c) => `${c}.name`,
+    },
+    {
+      name: "Documentation",
+      target: "DocumentationItems",
+      many: true,
+      from: (c) => docSource(c),
+      where: (p, c) => `${c}.client_id = ${p}.id`,
+    },
+    {
       name: "CsHistory",
       target: "CsAssignments",
       many: true,
@@ -392,6 +423,7 @@ const Contacts: EntitySet = {
   from: (a) => `public.contacts ${a}`,
   props: [
     p("Id", "Edm.Guid", "id", { key: true, nullable: false }),
+    codeProp(),
     p("Name", "Edm.String", "name", { nullable: false }),
     p("Role", "Edm.String", "role", { description: "Cargo." }),
     p("Email", "Edm.String", "email"),
@@ -404,6 +436,13 @@ const Contacts: EntitySet = {
       target: "Clients",
       many: true,
       from: (c) => `public.contact_clients ${c}_l join public.clients ${c} on ${c}.id = ${c}_l.client_id`,
+      where: (p, c) => `${c}_l.contact_id = ${p}.id`,
+    },
+    {
+      name: "Groups",
+      target: "ClientGroups",
+      many: true,
+      from: (c) => `public.client_group_contacts ${c}_l join public.client_groups ${c} on ${c}.id = ${c}_l.group_id`,
       where: (p, c) => `${c}_l.contact_id = ${p}.id`,
     },
   ],
@@ -429,6 +468,150 @@ const CsAssignments: EntitySet = {
   search: [col("note")],
   defaultOrder: (a) => `${a}.assigned_at desc, ${a}.id`,
   etag: xmin,
+};
+
+
+// ─── Grupos de clientes ─────────────────────────────────────────────────────
+const groupMembers = (a: string) => `select m.client_id from public.client_group_members m where m.group_id = ${a}.id`;
+
+const ClientGroups: EntitySet = {
+  name: "ClientGroups",
+  type: "ClientGroup",
+  description:
+    "Grupos de clientes (2 ou mais clientes, ex.: empresas do mesmo conglomerado). Um contato colocado direto no grupo (ContactIds) fica ligado a TODOS os clientes membros; um cliente só pode estar em um grupo, salvo se a configuração do sistema permitir vários. Somente leitura na API.",
+  from: (a) => `public.client_groups ${a}`,
+  props: [
+    p("Id", "Edm.Guid", "id", { key: true, nullable: false }),
+    codeProp(),
+    p("Name", "Edm.String", "name", { nullable: false }),
+    p("ClientIds", "Edm.Guid", (a) => `coalesce((select array_agg(m.client_id order by m.added_at) from public.client_group_members m where m.group_id = ${a}.id), '{}'::uuid[])`, {
+      collection: true,
+      pgArray: true,
+      computed: true,
+      description: "Clientes membros.",
+    }),
+    p("ContactIds", "Edm.Guid", (a) => `coalesce((select array_agg(c.contact_id order by c.added_at) from public.client_group_contacts c where c.group_id = ${a}.id), '{}'::uuid[])`, {
+      collection: true,
+      pgArray: true,
+      computed: true,
+      description: "Contatos colocados direto no grupo (ligados a todos os clientes membros). Os contatos próprios de cada cliente vêm por Clients/Contacts.",
+    }),
+    p("ClientCount", "Edm.Int32", (a) => `(select count(*)::int from public.client_group_members m where m.group_id = ${a}.id)`, { computed: true }),
+    p("BelowMinimum", "Edm.Boolean", (a) => `((select count(*) from public.client_group_members m where m.group_id = ${a}.id) < 2)`, {
+      computed: true,
+      description: "true quando o grupo tem menos de 2 clientes (o app só avisa, não apaga).",
+    }),
+    p("CreatedAt", "Edm.DateTimeOffset", "created_at"),
+    p("UpdatedAt", "Edm.DateTimeOffset", "updated_at"),
+    p("CreatedBy", "Edm.Guid", "created_by"),
+  ],
+  navs: [
+    {
+      name: "Clients",
+      target: "Clients",
+      many: true,
+      from: (c) => `public.client_group_members ${c}_l join public.clients ${c} on ${c}.id = ${c}_l.client_id`,
+      where: (p, c) => `${c}_l.group_id = ${p}.id`,
+      orderBy: (c) => `${c}.name`,
+    },
+    {
+      name: "Contacts",
+      target: "Contacts",
+      many: true,
+      from: (c) => `public.client_group_contacts ${c}_l join public.contacts ${c} on ${c}.id = ${c}_l.contact_id`,
+      where: (p, c) => `${c}_l.group_id = ${p}.id`,
+      orderBy: (c) => `${c}.name`,
+    },
+    {
+      name: "Projects",
+      target: "Projects",
+      many: true,
+      from: (c) => `public.projects ${c}`,
+      where: (p, c) => `exists (select 1 from public.project_clients pc where pc.project_id = ${c}.id and pc.client_id in (${groupMembers(p)}))`,
+      orderBy: (c) => `${c}.name`,
+    },
+    {
+      name: "Incidents",
+      target: "Incidents",
+      many: true,
+      from: (c) => `public.incidents ${c}`,
+      where: (p, c) => `exists (select 1 from public.incident_clients ic where ic.incident_id = ${c}.id and ic.client_id in (${groupMembers(p)}))`,
+    },
+    {
+      name: "Documentation",
+      target: "DocumentationItems",
+      many: true,
+      from: (c) => docSource(c),
+      where: (p, c) =>
+        `(${c}.client_id in (${groupMembers(p)}) or ${c}.project_id in (select pc.project_id from public.project_clients pc where pc.client_id in (${groupMembers(p)})))`,
+    },
+  ],
+  search: [col("name"), col("code")],
+  defaultOrder: (a) => `${a}.name asc, ${a}.id`,
+  etag: xmin,
+};
+
+// ─── Documentação ───────────────────────────────────────────────────────────
+/** Itens diretos (documentation_items) + links e anexos das tarefas de documentação (espelhados), numa tabela só.
+ *  O Id dos espelhados é um uuid estável derivado de 'entry-link:<tarefa>:<link>' / 'entry-file:<anexo>' (md5). */
+const docSource = (a: string) =>
+  `(select d.id, d.code, 'direct'::text as source, d.kind, d.title, d.url, d.file_name, d.file_size, d.body, d.audience,
+          coalesce(d.tags, '{}'::text[]) as tags, d.project_id, d.client_id, null::uuid as entry_id, (d.storage_path is not null) as has_file,
+          d.created_by, d.created_at, d.updated_at
+     from public.documentation_items d
+   union all
+   select md5('entry-link:' || e.id::text || ':' || (l.value->>'id'))::uuid, m.code, 'task'::text, 'link'::text,
+          coalesce(nullif(btrim(l.value->>'label'), ''), l.value->>'url'), l.value->>'url', null::text, null::bigint, null::text,
+          coalesce(m.audience, 'both'), coalesce(m.tags, '{}'::text[]), e.project_id, null::uuid, e.id, false,
+          null::uuid, e.created_at, coalesce(m.updated_at, e.updated_at)
+     from public.entries e
+     cross join lateral jsonb_array_elements(case when jsonb_typeof(e.links) = 'array' then e.links else '[]'::jsonb end) l
+     left join public.documentation_meta m on m.source_key = 'entry-link:' || e.id::text || ':' || (l.value->>'id')
+    where e.is_documentation and e.type = 'task' and e.project_id is not null and coalesce(l.value->>'url', '') <> ''
+   union all
+   select md5('entry-file:' || at.id::text)::uuid, m.code, 'task'::text, 'file'::text, at.name, null::text, at.name, at.size, null::text,
+          coalesce(m.audience, 'both'), coalesce(m.tags, '{}'::text[]), e.project_id, null::uuid, e.id, true,
+          at.uploaded_by, at.created_at, coalesce(m.updated_at, at.created_at)
+     from public.attachments at
+     join public.entries e on e.id = at.entity_id
+     left join public.documentation_meta m on m.source_key = 'entry-file:' || at.id::text
+    where at.entity_type = 'entry' and e.is_documentation and e.type = 'task' and e.project_id is not null) ${a}`;
+
+const DocumentationItems: EntitySet = {
+  name: "DocumentationItems",
+  type: "DocumentationItem",
+  description:
+    "Documentação de projetos e clientes: links, arquivos e textos, cada um com público (Technical/Executive/Both) e etiquetas. Source=Direct são itens colocados direto na aba Documentação (de um projeto OU de um cliente); Source=Task são os links e anexos das tarefas de documentação dos projetos (espelhados: o conteúdo mora na tarefa, TaskId). O conteúdo de arquivos não é baixado pela API (HasFile indica que existe). Somente leitura.",
+  from: docSource,
+  props: [
+    p("Id", "Edm.Guid", "id", { key: true, nullable: false }),
+    p("Code", "Edm.String", "code", {
+      description: "Código curto D26000123 (link: /r/<código>). Itens espelhados só ganham código depois de vistos no app.",
+    }),
+    p("Source", "Edm.String", "source", { enum: Enums.DocSource, nullable: false }),
+    p("Kind", "Edm.String", "kind", { enum: Enums.DocKind, nullable: false }),
+    p("Title", "Edm.String", "title", { nullable: false }),
+    p("Url", "Edm.String", "url", { description: "Kind=Link." }),
+    p("FileName", "Edm.String", "file_name"),
+    p("FileSize", "Edm.Int32", "file_size", { description: "Bytes (Kind=File)." }),
+    p("HasFile", "Edm.Boolean", "has_file"),
+    p("Body", "Edm.String", "body", { heavy: true, description: "Kind=Text: Markdown (documento colaborativo)." }),
+    p("Audience", "Edm.String", "audience", { enum: Enums.DocAudience, nullable: false, description: "Technical e Executive; Both serve aos dois públicos." }),
+    p("Tags", "Edm.String", "tags", { collection: true, pgArray: true, description: "Etiquetas livres." }),
+    p("ProjectId", "Edm.Guid", "project_id", { description: "Item de projeto (direto ou espelhado)." }),
+    p("ClientId", "Edm.Guid", "client_id", { description: "Item direto de cliente." }),
+    p("TaskId", "Edm.Guid", "entry_id", { description: "Source=Task: a tarefa de documentação onde o link/anexo mora." }),
+    p("CreatedAt", "Edm.DateTimeOffset", "created_at"),
+    p("UpdatedAt", "Edm.DateTimeOffset", "updated_at"),
+    p("CreatedBy", "Edm.Guid", "created_by"),
+  ],
+  navs: [
+    { name: "Project", target: "Projects", many: false, from: (c) => `public.projects ${c}`, where: (p, c) => `${c}.id = ${p}.project_id` },
+    { name: "Client", target: "Clients", many: false, from: (c) => `public.clients ${c}`, where: (p, c) => `${c}.id = ${p}.client_id` },
+    { name: "Task", target: "Tasks", many: false, from: (c) => `public.entries ${c}`, where: (p, c) => `${c}.id = ${p}.entry_id` },
+  ],
+  search: [col("title"), col("url"), col("body"), col("file_name"), col("code")],
+  defaultOrder: (a) => `${a}.created_at desc nulls last, ${a}.id`,
 };
 
 // ─── Users ──────────────────────────────────────────────────────────────────
@@ -491,6 +674,7 @@ const Incidents: EntitySet = {
   from: (a) => `public.incidents ${a}`,
   props: [
     p("Id", "Edm.Guid", "id", { key: true, nullable: false }),
+    codeProp(),
     p("Title", "Edm.String", "title", { nullable: false }),
     p("Description", "Edm.String", "description", { heavy: true, description: "Markdown (documento colaborativo)." }),
     p("Owner", "Edm.String", "owner", { complex: Complex.Owner }),
@@ -599,6 +783,7 @@ const Risks: EntitySet = {
   from: (a) => `public.risks ${a}`,
   props: [
     p("Id", "Edm.Guid", "id", { key: true, nullable: false }),
+    codeProp(),
     p("ProjectId", "Edm.Guid", "project_id"),
     p("Description", "Edm.String", "description", { nullable: false }),
     p("Probability", "Edm.String", "probability", { enum: Enums.Level }),
@@ -749,6 +934,7 @@ export const SETS: Record<string, EntitySet> = Object.fromEntries(
   [
     Clients,
     Contacts,
+    ClientGroups,
     CsAssignments,
     Projects,
     Phases,
@@ -761,6 +947,7 @@ export const SETS: Record<string, EntitySet> = Object.fromEntries(
     OpenPoints,
     Meetings,
     History,
+    DocumentationItems,
     Users,
     Notifications,
   ].map((s) => [s.name, s]),

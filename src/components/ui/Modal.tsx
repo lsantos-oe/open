@@ -46,8 +46,8 @@ export function Modal({ open, title, onClose, children, footer, size = 'md', noP
       <div
         style={{
           background: 'var(--surface-card)',
-          borderRadius: 'var(--radius-lg)',
-          border: '0.5px solid var(--border-default)',
+          borderRadius: 'var(--radius-xl)',
+          boxShadow: 'var(--shadow-lg)',
           width: '100%',
           maxWidth: MAX_WIDTHS[size],
           maxHeight: '90vh',
@@ -59,15 +59,14 @@ export function Modal({ open, title, onClose, children, footer, size = 'md', noP
         {/* Header */}
         <div
           style={{
-            padding: '16px 20px',
-            borderBottom: '0.5px solid var(--border-default)',
+            padding: '18px 22px 8px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             flexShrink: 0,
           }}
         >
-          <h2 style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', margin: 0 }}>{title}</h2>
+          <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{title}</h2>
           <button
             onClick={onClose}
             style={{ color: 'var(--text-tertiary)', fontSize: 20, lineHeight: 1, background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}
@@ -84,7 +83,7 @@ export function Modal({ open, title, onClose, children, footer, size = 'md', noP
             never trigger this scrollbar, but simpler noPadding callers with no
             such internal region (e.g. IncidentEntryModal) rely on this to scroll
             at all — forcing 'hidden' here previously clipped their content instead. */}
-        <div style={{ padding: noPadding ? 0 : 20, overflowY: 'auto', flex: 1, minHeight: 0 }}>
+        <div style={{ padding: noPadding ? 0 : '8px 22px 20px', overflowY: 'auto', flex: 1, minHeight: 0 }}>
           {children}
         </div>
 
@@ -92,8 +91,7 @@ export function Modal({ open, title, onClose, children, footer, size = 'md', noP
         {footer && (
           <div
             style={{
-              padding: '12px 20px',
-              borderTop: '0.5px solid var(--border-default)',
+              padding: '14px 22px 18px',
               display: 'flex',
               justifyContent: 'flex-end',
               gap: 8,

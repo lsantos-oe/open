@@ -143,6 +143,9 @@ export const Enums = {
   DelayType: e("DelayType", { Execution: "execution", Definition: "definition", Planning: "planning" }),
   Language: e("Language", { Pt: "pt", En: "en", Es: "es" }),
   MeetingItemType: e("MeetingItemType", { Action: "action", Decision: "decision", Info: "info" }),
+  DocKind: e("DocKind", { Link: "link", File: "file", Text: "text" }),
+  DocAudience: e("DocAudience", { Technical: "technical", Executive: "executive", Both: "both" }),
+  DocSource: e("DocSource", { Direct: "direct", Task: "task" }),
 };
 
 export function enumToMember(en: EnumType, dbValue: unknown): string | null {

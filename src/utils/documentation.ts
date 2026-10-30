@@ -31,7 +31,7 @@ export function isDocumentationName(name: string | undefined | null): boolean {
 export interface DocItem {
   /** Estável e único: 'item:<id>' (direto), 'entry-link:<tarefa>:<link>' ou 'entry-file:<anexo>' (espelhados). */
   key: string
-  /** Código curto (D-2026-000123): o mesmo para itens diretos e espelhados. */
+  /** Código curto (D26000123): o mesmo para itens diretos e espelhados. */
   code?: string
   source: 'direct' | 'task'
   kind: DocKind

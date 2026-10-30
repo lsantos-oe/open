@@ -71,7 +71,7 @@ export function CommandPalette() {
     const q = fold(query.trim())
     if (!q) return []
     const scored: { r: Result; score: number }[] = []
-    // Código curto colado na busca (C-2026-000123): abre direto o que ele aponta.
+    // Código curto colado na busca (C26000123): abre direto o que ele aponta.
     if (isCode(query)) {
       const code = normalizeCode(query)
       return [{ id: code, type: 'Código', label: code, sublabel: CODE_KIND_LABEL[code[0]] ?? undefined, path: `/r/${code}` }]

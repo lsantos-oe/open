@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Novidades do Open</title>
+<style>
+  :root{
+    --bg:#F6F3EE; --card:#FFFFFF; --ink:#1C1815; --ink2:#5E564D; --ink3:#948B80; --line:#E8E3DC;
+    --brand:#D9530E; --brand-soft:#FBEAE0;
+    --blue:#3568C4; --blue-soft:#E7EEFB; --green:#1A8850; --green-soft:#E3F3EA; --amber:#A8790A; --amber-soft:#FAF0D8; --violet:#5B21B6; --violet-soft:#EFEAFB; --gray-soft:#EFEBE5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#131110; --card:#1E1A16; --ink:#F2EEE8; --ink2:#B9B0A5; --ink3:#857C71; --line:#2E2923; --brand:#E8642A; --brand-soft:rgba(232,100,42,.16);
+      --blue:#6C97DE; --blue-soft:rgba(108,151,222,.16); --green:#3FBE80; --green-soft:rgba(63,190,128,.15); --amber:#D6A93B; --amber-soft:rgba(214,169,59,.16); --violet:#A78BFA; --violet-soft:rgba(167,139,250,.16); --gray-soft:rgba(255,255,255,.07); }
+  }
+  *{box-sizing:border-box;margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;padding:48px 24px}
+  .wrap{max-width:1180px;margin:0 auto}
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:32px;flex-wrap:wrap}
+  .mark{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .logo{width:34px;height:34px;border-radius:10px;background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:700;font-size:15px;letter-spacing:-.5px}
+  .mark span{font-weight:600;font-size:15px;color:var(--ink2)}
+  h1{font-size:46px;line-height:1.05;letter-spacing:-1.4px;font-weight:700;text-wrap:balance}
+  h1 em{font-style:normal;color:var(--brand)}
+  .when{font-size:14px;color:var(--ink3);padding-bottom:6px;white-space:nowrap}
+  .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+  .card{background:var(--card);border-radius:22px;padding:22px 22px 24px;display:flex;flex-direction:column;gap:16px;min-width:0}
+  .viz{background:var(--bg);border-radius:16px;padding:14px;min-height:168px;display:flex;flex-direction:column;gap:8px;justify-content:center}
+  .tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--brand);letter-spacing:.2px}
+  h2{font-size:21px;letter-spacing:-.4px;line-height:1.2;font-weight:650;margin-top:2px}
+  p{font-size:14.5px;line-height:1.55;color:var(--ink2)}
+  .pill{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+  .pill i{width:6px;height:6px;border-radius:50%;background:currentColor}
+  .b-gray{background:var(--gray-soft);color:var(--ink2)} .b-blue{background:var(--blue-soft);color:var(--blue)} .b-green{background:var(--green-soft);color:var(--green)}
+  .b-amber{background:var(--amber-soft);color:var(--amber)} .b-violet{background:var(--violet-soft);color:var(--violet)} .b-brand{background:var(--brand-soft);color:var(--brand)}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;letter-spacing:.2px}
+  .row{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:12px;padding:9px 12px;font-size:13px;min-width:0}
+  .row b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .sp{flex:1}
+  .ic{width:26px;height:26px;border-radius:8px;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font-size:12px;font-weight:700;flex:none}
+  .av{width:22px;height:22px;border-radius:50%;background:var(--brand-soft);color:var(--brand);display:inline-grid;place-items:center;font-size:9px;font-weight:700}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .code{background:var(--card);border-radius:12px;padding:9px 12px;font-size:12.5px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .code b{color:var(--brand);font-weight:600}
+  .more{margin-top:18px;background:var(--card);border-radius:22px;padding:20px 24px;display:flex;gap:28px;align-items:center;flex-wrap:wrap}
+  .more strong{font-size:14px;white-space:nowrap}
+  .more ul{display:flex;flex-wrap:wrap;gap:8px 10px;list-style:none;padding:0}
+  .more li{font-size:13.5px;color:var(--ink2);background:var(--bg);border-radius:999px;padding:6px 14px}
+  footer{margin-top:22px;font-size:13px;color:var(--ink3);text-align:center}
+  @media (max-width:960px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:36px}}
+  @media (max-width:640px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="mark"><div class="logo">O</div><span>Open</span></div>
+      <h1>Novidades da semana: <em>documentação,</em><br>grupos e tudo conectado</h1>
+    </div>
+    <div class="when">Semana de 26 a 30 de outubro de 2026</div>
+  </header>
+
+  <div class="grid">
+
+    <section class="card">
+      <div class="viz">
+        <div class="row"><span class="ic">▤</span><b>Manual do administrador</b><span class="sp"></span><span class="pill b-violet">Executivo</span></div>
+        <div class="row"><span class="ic">⌁</span><b>Postman da integração</b><span class="sp"></span><span class="pill b-blue">Técnico</span></div>
+        <div class="row"><span class="ic">✎</span><b>Arquitetura (texto)</b><span class="sp"></span><span class="pill b-gray">Ambos</span></div>
+      </div>
+      <div><span class="tag">NOVO</span><h2>Documentação em cada projeto e cliente</h2></div>
+      <p>Links, arquivos de até 25 MB e textos escritos em equipe, cada um marcado como técnico, executivo ou ambos, com etiquetas. O que vai na tarefa “Documentação” aparece sozinho na aba.</p>
+    </section>
+
+    <section class="card">
+      <div class="viz">
+        <div class="chips"><span class="pill b-brand">Grupo Lockton</span><span class="pill b-gray">3 clientes</span></div>
+        <div class="row"><span class="av">LB</span><b>Lockton Brasil</b></div>
+        <div class="row"><span class="av">LM</span><b>Lockton México</b></div>
+        <div class="row"><span class="av">LC</span><b>Lockton Chile</b><span class="sp"></span><span class="pill b-violet">Contato do grupo ✓</span></div>
+      </div>
+      <div><span class="tag">NOVO</span><h2>Grupos de clientes</h2></div>
+      <p>Reúna 2 ou mais clientes e veja contatos, projetos, incidentes e documentação de todos numa página só. Um contato colocado no grupo fica ligado a todos os clientes dele.</p>
+    </section>
+
+    <section class="card">
+      <div class="viz">
+        <div class="chips"><span class="pill b-gray mono">C26000123</span><span class="pill b-gray mono">P26000045</span><span class="pill b-gray mono">I26000311</span></div>
+        <div class="chips"><span class="pill b-gray mono">T26004210</span><span class="pill b-gray mono">G26000007</span><span class="pill b-gray mono">D26000089</span></div>
+        <div class="code">openploo.vercel.app/<b>r/D26000089</b></div>
+      </div>
+      <div><span class="tag">NOVO</span><h2>IDs curtos e links para tudo</h2></div>
+      <p>Letra da coisa, ano com 2 dígitos e sequência de 6, sem hífens. Cole o código na busca ou use o link curto: ele abre o cliente, projeto, incidente, tarefa, grupo ou item de documentação. Também nos itens de documentação.</p>
+    </section>
+
+    <section class="card">
+      <div class="viz">
+        <div class="code"><b>GET</b> /api/odata/Projects?$filter=Status eq 'in_progress'</div>
+        <div class="code"><b>GET</b> /api/odata/ClientGroups?$expand=Members</div>
+        <div class="chips" style="margin-top:2px"><span class="pill b-green"><i></i>Leitura e escrita</span><span class="pill b-gray">OData v4</span></div>
+      </div>
+      <div><span class="tag">API</span><h2>Open API para integrar com o resto</h2></div>
+      <p>Consulte e atualize clientes, projetos, incidentes e tarefas com OData, e leia grupos e documentação. Pegue sua chave em Configurações, onde agora também fica a documentação.</p>
+    </section>
+
+    <section class="card">
+      <div class="viz">
+        <div class="row"><b style="color:var(--ink3);font-weight:500">Você</b><span class="sp"></span></div>
+        <div class="row" style="background:var(--brand-soft);color:var(--ink)"><b>“Como está a documentação do Grupo Lockton?”</b></div>
+        <div class="row"><span class="ic">⚙</span><b>get_client_group</b><span class="sp"></span><span class="pill b-green">pronto</span></div>
+      </div>
+      <div><span class="tag">MCP</span><h2>Converse com o Open no Claude</h2></div>
+      <p>O conector MCP e o plugin do Claude agora conhecem grupos, documentação e os códigos curtos, além de projetos, incidentes e tarefas. Escritas sempre mostram a prévia antes de gravar.</p>
+    </section>
+
+    <section class="card">
+      <div class="viz">
+        <div class="row"><span class="ic">@</span><b>Tarefa vence amanhã</b><span class="sp"></span><span class="pill b-amber"><i></i>Aviso</span></div>
+        <div class="row" style="background:var(--brand-soft)"><b>/open</b><span style="color:var(--ink2)">quais incidentes estão abertos?</span></div>
+        <div class="row"><span class="pill b-brand">Confirmar</span><span class="pill b-gray">Cancelar</span></div>
+      </div>
+      <div><span class="tag">DISCORD</span><h2>Avisos e o assistente no Discord</h2></div>
+      <p>Alertas por mensagem direta, do jeito que cada pessoa escolhe no perfil, e o comando /open para perguntar, analisar e agir, com confirmação antes de qualquer alteração.</p>
+    </section>
+
+  </div>
+
+  <div class="more">
+    <strong>E também</strong>
+    <ul>
+      <li>Badges e chips redesenhados</li>
+      <li>Seletor de pessoas com busca e “criar contato”</li>
+      <li>Páginas com abas mais limpas</li>
+      <li>API e documentação em Configurações</li>
+      <li>Cards mais leves (em breve)</li>
+    </ul>
+  </div>
+  <footer>Dúvidas ou ideias? Fale com o time de Operações Enterprise.</footer>
+</div>
+</body>
+</html>
