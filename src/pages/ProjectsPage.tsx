@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import ImportJsonModal from '@/components/import/ImportJsonModal'
 import { exportAllProjectsToJson } from '@/utils/exportJson'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
@@ -993,7 +992,6 @@ export default function ProjectsPage() {
   const [modalOpen, setModalOpen] = useState(false)
   /** Raia do Kanban onde o duplo clique aconteceu: o projeto nasce nesse status. */
   const [newProjectStatus, setNewProjectStatus] = useState<ProjectStatus | undefined>(undefined)
-  const [showImportModal, setShowImportModal] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
 
   const [searchParams, setSearchParams] = useSearchParams()
@@ -1113,9 +1111,6 @@ export default function ProjectsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="secondary" onClick={() => setShowImportModal(true)}>
-            {t('import.title')}
-          </Button>
           <Button onClick={() => setModalOpen(true)}>
             {t('addBtn.project')}
           </Button>
@@ -1197,13 +1192,6 @@ export default function ProjectsPage() {
         templates={settings.templates}
         onCreate={handleCreate}
       />
-
-      {showImportModal && (
-        <ImportJsonModal
-          initialTab="new"
-          onClose={() => setShowImportModal(false)}
-        />
-      )}
 
       {/* Backup footer */}
       {!projectsLoading && projects.length > 0 && (
