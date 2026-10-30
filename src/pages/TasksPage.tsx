@@ -658,19 +658,23 @@ export default function TasksPage() {
 
   // Visão "Carga": cada tarefa ativa vira um item mínimo (executor, validadores, datas) e a análise de capacidade
   // (utils/capacity.ts) calcula pessoa a pessoa. Respeita os mesmos filtros da tabela.
+  const activeUserIds = useMemo(() => new Set(teamDirectory.filter((p) => p.active).map((p) => p.id)), [teamDirectory])
   const capacityTasks: CapTask[] = useMemo(() => filteredCards.map((c) => {
     const owners = entryOwners(c)
     // Linhas antigas, de antes de Executor/Validador existirem, não têm `kind`: o único responsável é o executor.
     const executor = owners.find((o) => o.kind === 'executor') ?? (owners.every((o) => !o.kind) ? owners[0] : undefined)
+    // Capacidade é do time: só conta quem é usuário ativo do Open. Contato do cliente (stakeholder) e nome em texto
+    // livre não são capacidade; a tarefa deles cai em "Sem responsável do time".
+    const isUser = (o?: EntryOwner) => !!o && o.type === 'member' && !!o.memberId && activeUserIds.has(o.memberId)
     return {
       id: c.id, type: c.type, status: c.status,
       start: c.type === 'task' ? c.plannedStart : c.plannedDate,
       end: c.type === 'task' ? c.plannedEnd : c.plannedDate,
-      executorKey: executor ? ownerKey(executor) : undefined,
-      executorName: executor?.name,
-      validatorKeys: owners.filter((o) => o.kind === 'validator').map(ownerKey),
+      executorKey: isUser(executor) ? ownerKey(executor!) : undefined,
+      executorName: isUser(executor) ? executor!.name : undefined,
+      validatorKeys: owners.filter((o) => o.kind === 'validator' && isUser(o)).map(ownerKey),
     }
-  }), [filteredCards])
+  }), [filteredCards, activeUserIds])
 
   // ── One row of the tracking table — inline-editable per §4 of the proposal.
   // Nome/Previsto/Duração real are simple controlled-on-blur inputs gated by
@@ -685,10 +689,10 @@ export default function TasksPage() {
     const originLabel = phaseName ? `${scopeLabel(card)} · ${phaseName}` : (scopeLabel(card) || (card._scopeType === 'standalone' ? 'Sem cliente' : ''))
     return (
       <tr className="transition-colors group" style={{ background: signalRowTint(card, today) }}>
-        <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+        <td className="px-3 py-1.5" onClick={(e) => e.stopPropagation()}>
           <input type="checkbox" className="rounded border-[var(--border-default)] accent-[var(--text-primary)]" checked={selected.has(card.id)} onChange={() => toggleSelect(card.id)} />
         </td>
-        <td className="px-3 py-2.5" style={{ maxWidth: 260, position: 'sticky', left: 0, background: 'inherit' }}>
+        <td className="px-3 py-1.5" style={{ maxWidth: 260, position: 'sticky', left: 0, background: 'var(--surface-card)' }}>
           {editingCell?.id === card.id && editingCell.field === 'name' ? (
             <input
               autoFocus
@@ -723,7 +727,7 @@ export default function TasksPage() {
           )}
         </td>
         {isVisible('scope') && (
-          <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)', maxWidth: 180 }} onClick={(e) => e.stopPropagation()}>
+          <td className="px-3 py-1.5" style={{ color: 'var(--text-secondary)', maxWidth: 180 }} onClick={(e) => e.stopPropagation()}>
             {!isEditableType || card._scopeType === 'incident' ? (
               <span className="block truncate" title={scopeLabel(card)}>{scopeLabel(card)}</span>
             ) : editingCell?.id === card.id && editingCell.field === 'origin' ? (
@@ -759,7 +763,7 @@ export default function TasksPage() {
           </td>
         )}
         {isVisible('owners') && (
-          <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+          <td className="px-3 py-1.5" onClick={(e) => e.stopPropagation()}>
             {isEditableType ? (
               <OwnersField
                 owners={entryOwners(card).filter((o) => o.kind === 'executor')}
@@ -769,6 +773,7 @@ export default function TasksPage() {
                 newContactClientIds={card._clientIds}
                 kind="executor"
                 max={1}
+                inline
               />
             ) : (
               <AvatarStack people={entryOwners(card)} size={20} />
@@ -776,7 +781,7 @@ export default function TasksPage() {
           </td>
         )}
         {isVisible('status') && (
-          <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+          <td className="px-3 py-1.5" onClick={(e) => e.stopPropagation()}>
             {isEditableType ? (
               <StatusBadge value={card.status} onChange={(v) => setCardStatus(card, v as EntryStatus)} options={STATUS_OPTIONS} />
             ) : (
@@ -785,7 +790,7 @@ export default function TasksPage() {
           </td>
         )}
         {isVisible('date') && (
-          <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)' }} onClick={(e) => e.stopPropagation()}>
+          <td className="px-3 py-1.5" style={{ color: 'var(--text-secondary)' }} onClick={(e) => e.stopPropagation()}>
             {!isEditableType ? (
               endDate ? fmtDate(endDate) : '—'
             ) : editingCell?.id === card.id && editingCell.field === 'planned' ? (
@@ -809,7 +814,7 @@ export default function TasksPage() {
           </td>
         )}
         {isVisible('actual') && (
-          <td className="px-3 py-2.5" style={{ color: 'var(--text-secondary)' }} onClick={(e) => e.stopPropagation()}>
+          <td className="px-3 py-1.5" style={{ color: 'var(--text-secondary)' }} onClick={(e) => e.stopPropagation()}>
             {!isEditableType ? '—' : editingCell?.id === card.id && editingCell.field === 'actual' ? (
               <div className="flex items-center gap-1">
                 <input type="date" defaultValue={card.actualStart ?? ''} onBlur={(e) => { if (e.target.value) changeCardDate(card, 'actualStart', e.target.value) }} className="text-xs rounded px-1 py-0.5 border" style={{ borderColor: 'var(--text-tertiary)', width: 112 }} title="Início real" />
@@ -827,7 +832,7 @@ export default function TasksPage() {
           </td>
         )}
         {isVisible('signal') && (
-          <td className="px-3 py-2.5"><SignalBadges entry={card} today={today} /></td>
+          <td className="px-3 py-1.5"><SignalBadges entry={card} today={today} size="sm" /></td>
         )}
       </tr>
     )

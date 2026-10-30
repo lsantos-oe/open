@@ -12,6 +12,7 @@ interface Props {
 }
 
 const LIMIT_KEY = 'pb-capacity-limit'
+const LIMITS_KEY = 'pb-capacity-limits'
 
 const CELL: Record<LoadLevel, { bg: string; fg: string }> = {
   none: { bg: 'transparent', fg: 'var(--text-disabled)' },
@@ -64,7 +65,18 @@ export function CapacityView({ tasks, today, onSeePerson }: Props) {
   })
   useEffect(() => { try { localStorage.setItem(LIMIT_KEY, String(limit)) } catch { /* sem armazenamento */ } }, [limit])
 
-  const cap = useMemo(() => buildCapacity(tasks, { today, limit }), [tasks, today, limit])
+  // Limite individual: quem tem um número próprio usa o dele; os demais seguem o padrão do time.
+  const [limits, setLimits] = useState<Record<string, number>>(() => {
+    try { const v = JSON.parse(localStorage.getItem(LIMITS_KEY) ?? '{}'); return v && typeof v === 'object' ? v : {} } catch { return {} }
+  })
+  useEffect(() => { try { localStorage.setItem(LIMITS_KEY, JSON.stringify(limits)) } catch { /* sem armazenamento */ } }, [limits])
+  const setPersonLimit = (key: string, v: number) => setLimits((cur) => {
+    const next = { ...cur }
+    if (!v || v === limit) delete next[key]; else next[key] = v
+    return next
+  })
+
+  const cap = useMemo(() => buildCapacity(tasks, { today, limit, limits }), [tasks, today, limit, limits])
   const { totals, people, unassigned, weekStarts, insights } = cap
 
   if (totals.active === 0) {
@@ -82,7 +94,7 @@ export function CapacityView({ tasks, today, onSeePerson }: Props) {
         <Kpi label="Vencem esta semana" value={totals.dueThisWeek} />
         <Kpi label="Sem prazo" value={totals.noDate} tone={totals.noDate ? 'warn' : undefined} sub="não entram no gráfico" />
         <Kpi label="Bloqueadas" value={totals.blocked} tone={totals.blocked ? 'warn' : undefined} />
-        <Kpi label="Sem executor" value={unassigned.active} tone={unassigned.active ? 'warn' : undefined} />
+        <Kpi label="Sem responsável" value={unassigned.active} tone={unassigned.active ? 'warn' : undefined} />
       </div>
 
       {insights.length > 0 && (
@@ -100,10 +112,10 @@ export function CapacityView({ tasks, today, onSeePerson }: Props) {
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-3 pb-1">
           <div>
             <h3 className="text-[13px] font-semibold" style={{ color: 'var(--text-primary)' }}>Carga por pessoa</h3>
-            <p className="text-[13px]" style={{ color: 'var(--text-tertiary)' }}>Tarefas em curso em cada semana (as atrasadas contam na semana atual). Marcos e reuniões ficam de fora.</p>
+            <p className="text-[13px]" style={{ color: 'var(--text-tertiary)' }}>Tarefas em curso em cada semana (as atrasadas contam na semana atual). Só entram usuários do Open; marcos e reuniões ficam de fora.</p>
           </div>
           <label className="flex items-center gap-2 text-[13px]" style={{ color: 'var(--text-secondary)' }}>
-            Limite por pessoa
+            Limite padrão
             <input
               type="number" min={1} max={50} value={limit}
               onChange={(e) => { const v = Math.round(Number(e.target.value)); if (v >= 1 && v <= 50) setLimit(v) }}
@@ -124,6 +136,7 @@ export function CapacityView({ tasks, today, onSeePerson }: Props) {
                 <th className={`${th} text-right`}>Esta semana</th>
                 <th className={`${th} text-right`}>Sem prazo</th>
                 <th className={`${th} text-right`} title="Tarefas em validação que a pessoa precisa validar">A validar</th>
+                <th className={`${th} text-center`} title="Tarefas simultâneas que a pessoa aguenta. Edite para ajustar só para ela.">Limite</th>
                 {weekStarts.map((w, i) => <th key={w} className={`${th} text-center`}>{weekLabel(w, i)}</th>)}
                 <th className={th} />
               </tr>
@@ -145,14 +158,24 @@ export function CapacityView({ tasks, today, onSeePerson }: Props) {
                   <td className="px-3 py-2.5 text-right">{num(p.dueThisWeek)}</td>
                   <td className="px-3 py-2.5 text-right">{num(p.noDate, 'warn')}</td>
                   <td className="px-3 py-2.5 text-right">{num(p.toValidate)}</td>
+                  <td className="px-1 py-2 text-center">
+                    <input
+                      type="number" min={1} max={50} value={p.limit}
+                      onChange={(e) => { const v = Math.round(Number(e.target.value)); if (v >= 1 && v <= 50) setPersonLimit(p.key, v) }}
+                      aria-label={`Limite de ${p.name}`}
+                      title={limits[p.key] ? 'Limite só desta pessoa (o padrão do time é ' + limit + ')' : 'Segue o limite padrão do time'}
+                      className="w-12 h-7 text-center text-[13px] rounded-full outline-none border border-transparent focus:border-[var(--text-tertiary)]"
+                      style={{ background: limits[p.key] ? 'var(--badge-gray-bg)' : 'var(--surface-subtle)', color: 'var(--text-primary)', fontWeight: limits[p.key] ? 600 : 400 }}
+                    />
+                  </td>
                   {p.weeks.map((c, i) => {
-                    const lvl = c > limit ? 'over' : c / limit > 0.75 ? 'high' : c / limit > 0.5 ? 'ok' : c > 0 ? 'free' : 'none'
+                    const lvl = c > p.limit ? 'over' : c / p.limit > 0.75 ? 'high' : c / p.limit > 0.5 ? 'ok' : c > 0 ? 'free' : 'none'
                     return (
                       <td key={i} className="px-1 py-2 text-center">
                         <span
                           className="inline-flex items-center justify-center tabular-nums text-[13px] font-medium"
                           style={{ width: 40, height: 28, borderRadius: 'var(--radius-md)', background: CELL[lvl].bg, color: CELL[lvl].fg }}
-                          title={c ? `${c} ${c === 1 ? 'tarefa' : 'tarefas'} em curso (limite ${limit})` : 'Nada em curso'}
+                          title={c ? `${c} ${c === 1 ? 'tarefa' : 'tarefas'} em curso (limite ${p.limit})` : 'Nada em curso'}
                         >
                           {c || '·'}
                         </span>
@@ -168,9 +191,9 @@ export function CapacityView({ tasks, today, onSeePerson }: Props) {
               ))}
               {unassigned.active > 0 && (
                 <tr>
-                  <td className="px-3 py-2.5" colSpan={2}><span style={{ color: 'var(--text-tertiary)' }}>Sem executor — {unassigned.active} {unassigned.active === 1 ? 'tarefa' : 'tarefas'}</span></td>
+                  <td className="px-3 py-2.5" colSpan={2}><span style={{ color: 'var(--text-tertiary)' }}>Sem responsável do time — {unassigned.active} {unassigned.active === 1 ? 'tarefa' : 'tarefas'}</span></td>
                   <td className="px-3 py-2.5 text-right">{num(unassigned.overdue, 'bad')}</td>
-                  <td colSpan={9 + weekStarts.length - 3} />
+                  <td colSpan={10 + weekStarts.length - 3} />
                 </tr>
               )}
             </tbody>
@@ -179,7 +202,7 @@ export function CapacityView({ tasks, today, onSeePerson }: Props) {
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-3 text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>
           <span>Semana:</span>
-          {([['free', `até ${Math.floor(limit * 0.5)}`], ['ok', `até ${Math.floor(limit * 0.75)}`], ['high', `até ${limit}`], ['over', `acima de ${limit}`]] as const).map(([lvl, txt]) => (
+          {([['free', 'até 50% do limite'], ['ok', 'até 75%'], ['high', 'até 100%'], ['over', 'acima do limite']] as const).map(([lvl, txt]) => (
             <span key={lvl} className="inline-flex items-center gap-1.5">
               <span style={{ width: 14, height: 14, borderRadius: 5, background: CELL[lvl].bg, boxShadow: lvl === 'free' ? 'inset 0 0 0 1px var(--border-default)' : undefined }} />{txt}
             </span>

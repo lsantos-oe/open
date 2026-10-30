@@ -48,6 +48,8 @@ export interface PersonCapacity {
   weeks: number[]
   peak: number
   peakLevel: LoadLevel
+  /** Limite de tarefas simultâneas desta pessoa (o padrão do time, ou o dela, se ajustado). */
+  limit: number
   /** Semanas (índices) acima do limite. */
   overWeeks: number[]
 }
@@ -82,14 +84,15 @@ export function weeksOf(t: Pick<CapTask, 'start' | 'end'>, today: string, weekSt
   return out
 }
 
-export function buildCapacity(tasks: CapTask[], opts: { today: string; limit?: number; weeks?: number }): TeamCapacity {
+export function buildCapacity(tasks: CapTask[], opts: { today: string; limit?: number; /** Limites por pessoa (chave = executorKey); quem não está aqui usa o padrão. */ limits?: Record<string, number>; weeks?: number }): TeamCapacity {
   const limit = opts.limit ?? DEFAULT_LIMIT
+  const limitOf = (key: string) => { const v = opts.limits?.[key]; return v && v >= 1 ? v : limit }
   const weekStarts = weekStartsFrom(opts.today, opts.weeks ?? WEEKS)
   const weekEnd0 = iso(addDays(parseISO(weekStarts[0]), 6))
   const people = new Map<string, PersonCapacity>()
   const blank = (key: string, name: string): PersonCapacity => ({
     key, name, active: 0, byStatus: { pending: 0, todo: 0, in_progress: 0, validation: 0, blocked: 0 },
-    overdue: 0, dueThisWeek: 0, noDate: 0, toValidate: 0, weeks: weekStarts.map(() => 0), peak: 0, peakLevel: 'none', overWeeks: [],
+    overdue: 0, dueThisWeek: 0, noDate: 0, toValidate: 0, weeks: weekStarts.map(() => 0), peak: 0, peakLevel: 'none', limit: limitOf(key), overWeeks: [],
   })
   const validators = new Map<string, number>()
   const names = new Map<string, string>()
@@ -130,19 +133,19 @@ export function buildCapacity(tasks: CapTask[], opts: { today: string; limit?: n
   const list = [...people.values()]
   for (const p of list) {
     p.peak = Math.max(0, ...p.weeks)
-    p.peakLevel = loadLevel(p.peak, limit)
-    p.overWeeks = p.weeks.flatMap((c, i) => (c > limit ? [i] : []))
+    p.peakLevel = loadLevel(p.peak, p.limit)
+    p.overWeeks = p.weeks.flatMap((c, i) => (c > p.limit ? [i] : []))
   }
   // mais pressionados primeiro: estouro, depois pico, depois atrasadas, depois total
   list.sort((a, b) => b.overWeeks.length - a.overWeeks.length || b.peak - a.peak || b.overdue - a.overdue || b.active - a.active || a.name.localeCompare(b.name, 'pt-BR'))
 
   const insights: TeamCapacity['insights'] = []
   const over = list.filter((p) => p.overWeeks.length > 0)
-  if (over.length) insights.push({ tone: 'bad', text: `${over.length} ${over.length === 1 ? 'pessoa passa' : 'pessoas passam'} do limite de ${limit} tarefas em alguma semana: ${over.slice(0, 3).map((p) => p.name.split(' ')[0]).join(', ')}${over.length > 3 ? '…' : ''}.` })
+  if (over.length) insights.push({ tone: 'bad', text: `${over.length} ${over.length === 1 ? 'pessoa passa' : 'pessoas passam'} do limite de tarefas simultâneas em alguma semana: ${over.slice(0, 3).map((p) => p.name.split(' ')[0]).join(', ')}${over.length > 3 ? '…' : ''}.` })
   const lateTotal = totals.overdue
   if (lateTotal > 0) insights.push({ tone: 'warn', text: `${lateTotal} ${lateTotal === 1 ? 'tarefa atrasada' : 'tarefas atrasadas'} ainda ${lateTotal === 1 ? 'ocupa' : 'ocupam'} a capacidade da semana atual.` })
-  if (unassigned.active > 0) insights.push({ tone: 'warn', text: `${unassigned.active} ${unassigned.active === 1 ? 'tarefa' : 'tarefas'} sem executor — a carga real é maior que a mostrada.` })
-  const free = list.filter((p) => p.weeks.slice(0, 2).every((c) => c <= Math.floor(limit * 0.5)) && p.overWeeks.length === 0)
+  if (unassigned.active > 0) insights.push({ tone: 'warn', text: `${unassigned.active} ${unassigned.active === 1 ? 'tarefa' : 'tarefas'} sem responsável do time (sem usuário, ou só contato ou texto) — a carga real é maior que a mostrada.` })
+  const free = list.filter((p) => p.weeks.slice(0, 2).every((c) => c <= Math.floor(p.limit * 0.5)) && p.overWeeks.length === 0)
   if (free.length && list.length > 1) insights.push({ tone: 'good', text: `Com folga nas próximas 2 semanas: ${free.slice(0, 4).map((p) => p.name.split(' ')[0]).join(', ')}${free.length > 4 ? '…' : ''}.` })
   const idleDates = list.filter((p) => p.active > 0 && p.noDate === p.active)
   if (idleDates.length) insights.push({ tone: 'warn', text: `${idleDates.length === 1 ? idleDates[0].name.split(' ')[0] + ' não tem' : idleDates.length + ' pessoas não têm'} nenhuma tarefa com prazo: a carga por semana não aparece.` })

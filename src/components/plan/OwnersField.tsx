@@ -21,9 +21,11 @@ interface Props {
   contacts?: ClientContact[]
   /** Clientes a que um contato criado aqui fica ligado (normalmente os clientes do projeto/incidente). */
   newContactClientIds?: string[]
+  /** Versão compacta para células de tabela: sem caixa ao redor, uma linha só. */
+  inline?: boolean
 }
 
-export default function OwnersField({ owners, onChange, teamMembers, max, kind, contacts, newContactClientIds }: Props) {
+export default function OwnersField({ owners, onChange, teamMembers, max, kind, contacts, newContactClientIds, inline }: Props) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<'member' | 'contact' | 'text'>('member')
@@ -124,19 +126,20 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind, 
 
   return (
     <div className="relative">
-      <div className="flex flex-wrap items-center gap-1.5 min-h-9 px-2 py-1 rounded-[18px]" style={{ background: 'var(--surface-subtle)' }}>
+      <div className={inline ? 'flex flex-wrap items-center gap-1' : 'flex flex-wrap items-center gap-1.5 min-h-9 px-2 py-1 rounded-[18px]'} style={inline ? undefined : { background: 'var(--surface-subtle)' }}>
         {owners.map((owner) => (
-          <Chip key={owner.id} solid person={owner.name} onRemove={() => remove(owner.id)} removeLabel={`Remover ${owner.name}`}>
+          <Chip key={owner.id} solid={!inline} person={owner.name} onRemove={() => remove(owner.id)} removeLabel={`Remover ${owner.name}`}>
             {owner.name}
             {owner.role && <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}> · {owner.role}</span>}
           </Chip>
         ))}
         {/* Campo de um responsável só: o botão não promete "adicionar" — escolher alguém substitui quem já está. */}
-        <AddChip buttonRef={triggerRef as any} onClick={() => setOpen((v) => !v)}>
-          {max === 1
-            ? (owners.length > 0 ? t('entry.changeOwner') : `+ ${t('entry.pickOwner')}`)
-            : `+ ${t('entry.addOwner')}`}
-        </AddChip>
+        {/* Campo de um responsável só: com alguém escolhido não há botão — para trocar, tire e escolha outro. */}
+        {!(max === 1 && owners.length > 0) ? (
+          <AddChip buttonRef={triggerRef as any} onClick={() => setOpen((v) => !v)}>
+            {max === 1 ? `+ ${t('entry.pickOwner')}` : `+ ${t('entry.addOwner')}`}
+          </AddChip>
+        ) : <span ref={triggerRef as any} />}
       </div>
 
       {open && createPortal(
