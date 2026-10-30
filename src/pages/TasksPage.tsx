@@ -868,7 +868,7 @@ export default function TasksPage() {
           <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{filteredCards.length} / {allCards.length}</p>
         </div>
         <Button onClick={() => setNewTaskOpen(true)}>
-          + {t('tasks.newTask')}
+          {t('addBtn.task')}
         </Button>
       </div>
 

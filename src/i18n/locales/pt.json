@@ -473,6 +473,7 @@
   "incident": {
     "title": "Sustentação",
     "new": "+ Incidente",
+    "newTitle": "Novo incidente",
     "noIncidents": "Nenhum incidente cadastrado ainda.",
     "createFirst": "+ Criar primeiro incidente",
     "colTitle": "Título",
@@ -815,6 +816,18 @@
   },
   "export": "Exportar XLSX",
   "exportCsv": "Exportar CSV",
+  "addBtn": {
+    "client": "+ Cliente",
+    "project": "+ Projeto",
+    "incident": "+ Incidente",
+    "contact": "+ Contato",
+    "task": "+ Tarefa",
+    "retro": "+ Retro",
+    "risk": "+ Risco",
+    "user": "+ Usuário",
+    "group": "+ Grupo",
+    "member": "+ Membro"
+  },
   "actions": {
     "edit": "Editar",
     "delete": "Excluir",

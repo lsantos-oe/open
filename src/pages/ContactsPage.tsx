@@ -132,7 +132,7 @@ export default function ContactsPage() {
           <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{t('nav.contacts')}</h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{filtered.length} / {contacts.length} {contacts.length !== 1 ? t('contacts.contacts') : t('contacts.contact')}</p>
         </div>
-        <Button onClick={openAdd}>+ {t('contacts.contact')}</Button>
+        <Button onClick={openAdd}>{t('addBtn.contact')}</Button>
       </div>
 
       <div className="flex items-center gap-2 mb-4 flex-wrap">

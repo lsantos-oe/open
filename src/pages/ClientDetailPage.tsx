@@ -1,4 +1,5 @@
 import DocumentationPanel from '@/components/docs/DocumentationPanel'
+import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
 import { useState, useMemo, ReactNode } from 'react'
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
@@ -46,6 +47,7 @@ const EVENT_ICONS: Record<string, ReactNode> = {
 }
 
 export default function ClientDetailPage() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { clients, projects, teamDirectory, contacts, updateClient, deleteClient, createContact, updateContact, linkContactToClient, unlinkContactFromClient, addCsAssignment, removeCsAssignment } = useAppStore()
@@ -190,7 +192,7 @@ export default function ClientDetailPage() {
             </Link>
           ))}
           {clientGroups.length > 0 && (allowMultipleGroups || groupsOfClient(clientGroups, client.id).length === 0) && (
-            <button className="text-xs shrink-0" style={{ color: 'var(--text-tertiary)' }} onClick={() => setAddToGroup(true)}>+ grupo</button>
+            <button className="text-xs shrink-0" style={{ color: 'var(--text-tertiary)' }} onClick={() => setAddToGroup(true)}>{t('addBtn.group')}</button>
           )}
         </div>
         <Button variant="secondary" size="sm" onClick={() => setShowArchiveConfirm(true)}>Excluir cliente</Button>
@@ -261,7 +263,7 @@ export default function ClientDetailPage() {
           <div>
             <div className="flex items-center justify-between mb-3">
               <Link to="/contacts" className="text-xs" style={{ color: 'var(--oe-primary)' }}>Ver todos os contatos →</Link>
-              <Button size="sm" onClick={openAddContact}>+ Contato</Button>
+              <Button size="sm" onClick={openAddContact}>{t('addBtn.contact')}</Button>
             </div>
             {clientContacts.length === 0 ? (
               <p className="text-sm text-center py-10" style={{ color: 'var(--text-tertiary)' }}>Nenhum contato vinculado ainda.</p>

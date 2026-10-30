@@ -1124,8 +1124,7 @@ export default function ProjectsPage() {
             {t('import.title')}
           </Button>
           <Button onClick={() => setModalOpen(true)}>
-            <span className="text-base leading-none font-bold">+</span>
-            {t('project.new')}
+            {t('addBtn.project')}
           </Button>
         </div>
       </div>

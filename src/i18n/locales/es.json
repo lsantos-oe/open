@@ -473,6 +473,7 @@
   "incident": {
     "title": "Sustentación",
     "new": "+ Incidente",
+    "newTitle": "Nuevo incidente",
     "noIncidents": "Ningún incidente registrado todavía.",
     "createFirst": "+ Crear primer incidente",
     "colTitle": "Título",
@@ -849,6 +850,18 @@
       "e12": "Go live",
       "e13": "Operación Asistida"
     }
+  },
+  "addBtn": {
+    "client": "+ Cliente",
+    "project": "+ Proyecto",
+    "incident": "+ Incidente",
+    "contact": "+ Contacto",
+    "task": "+ Tarea",
+    "retro": "+ Retro",
+    "risk": "+ Riesgo",
+    "user": "+ Usuario",
+    "group": "+ Grupo",
+    "member": "+ Miembro"
   },
   "actions": {
     "edit": "Editar",

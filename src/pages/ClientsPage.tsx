@@ -175,8 +175,8 @@ export default function ClientsPage() {
           <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{filtered.length} / {clients.length} {clients.length !== 1 ? t('wallet.clients') : t('wallet.client')}</p>
         </div>
         {tab === 'clients'
-          ? <Button onClick={openAdd}>+ {t('wallet.client')}</Button>
-          : <Button onClick={() => setNewGroupOpen(true)}>+ Grupo</Button>}
+          ? <Button onClick={openAdd}>{t('addBtn.client')}</Button>
+          : <Button onClick={() => setNewGroupOpen(true)}>{t('addBtn.group')}</Button>}
       </div>
 
       <div className="flex gap-1 mb-5" role="tablist" aria-label="Carteira">

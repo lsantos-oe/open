@@ -850,6 +850,18 @@
       "e13": "Assisted Operation"
     }
   },
+  "addBtn": {
+    "client": "+ Client",
+    "project": "+ Project",
+    "incident": "+ Incident",
+    "contact": "+ Contact",
+    "task": "+ Task",
+    "retro": "+ Retro",
+    "risk": "+ Risk",
+    "user": "+ User",
+    "group": "+ Group",
+    "member": "+ Member"
+  },
   "actions": {
     "edit": "Edit",
     "delete": "Delete",

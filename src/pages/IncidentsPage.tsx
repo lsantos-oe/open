@@ -365,7 +365,7 @@ export default function IncidentsPage() {
           <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{t('incident.title')}</h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{filtered.length} / {incidents.length}</p>
         </div>
-        <Button onClick={openAdd}>{t('incident.new')}</Button>
+        <Button onClick={openAdd}>{t('addBtn.incident')}</Button>
       </div>
 
       {incidents.length > 0 && (
@@ -534,7 +534,7 @@ export default function IncidentsPage() {
 
       <Modal
         open={showAdd}
-        title={t('incident.new')}
+        title={t('incident.newTitle')}
         onClose={() => setShowAdd(false)}
         size="md"
         footer={

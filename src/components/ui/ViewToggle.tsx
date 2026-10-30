@@ -16,16 +16,16 @@ interface ViewToggleProps<T extends string> {
  *  always paired (icon-only reads ambiguous), same active color everywhere. */
 export function ViewToggle<T extends string>({ value, onChange, options }: ViewToggleProps<T>) {
   return (
-    <div className="flex rounded-[var(--radius-md)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
+    <div className="flex items-center gap-0.5 p-0.5 h-8 rounded-[var(--radius-md)]" style={{ background: 'var(--surface-subtle)' }}>
       {options.map((opt) => (
         <button
           key={opt.value}
           type="button"
           onClick={() => onChange(opt.value)}
-          className="px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1.5"
+          className="h-7 px-2.5 text-[13px] font-medium transition-colors flex items-center gap-1.5 rounded-[calc(var(--radius-md)-2px)]"
           style={value === opt.value
             ? { background: 'var(--oe-primary)', color: 'white' }
-            : { background: 'var(--surface-card)', color: 'var(--text-secondary)' }}
+            : { background: 'transparent', color: 'var(--text-secondary)' }}
         >
           {opt.icon}
           {opt.label}

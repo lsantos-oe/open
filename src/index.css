@@ -25,6 +25,7 @@
   /* Borders */
   --border-default: #E8E3DC;
   --border-strong: #D8D1C6;
+  --border-soft: rgba(28, 24, 21, 0.06);
 
   /* Sidebar (always dark, independent of theme) */
   --sidebar-bg: #18140F;
@@ -92,6 +93,7 @@
     /* Borders */
     --border-default: #322C24;
     --border-strong: #443C31;
+    --border-soft: rgba(255, 255, 255, 0.06);
 
     /* Semantic — translucent tints instead of pale solid backgrounds */
     --color-success-bg: rgba(26, 136, 80, 0.18);
@@ -121,6 +123,8 @@
 @layer base {
   /* Linhas (divide-y, border) com a cor do tema; sem isso o Tailwind usa cinza claro, que no escuro vira traço branco. */
   *, ::before, ::after { border-color: var(--border-default); }
+  /* Divisórias entre linhas de listas e tabelas: quase invisíveis, só para guiar o olho. */
+  .divide-y > * { border-color: var(--border-soft); }
   * { box-sizing: border-box; }
   body {
     background-color: var(--surface-page);

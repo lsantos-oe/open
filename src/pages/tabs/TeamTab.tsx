@@ -89,7 +89,7 @@ export default function TeamTab({ project }: Props) {
   return (
     <>
       <div className="flex justify-end mb-3">
-        <Button size="sm" onClick={openAdd}>+ {t('team.add')}</Button>
+        <Button size="sm" onClick={openAdd}>{t('addBtn.member')}</Button>
       </div>
 
       {project.team.length === 0 ? (

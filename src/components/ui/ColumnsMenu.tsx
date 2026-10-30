@@ -41,8 +41,8 @@ export function ColumnsMenu({ columns, isVisible, onToggle }: Props) {
       <button
         ref={triggerRef as any}
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-[var(--radius-md)] border transition-colors"
-        style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)', color: 'var(--text-secondary)' }}
+        className="flex items-center gap-1.5 h-8 text-[13px] font-medium px-3 rounded-[var(--radius-md)] transition-colors whitespace-nowrap"
+        style={{ background: 'var(--surface-subtle)', color: 'var(--text-secondary)' }}
       >
         <ColumnsIcon />
         Colunas

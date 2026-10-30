@@ -38,7 +38,7 @@ export default function RetrosPage() {
           <h1 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{t('retro.title')}</h1>
           <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>{t('retro.subtitle')}</p>
         </div>
-        <Button onClick={() => setShowNew(true)}>{t('retro.new')}</Button>
+        <Button onClick={() => setShowNew(true)}>{t('addBtn.retro')}</Button>
       </div>
 
       {retros.length > 0 && (
@@ -51,7 +51,7 @@ export default function RetrosPage() {
         <EmptyState
           title={t('retro.emptyTitle')}
           description={t('retro.emptyDesc')}
-          action={{ label: t('retro.new'), onClick: () => setShowNew(true) }}
+          action={{ label: t('addBtn.retro'), onClick: () => setShowNew(true) }}
         />
       ) : filtered.length === 0 && loaded ? (
         <p className="text-sm text-center py-12" style={{ color: 'var(--text-tertiary)' }}>{t('retro.noResults')}</p>

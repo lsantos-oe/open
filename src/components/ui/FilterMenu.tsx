@@ -43,10 +43,9 @@ export function FilterMenu({ activeCount, onClear, children }: Props) {
       <button
         ref={triggerRef as any}
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-[var(--radius-md)] border transition-colors"
+        className="flex items-center gap-1.5 h-8 text-[13px] font-medium px-3 rounded-[var(--radius-md)] transition-colors whitespace-nowrap"
         style={{
-          borderColor: activeCount > 0 ? 'var(--oe-primary)' : 'var(--border-default)',
-          background: 'var(--surface-card)',
+          background: activeCount > 0 ? 'var(--oe-primary-light)' : 'var(--surface-subtle)',
           color: activeCount > 0 ? 'var(--oe-primary)' : 'var(--text-secondary)',
         }}
       >

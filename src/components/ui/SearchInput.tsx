@@ -18,9 +18,9 @@ export function SearchInput({ wrapperClassName = '', className = '', style, ...r
       </span>
       <input
         {...rest}
-        className={`w-full text-[13px] border border-[var(--border-default)] pl-8 pr-3 py-1.5 rounded-[var(--radius-md)] outline-none focus:border-[var(--oe-primary)] focus:ring-1 focus:ring-[var(--oe-primary)] transition-colors ${className}`}
+        className={`w-full h-8 text-[13px] border border-transparent pl-8 pr-3 rounded-[var(--radius-md)] outline-none focus:border-[var(--oe-primary)] focus:ring-1 focus:ring-[var(--oe-primary)] transition-colors ${className}`}
         style={{
-          background: 'var(--surface-input)',
+          background: 'var(--surface-subtle)',
           color: 'var(--text-primary)',
           ...style,
         }}

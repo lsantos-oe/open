@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { Button } from '@/components/ui/Button'
@@ -28,6 +29,7 @@ const COLUMNS: ColumnDef[] = [
 /** Full users management UI (active users table + pending invites + invite modal),
  *  reused as-is by the standalone /users route and by the "Usuários" tab in Configurações. */
 export function UsersManagementPanel() {
+  const { t } = useTranslation()
   const { teamDirectory, invitedUsers, inviteUser, deleteInvite, updateProfileRole, setProfileActive } = useAppStore()
   const { user } = useAuthStore()
 
@@ -82,7 +84,7 @@ export function UsersManagementPanel() {
             {teamDirectory.length} com acesso · {invitedUsers.length} convite(s) pendente(s)
           </p>
         </div>
-        <Button onClick={openInvite}>+ Convidar usuário</Button>
+        <Button onClick={openInvite}>{t('addBtn.user')}</Button>
       </div>
 
       <div className="flex items-center gap-2 mb-4 flex-wrap">

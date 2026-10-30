@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAppStore } from '@/store/useAppStore'
@@ -39,6 +40,7 @@ const Empty = ({ children }: { children: string }) => <p className="text-sm py-6
 /** Página do grupo de clientes: um compilado do que é dos clientes membros — contatos, projetos, incidentes,
  *  tarefas, notas e documentação. O que é adicionado aqui é só o que é do grupo (clientes e contatos). */
 export default function ClientGroupDetailPage() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const openEntry = useEntryOpenerStore((s) => s.open)
@@ -130,7 +132,7 @@ export default function ClientGroupDetailPage() {
 
       <div className="p-6">
         {tab === 'members' && <div className="max-w-5xl">
-          <div className="flex justify-end mb-3"><Button size="sm" onClick={() => setAddClients(true)}>+ Cliente</Button></div>
+          <div className="flex justify-end mb-3"><Button size="sm" onClick={() => setAddClients(true)}>{t('addBtn.client')}</Button></div>
           {members.length === 0 ? <Empty>Nenhum cliente neste grupo.</Empty> : (
             <ul className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
               {members.map((c) => (

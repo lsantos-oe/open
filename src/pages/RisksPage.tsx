@@ -446,7 +446,7 @@ export default function RisksPage({ projectId, focusRiskId, onFocusConsumed }: R
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-semibold text-[var(--text-secondary)]">{t('risk.title')}</h2>
-        <Button size="sm" onClick={() => setShowAdd(true)}>{t('risk.add')}</Button>
+        <Button size="sm" onClick={() => setShowAdd(true)}>{t('addBtn.risk')}</Button>
       </div>
 
       {project.risks.length === 0 ? (
