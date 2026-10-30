@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useCommandPaletteStore } from '@/stores/useCommandPaletteStore'
 import { NotificationBell } from './NotificationBell'
+import { ThemePref, setThemePref, useThemePref } from '@/utils/theme'
 import { EditProfileModal } from './EditProfileModal'
 import { PlusIcon, TasksIcon, SupportIcon, PortfolioIcon, ContactsIcon, WalletIcon } from '@/components/ui/icons'
 
@@ -29,6 +30,7 @@ export function Topbar() {
   const navigate = useNavigate()
   const { user, profile, signOut } = useAuthStore()
   const toggleCommandPalette = useCommandPaletteStore((s) => s.toggle)
+  const themePref = useThemePref()
   const [showMenu, setShowMenu] = useState(false)
   const [showEditProfile, setShowEditProfile] = useState(false)
   const [showQuickCreate, setShowQuickCreate] = useState(false)
@@ -78,174 +80,112 @@ export function Topbar() {
     navigate(`${to}?new=1`)
   }
 
+  const item = 'w-full text-left flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-[13px] transition-colors hover:bg-[var(--surface-subtle)]'
+  const popover: React.CSSProperties = {
+    position: 'absolute', top: 40, right: 0, background: 'var(--surface-card)', borderRadius: 'var(--radius-xl)',
+    boxShadow: 'var(--shadow-lg)', zIndex: 100, padding: 6,
+  }
+  const circle = (active: boolean): React.CSSProperties => ({
+    width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: active ? 'var(--text-primary)' : 'var(--surface-subtle)', color: active ? 'var(--surface-page)' : 'var(--text-secondary)',
+  })
+  const themeIcons: Record<ThemePref, ReactNode> = {
+    auto: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></svg>,
+    light: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4" /></svg>,
+    dark: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z" /></svg>,
+  }
+
   return (
     <>
-      <div
-        className="flex items-center shrink-0 px-5 gap-2.5"
-        style={{ height: 48, background: 'var(--surface-card)', borderBottom: '0.5px solid var(--border-default)' }}
-      >
+      <div className="flex items-center shrink-0 px-6 gap-2" style={{ height: 56, background: 'var(--surface-page)' }}>
         <button
           onClick={toggleCommandPalette}
-          className="flex items-center gap-2 transition-colors"
-          style={{
-            width: 260, background: 'var(--surface-subtle)', border: '1px solid var(--border-default)',
-            borderRadius: 'var(--radius-md)', padding: '6px 10px', color: 'var(--text-tertiary)',
-          }}
+          className="flex items-center gap-2.5 transition-colors hover:opacity-90 flex-1"
+          style={{ maxWidth: 420, height: 36, background: 'var(--surface-subtle)', borderRadius: 'var(--radius-pill)', padding: '0 8px 0 14px', color: 'var(--text-tertiary)' }}
+          aria-label="Buscar (Cmd+K)"
         >
           <span className="shrink-0 w-3.5 h-3.5 flex items-center justify-center"><SearchIcon /></span>
-          <span className="flex-1 text-left text-[13px]">Buscar...</span>
-          <span
-            className="shrink-0 text-[11.5px]"
-            style={{ background: 'var(--surface-card)', border: '1px solid var(--border-default)', borderRadius: 4, padding: '1px 5px', color: 'var(--text-disabled)' }}
-          >
-            ⌘K
-          </span>
+          <span className="flex-1 min-w-0 text-left text-[13px] truncate">Buscar projetos, clientes, tarefas ou um ID…</span>
+          <span className="shrink-0 text-[11.5px] px-2 h-5 inline-flex items-center rounded-full" style={{ background: 'var(--surface-card)', color: 'var(--text-tertiary)' }}>⌘K</span>
         </button>
 
         <div className="flex-1" />
 
-        <div ref={importRef} style={{ position: 'relative' }}>
-          <button
-            onClick={() => setShowImport((v) => !v)}
-            title="Importar de uma planilha Excel"
-            className="flex items-center gap-1.5 transition-colors"
-            style={{
-              height: 28, padding: '0 10px', borderRadius: 'var(--radius-md)', fontSize: 13,
-              background: showImport ? 'var(--text-primary)' : 'var(--surface-subtle)',
-              color: showImport ? 'white' : 'var(--text-secondary)',
-              border: '1px solid var(--border-default)',
-            }}
-          >
-            <UploadIcon />
-            Importar
-          </button>
-
-          {showImport && (
-            <div style={{
-              position: 'absolute', top: 34, right: 0, minWidth: 230,
-              background: 'var(--surface-card)', border: '0.5px solid var(--border-default)',
-              borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', zIndex: 100, overflow: 'hidden', padding: 4,
-            }}>
-              <p style={{ padding: '6px 8px 4px', fontSize: 11.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)' }}>
-                Importar do Excel
-              </p>
-              {IMPORT_OPTIONS.map(({ entity, label, Icon }) => (
-                <button
-                  key={entity}
-                  onClick={() => goImport(entity)}
-                  className="w-full text-left flex items-center gap-2.5 rounded-[var(--radius-md)]"
-                  style={{ padding: '7px 8px', fontSize: 13, color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-                >
-                  <span className="shrink-0" style={{ color: 'var(--text-tertiary)' }}><Icon className="w-4 h-4" /></span>
-                  {label}
-                </button>
-              ))}
-              <div style={{ height: 1, background: 'var(--border-default)', margin: '4px 0' }} />
-              <button
-                onClick={() => goImport('tudo')}
-                className="w-full text-left rounded-[var(--radius-md)]"
-                style={{ padding: '7px 8px', fontSize: 13, color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer' }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-              >
-                Tudo em um arquivo
-              </button>
-              <p style={{ padding: '4px 8px 6px', fontSize: 11.5, color: 'var(--text-tertiary)' }}>
-                Em cada opção você baixa o modelo em Excel e envia a planilha preenchida.
-              </p>
-            </div>
-          )}
-        </div>
-
+        {/* Criar e importar */}
         <div ref={quickCreateRef} style={{ position: 'relative' }}>
           <button
-            onClick={() => setShowQuickCreate((v) => !v)}
+            onClick={() => { setShowQuickCreate((v) => !v); setShowImport(false) }}
             title="Criar novo"
-            className="flex items-center justify-center transition-colors"
-            style={{
-              width: 28, height: 28, borderRadius: 'var(--radius-md)',
-              background: showQuickCreate ? 'var(--text-primary)' : 'var(--surface-subtle)',
-              color: showQuickCreate ? 'white' : 'var(--text-secondary)',
-              border: '1px solid var(--border-default)',
-            }}
+            aria-label="Criar novo" aria-expanded={showQuickCreate}
+            className="flex items-center justify-center transition-colors hover:opacity-90"
+            style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--oe-primary)', color: 'white' }}
           >
             <PlusIcon className="w-4 h-4" />
           </button>
 
           {showQuickCreate && (
-            <div style={{
-              position: 'absolute', top: 34, right: 0, minWidth: 190,
-              background: 'var(--surface-card)', border: '0.5px solid var(--border-default)',
-              borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', zIndex: 100, overflow: 'hidden', padding: 4,
-            }}>
+            <div style={{ ...popover, minWidth: 230 }}>
               {QUICK_CREATE.map(({ to, label, Icon }) => (
-                <button
-                  key={to}
-                  onClick={() => goCreate(to)}
-                  className="w-full text-left flex items-center gap-2.5 rounded-[var(--radius-md)]"
-                  style={{ padding: '7px 8px', fontSize: 13, color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-                >
+                <button key={to} onClick={() => goCreate(to)} className={item} style={{ color: 'var(--text-primary)' }}>
                   <span className="shrink-0" style={{ color: 'var(--text-tertiary)' }}><Icon className="w-4 h-4" /></span>
                   {label}
                 </button>
               ))}
+              <div style={{ height: 1, background: 'var(--border-soft)', margin: '6px 4px' }} />
+              <button onClick={() => setShowImport((v) => !v)} aria-expanded={showImport} className={item} style={{ color: 'var(--text-primary)' }}>
+                <span className="shrink-0" style={{ color: 'var(--text-tertiary)' }}><UploadIcon /></span>
+                <span className="flex-1">Importar do Excel</span>
+                <span style={{ color: 'var(--text-tertiary)', display: 'inline-block', transform: showImport ? 'rotate(90deg)' : undefined, transition: 'transform .12s' }}>›</span>
+              </button>
+              {showImport && (
+                <div className="pl-3">
+                  {IMPORT_OPTIONS.map(({ entity, label }) => (
+                    <button key={entity} onClick={() => { setShowQuickCreate(false); goImport(entity) }} className={item} style={{ color: 'var(--text-secondary)' }}>{label}</button>
+                  ))}
+                  <button onClick={() => { setShowQuickCreate(false); goImport('tudo') }} className={item} style={{ color: 'var(--text-secondary)' }}>Tudo em um arquivo</button>
+                  <p className="px-2.5 pb-1.5 text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>Baixe o modelo em Excel e envie a planilha preenchida.</p>
+                </div>
+              )}
             </div>
           )}
         </div>
 
         <NotificationBell />
 
+        {/* Perfil */}
         <div ref={menuRef} style={{ position: 'relative' }}>
-          <button
-            onClick={() => setShowMenu((v) => !v)}
-            className="flex items-center gap-1.5 rounded-[var(--radius-pill)] transition-colors"
-            style={{ padding: '3px 8px 3px 3px', background: 'transparent' }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-          >
+          <button onClick={() => setShowMenu((v) => !v)} className="flex items-center justify-center transition-opacity hover:opacity-90" aria-label="Menu do perfil" aria-expanded={showMenu} style={{ width: 32, height: 32, borderRadius: '50%' }}>
             {avatarUrl ? (
-              <img src={avatarUrl} alt={displayName} style={{ width: 26, height: 26, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+              <img src={avatarUrl} alt={displayName} style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
             ) : (
-              <span style={{
-                background: 'var(--oe-primary)', borderRadius: '50%', color: 'white', fontSize: 11.5, fontWeight: 600,
-                width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              }}>{initials}</span>
+              <span style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--surface-subtle)', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{initials}</span>
             )}
-            <ChevronDownIcon />
           </button>
 
           {showMenu && (
-            <div style={{
-              position: 'absolute', top: 38, right: 0, minWidth: 220,
-              background: 'var(--surface-card)', border: '0.5px solid var(--border-default)',
-              borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', zIndex: 100, overflow: 'hidden',
-            }}>
-              <div style={{ padding: '10px 12px', borderBottom: '0.5px solid var(--border-default)' }}>
-                <p className="truncate" style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{displayName}</p>
-                <p className="truncate" style={{ fontSize: 11.5, color: 'var(--text-tertiary)', marginTop: 1 }}>{user?.email}</p>
+            <div style={{ ...popover, minWidth: 250 }}>
+              <div className="px-2.5 pt-2 pb-2.5">
+                <p className="truncate text-[13px] font-medium" style={{ color: 'var(--text-primary)' }}>{displayName}</p>
+                <p className="truncate text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>{user?.email}</p>
               </div>
-              <button
-                onClick={() => { setShowMenu(false); setShowEditProfile(true) }}
-                className="w-full text-left flex items-center gap-2"
-                style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer' }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-              >
-                Editar perfil
-              </button>
-              <button
-                onClick={() => { setShowMenu(false); signOut() }}
-                className="w-full text-left flex items-center gap-2"
-                style={{ padding: '8px 12px', fontSize: 13, color: 'var(--color-danger-text)', background: 'none', border: 'none', cursor: 'pointer' }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-              >
-                Sair
-              </button>
+              <div className="px-2.5 pb-2">
+                <p className="text-[11.5px] mb-1.5" style={{ color: 'var(--text-tertiary)' }}>Aparência</p>
+                <div className="flex gap-0.5 p-0.5 rounded-full" style={{ background: 'var(--surface-subtle)' }} role="radiogroup" aria-label="Aparência">
+                  {(['auto', 'light', 'dark'] as ThemePref[]).map((v) => (
+                    <button
+                      key={v} role="radio" aria-checked={themePref === v} onClick={() => setThemePref(v)}
+                      title={v === 'auto' ? 'Automático' : v === 'light' ? 'Claro' : 'Escuro'}
+                      className="flex-1 h-7 flex items-center justify-center rounded-full transition-colors"
+                      style={{ background: themePref === v ? 'var(--surface-card)' : 'transparent', color: themePref === v ? 'var(--text-primary)' : 'var(--text-tertiary)', boxShadow: themePref === v ? 'var(--shadow-sm)' : undefined }}
+                    >
+                      {themeIcons[v]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ height: 1, background: 'var(--border-soft)', margin: '2px 4px 4px' }} />
+              <button onClick={() => { setShowMenu(false); setShowEditProfile(true) }} className={item} style={{ color: 'var(--text-primary)' }}>Editar perfil</button>
+              <button onClick={() => { setShowMenu(false); signOut() }} className={item} style={{ color: 'var(--color-danger-text)' }}>Sair</button>
             </div>
           )}
         </div>

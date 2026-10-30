@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { ThemePref, setThemePref, useThemePref } from '@/utils/theme'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
@@ -14,8 +15,8 @@ import RichTextInput from '@/components/editor/RichTextInput'
 
 function Section({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
-    <section className="bg-[var(--surface-card)] rounded-[var(--radius-lg)] border border-[var(--border-default)] p-6 mb-6">
-      <h2 className="text-sm font-semibold text-[var(--text-secondary)] mb-1">{title}</h2>
+    <section className="oe-card p-6 mb-4">
+      <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-1">{title}</h2>
       {description && <p className="text-xs text-[var(--text-tertiary)] mb-4">{description}</p>}
       {!description && <div className="mb-4" />}
       {children}
@@ -36,10 +37,10 @@ function ToggleGroup<T extends string>({
         <button
           key={opt.value}
           onClick={() => onChange(opt.value)}
-          className={`px-4 py-2 rounded-[var(--radius-lg)] text-sm font-medium border transition-colors ${
+          className={`px-4 py-1.5 rounded-full text-[13px] font-medium transition-colors ${
             value === opt.value
-              ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]'
-              : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-strong)] hover:border-[var(--text-tertiary)]'
+              ? 'bg-[var(--text-primary)] text-[var(--surface-page)]'
+              : 'bg-[var(--surface-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
           }`}
         >
           {opt.label}
@@ -64,6 +65,7 @@ type ArchivedFilter = 'all' | 'project' | 'client' | 'incident'
 export default function SettingsPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
+  const themePref = useThemePref()
   const { profile } = useAuthStore()
   const isAdmin = profile?.role === 'admin'
   const { hasKey, saving: savingAiKey, saveKey: saveAiKey, removeKey: removeAiKey } = useAiStore()
@@ -174,16 +176,16 @@ export default function SettingsPage() {
     <div className="p-8 max-w-screen-xl mx-auto">
       <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-6">{t('nav.settings')}</h1>
 
-      <div className="flex gap-0 border-b mb-6" style={{ borderColor: 'var(--border-default)' }}>
+      <div className="flex flex-wrap gap-1 mb-6" role="tablist">
         {TABS.map((tb) => (
           <button
             key={tb.id}
+            role="tab" aria-selected={tab === tb.id}
             onClick={() => setTab(tb.id)}
-            className="px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap"
+            className="px-3 py-1.5 text-[13px] font-medium rounded-full transition-colors whitespace-nowrap hover:text-[var(--text-primary)]"
             style={{
-              borderBottomColor: tab === tb.id ? 'var(--text-primary)' : 'transparent',
+              background: tab === tb.id ? 'var(--surface-subtle)' : 'transparent',
               color: tab === tb.id ? 'var(--text-primary)' : 'var(--text-tertiary)',
-              marginBottom: -1,
             }}
           >
             {tb.label}
@@ -201,6 +203,18 @@ export default function SettingsPage() {
                 { value: 'pt', label: '🇧🇷 Português' },
                 { value: 'en', label: '🇺🇸 English' },
                 { value: 'es', label: '🇪🇸 Español' },
+              ]}
+            />
+          </Section>
+
+          <Section title="Aparência" description="Automático segue o modo claro ou escuro do seu computador. Salvo apenas neste navegador.">
+            <ToggleGroup<ThemePref>
+              value={themePref}
+              onChange={setThemePref}
+              options={[
+                { value: 'auto', label: 'Automático' },
+                { value: 'light', label: 'Claro' },
+                { value: 'dark', label: 'Escuro' },
               ]}
             />
           </Section>

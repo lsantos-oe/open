@@ -37,10 +37,9 @@ export function NotificationBell() {
       <button
         ref={triggerRef as any}
         onClick={() => setOpen((v) => !v)}
-        className="relative flex items-center justify-center rounded-[var(--radius-md)] transition-colors"
-        style={{ width: 32, height: 32, color: 'var(--text-tertiary)', background: 'transparent' }}
-        onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-subtle)'; e.currentTarget.style.color = 'var(--text-primary)' }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-tertiary)' }}
+        className="relative flex items-center justify-center rounded-full transition-colors"
+        style={{ width: 32, height: 32, color: 'var(--text-secondary)', background: 'var(--surface-subtle)' }}
+        aria-label="Notificações"
         title="Notificações"
       >
         <span className="shrink-0 w-[17px] h-[17px] flex items-center justify-center relative">
@@ -48,7 +47,7 @@ export function NotificationBell() {
           {unreadCount > 0 && (
             <span
               className="absolute -top-1 -right-1 rounded-[var(--radius-pill)] flex items-center justify-center text-white"
-              style={{ width: 13, height: 13, fontSize: 8, fontWeight: 700, background: 'var(--oe-primary)', border: '1.5px solid var(--surface-card)' }}
+              style={{ width: 13, height: 13, fontSize: 8, fontWeight: 700, background: 'var(--oe-primary)', border: '1.5px solid var(--surface-page)' }}
             >
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
@@ -62,11 +61,11 @@ export function NotificationBell() {
           className="w-80 max-h-96 overflow-y-auto"
           style={{
             position: 'fixed', ...position, zIndex: 1000,
-            background: 'var(--surface-card)', border: '1px solid var(--border-default)',
-            borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)',
+            background: 'var(--surface-card)',
+            borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)',
           }}
         >
-          <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '0.5px solid var(--border-default)' }}>
+          <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '1px solid var(--border-soft)' }}>
             <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Notificações</span>
             {unreadCount > 0 && (
               <button onClick={() => markAllNotificationsRead()} className="text-xs" style={{ color: 'var(--text-secondary)' }}>

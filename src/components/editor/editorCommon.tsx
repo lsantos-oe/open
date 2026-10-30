@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useIsDark } from '@/utils/theme'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { filterSuggestionItems, insertOrUpdateBlockForSlashMenu } from '@blocknote/core'
@@ -23,14 +24,7 @@ const CURSOR_COLORS = ['#D9530E', '#3568C4', '#1A8850', '#7C3AED', '#A8790A', '#
 export const colorFor = (id: string) => CURSOR_COLORS[[...id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % CURSOR_COLORS.length]
 
 export function useDarkMode(): boolean {
-  const [dark, setDark] = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches)
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    const on = (e: MediaQueryListEvent) => setDark(e.matches)
-    mq.addEventListener('change', on)
-    return () => mq.removeEventListener('change', on)
-  }, [])
-  return dark
+  return useIsDark()
 }
 
 /** Textos do editor (menu, dicas) no idioma da interface. */
