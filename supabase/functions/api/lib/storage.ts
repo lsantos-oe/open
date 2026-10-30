@@ -14,6 +14,10 @@ export interface StorageApi {
   remove(paths: string[]): Promise<void>;
   /** Link assinado (com domínio) válido por `expiresIn` segundos. */
   signedUrl(path: string, expiresIn: number): Promise<string>;
+  /** URL assinada de UPLOAD de um único caminho, sem sobrescrever (sem upsert): quem tem a URL só consegue criar esse objeto. */
+  signedUploadUrl(path: string): Promise<string>;
+  /** Metadados do objeto (tamanho e tipo) ou null se não existe. */
+  head(path: string): Promise<{ size: number; contentType: string } | null>;
 }
 
 let override: StorageApi | undefined;
@@ -73,6 +77,32 @@ function supabaseStorage(): StorageApi {
       const j = await res.json() as { signedURL?: string };
       if (!j.signedURL) throw unavailable("o Storage não devolveu o link assinado.");
       return `${base}${j.signedURL.startsWith("/") ? "" : "/"}${j.signedURL}`;
+    },
+    // Storage API: POST /object/upload/sign/<bucket>/<path> → { url: "/object/upload/sign/<bucket>/<path>?token=…", token }.
+    // O upload é um PUT nessa URL (o token é a credencial; vale ~2 h, prazo fixo do Supabase). x-upsert=false: não sobrescreve.
+    async signedUploadUrl(path) {
+      const res = await call(`${base}/object/upload/sign/${BUCKET}/${safePath(path)}`, {
+        method: "POST",
+        headers: { ...auth, "Content-Type": "application/json", "x-upsert": "false" },
+        body: "{}",
+      });
+      const j = await res.json() as { url?: string; token?: string };
+      const rel = j.url ?? (j.token ? `/object/upload/sign/${BUCKET}/${safePath(path)}?token=${encodeURIComponent(j.token)}` : "");
+      if (!rel) throw unavailable("o Storage não devolveu a URL de upload.");
+      return `${base}${rel.startsWith("/") ? "" : "/"}${rel}`;
+    },
+    async head(path) {
+      let res: Response;
+      try {
+        res = await fetch(`${base}/object/authenticated/${BUCKET}/${safePath(path)}`, { method: "HEAD", headers: auth, signal: AbortSignal.timeout(30_000) });
+      } catch {
+        throw unavailable("o Storage não respondeu.");
+      }
+      if (res.status === 404 || res.status === 400) return null;
+      if (!res.ok) throw unavailable(`o Storage recusou a consulta (HTTP ${res.status}).`);
+      const size = Number(res.headers.get("content-length") ?? "");
+      if (!Number.isFinite(size)) throw unavailable("o Storage não informou o tamanho do arquivo.");
+      return { size, contentType: res.headers.get("content-type") ?? "" };
     },
   };
 }

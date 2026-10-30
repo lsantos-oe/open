@@ -623,10 +623,27 @@ function buildServer(user: AuthUser, root: string): McpServer {
   const docBack = readBack("DocumentationItems");
   writeTool("create_documentation_link", "Adicionar link à documentação", "Cria um link (http/https) na documentação de um projeto ou cliente." + DOC_NOTE, docs.DocLinkCreate.shape, W, (ctx, a) => docs.createDocLink(ctx, strip(a)), docBack);
   writeTool("create_documentation_text", "Adicionar texto à documentação", "Cria uma caixa de texto (Markdown, até 200 KB; documento colaborativo no app) na documentação de um projeto ou cliente." + DOC_NOTE, docs.DocTextCreate.shape, W, (ctx, a) => docs.createDocText(ctx, strip(a)), docBack);
+  tool("request_documentation_upload", {
+    title: "Pedir URL de upload de arquivo para a documentação",
+    description:
+      "PRIMEIRO PASSO para anexar um arquivo LOCAL (PDF, Word, planilha… até 25 MB) à documentação, sem base64 e sem URL pública. Informe ProjectId OU ClientId, FileName (com extensão) e, se souber, Size em bytes e ContentType. Não grava nada no Open: devolve StoragePath, UploadUrl (URL assinada do Storage; é a credencial, só permite criar esse caminho, uma vez, sem sobrescrever; vale ~2 h) e o comando Curl pronto. " +
+      "Exige um Claude com shell e acesso ao arquivo (Claude Code). Passo a passo: (1) chame esta tool; (2) rode no shell o campo Curl, trocando <CAMINHO_DO_ARQUIVO_LOCAL> pelo caminho do arquivo — formato: curl -sS --fail-with-body -X PUT -H \"Content-Type: <tipo>\" --data-binary @\"<arquivo>\" \"<UploadUrl>\" ; sucesso = HTTP 200 com {\"Key\": ...}; (3) chame create_documentation_file com o mesmo escopo e StoragePath (primeiro dryRun, depois dryRun=false). Não use chave nem token da pessoa no curl: a UploadUrl basta. Não mostre a UploadUrl à pessoa nem a guarde. No chat web (sem shell), use um link (Drive) ou anexe no app.",
+    inputSchema: {
+      ProjectId: guid.optional(),
+      ClientId: guid.optional(),
+      FileName: z.string().min(1).max(200).describe("Nome do arquivo com extensão, ex.: arquitetura.pdf"),
+      Size: z.number().int().min(1).optional().describe("Tamanho em bytes (opcional): recusa já aqui se passar de 25 MB."),
+      ContentType: z.string().max(120).optional().describe("Ex.: application/pdf. Se faltar, é deduzido da extensão."),
+    },
+    annotations: W,
+  }, async (a) => {
+    requireScope(user, "write");
+    return wrap(await withUser(user, async (tx) => docs.requestDocumentationUpload(await makeCtx(user, tx, true), a), { readOnly: true }));
+  });
   writeTool(
     "create_documentation_file",
     "Adicionar arquivo à documentação",
-    "Envia um arquivo (até 25 MB) para a documentação de um projeto ou cliente. Conteúdo por ContentBase64 (prático até ~8 MB) OU SourceUrl (https público; o servidor baixa — nada de localhost/rede interna). Informe FileName com extensão quando usar ContentBase64." + DOC_NOTE,
+    "Cria o item de arquivo (até 25 MB) na documentação de um projeto ou cliente. Origem do conteúdo — informe UMA: (1) StoragePath: arquivo LOCAL já enviado com request_documentation_upload + curl (o caminho normal; exige Claude com shell); (2) SourceUrl: https público que o servidor baixa (nada de localhost/rede interna) — só se já houver URL pública; (3) ContentBase64: só arquivos minúsculos (poucos KB; base64 em milhões de caracteres não cabe numa chamada). Com StoragePath o StoragePath tem de ser do mesmo ProjectId/ClientId e ter sido gerado para você; FileName é opcional (nome original com extensão). Se o item não for criado, o arquivo enviado é removido." + DOC_NOTE,
     docs.DocFileCreate.shape,
     W,
     (ctx, a) => docs.createDocFile(ctx, strip(a)),

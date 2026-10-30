@@ -150,10 +150,12 @@ grupo havia criado; vínculos feitos à mão continuam.
 -d '{"Kind":"Link","ProjectId":"<id>","Title":"Postman da integração","Url":"https://exemplo.com/postman","Audience":"Technical","Tags":["API"]}'
 # texto (Markdown, até 200 KB; é um documento colaborativo)
 -d '{"Kind":"Text","ClientId":"<id>","Title":"Visão geral","Body":"## Resumo\\nO cliente usa três funis.","Audience":"Executive"}'
-# arquivo pequeno (até 8 MB) em base64 ...
--d '{"Kind":"File","ProjectId":"<id>","FileName":"mapa.xlsx","ContentBase64":"UEsDBBQ...","Tags":["Integração"]}'
-# ... ou arquivo de até 25 MB baixado pelo servidor de um endereço https público
+# arquivo LOCAL, de até 25 MB, sem base64 e sem URL pública: veja "Upload de arquivo por URL assinada" abaixo (StoragePath)
+-d '{"Kind":"File","ProjectId":"<id>","StoragePath":"documentation/project/<id>/<...>_mapa.xlsx","FileName":"mapa.xlsx","Tags":["Integração"]}'
+# arquivo de até 25 MB baixado pelo servidor de um endereço https público
 -d '{"Kind":"File","ProjectId":"<id>","SourceUrl":"https://exemplo.com/arquitetura.pdf","Title":"Arquitetura"}'
+# arquivo minúsculo (poucos KB) em base64
+-d '{"Kind":"File","ProjectId":"<id>","FileName":"nota.txt","ContentBase64":"b2xh"}'
 \`\`\`
 
 \`SourceUrl\` só aceita https público (sem localhost, redes internas, IPs privados, usuário/senha na URL ou portas
@@ -162,6 +164,28 @@ diferentes de 443; redirecionamentos são revalidados). \`PATCH /DocumentationIt
 reabrir), \`Audience\` e \`Tags\`. Nos itens \`Source=Task\` só \`Audience\` e \`Tags\` mudam (o link/anexo mora na tarefa).
 \`DELETE\` remove itens diretos (o arquivo também sai do Storage); itens de tarefa se removem na tarefa. Para marcar uma
 tarefa de projeto como "de documentação", \`PATCH /Tasks(<id>)\` com \`{"IsDocumentation": true}\`.
+
+#### Upload de arquivo por URL assinada (arquivos locais)
+
+Para arquivos que estão no seu disco (PDF, Word, planilhas…) até 25 MB, sem base64 e sem URL pública, em três passos —
+a URL assinada do Storage é a credencial do upload (não vai chave sua no \`curl\`):
+
+\`\`\`bash
+# 1) pedir a URL (não grava item nenhum): devolve StoragePath, UploadUrl e o Curl pronto
+curl -X POST {{ROOT}}/odata/v1/Open.RequestDocumentationUpload -H "User-Key: SUA_USER_KEY" -H "Content-Type: application/json" \\
+  -d '{"ProjectId":"<id>","FileName":"arquitetura.pdf","Size":1572864}'      # ProjectId OU ClientId; Size e ContentType são opcionais
+# 2) enviar o arquivo (PUT na UploadUrl, sem cabeçalho de autenticação); sucesso = HTTP 200 com {"Key": ...}
+curl -sS --fail-with-body -X PUT -H "Content-Type: application/pdf" --data-binary @"arquitetura.pdf" "<UploadUrl>"
+# 3) finalizar: vira um item da documentação (aceita Prefer: dry-run)
+curl -X POST {{ROOT}}/odata/v1/DocumentationItems -H "User-Key: SUA_USER_KEY" -H "Content-Type: application/json" \\
+  -d '{"Kind":"File","ProjectId":"<id>","StoragePath":"<StoragePath do passo 1>","FileName":"arquitetura.pdf","Title":"Arquitetura","Audience":"Technical"}'
+\`\`\`
+
+A URL permite criar **um único caminho**, uma vez, sem sobrescrever nem listar; vale cerca de 2 horas (prazo do
+Supabase). O \`StoragePath\` só é aceito para o mesmo projeto/cliente, gerado para você pelo passo 1; o servidor confere que o
+arquivo existe e que tem até 25 MB (o que passar disso é apagado). **Limitação:** se o passo 3 nunca acontece, o objeto
+enviado fica órfão em \`documentation/\` no Storage (a URL assinada não limita o tamanho nem expira o objeto); a
+limpeza é administrativa.
 
 Baixar um arquivo: \`GET /DocumentationItems(<id>)/Open.DownloadLink\` devolve um **link assinado e temporário** (10 min por
 padrão; \`ExpiresInSeconds\` até 3600). Trate-o como segredo.
@@ -323,7 +347,7 @@ export const TAG_DOCS: Record<string, string> = {
   ClientGroups:
     "Criar, renomear (`PATCH Name`), desfazer (`DELETE`) e mexer em clientes/contatos pelas actions `Open.AddClient`, `Open.RemoveClient`, `Open.AddContact`, `Open.RemoveContact`. Contatos em `ContactIds` ficam ligados a todos os clientes membros. Um cliente só em um grupo, salvo configuração. Veja *Grupos de clientes e documentação* na introdução.",
   DocumentationItems:
-    "`POST` cria link, texto ou arquivo (`Kind`); `PATCH` muda título, link, texto, público e etiquetas; `DELETE` remove itens diretos; `Open.DownloadLink` gera o link temporário de um arquivo. `Source=Direct` (aba do projeto/cliente) ou `Task` (links e anexos das tarefas de documentação; só público e etiquetas mudam). Público: Technical, Executive, Both.",
+    "`POST` cria link, texto ou arquivo (`Kind`); `PATCH` muda título, link, texto, público e etiquetas; `DELETE` remove itens diretos; `Open.RequestDocumentationUpload` pede a URL assinada para enviar um arquivo local (depois `POST` com `StoragePath`); `Open.DownloadLink` gera o link temporário de um arquivo. `Source=Direct` (aba do projeto/cliente) ou `Task` (links e anexos das tarefas de documentação; só público e etiquetas mudam). Público: Technical, Executive, Both.",
 };
 
 /** Ícone do Open (mesmo do app: public/favicon.svg). */

@@ -2,6 +2,7 @@
 //   deno test -A tests/docs_write.test.ts
 // deno-lint-ignore-file no-explicit-any
 import { assert, assertEquals, assertMatch, assertRejects } from "@std/assert";
+import { config } from "../lib/config.ts";
 import { setStorage, type StorageApi } from "../lib/storage.ts";
 import { isPrivateIp, setNetwork } from "../lib/safefetch.ts";
 import { getSet } from "../odata/entities.ts";
@@ -28,6 +29,8 @@ function fakeStorage() {
       return Promise.resolve();
     },
     signedUrl: (p, exp) => Promise.resolve(`https://storage.fake/sign/${p}?token=t&exp=${exp}`),
+    signedUploadUrl: (p) => Promise.resolve(`https://storage.fake/storage/v1/object/upload/sign/project-files/${p}?token=tok`),
+    head: (p) => Promise.resolve(objects.has(p) ? { size: objects.get(p)!.size, contentType: objects.get(p)!.type } : null),
   };
   return { objects, impl };
 }
@@ -173,8 +176,8 @@ Deno.test({ name: "[docs/grupos] escrita", sanitizeResources: false, sanitizeOps
   });
 
   await t.step("arquivo: validações (um de dois, vazio, base64 inválido, tamanho inline, nome, escopo)", async () => {
-    await rejectsStatus(() => h.run((c) => docs.createDocFile(c, { ProjectId: P[0], FileName: "x.pdf" })), 400, "ContentBase64");
-    await rejectsStatus(() => h.run((c) => docs.createDocFile(c, { ProjectId: P[0], FileName: "x.pdf", ContentBase64: "YQ==", SourceUrl: "https://x.com/a.pdf" })), 400, "um dos dois");
+    await rejectsStatus(() => h.run((c) => docs.createDocFile(c, { ProjectId: P[0], FileName: "x.pdf" })), 400, "StoragePath");
+    await rejectsStatus(() => h.run((c) => docs.createDocFile(c, { ProjectId: P[0], FileName: "x.pdf", ContentBase64: "YQ==", SourceUrl: "https://x.com/a.pdf" })), 400, "uma só");
     await rejectsStatus(() => h.run((c) => docs.createDocFile(c, { ProjectId: P[0], FileName: "x.pdf", ContentBase64: "***" })), 400, "base64");
     await rejectsStatus(() => h.run((c) => docs.createDocFile(c, { ProjectId: P[0], FileName: "x.pdf", ContentBase64: "" })), 400);
     await rejectsStatus(() => h.run((c) => docs.createDocFile(c, { ProjectId: P[0], ContentBase64: b64("x") })), 400, "FileName");
@@ -286,6 +289,142 @@ Deno.test({ name: "[docs/grupos] escrita", sanitizeResources: false, sanitizeOps
     const link = await h.run((c) => docs.createDocLink(c, { ProjectId: P[0], Title: "L", Url: "https://l.com" }));
     await rejectsStatus(() => docs.documentationFileLink(h.ctx, link), 400, "não é um arquivo");
     await rejectsStatus(() => docs.documentationFileLink(h.ctx, "00000000-0000-4000-8000-0000000a0099"), 404);
+  });
+
+  // ─── upload direto por URL assinada ───────────────────────────────────────
+
+  const pathOf = (r: { StoragePath: string }) => r.StoragePath;
+  /** O que o curl faria: cria o objeto no Storage simulado. */
+  const putFile = (path: string, size: number, type = "application/pdf") => st.objects.set(path, { size, type });
+
+  await t.step("request_documentation_upload: caminho do escopo, URL assinada, curl e limites; não grava item nem objeto", async () => {
+    config.tokenPepper = "pepper-de-teste";
+    const items = (await h.q("select count(*)::int n from documentation_items"))[0].n, objs = st.objects.size;
+    const r = await h.run((c) => docs.requestDocumentationUpload(c, { ProjectId: P[0], FileName: "Relatório final.pdf", Size: 1_500_000 }), { dryRun: true });
+    assertMatch(r.StoragePath, new RegExp(`^documentation/project/${P[0]}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}_Relatorio_final\\.pdf$`));
+    assertEquals([r.Method, r.Headers["Content-Type"], r.MaxBytes, r.Scope], ["PUT", "application/pdf", 25 * 1024 * 1024, { Kind: "Project", Id: P[0] }]);
+    assert(r.UploadUrl.includes(r.StoragePath) && r.UploadUrl.includes("token="));
+    assertEquals(r.Curl, `curl -sS --fail-with-body -X PUT -H "Content-Type: application/pdf" --data-binary @"<CAMINHO_DO_ARQUIVO_LOCAL>" "${r.UploadUrl}"`);
+    assert(r.NextStep.includes("create_documentation_file") && r.NextStep.includes(r.StoragePath));
+    assertEquals([(await h.q("select count(*)::int n from documentation_items"))[0].n, st.objects.size], [items, objs]);
+    const cli = await h.run((c) => docs.requestDocumentationUpload(c, { ClientId: C[0], FileName: "contrato.docx", ContentType: "application/x-custom" }));
+    assertMatch(cli.StoragePath, new RegExp(`^documentation/client/${C[0]}/`));
+    assertEquals(cli.Headers["Content-Type"], "application/x-custom");
+    assert(r.StoragePath !== (await h.run((c) => docs.requestDocumentationUpload(c, { ProjectId: P[0], FileName: "Relatório final.pdf" }))).StoragePath); // cada pedido, um caminho
+    await rejectsStatus(() => h.run((c) => docs.requestDocumentationUpload(c, { ProjectId: P[0], FileName: "x.pdf", Size: 26 * 1024 * 1024 })), 400, "25 MB");
+    await rejectsStatus(() => h.run((c) => docs.requestDocumentationUpload(c, { FileName: "x.pdf" })), 400, "exatamente um");
+    await rejectsStatus(() => h.run((c) => docs.requestDocumentationUpload(c, { ProjectId: P[0], ClientId: C[0], FileName: "x.pdf" })), 400, "exatamente um");
+    await rejectsStatus(() => h.run((c) => docs.requestDocumentationUpload(c, { ProjectId: "00000000-0000-4000-8000-0000000b0099", FileName: "x.pdf" })), 400, "Projeto não encontrado");
+    await rejectsStatus(() => h.run((c) => docs.requestDocumentationUpload(c, { ProjectId: P[0] })), 400);
+  });
+
+  await t.step("finalizar com StoragePath: dry-run mostra o item sem gravar e sem apagar o objeto; depois grava com o tamanho real", async () => {
+    const r = await h.run((c) => docs.requestDocumentationUpload(c, { ProjectId: P[0], FileName: "Arquitetura.pdf" }));
+    const path = pathOf(r);
+    putFile(path, 1_572_864);
+    const before = (await h.q("select count(*)::int n from documentation_items"))[0].n;
+    const prev = await h.run(async (c) => await readOne(c, getSet("DocumentationItems"), await docs.createDocFile(c, { ProjectId: P[0], StoragePath: path, FileName: "Arquitetura.pdf", Audience: "Technical", Tags: ["API"] }), {}), { dryRun: true });
+    assertEquals([prev.FileName, prev.FileSize, prev.ProjectId, prev.Audience], ["Arquitetura.pdf", 1_572_864, P[0], "Technical"]);
+    assertEquals((await h.q("select count(*)::int n from documentation_items"))[0].n, before);
+    assert(st.objects.has(path), "dry-run não pode apagar o objeto enviado");
+    const idv = await h.run((c) => docs.createDocFile(c, { ProjectId: P[0], StoragePath: path, Title: "Arquitetura da integração", Audience: "Technical", Tags: ["API"] }));
+    const it = await readOne(h.ctx, getSet("DocumentationItems"), idv, {});
+    assertEquals([it.Title, it.FileName, it.FileSize, it.HasFile, it.Kind, it.Tags], ["Arquitetura da integração", "Arquitetura.pdf", 1_572_864, true, "File", ["API"]]);
+    assertEquals((await h.q("select storage_path from documentation_items where id = $1", [idv]))[0].storage_path, path);
+    assert(st.objects.has(path));
+    // o mesmo caminho não vira dois itens
+    await rejectsStatus(() => h.run((c) => docs.createDocFile(c, { ProjectId: P[0], StoragePath: path })), 400, "já virou");
+    // pelo POST de DocumentationItems (Kind=File), igual
+    const r2 = await h.run((c) => docs.requestDocumentationUpload(c, { ClientId: C[1], FileName: "Cliente.xlsx" }));
+    putFile(pathOf(r2), 2_200_000);
+    const viaPost = await h.run((c) => WRITES.DocumentationItems.create!(c, { Kind: "File", ClientId: C[1], StoragePath: pathOf(r2) }));
+    assertEquals((await item(viaPost)).FileSize, 2_200_000);
+    // e o download do item gera o link assinado
+    assertMatch((await docs.documentationFileLink(h.ctx, idv)).Url, /storage\.fake\/sign\/documentation\/project\//);
+  });
+
+  await t.step("finalizar com StoragePath: rejeita outro escopo, prefixo inventado, carimbo de outra pessoa/pepper e origem repetida", async () => {
+    const r = await h.run((c) => docs.requestDocumentationUpload(c, { ProjectId: P[0], FileName: "a.pdf" }));
+    putFile(pathOf(r), 1000);
+    const ok = pathOf(r);
+    const filePart = ok.split("/").pop()!;
+    // escopo errado (outro projeto / cliente) mesmo com o objeto existindo
+    await rejectsStatus(() => h.run((c) => docs.createDocFile(c, { ProjectId: P[1], StoragePath: ok })), 400, "request_documentation_upload");
+    await rejectsStatus(() => h.run((c) => docs.createDocFile(c, { ClientId: C[0], StoragePath: ok })), 400, "request_documentation_upload");
+    // prefixos que não são da documentação, anexos de tarefa, traversal, caminho inventado com o mesmo escopo
+    for (const bad of ["entry/e1/arq.pdf", `entry/${filePart}`, `documentation/project/${P[1]}/${filePart}`, `documentation/project/${P[0]}/../${P[1]}/${filePart}`,
+      `documentation/project/${P[0]}/${crypto.randomUUID()}_a.pdf`, `documentation/project/${P[0]}/${filePart}/extra`, `/${ok}`, "", " "]) {
+      putFile(bad, 10);
+      await rejectsStatus(() => h.run((c) => docs.createDocFile(c, { ProjectId: P[0], StoragePath: bad })), 400);
+    }
+    // carimbo é por pessoa: outra pessoa não finaliza o caminho gerado para esta
+    const other = { ...h.ctx, user: { ...h.ctx.user, id: "00000000-0000-4000-8000-00000000a002" } } as typeof h.ctx;
+    await rejectsStatus(() => docs.createDocFile(other, { ProjectId: P[0], StoragePath: ok }), 400, "gerado");
+    // e depende do segredo do servidor
+    config.tokenPepper = "outro-pepper";
+    await rejectsStatus(() => h.run((c) => docs.createDocFile(c, { ProjectId: P[0], StoragePath: ok })), 400, "gerado");
+    config.tokenPepper = "pepper-de-teste";
+    // origem: exatamente uma
+    await rejectsStatus(() => h.run((c) => docs.createDocFile(c, { ProjectId: P[0], StoragePath: ok, ContentBase64: "YQ==" })), 400, "uma só");
+    assert(st.objects.has(ok), "caminho rejeitado por escopo/pessoa não pode ter apagado nada");
+    // o caminho correto continua valendo
+    assertEquals((await item(await h.run((c) => docs.createDocFile(c, { ProjectId: P[0], StoragePath: ok })))).FileSize, 1000);
+  });
+
+  await t.step("finalizar com StoragePath: objeto inexistente, vazio ou maior que 25 MB (o inválido é removido)", async () => {
+    const sem = await h.run((c) => docs.requestDocumentationUpload(c, { ProjectId: P[0], FileName: "nao-enviado.pdf" }));
+    await rejectsStatus(() => h.run((c) => docs.createDocFile(c, { ProjectId: P[0], StoragePath: pathOf(sem) })), 400, "não foi concluído");
+    const vazio = await h.run((c) => docs.requestDocumentationUpload(c, { ProjectId: P[0], FileName: "vazio.pdf" }));
+    putFile(pathOf(vazio), 0);
+    await rejectsStatus(() => h.run((c) => docs.createDocFile(c, { ProjectId: P[0], StoragePath: pathOf(vazio) })), 400, "vazio");
+    assert(!st.objects.has(pathOf(vazio)));
+    const grande = await h.run((c) => docs.requestDocumentationUpload(c, { ProjectId: P[0], FileName: "grande.zip" }));
+    putFile(pathOf(grande), 25 * 1024 * 1024 + 1);
+    await h.run((c) => docs.createDocFile(c, { ProjectId: P[0], StoragePath: pathOf(grande) }), { dryRun: true }).catch(() => {});
+    assert(st.objects.has(pathOf(grande)), "em dry-run nada é removido");
+    await rejectsStatus(() => h.run((c) => docs.createDocFile(c, { ProjectId: P[0], StoragePath: pathOf(grande) })), 400, "25 MB");
+    assert(!st.objects.has(pathOf(grande)), "objeto acima do limite sai do Storage");
+    const limite = await h.run((c) => docs.requestDocumentationUpload(c, { ProjectId: P[0], FileName: "limite.zip" }));
+    putFile(pathOf(limite), 25 * 1024 * 1024);
+    assertEquals((await item(await h.run((c) => docs.createDocFile(c, { ProjectId: P[0], StoragePath: pathOf(limite) })))).FileSize, 25 * 1024 * 1024); // exatamente no limite passa
+  });
+
+  await t.step("finalizar com StoragePath: se o item não for criado (falha antes do COMMIT), o objeto é removido", async () => {
+    const r = await h.run((c) => docs.requestDocumentationUpload(c, { ProjectId: P[0], FileName: "orfao.pdf" }));
+    putFile(pathOf(r), 500);
+    await assertRejects(() => h.run(async (c) => {
+      await docs.createDocFile(c, { ProjectId: P[0], StoragePath: pathOf(r) });
+      throw new Error("falha depois");
+    }));
+    assert(!st.objects.has(pathOf(r)));
+  });
+
+  await t.step("cliente do Storage (lib/storage.ts): formato das chamadas à Storage API, com a service role só no servidor", async () => {
+    const calls: { url: string; method: string; headers: Record<string, string>; body?: string }[] = [];
+    const realFetch = globalThis.fetch;
+    const old = [config.supabaseUrl, config.serviceRoleKey];
+    config.supabaseUrl = "https://proj.supabase.co/";
+    config.serviceRoleKey = "service-key";
+    setStorage(undefined);
+    globalThis.fetch = ((url: string, init: RequestInit) => {
+      calls.push({ url: String(url), method: String(init.method), headers: init.headers as Record<string, string>, body: init.body as string });
+      if (String(url).includes("/object/upload/sign/")) return Promise.resolve(Response.json({ url: "/object/upload/sign/project-files/documentation/project/p/x_a.pdf?token=TKN" }));
+      if (init.method === "HEAD") return Promise.resolve(String(url).includes("faltando") ? new Response(null, { status: 404 }) : new Response(null, { headers: { "content-length": "1234", "content-type": "application/pdf" } }));
+      return Promise.resolve(Response.json({}));
+    }) as any;
+    try {
+      const { storage } = await import("../lib/storage.ts");
+      const up = await storage().signedUploadUrl("documentation/project/p/x_a.pdf");
+      assertEquals(up, "https://proj.supabase.co/storage/v1/object/upload/sign/project-files/documentation/project/p/x_a.pdf?token=TKN");
+      assertEquals([calls[0].method, calls[0].headers["x-upsert"], calls[0].headers.Authorization], ["POST", "false", "Bearer service-key"]); // sem upsert: não sobrescreve
+      assertEquals(await storage().head("documentation/project/p/x_a.pdf"), { size: 1234, contentType: "application/pdf" });
+      assertEquals(await storage().head("documentation/project/p/faltando.pdf"), null);
+      await assertRejects(() => storage().signedUploadUrl("documentation/../outro"));
+    } finally {
+      globalThis.fetch = realFetch;
+      [config.supabaseUrl, config.serviceRoleKey] = old as [string, string];
+      setStorage(st.impl);
+    }
   });
 
   await t.step("sem Storage configurado: erro 503 claro (e nada fica gravado)", async () => {

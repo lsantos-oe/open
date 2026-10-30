@@ -36,12 +36,17 @@ Regras:
     só resuma o que a listagem traz (título, URL, texto) e aponte o Link do app. Para baixar um arquivo use
     get_documentation_file_link (link temporário e privado: não o repita em lugares abertos).
 13. Escrever documentação: create_documentation_link (Url http/https), create_documentation_text (Markdown, até 200 KB),
-    create_documentation_file (FileName + ContentBase64 até ~8 MB, ou SourceUrl https público até 25 MB),
-    update_documentation_item (título, link, texto, público, etiquetas), delete_documentation_item (só itens diretos;
-    apagar arquivo é definitivo). Sempre diga a quem se destina (Technical, Executive ou Both) e as etiquetas, e confirme
-    antes de gravar. update_documentation_item com Body SUBSTITUI o texto todo: leia o texto atual
-    (list_documentation includeBody=true), altere e reenvie inteiro. Para marcar uma tarefa como "de documentação" use
-    update_task com IsDocumentation=true.`;
+    create_documentation_file (até 25 MB), update_documentation_item (título, link, texto, público, etiquetas),
+    delete_documentation_item (só itens diretos; apagar arquivo é definitivo). Sempre diga a quem se destina (Technical,
+    Executive ou Both) e as etiquetas, e confirme antes de gravar. update_documentation_item com Body SUBSTITUI o texto
+    todo: leia o texto atual (list_documentation includeBody=true), altere e reenvie inteiro. Para marcar uma tarefa
+    como "de documentação" use update_task com IsDocumentation=true.
+14. Arquivo LOCAL (PDF, Word, planilha no disco da pessoa): NUNCA use base64 para isso (vira milhões de caracteres).
+    Com shell (Claude Code): (a) request_documentation_upload (ProjectId OU ClientId, FileName, Size) devolve StoragePath,
+    UploadUrl e o Curl; (b) rode o Curl no shell trocando <CAMINHO_DO_ARQUIVO_LOCAL> (a UploadUrl é a credencial: não
+    use chave nem token da pessoa, não a mostre); (c) create_documentation_file com o mesmo escopo e StoragePath
+    (dryRun primeiro). SourceUrl só se o arquivo já tiver URL pública (https); ContentBase64 só para arquivos
+    minúsculos. Sem shell (chat web): peça um link (Drive) ou que a pessoa anexe no app.`;
 
 export function modelGuide(): string {
   const lines = ["# Modelo de dados do Open", ""];
@@ -69,7 +74,7 @@ export function modelGuide(): string {
     "- Clientes: Status PreVenda, Implantacao ou SustentacaoNovosProjetos. Incidentes avisam owner e stakeholders a cada mudança de status.",
     "- Códigos curtos: letra da entidade + ano (2 dígitos) + sequência de 6 dígitos (C26000123), estáveis. C cliente, P projeto, I incidente, T tarefa/marco/reunião, K contato, G grupo, R risco, D documentação. O app abre /r/<código>.",
     "- Grupos de clientes: 2 ou mais clientes. Contato colocado direto no grupo (ContactIds) fica ligado a TODOS os clientes membros (inclusive os que entrarem depois); um cliente só em um grupo, salvo configuração. Abaixo de 2 clientes o app só avisa (BelowMinimum).",
-    "- Documentação (DocumentationItems): Source=Direct (item colocado na aba do projeto ou do cliente) ou Task (links e anexos das tarefas de documentação do projeto, espelhados; só Audience/Tags mudam). Público Technical/Executive/Both e etiquetas livres (até 12, até 30 caracteres). Texto até 200 KB; arquivo até 25 MB (inline até ~8 MB).",
+    "- Documentação (DocumentationItems): Source=Direct (item colocado na aba do projeto ou do cliente) ou Task (links e anexos das tarefas de documentação do projeto, espelhados; só Audience/Tags mudam). Público Technical/Executive/Both e etiquetas livres (até 12, até 30 caracteres). Texto até 200 KB; arquivo até 25 MB (por URL assinada de upload; inline só minúsculo).",
   );
   return lines.join("\n");
 }

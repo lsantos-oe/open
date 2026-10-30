@@ -23,7 +23,7 @@ Para desconectar: **https://openploo.vercel.app/api/minha-chave** → **Desconec
 
 ## O que vem no plugin
 
-- **Conector do Open** (`/api/mcp`) — cerca de 75 ferramentas de leitura e escrita (inclui criar, editar e remover documentação — links, textos e arquivos — e montar grupos de clientes).
+- **Conector do Open** (`/api/mcp`) — cerca de 75 ferramentas de leitura e escrita (inclui criar, editar e remover documentação — links, textos e arquivos locais por URL assinada, sem base64 — e montar grupos de clientes). Enviar arquivo local exige o Claude Code (precisa de shell).
 - **Skill `open`** — o Claude sabe quando e como usar o Open.
 - **Comandos:**
 
@@ -41,7 +41,7 @@ Para desconectar: **https://openploo.vercel.app/api/minha-chave** → **Desconec
 | `/open:revisar-atrasos [foco]` | atrasos por projeto e por pessoa |
 | `/open:carga-time [foco]` | carga de trabalho por pessoa, com sugestões |
 | `/open:grupo <grupo ou cliente>` | visão compilada do grupo de clientes (contatos, projetos, incidentes, documentação); também cria e ajusta grupos |
-| `/open:documentacao <projeto, cliente ou grupo> [técnica/executiva] [etiqueta]` | documentação reunida, filtrada por público e etiqueta; também adiciona, edita e remove links, textos e arquivos |
+| `/open:documentacao <projeto, cliente ou grupo> [técnica/executiva] [etiqueta]` | documentação reunida, filtrada por público e etiqueta; também adiciona, edita e remove links, textos e arquivos locais (via `curl`, no Claude Code) |
 
 ## Segurança
 

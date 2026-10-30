@@ -11,7 +11,8 @@
 import { z } from "zod";
 import type { Ctx } from "../lib/context.ts";
 import { onTxEnd } from "../lib/db.ts";
-import { notFound, validation } from "../lib/errors.ts";
+import { config } from "../lib/config.ts";
+import { ApiError, notFound, validation } from "../lib/errors.ts";
 import { downloadFile } from "../lib/safefetch.ts";
 import { isDocPath, storage } from "../lib/storage.ts";
 import { Enums } from "../odata/edm.ts";
@@ -73,6 +74,8 @@ export const DocFileCreate = z.object({
   FileName: Text(200).optional(),
   ContentBase64: z.string().optional(),
   SourceUrl: z.string().trim().max(2000).optional(),
+  /** Caminho devolvido por request_documentation_upload, depois do PUT do arquivo na URL assinada. */
+  StoragePath: z.string().trim().max(500).optional(),
   ContentType: z.string().trim().max(120).optional(),
   ...meta,
 }).strict();
@@ -191,8 +194,41 @@ export async function createDocText(ctx: Ctx, body: unknown): Promise<string> {
 
 export async function createDocFile(ctx: Ctx, body: unknown): Promise<string> {
   const d = parseBody(DocFileCreate, body);
-  if (!!d.ContentBase64 === !!d.SourceUrl) throw validation("Informe ContentBase64 (arquivos pequenos) ou SourceUrl (https público) — um dos dois.", "ContentBase64");
+  const origins = [d.ContentBase64, d.SourceUrl, d.StoragePath].filter((x) => !!x).length;
+  if (origins !== 1) {
+    throw validation(
+      "Informe a origem do arquivo — uma só: StoragePath (arquivo enviado pela URL de request_documentation_upload; o caminho para arquivos locais), SourceUrl (https público) ou ContentBase64 (só arquivos minúsculos).",
+      "StoragePath",
+    );
+  }
   const s = await ensureScope(ctx, d);
+  const c = scopeCols(s);
+
+  // ── arquivo já enviado pela URL assinada: só conferimos e finalizamos (nada trafega por aqui)
+  if (d.StoragePath) {
+    const path = await checkUploadPath(ctx, s, d.StoragePath);
+    const [dup] = await ctx.tx<Row[]>`select id from documentation_items where storage_path = ${path}`;
+    if (dup) throw validation("Este StoragePath já virou um item de documentação. Peça outra URL com request_documentation_upload.", "StoragePath");
+    const store = storage();
+    const info = await store.head(path);
+    if (!info) {
+      throw validation("O arquivo ainda não está no Storage: o upload não foi concluído (confira a resposta do curl) ou a URL expirou. Peça outra com request_documentation_upload.", "StoragePath");
+    }
+    if (info.size === 0 || info.size > DOC_MAX_FILE_BYTES) {
+      if (!ctx.dryRun) await store.remove([path]); // não deixa o objeto inválido ocupando espaço
+      throw validation(info.size === 0 ? "O arquivo enviado está vazio." : `O arquivo enviado tem ${(info.size / 1048576).toFixed(1)} MB e o limite é ${DOC_MAX_FILE_BYTES / 1048576} MB.`, "StoragePath");
+    }
+    const name = (d.FileName?.trim() || path.slice(path.indexOf("_", path.lastIndexOf("/")) + 1)).slice(0, 200);
+    const [r] = await ctx.tx<{ id: string }[]>`
+      insert into documentation_items (project_id, client_id, kind, title, storage_path, file_name, file_size, audience, tags, created_by)
+      values (${c.project_id}, ${c.client_id}, 'file', ${d.Title?.trim() || name}, ${path}, ${name}, ${info.size}, ${d.Audience ?? "both"},
+              ${ctx.tx.array(d.Tags ?? [], 1009)}, ${ctx.user.id})
+      returning id`;
+    // item não criado (falha antes do COMMIT) = o objeto sai do Storage; em dry-run ele fica para a gravação de verdade
+    if (!ctx.dryRun) onTxEnd(ctx.tx, { rollback: () => store.remove([path]) });
+    return r.id;
+  }
+
   let bytes: Uint8Array, contentType = d.ContentType ?? "", name = d.FileName ?? "";
   if (d.ContentBase64) {
     bytes = decodeBase64(d.ContentBase64);
@@ -208,7 +244,6 @@ export async function createDocFile(ctx: Ctx, body: unknown): Promise<string> {
   name = name.trim().slice(0, 200);
   contentType ||= guessType(name);
   const path = `documentation/${s.kind}/${s.id}/${crypto.randomUUID()}_${safeFileName(name)}`;
-  const c = scopeCols(s);
   // 1º o registro (RLS e restrições do banco aceitam?), 2º o Storage. Se algo falhar depois, o arquivo sai do Storage.
   const [r] = await ctx.tx<{ id: string }[]>`
     insert into documentation_items (project_id, client_id, kind, title, storage_path, file_name, file_size, audience, tags, created_by)
@@ -221,6 +256,72 @@ export async function createDocFile(ctx: Ctx, body: unknown): Promise<string> {
     await store.upload(path, bytes, contentType);
   }
   return r.id;
+}
+
+// ─── upload direto por URL assinada (arquivos locais, sem base64 e sem URL pública) ───────────
+
+/** Segredo do carimbo dos caminhos (HMAC): pepper da API + service role. Sem nenhum dos dois não há Storage mesmo. */
+const stampKey = () => `${config.tokenPepper}|${config.serviceRoleKey}`;
+
+async function stamp(kind: string, scopeId: string, userId: string, nonce: string): Promise<string> {
+  if (!config.tokenPepper && !config.serviceRoleKey) throw new ApiError(503, "StorageUnavailable", "Arquivos indisponíveis: a função não tem SUPABASE_SERVICE_ROLE_KEY.");
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(stampKey()), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const mac = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${kind}/${scopeId}/${userId}/${nonce}`)));
+  return [...mac.slice(0, 8)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+const hex = (n: number) => [...crypto.getRandomValues(new Uint8Array(n))].map((b) => b.toString(16).padStart(2, "0")).join("");
+/** 16 hex de nonce + 16 hex de carimbo, no formato de uuid: só este servidor, para esta pessoa e este escopo, gera um válido. */
+const stampedUuid = (nonce: string, mac: string) => `${nonce.slice(0, 8)}-${nonce.slice(8, 12)}-${nonce.slice(12, 16)}-${mac.slice(0, 4)}-${mac.slice(4, 16)}`;
+
+/** O StoragePath precisa ser exatamente do escopo informado, ter o formato gerado por request_documentation_upload e o carimbo desta pessoa. */
+async function checkUploadPath(ctx: Ctx, s: { kind: "project" | "client"; id: string }, raw: string): Promise<string> {
+  const path = raw.trim();
+  const prefix = `documentation/${s.kind}/${s.id}/`;
+  const m = path.startsWith(prefix) ? /^([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})_([\w.\-]{1,160})$/.exec(path.slice(prefix.length)) : null;
+  if (!m) {
+    throw validation(`StoragePath precisa ser o caminho devolvido por request_documentation_upload para este mesmo ${s.kind === "project" ? "projeto" : "cliente"} (começa por ${prefix}).`, "StoragePath");
+  }
+  const nonce = m[1] + m[2] + m[3];
+  const mac = m[4] + m[5];
+  if (mac !== await stamp(s.kind, s.id, ctx.user.id, nonce)) {
+    throw validation("StoragePath não foi gerado por request_documentation_upload para você neste escopo. Peça uma URL de upload e use o caminho que ela devolve.", "StoragePath");
+  }
+  return path;
+}
+
+export const DocUploadRequest = z.object({
+  ...scope,
+  FileName: Text(200),
+  Size: z.number().int().min(1).optional(),
+  ContentType: z.string().trim().max(120).optional(),
+}).strict();
+
+/** Gera o caminho e a URL assinada de upload (não grava item nenhum). O arquivo é enviado com um PUT dessa URL. */
+export async function requestDocumentationUpload(ctx: Ctx, body: unknown) {
+  const d = parseBody(DocUploadRequest, body);
+  if (d.Size !== undefined && d.Size > DOC_MAX_FILE_BYTES) {
+    throw validation(`O arquivo tem ${(d.Size / 1048576).toFixed(1)} MB e o limite é ${DOC_MAX_FILE_BYTES / 1048576} MB.`, "Size");
+  }
+  const s = await ensureScope(ctx, d);
+  const name = d.FileName.trim();
+  const nonce = hex(8);
+  const path = `documentation/${s.kind}/${s.id}/${stampedUuid(nonce, await stamp(s.kind, s.id, ctx.user.id, nonce))}_${safeFileName(name)}`;
+  const url = await storage().signedUploadUrl(path);
+  const contentType = d.ContentType || guessType(name);
+  return {
+    Scope: { Kind: s.kind === "project" ? "Project" : "Client", Id: s.id },
+    FileName: name,
+    StoragePath: path,
+    UploadUrl: url,
+    Method: "PUT",
+    Headers: { "Content-Type": contentType },
+    MaxBytes: DOC_MAX_FILE_BYTES,
+    Curl: `curl -sS --fail-with-body -X PUT -H "Content-Type: ${contentType}" --data-binary @"<CAMINHO_DO_ARQUIVO_LOCAL>" "${url}"`,
+    ExpiresIn: "até cerca de 2 horas (prazo do Supabase); a URL só permite criar este caminho, uma vez, sem sobrescrever nem listar",
+    NextStep: `Rode o Curl trocando <CAMINHO_DO_ARQUIVO_LOCAL> pelo caminho do arquivo (HTTP 200 com {"Key": ...} = enviado). Depois chame create_documentation_file com ${s.kind === "project" ? "ProjectId" : "ClientId"}=${s.id}, StoragePath="${path}", FileName="${name}", Title, Audience e Tags (primeiro com dryRun, depois dryRun=false). Até esse passo o arquivo ainda NÃO é um item da documentação.`,
+    Warning: "A UploadUrl é uma credencial temporária: não a mostre nem a guarde.",
+  };
 }
 
 /** POST /DocumentationItems — Kind: Link | Text | File. */

@@ -245,7 +245,7 @@ t("grupos, documentação e códigos: tools de leitura e de escrita existem; esc
   assert(noScope.isError);
   // escrita: existem, simulam por padrão (dryRun) e nada é gravado
   for (const n of ["create_client_group", "update_client_group", "delete_client_group", "add_group_client", "remove_group_client", "add_group_contact", "remove_group_contact",
-    "create_documentation_link", "create_documentation_text", "create_documentation_file", "update_documentation_item", "delete_documentation_item", "get_documentation_file_link"]) assert(names.includes(n), n);
+    "create_documentation_link", "create_documentation_text", "create_documentation_file", "update_documentation_item", "delete_documentation_item", "get_documentation_file_link", "request_documentation_upload"]) assert(names.includes(n), n);
   const before = (await tool("list_documentation", { projectId: IDS.project })).data.count;
   const prev = await tool("create_documentation_link", { ProjectId: IDS.project, Title: "Simulado pelo teste", Url: "https://exemplo.com/sim", Audience: "Technical", Tags: ["teste"] });
   assert(!prev.isError, prev.text);

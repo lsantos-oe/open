@@ -424,6 +424,17 @@ export const ACTIONS: ActionDef[] = [
     params: [p("ExpiresInSeconds", "Edm.Int32")],
     run: (ctx, id, b) => docs.documentationFileLink(ctx, id!, { ExpiresInSeconds: b?.ExpiresInSeconds === undefined ? undefined : Number(b.ExpiresInSeconds) }),
   },
+  {
+    name: "RequestDocumentationUpload",
+    kind: "action",
+    scope: "write",
+    returns: "Edm.Untyped",
+    description:
+      "Upload direto de arquivo local, sem base64 e sem URL pública: devolve `UploadUrl` (URL assinada do Storage, só permite criar o caminho `StoragePath`, sem sobrescrever) e o `Curl` pronto. Depois do PUT do arquivo nessa URL, finalize com `POST /DocumentationItems` `{Kind:'File', ProjectId|ClientId, StoragePath, FileName, Title, Audience, Tags}`. Não grava item nenhum. Limite de 25 MB.",
+    params: [p("ProjectId", "Edm.Guid"), p("ClientId", "Edm.Guid"), p("FileName", "Edm.String", true), p("Size", "Edm.Int64", false, "Bytes (opcional): recusa já aqui se passar de 25 MB."), p("ContentType", "Edm.String")],
+    example: { ProjectId: "00000000-0000-4000-8000-0000000b0001", FileName: "arquitetura.pdf", Size: 1572864, ContentType: "application/pdf" },
+    run: (ctx, _id, b) => docs.requestDocumentationUpload(ctx, b),
+  },
   // ── unbound
   {
     name: "MarkNotificationsRead",

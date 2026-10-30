@@ -22,8 +22,12 @@ Pedido: $ARGUMENTS
    Pergunte onde o item deve ficar se não estiver claro.
 5. Pergunte (ou proponha e confirme) **para quem é** — técnico, executivo ou os dois — e as **etiquetas** (até 12).
 6. Ferramentas: `create_documentation_link` (http/https), `create_documentation_text` (Markdown, até 200 KB),
-   `create_documentation_file` (até 25 MB: `ContentBase64` + `FileName` até ~8 MB, ou `SourceUrl` https público),
+   `create_documentation_file` (até 25 MB), `request_documentation_upload` (arquivo local),
    `update_documentation_item` (título, link, texto, público, etiquetas) e `delete_documentation_item`.
+   **Arquivo local:** `request_documentation_upload` → rode o `Curl` que ela devolve no shell (PUT do arquivo na URL
+   assinada; sem chave nem base64) → `create_documentation_file` com o `StoragePath`. Exige Claude com shell (Claude
+   Code); no chat web, use um link (Drive) ou anexe no app. `SourceUrl` só se o arquivo já tiver URL pública;
+   `ContentBase64` só para arquivos minúsculos.
 7. Edição de texto **substitui tudo**: leia o texto atual (`includeBody: true`), altere e reenvie completo. Itens de
    tarefa (`Source: Task`) só mudam público e etiquetas.
 8. Todas simulam primeiro: mostre a prévia e só grave com `dryRun=false` depois da confirmação. Remover arquivo ou
