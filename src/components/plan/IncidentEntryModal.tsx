@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, CSSProperties, ReactNode } from 'react'
-import { Select } from '@/components/ui/Input'
+import { Select, Input, Field } from '@/components/ui/Input'
+import { EntityCodeLink } from '@/components/ui/CodeBadge'
 import RichTextInput from '@/components/editor/RichTextInput'
 import EntryComments from './EntryComments'
 import { useTranslation } from 'react-i18next'
@@ -214,223 +215,243 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, defa
   const typeLabel = (type: EntryType) => (type.charAt(0).toUpperCase() + type.slice(1)) as 'Task' | 'Milestone' | 'Meeting'
   const title = mode === 'create' ? t(`entry.new${typeLabel(form.type)}` as any) : t(`entry.edit${typeLabel(entry?.type ?? 'task')}` as any)
 
+  const isEdit = mode === 'edit'
+  const canSave = !!form.name.trim() && form.owners.some((o) => o.kind === 'executor')
+  const [showMore, setShowMore] = useState(false)
+  const [showDesc, setShowDesc] = useState(false)
+
   const footer = (
-    <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 8 }}>
-      {mode === 'edit' && (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div className="flex items-center w-full gap-2">
+      {isEdit && (
+        <div className="flex-1 flex items-center gap-2 min-w-0">
           {deleteStep === 'idle' ? (
-            <button
-              onClick={() => setDeleteStep('confirm')}
-              style={{ fontSize: 13, padding: '6px 12px', borderRadius: 'var(--radius-md)', color: 'var(--color-danger-text)', background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-text)', cursor: 'pointer' }}
-            >
-              {t('entry.deleteEntry')}
-            </button>
+            <Button variant="ghost" size="sm" onClick={() => setDeleteStep('confirm')}>
+              <span style={{ color: 'var(--color-danger-text)' }}>{t('entry.deleteEntry')}</span>
+            </Button>
           ) : (
             <>
-              <button onClick={handleDelete} style={{ fontSize: 13, padding: '6px 12px', borderRadius: 'var(--radius-md)', color: 'white', background: 'var(--color-danger-text)', border: 'none', cursor: 'pointer', fontWeight: 500 }}>
-                {t('entry.confirmDelete')}
-              </button>
-              <button onClick={() => setDeleteStep('idle')} style={{ fontSize: 13, padding: '4px 8px', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}>
-                {t('actions.cancel')}
-              </button>
+              <Button variant="danger" size="sm" onClick={handleDelete}>{t('entry.confirmDelete')}</Button>
+              <Button variant="ghost" size="sm" onClick={() => setDeleteStep('idle')}>{t('actions.cancel')}</Button>
             </>
           )}
         </div>
       )}
-      {mode === 'create' && <div style={{ flex: 1 }} />}
+      {!isEdit && <div className="flex-1" />}
       <Button variant="secondary" onClick={onClose}>{t('actions.cancel')}</Button>
-      <Button onClick={mode === 'edit' ? handleSaveEdit : handleSaveCreate} disabled={!form.name.trim() || !form.owners.some((o) => o.kind === 'executor')}>
-        {mode === 'edit' ? t('entry.saveChanges') : t('actions.create')}
+      <Button onClick={isEdit ? handleSaveEdit : handleSaveCreate} disabled={!canSave}>
+        {isEdit ? t('entry.saveChanges') : t('actions.create')}
       </Button>
     </div>
   )
 
-  return (
-    <Modal open={open} title={title} onClose={onClose} size="lg" noPadding footer={footer}>
-      <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-        {mode === 'edit' && entry && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-            <CopyLinkButton url={`${window.location.origin}/tasks?entry=${entry.id}`} size="xs" />
-            <Button variant="ghost" size="xs" onClick={() => { onClose(); navigate(`/support/${incidentId}`) }}>
-              <ExternalLinkIcon className="w-3.5 h-3.5" /> {t('entry.viewIncident')}
-            </Button>
-            {(incident?.projectIds ?? []).map((pid) => {
-              const project = projects.find((p) => p.id === pid)
-              if (!project) return null
-              return (
-                <Button key={pid} variant="ghost" size="xs" onClick={() => { onClose(); navigate(`/projects/${pid}`) }}>
-                  <ExternalLinkIcon className="w-3.5 h-3.5" /> {t('entry.viewProject')}: {project.name}
-                </Button>
-              )
-            })}
-            {(incident?.clientIds ?? []).map((cid) => {
-              const client = clients.find((c) => c.id === cid)
-              if (!client) return null
-              return (
-                <Button key={cid} variant="ghost" size="xs" onClick={() => { onClose(); navigate(`/wallet/${cid}`) }}>
-                  <ExternalLinkIcon className="w-3.5 h-3.5" /> {t('entry.viewClient')}: {client.name}
-                </Button>
-              )
-            })}
-          </div>
-        )}
-        {mode === 'create' && (
-          <div style={{ display: 'flex', gap: 8 }}>
-            {(['task', 'milestone', 'meeting'] as EntryType[]).map((type) => (
-              <button
-                key={type}
-                onClick={() => set('type', type)}
-                style={{
-                  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 0',
-                  borderRadius: 'var(--radius-lg)',
-                  border: form.type === type ? '2px solid var(--text-primary)' : '2px solid var(--border-default)',
-                  background: form.type === type ? 'var(--color-info-bg)' : 'transparent',
-                  color: form.type === type ? 'var(--color-info-text)' : 'var(--text-secondary)',
-                  fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                }}
-              >
-                {TYPE_ICONS[type]} {t(`entry.${type}` as any)}
-              </button>
-            ))}
-          </div>
-        )}
+  const goTo = (path: string) => { onClose(); navigate(path) }
+  const incidentClients = (incident?.clientIds ?? []).map((id) => clients.find((c) => c.id === id)).filter((c): c is NonNullable<typeof c> => !!c)
 
-        <input
-          autoFocus
-          value={form.name}
-          onChange={(e) => set('name', e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') mode === 'edit' ? handleSaveEdit() : handleSaveCreate() }}
-          placeholder={t('entry.name')}
-          style={{ width: '100%', fontSize: 15, fontWeight: 500, border: 'none', borderBottom: '2px solid var(--border-default)', outline: 'none', background: 'transparent', color: 'var(--text-primary)', paddingBottom: 8, boxSizing: 'border-box' }}
+  const pill = (on: boolean): CSSProperties => ({
+    display: 'inline-flex', alignItems: 'center', gap: 6, height: 30, padding: '0 14px', borderRadius: 999, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: 'none',
+    background: on ? 'var(--text-primary)' : 'var(--surface-subtle)', color: on ? 'var(--surface-page)' : 'var(--text-secondary)',
+  })
+
+  const linkChip = (key: string, label: string, path: string, hint: string) => (
+    <button
+      key={key} type="button" onClick={() => goTo(path)} title={hint}
+      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[13px] transition-colors hover:opacity-80 max-w-full"
+      style={{ background: 'var(--surface-subtle)', color: 'var(--text-primary)' }}
+    >
+      <span className="truncate">{label}</span>
+      <ExternalLinkIcon className="w-3 h-3 shrink-0" />
+    </button>
+  )
+
+  const typePills = !isEdit && (
+    <div className="flex gap-1.5" role="radiogroup" aria-label="Tipo">
+      {(['task', 'milestone', 'meeting'] as EntryType[]).map((type) => (
+        <button key={type} role="radio" aria-checked={form.type === type} onClick={() => set('type', type)} style={pill(form.type === type)}>
+          {TYPE_ICONS[type]} {t(`entry.${type}` as any)}
+        </button>
+      ))}
+    </div>
+  )
+
+  const nameInput = (
+    <input
+      autoFocus={!isEdit}
+      value={form.name}
+      onChange={(e) => set('name', e.target.value)}
+      onKeyDown={(e) => { if (e.key === 'Enter') (isEdit ? handleSaveEdit() : handleSaveCreate()) }}
+      placeholder={t('entry.name')}
+      aria-label={t('entry.name')}
+      style={{ width: '100%', fontSize: 18, fontWeight: 600, border: 'none', outline: 'none', background: 'transparent', color: 'var(--text-primary)', padding: '4px 0' }}
+    />
+  )
+
+  const whereFields = (
+    <div className="grid grid-cols-2 gap-3">
+      <Field label={t('entry.incident' as any) === 'entry.incident' ? 'Incidente' : t('entry.incident' as any)}>
+        <div className="flex flex-wrap items-center gap-1.5 min-h-9">
+          {incident ? linkChip('inc', incident.title, `/support/${incidentId}`, t('entry.viewIncident')) : <span className="text-[13px]" style={{ color: 'var(--text-tertiary)' }}>—</span>}
+        </div>
+      </Field>
+      <Field label={t('entry.client' as any)}>
+        <div className="flex flex-wrap items-center gap-1.5 min-h-9">
+          {incidentClients.length === 0 && <span className="text-[13px]" style={{ color: 'var(--text-tertiary)' }}>—</span>}
+          {incidentClients.map((c) => linkChip(c.id, c.name, `/wallet/${c.id}`, `${t('entry.viewClient')}: ${c.name}`))}
+        </div>
+      </Field>
+    </div>
+  )
+
+  const peopleFields = (
+    <div className="grid grid-cols-2 gap-3">
+      <Field label="Responsável">
+        <OwnersField
+          owners={form.owners.filter((o) => o.kind === 'executor')}
+          onChange={(next) => set('owners', [...next, ...form.owners.filter((o) => o.kind !== 'executor')])}
+          teamMembers={directoryAsTeam}
+          contacts={incidentContacts} newContactClientIds={incident?.clientIds}
+          max={1}
+          kind="executor"
         />
+      </Field>
+      <Field label={t('entry.validator')}>
+        <OwnersField
+          owners={form.owners.filter((o) => o.kind === 'validator')}
+          onChange={(next) => set('owners', [...form.owners.filter((o) => o.kind !== 'validator'), ...next])}
+          teamMembers={directoryAsTeam}
+          contacts={incidentContacts} newContactClientIds={incident?.clientIds}
+          max={1}
+          kind="validator"
+        />
+      </Field>
+    </div>
+  )
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <div>
-            <FieldLabel>{t('entry.executor')}</FieldLabel>
-            <OwnersField
-              owners={form.owners.filter((o) => o.kind === 'executor')}
-              onChange={(next) => set('owners', [...next, ...form.owners.filter((o) => o.kind !== 'executor')])}
-              teamMembers={directoryAsTeam}
-              contacts={incidentContacts} newContactClientIds={incident?.clientIds}
-              max={1}
-              kind="executor"
-            />
-          </div>
-          <div>
-            <FieldLabel>{t('entry.validator')}</FieldLabel>
-            <OwnersField
-              owners={form.owners.filter((o) => o.kind === 'validator')}
-              onChange={(next) => set('owners', [...form.owners.filter((o) => o.kind !== 'validator'), ...next])}
-              teamMembers={directoryAsTeam}
-              contacts={incidentContacts} newContactClientIds={incident?.clientIds}
-              max={1}
-              kind="validator"
-            />
-          </div>
-        </div>
-
-        <div>
-          <FieldLabel>{t('entry.description')}</FieldLabel>
-          <RichTextInput
-            key={descEpoch}
-            initialMarkdown={form.description}
-            onChange={(md) => set('description', md)}
-            uploadScope={entry ? `entry_${entry.id}` : 'entry_new'}
-            minHeight={90}
-          />
-        </div>
-
-        {form.type === 'task' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-            <FieldBox label={t('entry.plannedStart')}>
-              <input type="date" value={form.plannedStart} onChange={(e) => set('plannedStart', e.target.value)} style={inputStyle} />
-            </FieldBox>
-            <FieldBox label={t('entry.plannedEnd')}>
-              <input type="date" value={form.plannedEnd} onChange={(e) => { set('plannedEnd', e.target.value); setEndDateError('') }} style={{ ...inputStyle, ...(endDateError ? { borderColor: 'var(--color-danger-text)' } : {}) }} />
-              {endDateError && <p style={{ fontSize: 11.5, color: 'var(--color-danger-text)', marginTop: 3 }}>{endDateError}</p>}
-            </FieldBox>
-            <FieldBox label={t('entry.duration')}>
-              <input type="number" min={1} value={form.durationDays} onChange={(e) => set('durationDays', Number(e.target.value))} style={inputStyle} />
-            </FieldBox>
-          </div>
+  const statusDateFields = (
+    <div className="grid grid-cols-2 gap-3">
+      <Field label={t('entry.status')}>
+        <Select value={form.status} onChange={(e) => set('status', e.target.value as EntryStatus)}>
+          <option value="pending">{t('entry.pending')}</option>
+          <option value="todo">{t('entry.todo')}</option>
+          <option value="in_progress">{t('entry.in_progress')}</option>
+          <option value="validation">{t('entry.validation')}</option>
+          <option value="done">{t('entry.done')}</option>
+          <option value="blocked">{t('entry.blocked')}</option>
+        </Select>
+      </Field>
+      <Field label={form.type === 'task' ? 'Prazo' : 'Data'}>
+        {form.type === 'task' ? (
+          <>
+            <Input type="date" value={form.plannedEnd} onChange={(e) => { set('plannedEnd', e.target.value); setEndDateError('') }} />
+            {endDateError && <p className="text-xs mt-1" style={{ color: 'var(--color-danger-text)' }}>{endDateError}</p>}
+          </>
+        ) : (
+          <Input type="date" value={form.plannedDate} onChange={(e) => set('plannedDate', e.target.value)} />
         )}
+      </Field>
+    </div>
+  )
 
-        {form.type !== 'task' && (
-          <div style={{ display: 'grid', gridTemplateColumns: form.type === 'meeting' ? '1fr 1fr' : '1fr', gap: 12 }}>
-            <FieldBox label={t('entry.plannedDate')}>
-              <input type="date" value={form.plannedDate} onChange={(e) => set('plannedDate', e.target.value)} style={inputStyle} />
-            </FieldBox>
-            {form.type === 'meeting' && (
-              <FieldBox label={t('entry.durationHours')}>
-                <input type="number" min={0.5} step={0.5} value={form.durationHours} onChange={(e) => set('durationHours', Number(e.target.value))} style={inputStyle} />
-              </FieldBox>
-            )}
-          </div>
-        )}
+  const descriptionEditor = (
+    <RichTextInput key={descEpoch} initialMarkdown={form.description} onChange={(md) => set('description', md)} uploadScope={entry ? `entry_${entry.id}` : 'entry_new'} minHeight={90} />
+  )
 
-        <div className="grid grid-cols-2 gap-4">
-          <FieldBox label={t('entry.status')}>
-            <Select value={form.status} onChange={(e) => set('status', e.target.value as EntryStatus)}>
-              <option value="pending">{t('entry.pending')}</option>
-              <option value="todo">{t('entry.todo')}</option>
-              <option value="in_progress">{t('entry.in_progress')}</option>
-              <option value="validation">{t('entry.validation')}</option>
-              <option value="done">{t('entry.done')}</option>
-              <option value="blocked">{t('entry.blocked')}</option>
-            </Select>
-          </FieldBox>
-          <FieldBox label={t('entry.riskFlag')}>
-            <Select value={form.riskFlag} onChange={(e) => set('riskFlag', e.target.value as RiskFlag)}>
-              <option value="none">{t('entry.none')}</option>
-              <option value="warning">{t('entry.warning')}</option>
-              <option value="critical">{t('entry.critical')}</option>
-            </Select>
-          </FieldBox>
-        </div>
+  const planningFields = (
+    <div className="grid grid-cols-2 gap-3">
+      {form.type === 'task' && (
+        <>
+          <Field label={t('entry.plannedStart')}><Input type="date" value={form.plannedStart} onChange={(e) => set('plannedStart', e.target.value)} /></Field>
+          <Field label={t('entry.duration')}><Input type="number" min={1} value={form.durationDays} onChange={(e) => set('durationDays', Number(e.target.value))} /></Field>
+        </>
+      )}
+      {form.type === 'meeting' && (
+        <Field label={t('entry.durationHours')}><Input type="number" min={0.5} step={0.5} value={form.durationHours} onChange={(e) => set('durationHours', Number(e.target.value))} /></Field>
+      )}
+      <Field label={t('entry.riskFlag')}>
+        <Select value={form.riskFlag} onChange={(e) => set('riskFlag', e.target.value as RiskFlag)}>
+          <option value="none">{t('entry.none')}</option>
+          <option value="warning">{t('entry.warning')}</option>
+          <option value="critical">{t('entry.critical')}</option>
+        </Select>
+      </Field>
+    </div>
+  )
 
-        {availableDeps.length > 0 && (
-          <FieldBox label={t('plan.dependencies')}>
-            <div style={{ border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', maxHeight: 140, overflowY: 'auto' }}>
-              {availableDeps.map((dep) => (
-                <label key={dep.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', cursor: 'pointer', fontSize: 13 }}>
-                  <input type="checkbox" checked={form.dependsOn.includes(dep.id)} onChange={() => toggleDep(dep.id)} />
-                  <span style={{ color: 'var(--text-secondary)' }}>{dep.name}</span>
-                </label>
-              ))}
+  const dependenciesField = availableDeps.length > 0 && (
+    <Field label={`${t('plan.dependencies')}${form.dependsOn.length ? ` (${form.dependsOn.length})` : ''}`}>
+      <div style={{ maxHeight: 150, overflowY: 'auto', borderRadius: 'var(--radius-lg)', background: 'var(--surface-subtle)', padding: 4 }}>
+        {availableDeps.map((dep) => (
+          <label key={dep.id} className="flex items-center gap-2 px-2 py-1.5 text-[13px] cursor-pointer rounded-[var(--radius-md)] hover:bg-[var(--surface-card)]" style={{ color: 'var(--text-secondary)' }}>
+            <input type="checkbox" className="accent-[var(--text-primary)]" checked={form.dependsOn.includes(dep.id)} onChange={() => toggleDep(dep.id)} />
+            {dep.name}
+          </label>
+        ))}
+      </div>
+    </Field>
+  )
+
+  const linksField = (
+    <Field label="Links">
+      {form.links.length > 0 && (
+        <div className="mb-2 space-y-1">
+          {form.links.map((l) => (
+            <div key={l.id} className="flex items-center gap-2 text-[13px]">
+              <a href={l.url} target="_blank" rel="noopener noreferrer" className="flex-1 truncate hover:underline" style={{ color: 'var(--text-secondary)' }}>{l.label}</a>
+              <button onClick={() => removeLink(l.id)} aria-label={`Remover ${l.label}`} className="text-base leading-none hover:opacity-70" style={{ color: 'var(--text-tertiary)' }}>×</button>
             </div>
-          </FieldBox>
-        )}
+          ))}
+        </div>
+      )}
+      <div className="flex gap-2">
+        <Input value={newLinkLabel} onChange={(e) => setNewLinkLabel(e.target.value)} placeholder="Nome (opcional)" className="!w-2/5" />
+        <Input value={newLinkUrl} onChange={(e) => setNewLinkUrl(e.target.value)} placeholder="Cole um link" onKeyDown={(e) => e.key === 'Enter' && addLink()} />
+        <Button variant="secondary" size="sm" onClick={addLink} disabled={!newLinkUrl.trim()}>{t('actions.add')}</Button>
+      </div>
+    </Field>
+  )
 
-        <div>
-          <FieldLabel>Links</FieldLabel>
-          {form.links.length > 0 && (
-            <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {form.links.map((l) => (
-                <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <a href={l.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1, fontSize: 13, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.label}</a>
-                  <button onClick={() => removeLink(l.id)} style={{ fontSize: 13, color: 'var(--text-disabled)', background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
-                </div>
-              ))}
-            </div>
+  const sectionTitle = (text: string) => <h3 className="text-[13px] font-semibold" style={{ color: 'var(--text-primary)' }}>{text}</h3>
+
+  if (!isEdit) {
+    return (
+      <Modal open={open} title={title} onClose={onClose} size="md" footer={footer}>
+        <div className="space-y-5">
+          {typePills}
+          {nameInput}
+          {whereFields}
+          {peopleFields}
+          {statusDateFields}
+          {showDesc || form.description ? <Field label={t('entry.description')}>{descriptionEditor}</Field> : (
+            <button type="button" onClick={() => setShowDesc(true)} className="text-[13px]" style={{ color: 'var(--text-tertiary)' }}>+ {t('entry.description')}</button>
           )}
-          <div style={{ display: 'flex', gap: 6 }}>
-            <input value={newLinkLabel} onChange={(e) => setNewLinkLabel(e.target.value)} placeholder="Label" style={inputStyle} />
-            <input value={newLinkUrl} onChange={(e) => setNewLinkUrl(e.target.value)} placeholder="URL" style={inputStyle} onKeyDown={(e) => e.key === 'Enter' && addLink()} />
-            <button onClick={addLink} disabled={!newLinkUrl.trim()} style={{ fontSize: 13, background: 'var(--oe-primary)', color: 'white', borderRadius: 'var(--radius-md)', padding: '5px 10px', border: 'none', cursor: 'pointer', opacity: newLinkUrl.trim() ? 1 : 0.4, whiteSpace: 'nowrap' }}>
-              {t('actions.add')}
+          <div>
+            <button type="button" onClick={() => setShowMore((v) => !v)} aria-expanded={showMore} className="flex items-center gap-1.5 text-[13px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+              <span style={{ display: 'inline-block', transform: showMore ? 'rotate(90deg)' : undefined, transition: 'transform .12s' }}>›</span>
+              Mais opções
             </button>
+            {showMore && <div className="mt-3 space-y-4">{planningFields}{dependenciesField}{linksField}</div>}
           </div>
         </div>
+      </Modal>
+    )
+  }
 
-        {mode === 'edit' && entry && (
-          <EntityAttachments entityType="entry" entityId={entry.id} />
-        )}
-
-        {/* Conversa da tarefa: em cadeia (respostas, menções, edição) */}
-        {mode === 'edit' && entry && incident?.entries.some((e) => e.id === entry.id) && (
-          <div style={{ borderTop: '1px solid var(--border-default)', paddingTop: 16 }}>
+  return (
+    <Modal open={open} title={title} onClose={onClose} size="lg" footer={footer} headerExtra={entry ? <EntityCodeLink table="entries" id={entry.id} /> : undefined}>
+      <div className="space-y-6">
+        <div className="space-y-5">
+          {nameInput}
+          {whereFields}
+          {peopleFields}
+          {statusDateFields}
+        </div>
+        <section className="space-y-3">{sectionTitle('Descrição')}{descriptionEditor}</section>
+        <section className="space-y-3">{sectionTitle('Planejamento')}{planningFields}{dependenciesField}</section>
+        <section className="space-y-3">{sectionTitle('Links e anexos')}{linksField}{entry && <EntityAttachments entityType="entry" entityId={entry.id} />}</section>
+        {entry && incident?.entries.some((e) => e.id === entry.id) && (
+          <section className="space-y-3">
+            {sectionTitle('Conversa')}
             <EntryComments entryId={entry.id} scope={{ type: 'incident', incidentId }} maxListHeight={260} />
-          </div>
+          </section>
         )}
       </div>
     </Modal>

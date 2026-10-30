@@ -27,15 +27,17 @@ interface ChipProps {
   onRemove?: () => void
   removeLabel?: string
   className?: string
+  /** Fundo claro (para usar sobre campos com fundo suave). */
+  solid?: boolean
 }
 
 /** Item escolhido (pessoa, cliente, projeto…): pílula suave sem borda, com × para tirar. */
-export function Chip({ children, person, to, onRemove, removeLabel = 'Remover', className = '' }: ChipProps) {
+export function Chip({ children, person, to, onRemove, removeLabel = 'Remover', className = '', solid }: ChipProps) {
   const body = to ? <Link to={to} className="hover:underline truncate">{children}</Link> : <span className="truncate">{children}</span>
   return (
     <span
       className={`inline-flex items-center gap-1.5 max-w-full text-xs font-medium ${className}`}
-      style={{ height: 26, paddingLeft: person ? 3 : 10, paddingRight: onRemove ? 4 : 10, borderRadius: 'var(--radius-pill)', background: 'var(--badge-gray-bg)', color: 'var(--text-primary)' }}
+      style={{ height: 26, paddingLeft: person ? 3 : 10, paddingRight: onRemove ? 4 : 10, borderRadius: 'var(--radius-pill)', background: solid ? 'var(--surface-card)' : 'var(--badge-gray-bg)', color: 'var(--text-primary)' }}
     >
       {person && <Avatar name={person} size={20} />}
       {body}

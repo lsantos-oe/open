@@ -9,11 +9,13 @@ interface ModalProps {
   footer?: ReactNode
   size?: 'sm' | 'md' | 'lg' | 'xl'
   noPadding?: boolean
+  /** Fica ao lado do título (ex.: ID com botão de copiar o link). */
+  headerExtra?: ReactNode
 }
 
 const MAX_WIDTHS = { sm: 400, md: 560, lg: 720, xl: 920 }
 
-export function Modal({ open, title, onClose, children, footer, size = 'md', noPadding }: ModalProps) {
+export function Modal({ open, title, onClose, children, footer, size = 'md', noPadding, headerExtra }: ModalProps) {
   useEffect(() => {
     if (!open) return
     const handler = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -66,7 +68,10 @@ export function Modal({ open, title, onClose, children, footer, size = 'md', noP
             flexShrink: 0,
           }}
         >
-          <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{title}</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{title}</h2>
+            {headerExtra}
+          </div>
           <button
             onClick={onClose}
             style={{ color: 'var(--text-tertiary)', fontSize: 20, lineHeight: 1, background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}

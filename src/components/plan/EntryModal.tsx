@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, CSSProperties, ReactNode } from 'react'
 import { Select, Input, Field } from '@/components/ui/Input'
-import { EntityCode } from '@/components/ui/CodeBadge'
+import { EntityCodeLink } from '@/components/ui/CodeBadge'
 import RichTextInput from '@/components/editor/RichTextInput'
 import EntryComments from './EntryComments'
 import { useTranslation } from 'react-i18next'
@@ -618,682 +618,348 @@ export default function EntryModal({
     ? !!origProject?.phases.some((ph) => ph.entries.some((e) => e.id === entry.id))
     : true)
 
+  const isEdit = mode === 'edit'
+
+  // ── rodapé: excluir à esquerda (só ao editar), cancelar e salvar à direita ──────────────────────
+
   const footer = (
-    <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 8 }}>
-      {mode === 'edit' && (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div className="flex items-center w-full gap-2">
+      {isEdit && (
+        <div className="flex-1 flex items-center gap-2 min-w-0">
           {deleteStep === 'idle' ? (
-            <button
-              onClick={() => setDeleteStep('confirm')}
-              style={{ fontSize: 13, padding: '6px 12px', borderRadius: 'var(--radius-md)', color: 'var(--color-danger-text)', background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-text)', cursor: 'pointer' }}
-            >
-              {t('entry.deleteEntry')}
-            </button>
+            <Button variant="ghost" size="sm" onClick={() => setDeleteStep('confirm')}>
+              <span style={{ color: 'var(--color-danger-text)' }}>{t('entry.deleteEntry')}</span>
+            </Button>
           ) : (
             <>
               {dependentCount > 0 && (
-                <span style={{ fontSize: 13, color: 'var(--color-warning-text)' }}>
-                  ⚠ {t('entry.hasDependents', { count: dependentCount })}
-                </span>
+                <span className="text-xs" style={{ color: 'var(--color-warning-text)' }}>⚠ {t('entry.hasDependents', { count: dependentCount })}</span>
               )}
-              <button
-                onClick={handleDelete}
-                style={{ fontSize: 13, padding: '6px 12px', borderRadius: 'var(--radius-md)', color: 'white', background: 'var(--color-danger-text)', border: 'none', cursor: 'pointer', fontWeight: 500 }}
-              >
-                {t('entry.confirmDelete')}
-              </button>
-              <button
-                onClick={() => setDeleteStep('idle')}
-                style={{ fontSize: 13, padding: '4px 8px', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}
-              >
-                {t('actions.cancel')}
-              </button>
+              <Button variant="danger" size="sm" onClick={handleDelete}>{t('entry.confirmDelete')}</Button>
+              <Button variant="ghost" size="sm" onClick={() => setDeleteStep('idle')}>{t('actions.cancel')}</Button>
             </>
           )}
         </div>
       )}
-      {mode === 'create' && <div style={{ flex: 1 }} />}
+      {!isEdit && <div className="flex-1" />}
       <Button variant="secondary" onClick={onClose}>{t('actions.cancel')}</Button>
-      <Button
-        onClick={mode === 'edit' ? handleSaveEdit : handleSaveCreate}
-        disabled={!canSave}
-      >
-        {mode === 'edit' ? t('entry.saveChanges') : t('actions.create')}
+      <Button onClick={isEdit ? handleSaveEdit : handleSaveCreate} disabled={!canSave}>
+        {isEdit ? t('entry.saveChanges') : t('actions.create')}
       </Button>
     </div>
   )
 
-  // ── CRIAR: formulário curto. O essencial (nome, onde, quem, quando) fica à vista; o resto abre em "Mais opções". ──
-  if (mode === 'create') {
-    const canPickType = !isSubtask && !defaultParentEntryId && !!form.projectId
-    const noProject = !form.projectId
-    const pill = (on: boolean) => ({
-      display: 'inline-flex', alignItems: 'center', gap: 6, height: 30, padding: '0 14px', borderRadius: 999, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: 'none',
-      background: on ? 'var(--text-primary)' : 'var(--surface-subtle)', color: on ? 'var(--surface-page)' : 'var(--text-secondary)',
-    }) as CSSProperties
+  // ── blocos compartilhados (criar e editar usam os mesmos campos, no mesmo estilo) ────────────────
+
+  const goTo = (path: string) => { onClose(); navigate(path) }
+  const canPickType = mode === 'create' && !isSubtask && !defaultParentEntryId && !!form.projectId
+  const noProject = !form.projectId
+  const projectClients = (selectedProject?.clientIds ?? []).map((id) => clients.find((c) => c.id === id)).filter((c): c is NonNullable<typeof c> => !!c)
+  const contactClientIds = selectedProject?.clientIds.length ? selectedProject.clientIds : noProject ? clientFilter : undefined
+
+  const pill = (on: boolean): CSSProperties => ({
+    display: 'inline-flex', alignItems: 'center', gap: 6, height: 30, padding: '0 14px', borderRadius: 999, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: 'none',
+    background: on ? 'var(--text-primary)' : 'var(--surface-subtle)', color: on ? 'var(--surface-page)' : 'var(--text-secondary)',
+  })
+
+  /** Botão redondo "ir para" ao lado do seletor. */
+  const GoBtn = ({ label, path }: { label: string; path: string }) => (
+    <button
+      type="button" onClick={() => goTo(path)} title={label} aria-label={label}
+      className="shrink-0 flex items-center justify-center h-9 w-9 rounded-full transition-colors hover:opacity-80"
+      style={{ background: 'var(--surface-subtle)', color: 'var(--text-secondary)' }}
+    >
+      <ExternalLinkIcon className="w-3.5 h-3.5" />
+    </button>
+  )
+
+  const typePills = canPickType && (
+    <div className="flex gap-1.5" role="radiogroup" aria-label="Tipo">
+      {(['task', 'milestone', 'meeting'] as EntryType[]).map((type) => (
+        <button key={type} role="radio" aria-checked={form.type === type} onClick={() => set('type', type)} style={pill(form.type === type)}>
+          {TYPE_ICONS[type]} {t(`entry.${type}` as any)}
+        </button>
+      ))}
+    </div>
+  )
+
+  const nameInput = (
+    <input
+      autoFocus={!isEdit}
+      value={form.name}
+      onChange={(e) => set('name', e.target.value)}
+      onKeyDown={(e) => { if (e.key === 'Enter') (isEdit ? handleSaveEdit() : handleSaveCreate()) }}
+      placeholder={t('entry.name')}
+      aria-label={t('entry.name')}
+      style={{ width: '100%', fontSize: 18, fontWeight: 600, border: 'none', outline: 'none', background: 'transparent', color: 'var(--text-primary)', padding: '4px 0' }}
+    />
+  )
+
+  const whereFields = (
+    <div className="grid grid-cols-2 gap-3">
+      <Field label={t('entry.project' as any)}>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <SearchableSelect
+              value={form.projectId}
+              onChange={handleProjectChange}
+              options={[
+                ...(allowStandalone ? [{ id: '', label: t('entry.noProject' as any) }] : []),
+                ...visibleProjects.map((p) => ({ id: p.id, label: p.name, sublabel: p.client || undefined })),
+              ]}
+              disabled={lockProject && !isEdit}
+            />
+          </div>
+          {!!form.projectId && <GoBtn label={t('entry.viewProject')} path={`/projects/${form.projectId}`} />}
+        </div>
+        {projectChanged && <p className="text-xs mt-1" style={{ color: 'var(--color-warning-text)' }}>⚠ {t('entry.moveWarning')}</p>}
+      </Field>
+      <Field label={t('entry.client' as any)}>
+        {noProject ? (
+          <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <MultiSelect
+                values={clientFilter}
+                onChange={handleClientFilterChange}
+                options={clients.map((c) => ({ id: c.id, label: c.name }))}
+                placeholder={`— ${t('entry.allClients' as any)} —`}
+                disabled={lockProject && !isEdit}
+              />
+            </div>
+            {clientFilter.length === 1 && <GoBtn label={t('entry.viewClient')} path={`/wallet/${clientFilter[0]}`} />}
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-1.5 min-h-9">
+            {projectClients.length === 0 && <span className="text-[13px]" style={{ color: 'var(--text-tertiary)' }}>—</span>}
+            {projectClients.map((c) => (
+              <button
+                key={c.id} type="button" onClick={() => goTo(`/wallet/${c.id}`)} title={`${t('entry.viewClient')}: ${c.name}`}
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[13px] transition-colors hover:opacity-80 max-w-full"
+                style={{ background: 'var(--surface-subtle)', color: 'var(--text-primary)' }}
+              >
+                <span className="truncate">{c.name}</span>
+                <ExternalLinkIcon className="w-3 h-3 shrink-0" />
+              </button>
+            ))}
+          </div>
+        )}
+      </Field>
+    </div>
+  )
+
+  const peopleFields = (
+    <div className="grid grid-cols-2 gap-3">
+      <Field label="Responsável">
+        <OwnersField
+          owners={form.owners.filter((o) => o.kind === 'executor')}
+          onChange={(next) => set('owners', [...next, ...form.owners.filter((o) => o.kind !== 'executor')])}
+          teamMembers={selectedTeam}
+          contacts={selectedContacts}
+          newContactClientIds={contactClientIds}
+          kind="executor"
+        />
+      </Field>
+      <Field label={t('entry.validator')}>
+        <OwnersField
+          owners={form.owners.filter((o) => o.kind === 'validator')}
+          onChange={(next) => set('owners', [...form.owners.filter((o) => o.kind !== 'validator'), ...next])}
+          teamMembers={selectedTeam}
+          contacts={selectedContacts}
+          newContactClientIds={contactClientIds}
+          max={1}
+          kind="validator"
+        />
+      </Field>
+    </div>
+  )
+
+  const statusDateFields = (
+    <div className="grid grid-cols-2 gap-3">
+      <Field label={t('entry.status')}>
+        <Select value={form.status} onChange={(e) => set('status', e.target.value as EntryStatus)}>
+          <option value="pending">{t('entry.pending')}</option>
+          <option value="todo">{t('entry.todo')}</option>
+          <option value="in_progress">{t('entry.in_progress')}</option>
+          <option value="validation">{t('entry.validation')}</option>
+          <option value="done">{t('entry.done')}</option>
+          <option value="blocked">{t('entry.blocked')}</option>
+        </Select>
+      </Field>
+      <Field label={form.type === 'task' ? 'Prazo' : 'Data'}>
+        {form.type === 'task' ? (
+          <>
+            <Input type="date" value={form.plannedEnd} onChange={(e) => { set('plannedEnd', e.target.value); setEndDateError('') }} />
+            {endDateError && <p className="text-xs mt-1" style={{ color: 'var(--color-danger-text)' }}>{endDateError}</p>}
+          </>
+        ) : (
+          <Input type="date" value={form.plannedDate} onChange={(e) => set('plannedDate', e.target.value)} />
+        )}
+      </Field>
+    </div>
+  )
+
+  const descriptionEditor = (
+    <RichTextInput key={descEpoch} initialMarkdown={form.description} onChange={(md) => set('description', md)} uploadScope={entry ? `entry_${entry.id}` : 'entry_new'} minHeight={90} />
+  )
+  const descriptionField = <Field label={t('entry.description')}>{descriptionEditor}</Field>
+
+  // Planejamento: início, duração, fase, risco, subtarefa, tarefa vinculada
+  const planningFields = (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        {form.type === 'task' && (
+          <>
+            <Field label={t('entry.plannedStart')}><Input type="date" value={form.plannedStart} onChange={(e) => set('plannedStart', e.target.value)} /></Field>
+            <Field label={t('entry.duration')}><Input type="number" min={1} value={form.durationDays} onChange={(e) => set('durationDays', Number(e.target.value))} /></Field>
+          </>
+        )}
+        {form.type === 'meeting' && (
+          <>
+            <Field label={t('entry.durationHours')}><Input type="number" min={0.5} step={0.5} value={form.durationHours} onChange={(e) => set('durationHours', Number(e.target.value))} /></Field>
+            <Field label={t('plan.linkedTask')}>
+              <Select value={form.linkedParentId} onChange={(e) => set('linkedParentId', e.target.value)} disabled={!!defaultParentEntryId}>
+                <option value="">— {t('plan.linkedTaskNone')} —</option>
+                {availableParentTasks.map((task) => <option key={task.id} value={task.id}>{task.name}</option>)}
+              </Select>
+            </Field>
+          </>
+        )}
+        {!!form.projectId && !isSubtask && (
+          <Field label={t('plan.phase')}>
+            <Select value={selectedProject?.phases.find((ph) => ph.id === form.phaseId)?.isUnassigned ? '' : form.phaseId} onChange={(e) => set('phaseId', e.target.value)}>
+              {form.hiddenFromPlan && <option value="">— {t('entry.noPhase' as any)} —</option>}
+              {visiblePhases.map((ph) => <option key={ph.id} value={ph.id}>{ph.name}</option>)}
+            </Select>
+            {phaseChanged && <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>↳ {t('entry.moveToPhase', { phase: visiblePhases.find((p) => p.id === form.phaseId)?.name ?? t('entry.noPhase' as any) })}</p>}
+          </Field>
+        )}
+        <Field label={t('entry.riskFlag')}>
+          <Select value={form.riskFlag} onChange={(e) => set('riskFlag', e.target.value as RiskFlag)}>
+            <option value="none">{t('entry.none')}</option>
+            <option value="warning">{t('entry.warning')}</option>
+            <option value="critical">{t('entry.critical')}</option>
+          </Select>
+        </Field>
+        {mode === 'create' && form.type === 'task' && !defaultParentId && availableParentTasks.length > 0 && (
+          <Field label={t('entry.subtaskOf')}>
+            <Select value={form.subtaskOf} onChange={(e) => set('subtaskOf', e.target.value)}>
+              <option value="">— {t('plan.linkedTaskNone')} —</option>
+              {availableParentTasks.map((task) => <option key={task.id} value={task.id}>{task.name}</option>)}
+            </Select>
+          </Field>
+        )}
+      </div>
+      {form.type === 'meeting' && parentEndWarning && <p className="text-xs" style={{ color: 'var(--color-warning-text)' }}>⚠ {t('plan.childMeetingOutOfRange')}</p>}
+      {!!form.projectId && (
+        <div className="space-y-2 pt-1">
+          <label className="flex items-start gap-2 text-[13px] cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+            <input type="checkbox" className="mt-0.5 accent-[var(--text-primary)]" checked={!form.hiddenFromPlan} onChange={handleToggleHiddenFromPlan} />
+            <span>{t('entry.showInPlan')}{form.hiddenFromPlan && <span className="block text-xs" style={{ color: 'var(--text-tertiary)' }}>{t('entry.hiddenFromPlanHint')}</span>}</span>
+          </label>
+          {form.type === 'task' && (
+            <label className="flex items-start gap-2 text-[13px] cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+              <input type="checkbox" className="mt-0.5 accent-[var(--text-primary)]" checked={form.isDocumentation} onChange={(e) => set('isDocumentation', e.target.checked)} />
+              <span>Tarefa de documentação<span className="block text-xs" style={{ color: 'var(--text-tertiary)' }}>Os links e arquivos desta tarefa aparecem na aba Documentação do projeto e do cliente.</span></span>
+            </label>
+          )}
+        </div>
+      )}
+    </div>
+  )
+
+  const dependenciesField = availableDeps.length > 0 && (
+    <Field label={`${t('plan.dependencies')}${form.dependsOn.length ? ` (${form.dependsOn.length})` : ''}`}>
+      <div style={{ maxHeight: 150, overflowY: 'auto', borderRadius: 'var(--radius-lg)', background: 'var(--surface-subtle)', padding: 4 }}>
+        {availableDeps.map((dep) => (
+          <label key={dep.id} className="flex items-center gap-2 px-2 py-1.5 text-[13px] cursor-pointer rounded-[var(--radius-md)] hover:bg-[var(--surface-card)]" style={{ color: 'var(--text-secondary)' }}>
+            <input type="checkbox" className="accent-[var(--text-primary)]" checked={form.dependsOn.includes(dep.id)} onChange={() => toggleDep(dep.id)} />
+            <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{dep.phaseName}</span>{dep.name}
+          </label>
+        ))}
+      </div>
+    </Field>
+  )
+
+  const linksField = (
+    <Field label="Links">
+      {form.links.length > 0 && (
+        <div className="mb-2 space-y-1">
+          {form.links.map((l) => (
+            <div key={l.id} className="flex items-center gap-2 text-[13px]">
+              <a href={l.url} target="_blank" rel="noopener noreferrer" className="flex-1 truncate hover:underline" style={{ color: 'var(--text-secondary)' }}>{l.label}</a>
+              <button onClick={() => removeLink(l.id)} aria-label={`Remover ${l.label}`} className="text-base leading-none hover:opacity-70" style={{ color: 'var(--text-tertiary)' }}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-2">
+        <Input value={newLinkLabel} onChange={(e) => setNewLinkLabel(e.target.value)} placeholder="Nome (opcional)" className="!w-2/5" />
+        <Input value={newLinkUrl} onChange={(e) => setNewLinkUrl(e.target.value)} placeholder="Cole um link" onKeyDown={(e) => e.key === 'Enter' && addLink()} />
+        <Button variant="secondary" size="sm" onClick={addLink} disabled={!newLinkUrl.trim()}>{t('actions.add')}</Button>
+      </div>
+    </Field>
+  )
+
+  const sectionTitle = (text: string) => (
+    <h3 className="text-[13px] font-semibold" style={{ color: 'var(--text-primary)' }}>{text}</h3>
+  )
+
+  // ── CRIAR: formulário curto. Quem, onde, status e prazo à vista; o resto abre em "Mais opções". ──
+  if (!isEdit) {
     return (
       <Modal open={open} title={title} onClose={onClose} size="md" footer={footer}>
         <div className="space-y-5">
-          {canPickType && (
-            <div style={{ display: 'flex', gap: 6 }} role="radiogroup" aria-label="Tipo">
-              {(['task', 'milestone', 'meeting'] as EntryType[]).map((type) => (
-                <button key={type} role="radio" aria-checked={form.type === type} onClick={() => set('type', type)} style={pill(form.type === type)}>
-                  {TYPE_ICONS[type]} {t(`entry.${type}` as any)}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <input
-            autoFocus
-            value={form.name}
-            onChange={(e) => set('name', e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveCreate() }}
-            placeholder={t('entry.name')}
-            aria-label={t('entry.name')}
-            style={{ width: '100%', fontSize: 18, fontWeight: 600, border: 'none', outline: 'none', background: 'transparent', color: 'var(--text-primary)', padding: '4px 0' }}
-          />
-
-          <div className="grid grid-cols-2 gap-3">
-            <Field label={t('entry.project' as any)}>
-              <SearchableSelect
-                value={form.projectId}
-                onChange={handleProjectChange}
-                options={[
-                  ...(allowStandalone ? [{ id: '', label: t('entry.noProject' as any) }] : []),
-                  ...visibleProjects.map((p) => ({ id: p.id, label: p.name, sublabel: p.client || undefined })),
-                ]}
-                disabled={lockProject}
-              />
-            </Field>
-            {noProject ? (
-              <Field label={t('entry.client' as any)}>
-                <MultiSelect
-                  values={clientFilter}
-                  onChange={handleClientFilterChange}
-                  options={clients.map((c) => ({ id: c.id, label: c.name }))}
-                  placeholder={`— ${t('entry.allClients' as any)} —`}
-                  disabled={lockProject}
-                />
-              </Field>
-            ) : !isSubtask ? (
-              <Field label={t('plan.phase')}>
-                <Select value={selectedProject?.phases.find((ph) => ph.id === form.phaseId)?.isUnassigned ? '' : form.phaseId} onChange={(e) => set('phaseId', e.target.value)}>
-                  {form.hiddenFromPlan && <option value="">— {t('entry.noPhase' as any)} —</option>}
-                  {visiblePhases.map((ph) => <option key={ph.id} value={ph.id}>{ph.name}</option>)}
-                </Select>
-              </Field>
-            ) : <div />}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Responsável">
-              <OwnersField
-                owners={form.owners.filter((o) => o.kind === 'executor')}
-                onChange={(next) => set('owners', [...next, ...form.owners.filter((o) => o.kind !== 'executor')])}
-                teamMembers={selectedTeam}
-                contacts={selectedContacts}
-                newContactClientIds={selectedProject?.clientIds.length ? selectedProject.clientIds : !form.projectId ? clientFilter : undefined}
-                kind="executor"
-              />
-            </Field>
-            <Field label={form.type === 'task' ? 'Prazo' : 'Data'}>
-              {form.type === 'task' ? (
-                <>
-                  <Input type="date" value={form.plannedEnd} onChange={(e) => { set('plannedEnd', e.target.value); setEndDateError('') }} />
-                  {endDateError && <p className="text-xs mt-1" style={{ color: 'var(--color-danger-text)' }}>{endDateError}</p>}
-                </>
-              ) : (
-                <Input type="date" value={form.plannedDate} onChange={(e) => set('plannedDate', e.target.value)} />
-              )}
-            </Field>
-          </div>
-
-          {showDesc || form.description ? (
-            <Field label={t('entry.description')}>
-              <RichTextInput key={descEpoch} initialMarkdown={form.description} onChange={(md) => set('description', md)} uploadScope="entry_new" minHeight={90} />
-            </Field>
-          ) : (
+          {typePills}
+          {nameInput}
+          {whereFields}
+          {peopleFields}
+          {statusDateFields}
+          {showDesc || form.description ? descriptionField : (
             <button type="button" onClick={() => setShowDesc(true)} className="text-[13px]" style={{ color: 'var(--text-tertiary)' }}>+ {t('entry.description')}</button>
           )}
-
           <div>
             <button type="button" onClick={() => setShowMore((v) => !v)} aria-expanded={showMore} className="flex items-center gap-1.5 text-[13px] font-medium" style={{ color: 'var(--text-secondary)' }}>
               <span style={{ display: 'inline-block', transform: showMore ? 'rotate(90deg)' : undefined, transition: 'transform .12s' }}>›</span>
               Mais opções
-              {(form.owners.some((o) => o.kind === 'validator') || form.dependsOn.length > 0 || form.links.length > 0) && <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--text-tertiary)' }} />}
             </button>
-
-            {showMore && (
-              <div className="mt-3 space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label={t('entry.validator')}>
-                    <OwnersField
-                      owners={form.owners.filter((o) => o.kind === 'validator')}
-                      onChange={(next) => set('owners', [...form.owners.filter((o) => o.kind !== 'validator'), ...next])}
-                      teamMembers={selectedTeam}
-                      contacts={selectedContacts}
-                      newContactClientIds={selectedProject?.clientIds.length ? selectedProject.clientIds : !form.projectId ? clientFilter : undefined}
-                      max={1}
-                      kind="validator"
-                    />
-                  </Field>
-                  <Field label={t('entry.status')}>
-                    <Select value={form.status} onChange={(e) => set('status', e.target.value as EntryStatus)}>
-                      <option value="pending">{t('entry.pending')}</option>
-                      <option value="todo">{t('entry.todo')}</option>
-                      <option value="in_progress">{t('entry.in_progress')}</option>
-                      <option value="validation">{t('entry.validation')}</option>
-                      <option value="done">{t('entry.done')}</option>
-                      <option value="blocked">{t('entry.blocked')}</option>
-                    </Select>
-                  </Field>
-                </div>
-
-                {form.type === 'task' ? (
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label={t('entry.plannedStart')}><Input type="date" value={form.plannedStart} onChange={(e) => set('plannedStart', e.target.value)} /></Field>
-                    <Field label={t('entry.duration')}><Input type="number" min={1} value={form.durationDays} onChange={(e) => set('durationDays', Number(e.target.value))} /></Field>
-                  </div>
-                ) : form.type === 'meeting' ? (
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label={t('entry.durationHours')}><Input type="number" min={0.5} step={0.5} value={form.durationHours} onChange={(e) => set('durationHours', Number(e.target.value))} /></Field>
-                    <Field label={t('plan.linkedTask')}>
-                      <Select value={form.linkedParentId} onChange={(e) => set('linkedParentId', e.target.value)} disabled={!!defaultParentEntryId}>
-                        <option value="">— {t('plan.linkedTaskNone')} —</option>
-                        {availableParentTasks.map((task) => <option key={task.id} value={task.id}>{task.name}</option>)}
-                      </Select>
-                    </Field>
-                  </div>
-                ) : null}
-                {form.type === 'meeting' && parentEndWarning && <p className="text-xs" style={{ color: 'var(--color-warning-text)' }}>⚠ {t('plan.childMeetingOutOfRange')}</p>}
-
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label={t('entry.riskFlag')}>
-                    <Select value={form.riskFlag} onChange={(e) => set('riskFlag', e.target.value as RiskFlag)}>
-                      <option value="none">{t('entry.none')}</option>
-                      <option value="warning">{t('entry.warning')}</option>
-                      <option value="critical">{t('entry.critical')}</option>
-                    </Select>
-                  </Field>
-                  {form.type === 'task' && !defaultParentId && availableParentTasks.length > 0 ? (
-                    <Field label={t('entry.subtaskOf')}>
-                      <Select value={form.subtaskOf} onChange={(e) => set('subtaskOf', e.target.value)}>
-                        <option value="">— {t('plan.linkedTaskNone')} —</option>
-                        {availableParentTasks.map((task) => <option key={task.id} value={task.id}>{task.name}</option>)}
-                      </Select>
-                    </Field>
-                  ) : <div />}
-                </div>
-
-                {availableDeps.length > 0 && (
-                  <Field label={`${t('plan.dependencies')}${form.dependsOn.length ? ` (${form.dependsOn.length})` : ''}`}>
-                    <div style={{ maxHeight: 140, overflowY: 'auto', borderRadius: 'var(--radius-lg)', background: 'var(--surface-subtle)', padding: 4 }}>
-                      {availableDeps.map((dep) => (
-                        <label key={dep.id} className="flex items-center gap-2 px-2 py-1.5 text-[13px] cursor-pointer rounded-[var(--radius-md)] hover:bg-[var(--surface-card)]" style={{ color: 'var(--text-secondary)' }}>
-                          <input type="checkbox" className="accent-[var(--text-primary)]" checked={form.dependsOn.includes(dep.id)} onChange={() => toggleDep(dep.id)} />
-                          <span style={{ color: 'var(--text-tertiary)', fontSize: 11.5 }}>{dep.phaseName}</span>{dep.name}
-                        </label>
-                      ))}
-                    </div>
-                  </Field>
-                )}
-
-                <Field label="Links">
-                  {form.links.map((l) => (
-                    <div key={l.id} className="flex items-center gap-2 text-[13px] mb-1" style={{ color: 'var(--text-secondary)' }}>
-                      <span className="truncate flex-1">{l.label}</span>
-                      <button onClick={() => removeLink(l.id)} aria-label={`Remover ${l.label}`} style={{ color: 'var(--text-tertiary)' }}>×</button>
-                    </div>
-                  ))}
-                  <div className="flex gap-2">
-                    <Input value={newLinkUrl} onChange={(e) => setNewLinkUrl(e.target.value)} placeholder="Cole um link" onKeyDown={(e) => e.key === 'Enter' && addLink()} />
-                    <Button variant="secondary" size="sm" onClick={addLink} disabled={!newLinkUrl.trim()}>{t('actions.add')}</Button>
-                  </div>
-                </Field>
-
-                {!!form.projectId && (
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-[13px] cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
-                      <input type="checkbox" className="accent-[var(--text-primary)]" checked={!form.hiddenFromPlan} onChange={handleToggleHiddenFromPlan} />
-                      {t('entry.showInPlan')}
-                    </label>
-                    {form.type === 'task' && (
-                      <label className="flex items-center gap-2 text-[13px] cursor-pointer" style={{ color: 'var(--text-secondary)' }} title="Os links e arquivos desta tarefa aparecem na aba Documentação do projeto e do cliente.">
-                        <input type="checkbox" className="accent-[var(--text-primary)]" checked={form.isDocumentation} onChange={(e) => set('isDocumentation', e.target.checked)} />
-                        Tarefa de documentação
-                      </label>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+            {showMore && <div className="mt-3 space-y-4">{planningFields}{dependenciesField}{linksField}</div>}
           </div>
         </div>
       </Modal>
     )
   }
 
-  // ── render ────────────────────────────────────────────────────────────────
-
+  // ── EDITAR: os mesmos campos, no mesmo estilo, com tudo à mostra ──
   return (
-    <Modal open={open} title={title} onClose={onClose} size="xl" noPadding footer={footer}>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 480 }}>
-      <div style={{ display: 'flex', flex: 1, minHeight: showComments ? 360 : 480, overflow: 'hidden' }}>
-
-        {/* ── LEFT COLUMN ── */}
-        <div style={{ flex: 2, padding: 24, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {mode === 'edit' && entry && <div className="-mb-3"><EntityCode table="entries" id={entry.id} /></div>}
-
-          {/* Copy link + related entities (edit mode only — nothing to link to before it's saved) */}
-          {mode === 'edit' && entry && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', marginBottom: -8 }}>
-              <CopyLinkButton url={`${window.location.origin}/tasks?entry=${entry.id}`} size="xs" />
-              {origProjectId && (
-                <Button variant="ghost" size="xs" onClick={() => { onClose(); navigate(`/projects/${origProjectId}`) }}>
-                  <ExternalLinkIcon className="w-3.5 h-3.5" /> {t('entry.viewProject')}
-                </Button>
-              )}
-              {(origProject?.clientIds ?? (entry.clientId ? [entry.clientId] : [])).map((cid) => {
-                const client = clients.find((c) => c.id === cid)
-                if (!client) return null
-                return (
-                  <Button key={cid} variant="ghost" size="xs" onClick={() => { onClose(); navigate(`/wallet/${cid}`) }}>
-                    <ExternalLinkIcon className="w-3.5 h-3.5" /> {t('entry.viewClient')}: {client.name}
-                  </Button>
-                )
-              })}
-            </div>
-          )}
-
-          {/* Title */}
-          <input
-            autoFocus
-            value={form.name}
-            onChange={(e) => set('name', e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') mode === 'edit' ? handleSaveEdit() : handleSaveCreate()
-            }}
-            placeholder={t('entry.name')}
-            style={{
-              width: '100%', fontSize: 15, fontWeight: 500,
-              border: 'none', borderBottom: '2px solid var(--border-default)',
-              outline: 'none', background: 'transparent',
-              color: 'var(--text-primary)', paddingBottom: 8, boxSizing: 'border-box',
-            }}
-            onFocus={e => (e.currentTarget.style.borderBottomColor = 'var(--text-tertiary)')}
-            onBlur={e => (e.currentTarget.style.borderBottomColor = 'var(--border-default)')}
-          />
-
-          {/* Executor / Validador */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <div>
-              <FieldLabel>{t('entry.executor')}</FieldLabel>
-              <OwnersField
-                owners={form.owners.filter((o) => o.kind === 'executor')}
-                onChange={(next) => set('owners', [...next, ...form.owners.filter((o) => o.kind !== 'executor')])}
-                teamMembers={selectedTeam}
-                contacts={selectedContacts}
-                newContactClientIds={selectedProject?.clientIds.length ? selectedProject.clientIds : !form.projectId ? clientFilter : undefined}
-                kind="executor"
-              />
-            </div>
-            <div>
-              <FieldLabel>{t('entry.validator')}</FieldLabel>
-              <OwnersField
-                owners={form.owners.filter((o) => o.kind === 'validator')}
-                onChange={(next) => set('owners', [...form.owners.filter((o) => o.kind !== 'validator'), ...next])}
-                teamMembers={selectedTeam}
-                contacts={selectedContacts}
-                newContactClientIds={selectedProject?.clientIds.length ? selectedProject.clientIds : !form.projectId ? clientFilter : undefined}
-                max={1}
-                kind="validator"
-              />
-            </div>
-          </div>
-
-          {/* Description */}
-          <div>
-            <FieldLabel>{t('entry.description')}</FieldLabel>
-            <RichTextInput
-              key={descEpoch}
-              initialMarkdown={form.description}
-              onChange={(md) => set('description', md)}
-              uploadScope={entry ? `entry_${entry.id}` : 'entry_new'}
-              minHeight={90}
-            />
-          </div>
-
-          {/* Date fields — task */}
-          {form.type === 'task' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-              <FieldBox label={t('entry.plannedStart')}>
-                <input
-                  type="date"
-                  value={form.plannedStart}
-                  onChange={e => set('plannedStart', e.target.value)}
-                  style={inputStyle}
-                />
-              </FieldBox>
-              <FieldBox label={t('entry.plannedEnd')}>
-                <input
-                  type="date"
-                  value={form.plannedEnd}
-                  onChange={e => { set('plannedEnd', e.target.value); setEndDateError('') }}
-                  style={{ ...inputStyle, ...(endDateError ? { borderColor: 'var(--color-danger-text)' } : {}) }}
-                />
-                {endDateError && <p style={{ fontSize: 11.5, color: 'var(--color-danger-text)', marginTop: 3 }}>{endDateError}</p>}
-              </FieldBox>
-              <FieldBox label={t('entry.duration')}>
-                <input
-                  type="number"
-                  min={1}
-                  value={form.durationDays}
-                  onChange={e => set('durationDays', Number(e.target.value))}
-                  style={inputStyle}
-                />
-              </FieldBox>
-            </div>
-          )}
-
-          {/* Date fields — milestone / meeting */}
-          {form.type !== 'task' && (
-            <div style={{ display: 'grid', gridTemplateColumns: form.type === 'meeting' ? '1fr 1fr' : '1fr', gap: 12 }}>
-              <FieldBox label={t('entry.plannedDate')}>
-                <input
-                  type="date"
-                  value={form.plannedDate}
-                  onChange={e => set('plannedDate', e.target.value)}
-                  style={inputStyle}
-                />
-              </FieldBox>
-              {form.type === 'meeting' && (
-                <FieldBox label={t('entry.durationHours')}>
-                  <input
-                    type="number"
-                    min={0.5}
-                    step={0.5}
-                    value={form.durationHours}
-                    onChange={e => set('durationHours', Number(e.target.value))}
-                    style={inputStyle}
-                  />
-                </FieldBox>
-              )}
-            </div>
-          )}
-
-          {/* Linked parent task (meeting) */}
-          {form.type === 'meeting' && (
-            <FieldBox label={t('plan.linkedTask')}>
-              <Select value={form.linkedParentId} onChange={e => set('linkedParentId', e.target.value)} disabled={!!defaultParentEntryId}>
-                <option value="">— {t('plan.linkedTaskNone')} —</option>
-                {availableParentTasks.map(task => (
-                  <option key={task.id} value={task.id}>{task.name}</option>
-                ))}
-              </Select>
-              {parentEndWarning && (
-                <p style={{ fontSize: 11.5, color: 'var(--color-warning-text)', marginTop: 3 }}>
-                  ⚠ {t('plan.childMeetingOutOfRange')}
-                </p>
-              )}
-            </FieldBox>
-          )}
-
-          {/* Dependencies (collapsible) */}
-          {availableDeps.length > 0 && (
-            <div>
-              <button
-                onClick={() => setDepsOpen(v => !v)}
-                style={{
-                  fontSize: 11.5, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em',
-                  color: 'var(--text-tertiary)', cursor: 'pointer', background: 'none', border: 'none',
-                  padding: 0, display: 'flex', alignItems: 'center', gap: 5,
-                }}
-              >
-                {depsOpen ? '▾' : '▸'} {t('plan.dependencies')}
-                {form.dependsOn.length > 0 && (
-                  <span style={{ fontSize: 11.5, background: 'var(--oe-primary-light)', color: 'var(--text-secondary)', borderRadius: 'var(--radius-pill)', padding: '1px 6px' }}>
-                    {form.dependsOn.length}
-                  </span>
-                )}
-              </button>
-              {depsOpen && (
-                <div style={{ marginTop: 8, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', maxHeight: 160, overflowY: 'auto' }}>
-                  {availableDeps.map(dep => (
-                    <label
-                      key={dep.id}
-                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', cursor: 'pointer', fontSize: 13 }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--surface-subtle)' }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '' }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={form.dependsOn.includes(dep.id)}
-                        onChange={() => toggleDep(dep.id)}
-                      />
-                      <span style={{ fontSize: 11.5, color: 'var(--text-tertiary)', flexShrink: 0 }}>{dep.phaseName}</span>
-                      <span style={{ color: 'var(--text-secondary)' }}>{dep.name}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+    <Modal open={open} title={title} onClose={onClose} size="lg" footer={footer} headerExtra={entry ? <EntityCodeLink table="entries" id={entry.id} /> : undefined}>
+      <div className="space-y-6">
+        <div className="space-y-5">
+          {nameInput}
+          {whereFields}
+          {peopleFields}
+          {statusDateFields}
         </div>
 
-        {/* ── RIGHT COLUMN ── */}
-        <div style={{
-          flex: 1, padding: 20, overflowY: 'auto',
-          background: 'var(--surface-subtle)',
-          borderLeft: '1px solid var(--border-default)',
-          display: 'flex', flexDirection: 'column', gap: 16,
-        }}>
+        <section className="space-y-3">{sectionTitle('Descrição')}{descriptionEditor}</section>
 
-          {/* Clientes: filtram a lista de projetos abaixo e, numa tarefa solta (sem projeto), SÃO os clientes da tarefa — pode ser mais de um. */}
-          <FieldBox label={t('entry.client' as any)}>
-            <MultiSelect
-              values={clientFilter}
-              onChange={handleClientFilterChange}
-              options={clients.map(c => ({ id: c.id, label: c.name }))}
-              placeholder={`— ${t('entry.allClients' as any)} —`}
-              disabled={false}
-              style={inputStyle}
-            />
-          </FieldBox>
+        <section className="space-y-3">{sectionTitle('Planejamento')}{planningFields}{dependenciesField}</section>
 
-          {/* Project (optional — "Nenhum" makes this a standalone task) */}
-          <FieldBox label={t('entry.project' as any)}>
-            <SearchableSelect
-              value={form.projectId}
-              onChange={handleProjectChange}
-              options={[
-                ...(allowStandalone ? [{ id: '', label: t('entry.noProject' as any) }] : []),
-                ...visibleProjects.map(p => ({ id: p.id, label: p.name })),
-              ]}
-              disabled={false}
-              style={inputStyle}
-            />
-            {projectChanged && (
-              <p style={{ fontSize: 11.5, color: 'var(--color-warning-text)', marginTop: 4 }}>
-                ⚠ {t('entry.moveWarning')}
-              </p>
-            )}
-          </FieldBox>
+        <section className="space-y-3">{sectionTitle('Links e anexos')}{linksField}{entry && <EntityAttachments entityType="entry" entityId={entry.id} />}</section>
 
-          {/* Phase (project tasks only — standalone tasks have no plan/phase) */}
-          {!isSubtask && !!form.projectId && (
-            <FieldBox label={t('plan.phase')}>
-              <Select value={selectedProject?.phases.find(ph => ph.id === form.phaseId)?.isUnassigned ? '' : form.phaseId} onChange={e => set('phaseId', e.target.value)}>
-                {form.hiddenFromPlan && (
-                  <option value="">— {t('entry.noPhase' as any)} —</option>
-                )}
-                {visiblePhases.map(ph => (
-                  <option key={ph.id} value={ph.id}>{ph.name}</option>
-                ))}
-              </Select>
-              {phaseChanged && (
-                <p style={{ fontSize: 11.5, color: 'var(--text-tertiary)', marginTop: 4 }}>
-                  ↳ {t('entry.moveToPhase', { phase: visiblePhases.find(p => p.id === form.phaseId)?.name ?? t('entry.noPhase' as any) })}
-                </p>
-              )}
-            </FieldBox>
-          )}
+        {showComments && entry && (
+          <section className="space-y-3">
+            {sectionTitle('Conversa')}
+            <EntryComments entryId={entry.id} scope={origProjectId ? { type: 'project', projectId: origProjectId } : { type: 'standalone' }} maxListHeight={240} />
+          </section>
+        )}
 
-          {/* Status */}
-          <FieldBox label={t('entry.status')}>
-            <Select value={form.status} onChange={e => set('status', e.target.value as EntryStatus)}>
-              <option value="pending">{t('entry.pending')}</option>
-              <option value="todo">{t('entry.todo')}</option>
-              <option value="in_progress">{t('entry.in_progress')}</option>
-              <option value="validation">{t('entry.validation')}</option>
-              <option value="done">{t('entry.done')}</option>
-              <option value="blocked">{t('entry.blocked')}</option>
-            </Select>
-          </FieldBox>
-
-          {/* Risk flag */}
-          <FieldBox label={t('entry.riskFlag')}>
-            <Select value={form.riskFlag} onChange={e => set('riskFlag', e.target.value as RiskFlag)}>
-              <option value="none">{t('entry.none')}</option>
-              <option value="warning">{t('entry.warning')}</option>
-              <option value="critical">{t('entry.critical')}</option>
-            </Select>
-          </FieldBox>
-
-          {/* Show in plan toggle (project tasks only — a standalone task has no plan to show in) */}
-          {!!form.projectId && (
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={!form.hiddenFromPlan}
-                onChange={handleToggleHiddenFromPlan}
-                style={{ marginTop: 2, flexShrink: 0 }}
-              />
-              <div>
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>
-                  {t('entry.showInPlan')}
-                </span>
-                {form.hiddenFromPlan && (
-                  <p style={{ fontSize: 11.5, color: 'var(--text-tertiary)', marginTop: 2 }}>
-                    {t('entry.hiddenFromPlanHint')}
-                  </p>
-                )}
-              </div>
-            </label>
-          )}
-
-          {/* Tarefa de documentação (tarefa de projeto): os links e arquivos dela alimentam a aba Documentação */}
-          {!!form.projectId && form.type === 'task' && (
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={form.isDocumentation}
-                onChange={(e) => set('isDocumentation', e.target.checked)}
-                style={{ marginTop: 2, flexShrink: 0 }}
-              />
-              <div>
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>Tarefa de documentação</span>
-                <p style={{ fontSize: 11.5, color: 'var(--text-tertiary)', marginTop: 2 }}>
-                  Os links e arquivos desta tarefa aparecem na aba Documentação do projeto e do cliente.
-                </p>
-              </div>
-            </label>
-          )}
-
-          {/* Divider */}
-          <div style={{ height: 1, background: 'var(--border-default)' }} />
-
-          {/* Links */}
-          <div>
-            <FieldLabel>Links</FieldLabel>
-            {form.links.length > 0 && (
-              <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {form.links.map(l => (
-                  <div
-                    key={l.id}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-                    onMouseEnter={e => { (e.currentTarget.querySelector('.rm-link') as HTMLElement | null)?.style.setProperty('opacity', '1') }}
-                    onMouseLeave={e => { (e.currentTarget.querySelector('.rm-link') as HTMLElement | null)?.style.setProperty('opacity', '0') }}
-                  >
-                    <a
-                      href={l.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ flex: 1, fontSize: 13, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                    >
-                      {l.label}
-                    </a>
-                    <button
-                      className="rm-link"
-                      onClick={() => removeLink(l.id)}
-                      style={{ fontSize: 13, color: 'var(--text-disabled)', lineHeight: 1, background: 'none', border: 'none', cursor: 'pointer', opacity: 0, transition: 'opacity 0.15s', flexShrink: 0 }}
-                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-danger-text)')}
-                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-disabled)')}
-                    >×</button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <input
-                value={newLinkLabel}
-                onChange={e => setNewLinkLabel(e.target.value)}
-                placeholder="Label (opcional)"
-                style={inputStyle}
-              />
-              <div style={{ display: 'flex', gap: 6 }}>
-                <input
-                  value={newLinkUrl}
-                  onChange={e => setNewLinkUrl(e.target.value)}
-                  placeholder="URL *"
-                  style={{ ...inputStyle, flex: 1 }}
-                  onKeyDown={e => e.key === 'Enter' && addLink()}
-                />
-                <button
-                  onClick={addLink}
-                  disabled={!newLinkUrl.trim()}
-                  style={{
-                    fontSize: 13, background: 'var(--oe-primary)', color: 'white',
-                    borderRadius: 'var(--radius-md)', padding: '5px 10px',
-                    border: 'none', cursor: 'pointer', opacity: newLinkUrl.trim() ? 1 : 0.4,
-                    whiteSpace: 'nowrap', flexShrink: 0,
-                  }}
-                >
-                  {t('actions.add')}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Attachments (edit mode only — nothing to attach files to before it's saved) */}
-          {mode === 'edit' && entry && (
-            <EntityAttachments entityType="entry" entityId={entry.id} />
-          )}
-
-          {/* Created / Updated metadata */}
-          {mode === 'edit' && entry && (entry.createdAt || entry.updatedAt) && (
-            <div style={{ paddingTop: 10, borderTop: '1px solid var(--border-default)', marginTop: 'auto' }}>
-              {entry.createdAt && (
-                <p style={{ fontSize: 11.5, color: 'var(--text-disabled)' }}>
-                  Criado em {new Date(entry.createdAt).toLocaleDateString()}
-                </p>
-              )}
-              {entry.updatedAt && (
-                <p style={{ fontSize: 11.5, color: 'var(--text-disabled)', marginTop: 2 }}>
-                  Atualizado em {new Date(entry.updatedAt).toLocaleDateString()}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Conversa da tarefa: seção inferior, em cadeia (respostas, menções, edição) */}
-      {showComments && entry && (
-        <div style={{ flexShrink: 0, borderTop: '1px solid var(--border-default)', padding: '16px 24px 18px', background: 'var(--surface-card)' }}>
-          <EntryComments entryId={entry.id} scope={origProjectId ? { type: 'project', projectId: origProjectId } : { type: 'standalone' }} maxListHeight={240} />
-        </div>
-      )}
+        {entry && (entry.createdAt || entry.updatedAt) && (
+          <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+            {entry.createdAt && <>Criado em {new Date(entry.createdAt).toLocaleDateString()}</>}
+            {entry.createdAt && entry.updatedAt && ' · '}
+            {entry.updatedAt && <>atualizado em {new Date(entry.updatedAt).toLocaleDateString()}</>}
+          </p>
+        )}
       </div>
     </Modal>
   )

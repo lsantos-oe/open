@@ -124,9 +124,9 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind, 
 
   return (
     <div className="relative">
-      <div className="flex flex-wrap items-center gap-1.5 min-h-[28px] mb-1">
+      <div className="flex flex-wrap items-center gap-1.5 min-h-9 px-2 py-1 rounded-[18px]" style={{ background: 'var(--surface-subtle)' }}>
         {owners.map((owner) => (
-          <Chip key={owner.id} person={owner.name} onRemove={() => remove(owner.id)} removeLabel={`Remover ${owner.name}`}>
+          <Chip key={owner.id} solid person={owner.name} onRemove={() => remove(owner.id)} removeLabel={`Remover ${owner.name}`}>
             {owner.name}
             {owner.role && <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}> · {owner.role}</span>}
           </Chip>

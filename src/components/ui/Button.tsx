@@ -7,10 +7,11 @@ const base = 'inline-flex items-center gap-1.5 font-[500] transition-colors focu
 
 const variants: Record<Variant, string> = {
   primary:   'bg-[var(--oe-primary)] text-white hover:bg-[var(--oe-primary-hover)]',
-  secondary: 'bg-[var(--surface-card)] text-[var(--text-secondary)] border border-[var(--border-default)] hover:bg-[var(--surface-subtle)]',
+  // Secundário: só um tom de fundo (sem borda), do mesmo jeito que os campos.
+  secondary: 'bg-[var(--surface-subtle)] text-[var(--text-primary)] hover:bg-[var(--badge-gray-bg)]',
   ghost:     'text-[var(--text-tertiary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-secondary)]',
-  danger:    'bg-[var(--color-danger-bg)] text-[var(--color-danger-text)] border border-[var(--border-default)] hover:opacity-80',
-  pill:      'bg-[var(--surface-card)] text-[var(--text-secondary)] border border-[var(--border-default)] hover:text-[var(--text-secondary)] hover:border-[var(--oe-primary-mid)]',
+  danger:    'bg-[var(--color-danger-bg)] text-[var(--color-danger-text)] hover:opacity-80',
+  pill:      'bg-[var(--surface-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]',
 }
 
 const radii: Record<Variant, string> = {
