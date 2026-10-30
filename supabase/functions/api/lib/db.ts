@@ -42,6 +42,30 @@ export interface DbUser {
 
 class DryRunRollback extends Error {}
 
+// Efeitos fora do banco (ex.: apagar/subir arquivo no Storage) que dependem do desfecho da transação:
+// `commit` roda só depois do COMMIT (nunca em dry-run); `rollback` roda se a transação foi desfeita (erro ou dry-run).
+type Hook = () => Promise<void>;
+const hooks = new WeakMap<object, { commit: Hook[]; rollback: Hook[] }>();
+
+export function onTxEnd(tx: object, h: { commit?: Hook; rollback?: Hook }) {
+  const cur = hooks.get(tx) ?? { commit: [], rollback: [] };
+  if (h.commit) cur.commit.push(h.commit);
+  if (h.rollback) cur.rollback.push(h.rollback);
+  hooks.set(tx, cur);
+}
+
+export async function runTxHooks(tx: object, outcome: "commit" | "rollback") {
+  const cur = hooks.get(tx);
+  hooks.delete(tx);
+  for (const h of cur?.[outcome] ?? []) {
+    try {
+      await h();
+    } catch (e) {
+      console.error(`hook pós-transação (${outcome}) falhou`, e);
+    }
+  }
+}
+
 export interface TxOptions {
   readOnly?: boolean;
   /** Executa tudo e desfaz no final (Prefer: dry-run). */
@@ -50,8 +74,10 @@ export interface TxOptions {
 
 export async function withUser<T>(user: DbUser, fn: (tx: Tx) => Promise<T>, opts: TxOptions = {}): Promise<T> {
   let result!: T;
+  let txRef: Tx | undefined;
   try {
     await admin().begin(async (tx) => {
+      txRef = tx;
       // Uma ida ao banco só: papel do app (= SET LOCAL ROLE), claims do usuário e, em leituras, modo somente leitura.
       const claims = JSON.stringify({ sub: user.id, role: "authenticated", aud: "authenticated", email: user.email });
       await tx`select set_config('transaction_read_only', ${opts.readOnly ? "on" : "off"}, true),
@@ -62,10 +88,12 @@ export async function withUser<T>(user: DbUser, fn: (tx: Tx) => Promise<T>, opts
       if (opts.dryRun) throw new DryRunRollback();
     });
   } catch (e) {
+    if (txRef) await runTxHooks(txRef, "rollback");
     if (e instanceof DryRunRollback) return result;
     if (e instanceof ApiError) throw e;
     throw fromDbError(e);
   }
+  if (txRef) await runTxHooks(txRef, "commit");
   return result;
 }
 

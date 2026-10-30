@@ -71,6 +71,8 @@ export const TaskPatch = z.object({
   Owners: z.array(OwnerInput).min(1).max(10).optional(),
   RiskFlag: zEnum(Enums.RiskFlag).optional(),
   HiddenFromPlan: z.boolean().optional(),
+  /** Marca/desmarca a tarefa de projeto como "de documentação": seus links e anexos aparecem na aba Documentação. */
+  IsDocumentation: z.boolean().optional(),
   Links: z.array(LinkInput).max(20).optional(),
   PhaseId: Guid.optional(),
   Status: zEnum(Enums.TaskStatus).optional(),
@@ -413,8 +415,14 @@ export async function updateTask(ctx: Ctx, id: string, body: unknown, ifMatch?: 
   if (d.RiskFlag !== undefined) set.risk_flag = d.RiskFlag;
   if (d.HiddenFromPlan !== undefined) set.hidden_from_plan = d.HiddenFromPlan;
   if (d.DurationHours !== undefined) set.duration_hours = d.DurationHours;
+  if (d.IsDocumentation !== undefined) {
+    if (!row.project_id || row.type !== "task") throw validation("Só tarefas (não marcos/reuniões) de projeto podem ser de documentação.", "IsDocumentation");
+    set.is_documentation = d.IsDocumentation;
+  }
   if (d.Links !== undefined) {
-    set.links = ctx.tx.json(d.Links.map((l) => ({ id: crypto.randomUUID(), label: l.Label, url: l.Url })) as never);
+    // quem já estava na lista (mesma URL) mantém o id: a classificação (público/etiquetas) da documentação é presa a ele
+    const keep = new Map<string, string>(((row.links as { id: string; url: string }[] | null) ?? []).map((l) => [l.url, l.id]));
+    set.links = ctx.tx.json(d.Links.map((l) => ({ id: keep.get(l.Url) ?? crypto.randomUUID(), label: l.Label, url: l.Url })) as never);
   }
 
   let newOwners: EntryOwner[] | undefined;

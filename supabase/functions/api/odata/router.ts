@@ -256,13 +256,15 @@ export async function handleOData(req: ODataRequest): Promise<ODataResult> {
       });
     }
     if (method === "DELETE") {
-      if (set.name !== "Comments") throw new ApiError(405, "MethodNotAllowed", "Exclusão não é permitida pela API nesta versão (use Archive quando existir).");
+      const w = WRITES[set.name];
+      if (set.name !== "Comments" && !w?.delete) throw new ApiError(405, "MethodNotAllowed", "Exclusão não é permitida pela API nesta versão (use Archive quando existir).");
       requireScope(user, "write");
       await withUser(user, async (tx) => {
+        if (w?.delete) return await w.delete(await makeCtx(user, tx, dryRun), id);
         const r = await tx`delete from comments where id = ${id} returning id`;
         if (!r.length) throw notFound("Comentário não encontrado ou sem permissão (só o autor ou admin apagam).");
       }, { dryRun });
-      return { status: 204 };
+      return dryRun ? { status: 200, body: { "@open.dryRun": true, deleted: id }, headers: { "Preference-Applied": "dry-run" } } : { status: 204 };
     }
     throw new ApiError(405, "MethodNotAllowed", `Método ${method} não suportado aqui.`);
   }

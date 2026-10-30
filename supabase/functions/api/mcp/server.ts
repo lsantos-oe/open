@@ -19,6 +19,8 @@ import * as tasks from "../services/tasks.ts";
 import * as projects from "../services/projects.ts";
 import * as clients from "../services/clients.ts";
 import * as groups from "../services/groups.ts";
+import * as groupsWrite from "../services/groups_write.ts";
+import * as docs from "../services/docs.ts";
 import * as incidents from "../services/incidents.ts";
 import * as diary from "../services/diary.ts";
 import * as intake from "../services/intake.ts";
@@ -397,7 +399,7 @@ function buildServer(user: AuthUser, root: string): McpServer {
   tool("list_documentation", {
     title: "Listar documentação",
     description:
-      "Documentação (links, arquivos e textos) de um projeto, de um cliente (itens do cliente + dos projetos dele) ou de um grupo de clientes (soma dos membros). Informe exatamente um entre projectId, clientId e groupId. Cada item tem Code (D26000123), Link do app, Audience (Technical/Executive/Both) e Tags. audience=Technical traz técnico e ambos; Executive traz executivo e ambos (como o filtro do app). Source=Task são links e anexos das tarefas de documentação do projeto. Arquivos não são baixados pela API; abra pelo Link.",
+      "Documentação (links, arquivos e textos) de um projeto, de um cliente (itens do cliente + dos projetos dele) ou de um grupo de clientes (soma dos membros). Informe exatamente um entre projectId, clientId e groupId. Cada item tem Code (D26000123), Link do app, Audience (Technical/Executive/Both) e Tags. audience=Technical traz técnico e ambos; Executive traz executivo e ambos (como o filtro do app). Source=Task são links e anexos das tarefas de documentação do projeto. Para baixar um arquivo use get_documentation_file_link; ou abra pelo Link do app.",
     inputSchema: {
       projectId: guid.optional(),
       clientId: guid.optional(),
@@ -412,6 +414,14 @@ function buildServer(user: AuthUser, root: string): McpServer {
     },
     annotations: R,
   }, async (a) => wrap(await read((ctx) => groups.listDocumentation(ctx, a))));
+
+  tool("get_documentation_file_link", {
+    title: "Link de download de arquivo da documentação",
+    description:
+      "Gera um link assinado, privado e temporário (padrão 10 min, até 1 h) para baixar um item do tipo arquivo (Kind=File), direto ou anexo de tarefa de documentação. Não repita o link em lugares abertos; peça outro quando expirar.",
+    inputSchema: { id: guid, ExpiresInSeconds: z.number().int().min(60).max(3600).optional() },
+    annotations: R,
+  }, async (a) => wrap(await read((ctx) => docs.documentationFileLink(ctx, a.id, { ExpiresInSeconds: a.ExpiresInSeconds }))));
 
   tool("resolve_code", {
     title: "Resolver código curto",
@@ -585,6 +595,64 @@ function buildServer(user: AuthUser, root: string): McpServer {
     ContactId: guid.optional(),
     Name: z.string().optional(),
   }, W, (ctx, a) => incidents.addStakeholder(ctx, a.id, strip(a)), (ctx, _o, a) => readBack("Incidents")(ctx, a.id));
+
+  // ── grupos de clientes
+  const GROUP_NOTE = " Um cliente só pode estar em um grupo (salvo configuração do sistema); se o banco recusar, a mensagem explica o motivo.";
+  const groupBack = (ctx: Ctx, id: Any) => groups.getClientGroup(ctx, String(id));
+  writeTool("create_client_group", "Criar grupo de clientes", "Cria um grupo (nome único) com 2 ou mais clientes e, opcionalmente, contatos diretos (ligados a todos os clientes do grupo)." + GROUP_NOTE, groupsWrite.GroupCreate.shape, W, (ctx, a) => groupsWrite.createClientGroup(ctx, strip(a)), groupBack);
+  writeTool("update_client_group", "Renomear grupo de clientes", "Troca o nome do grupo (continua único).", { id: guid, ...groupsWrite.GroupPatch.shape }, W, (ctx, a) => groupsWrite.updateClientGroup(ctx, a.id, strip(a)), (ctx, _o, a) => groupBack(ctx, a.id));
+  writeTool(
+    "delete_client_group",
+    "Desfazer grupo de clientes",
+    "Desfaz o grupo. Clientes e contatos continuam existindo; só os vínculos de contato que o grupo havia criado são soltos (vínculos feitos à mão ficam).",
+    { id: guid },
+    WD,
+    async (ctx, a) => {
+      const before = await groups.getClientGroup(ctx, a.id);
+      await groupsWrite.deleteClientGroup(ctx, a.id);
+      return { Deleted: true, Id: a.id, Code: before.Code, Name: before.Name, ClientsKept: (before.Clients as Any[]).length };
+    },
+  );
+  writeTool("add_group_client", "Colocar cliente no grupo", "Adiciona um cliente ao grupo; os contatos diretos do grupo passam a valer para ele." + GROUP_NOTE, { id: guid, ...groupsWrite.GroupClientInput.shape }, W, (ctx, a) => groupsWrite.groupClient(ctx, a.id, strip(a), true), (ctx, _o, a) => groupBack(ctx, a.id));
+  writeTool("remove_group_client", "Tirar cliente do grupo", "Remove o cliente do grupo (os vínculos de contato criados pelo grupo para ele são soltos). Com menos de 2 clientes o grupo continua existindo (só aparece o aviso).", { id: guid, ...groupsWrite.GroupClientInput.shape }, WD, (ctx, a) => groupsWrite.groupClient(ctx, a.id, strip(a), false), (ctx, _o, a) => groupBack(ctx, a.id));
+  writeTool("add_group_contact", "Colocar contato direto no grupo", "O contato passa a estar ligado a TODOS os clientes membros (inclusive os que entrarem depois). Contato por Id (use find_contact).", { id: guid, ...groupsWrite.GroupContactInput.shape }, W, (ctx, a) => groupsWrite.groupContact(ctx, a.id, strip(a), true), (ctx, _o, a) => groupBack(ctx, a.id));
+  writeTool("remove_group_contact", "Tirar contato do grupo", "Remove o contato direto do grupo (vínculos criados pelo grupo são soltos; os feitos à mão continuam).", { id: guid, ...groupsWrite.GroupContactInput.shape }, WD, (ctx, a) => groupsWrite.groupContact(ctx, a.id, strip(a), false), (ctx, _o, a) => groupBack(ctx, a.id));
+
+  // ── documentação
+  const DOC_NOTE = " Informe ProjectId OU ClientId (um dos dois). Audience: Technical, Executive ou Both (padrão Both). Tags: até 12, até 30 caracteres.";
+  const docBack = readBack("DocumentationItems");
+  writeTool("create_documentation_link", "Adicionar link à documentação", "Cria um link (http/https) na documentação de um projeto ou cliente." + DOC_NOTE, docs.DocLinkCreate.shape, W, (ctx, a) => docs.createDocLink(ctx, strip(a)), docBack);
+  writeTool("create_documentation_text", "Adicionar texto à documentação", "Cria uma caixa de texto (Markdown, até 200 KB; documento colaborativo no app) na documentação de um projeto ou cliente." + DOC_NOTE, docs.DocTextCreate.shape, W, (ctx, a) => docs.createDocText(ctx, strip(a)), docBack);
+  writeTool(
+    "create_documentation_file",
+    "Adicionar arquivo à documentação",
+    "Envia um arquivo (até 25 MB) para a documentação de um projeto ou cliente. Conteúdo por ContentBase64 (prático até ~8 MB) OU SourceUrl (https público; o servidor baixa — nada de localhost/rede interna). Informe FileName com extensão quando usar ContentBase64." + DOC_NOTE,
+    docs.DocFileCreate.shape,
+    W,
+    (ctx, a) => docs.createDocFile(ctx, strip(a)),
+    docBack,
+  );
+  writeTool(
+    "update_documentation_item",
+    "Editar item da documentação",
+    "Altera Title, Url (links), Body (textos: SUBSTITUI o conteúdo inteiro — leia antes com list_documentation includeBody=true), Audience e Tags. Itens de tarefa (Source=Task) só aceitam Audience e Tags: o link/anexo mora na tarefa.",
+    { id: guid, ...docs.DocPatch.shape },
+    W,
+    (ctx, a) => docs.updateDocumentationItem(ctx, a.id, strip(a)),
+    (ctx, _o, a) => docBack(ctx, a.id),
+  );
+  writeTool(
+    "delete_documentation_item",
+    "Remover item da documentação",
+    "Remove um item direto (link, texto ou arquivo). Apagar arquivo ou texto é definitivo. Itens de tarefa (Source=Task) se removem na tarefa.",
+    { id: guid },
+    WD,
+    async (ctx, a) => {
+      const before = await docBack(ctx, a.id);
+      await docs.deleteDocumentationItem(ctx, a.id);
+      return { Deleted: true, Id: a.id, Code: before.Code, Kind: before.Kind, Title: before.Title };
+    },
+  );
 
   tool("list_open_tasks", {
     title: "Tarefas abertas (encerramento)",

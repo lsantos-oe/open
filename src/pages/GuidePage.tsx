@@ -267,7 +267,7 @@ const SECTIONS: Section[] = [
           <li>Sem o plugin, dá para ligar o Claude Code direto com a chave: <Code>claude mcp add --transport http open https://openploo.vercel.app/api/mcp --header "User-Key: SUA_CHAVE"</Code>.</li>
         </Ul>
 
-        <p><strong>O que dá para pedir ao Claude:</strong> consultar (suas tarefas atrasadas, o status de um projeto, a carga de trabalho do time, o que um cliente tem aberto), cadastrar (projeto a partir de um template, tarefa, incidente, ponto em aberto, ata de reunião, risco), mudar prazos (as tarefas dependentes são empurradas), mudar etapa, comentar e <strong>cadastrar várias demandas de uma vez</strong> a partir de um e-mail, ata ou planilha. O plugin traz comandos prontos:</p>
+        <p><strong>O que dá para pedir ao Claude:</strong> consultar (suas tarefas atrasadas, o status de um projeto, a carga de trabalho do time, o que um cliente tem aberto), cadastrar (projeto a partir de um template, tarefa, incidente, ponto em aberto, ata de reunião, risco), mudar prazos (as tarefas dependentes são empurradas), mudar etapa, comentar, <strong>cuidar da documentação</strong> (adicionar ou remover links, textos e arquivos de um projeto ou cliente, e definir o público e as etiquetas), <strong>montar e ajustar grupos de clientes</strong> e <strong>cadastrar várias demandas de uma vez</strong> a partir de um e-mail, ata ou planilha. O plugin traz comandos prontos:</p>
         <Ul>
           <li><strong>/open:minha-semana</strong> — suas tarefas atrasadas, vencendo e paradas.</li>
           <li><strong>/open:status-projeto</strong> — status report pronto para o cliente.</li>
@@ -276,6 +276,7 @@ const SECTIONS: Section[] = [
           <li><strong>/open:cadastrar-demanda</strong>, <strong>/open:novo-projeto</strong> e <strong>/open:triagem-incidente</strong> — cadastros.</li>
           <li><strong>/open:encerrar</strong> — conclui um projeto ou incidente e trata as tarefas que ficaram abertas.</li>
           <li><strong>/open:revisar-atrasos</strong> e <strong>/open:carga-time</strong> — atrasos por projeto e por pessoa, e carga de trabalho com sugestões.</li>
+          <li><strong>/open:grupo</strong> e <strong>/open:documentacao</strong> — visão compilada do grupo de clientes e a documentação de um projeto, cliente ou grupo; também criam e editam (sempre mostrando a prévia antes de gravar).</li>
         </Ul>
 
         <p><strong>Segurança e cuidados:</strong></p>
@@ -295,7 +296,8 @@ const SECTIONS: Section[] = [
           <li>Projetos em andamento com saúde: <Code>GET /Projects?$filter=Status eq 'InProgress' and not Archived&$select=Id,Name,Progress,OverdueCount,IsDelayed</Code>.</li>
           <li>Mudar a etapa de uma tarefa: <Code>POST /Tasks(id)/Open.SetStatus</Code> com <Code>{'{"Status":"Validation"}'}</Code>.</li>
           <li>Cadastro em lote: <Code>POST /Open.Intake</Code> — simula por padrão; repita com <Code>"DryRun": false</Code> para gravar.</li>
-          <li>Escritas aceitam <Code>Prefer: dry-run</Code> (executa e desfaz), <Code>Idempotency-Key</Code> (repetir não duplica) e <Code>If-Match</Code> (evita sobrescrever uma alteração de outra pessoa). Não há DELETE de dados de negócio.</li>
+          <li>Escritas aceitam <Code>Prefer: dry-run</Code> (executa e desfaz), <Code>Idempotency-Key</Code> (repetir não duplica) e <Code>If-Match</Code> (evita sobrescrever uma alteração de outra pessoa). O DELETE existe só para o que o app também apaga: comentários, itens de documentação e grupos de clientes (clientes, projetos e tarefas continuam sem DELETE).</li>
+          <li>Documentação e grupos: <Code>POST /DocumentationItems</Code> (<Code>Kind</Code> Link, Text ou File — arquivo por <Code>ContentBase64</Code> até cerca de 8 MB, ou por <Code>SourceUrl</Code> https público até 25 MB), <Code>PATCH</Code> para título, link, texto, público e etiquetas, <Code>GET /DocumentationItems(id)/Open.DownloadLink</Code> para um link temporário do arquivo; <Code>POST /ClientGroups</Code> e as ações <Code>Open.AddClient</Code>, <Code>Open.RemoveClient</Code>, <Code>Open.AddContact</Code> e <Code>Open.RemoveContact</Code>.</li>
           <li>Automações: use a chave de um usuário-robô. Admins geram com <Code>POST /api/admin/user-keys/rotate</Code> informando o e-mail.</li>
         </Ul>
       </>

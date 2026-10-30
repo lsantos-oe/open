@@ -7,6 +7,8 @@ export const config = {
   /** Usados só para validar JWT de sessão do Supabase (login Google) via GoTrue. */
   supabaseUrl: env("SUPABASE_URL"),
   anonKey: env("SUPABASE_ANON_KEY"),
+  /** Só para o Storage (arquivos da documentação). A Edge Function recebe do Supabase; fica restrita a lib/storage.ts. */
+  serviceRoleKey: env("SUPABASE_SERVICE_ROLE_KEY"),
   /** Kill switch de escrita: com "false" a API vira somente leitura (rollout/rollback). */
   writeEnabled: (env("API_WRITE_ENABLED") || "true") === "true",
   /** URL pública do app, para devolver links das entidades criadas. */

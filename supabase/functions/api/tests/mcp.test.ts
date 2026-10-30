@@ -222,7 +222,7 @@ t("encerramento pelo MCP: list_open_tasks → complete_open_tasks (com prévia)"
   assertEquals(done.data.Completed, 1);
 });
 
-t("grupos, documentação e códigos: tools existem e respondem (somente leitura)", async () => {
+t("grupos, documentação e códigos: tools de leitura e de escrita existem; escrita simula por padrão", async () => {
   const names = (await mcp("tools/list")).result.tools.map((x: any) => x.name);
   for (const n of ["list_client_groups", "get_client_group", "list_documentation", "resolve_code", "find_client_group"]) assert(names.includes(n), n);
   const groups = await tool("list_client_groups", {});
@@ -243,4 +243,14 @@ t("grupos, documentação e códigos: tools existem e respondem (somente leitura
   assert(Array.isArray(docs.data.items));
   const noScope = await tool("list_documentation", {});
   assert(noScope.isError);
+  // escrita: existem, simulam por padrão (dryRun) e nada é gravado
+  for (const n of ["create_client_group", "update_client_group", "delete_client_group", "add_group_client", "remove_group_client", "add_group_contact", "remove_group_contact",
+    "create_documentation_link", "create_documentation_text", "create_documentation_file", "update_documentation_item", "delete_documentation_item", "get_documentation_file_link"]) assert(names.includes(n), n);
+  const before = (await tool("list_documentation", { projectId: IDS.project })).data.count;
+  const prev = await tool("create_documentation_link", { ProjectId: IDS.project, Title: "Simulado pelo teste", Url: "https://exemplo.com/sim", Audience: "Technical", Tags: ["teste"] });
+  assert(!prev.isError, prev.text);
+  assertEquals(prev.data.dryRun, true);
+  assertEquals((await tool("list_documentation", { projectId: IDS.project })).data.count, before);
+  const badUrl = await tool("create_documentation_link", { ProjectId: IDS.project, Title: "x", Url: "javascript:alert(1)" });
+  assert(badUrl.isError);
 });

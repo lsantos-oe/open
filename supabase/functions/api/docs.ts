@@ -104,7 +104,7 @@ curl -G -H "User-Key: SUA_USER_KEY" "{{ROOT}}/odata/v1/Clients" --data-urlencode
 curl -H "User-Key: SUA_USER_KEY" "{{ROOT}}/odata/v1/Open.ResolveCode(code='D26000045')"
 \`\`\`
 
-### Grupos de clientes e documentação (somente leitura)
+### Grupos de clientes e documentação
 
 \`ClientGroups\` reúne 2 ou mais clientes (ex.: empresas do mesmo conglomerado): \`ClientIds\` são os membros e
 \`ContactIds\` os contatos colocados **direto no grupo** — eles ficam ligados a **todos** os clientes membros. Um cliente
@@ -112,9 +112,9 @@ só participa de um grupo, salvo se a configuração do sistema permitir vários
 (\`BelowMinimum\`). Navegações: \`Clients\`, \`Contacts\`, \`Projects\`, \`Incidents\`, \`Documentation\`.
 
 \`DocumentationItems\` traz links, arquivos e textos, cada um com público (\`Audience\`: Technical, Executive ou Both) e
-\`Tags\`. \`Source=Direct\` são itens colocados direto na aba Documentação de um projeto ou cliente;
-\`Source=Task\` são os links e anexos das tarefas de documentação do projeto (espelhados; \`TaskId\` aponta a tarefa).
-Arquivos não são baixados pela API (\`HasFile\`): abra pelo link do app.
+\`Tags\` (até 12, até 30 caracteres cada; repetidas são unidas). \`Source=Direct\` são itens colocados direto na aba
+Documentação de **um** projeto **ou** de um cliente; \`Source=Task\` são os links e anexos das tarefas de documentação do
+projeto (espelhados; \`TaskId\` aponta a tarefa).
 
 \`\`\`text
 GET /ClientGroups?\$expand=Clients(\$select=Id,Name)            -- grupos com os membros
@@ -122,6 +122,49 @@ GET /ClientGroups(<id>)/Documentation?\$filter=Audience ne 'Technical'   -- docu
 GET /DocumentationItems?\$filter=ProjectId eq <id> and Tags/any(t: tolower(t) eq 'api')
 GET /Clients(<id>)/Groups                                     -- em que grupo o cliente está
 \`\`\`
+
+#### Escrita em grupos
+
+Como todas as escritas: \`write\` na chave, \`Prefer: dry-run\` simula (nada é gravado) e \`Idempotency-Key\` evita duplicar.
+Erros do banco chegam com a mensagem em português (ex.: *"Este cliente já faz parte do grupo ..."* → 409).
+
+\`\`\`bash
+# criar (nome único; começa com 2+ clientes; ContactIds opcional)
+curl -X POST {{ROOT}}/odata/v1/ClientGroups -H "User-Key: SUA_USER_KEY" -H "Content-Type: application/json" \\
+  -d '{"Name":"Grupo Lockton","ClientIds":["<cliente1>","<cliente2>"]}'
+curl -X PATCH {{ROOT}}/odata/v1/ClientGroups(<id>) ... -d '{"Name":"Grupo Lockton Américas"}'   # renomear
+curl -X POST {{ROOT}}/odata/v1/ClientGroups(<id>)/Open.AddClient     -d '{"ClientId":"<id>"}'    # RemoveClient tira
+curl -X POST {{ROOT}}/odata/v1/ClientGroups(<id>)/Open.AddContact    -d '{"ContactId":"<id>"}'   # RemoveContact tira
+curl -X DELETE {{ROOT}}/odata/v1/ClientGroups(<id>)                                              # desfaz o grupo
+\`\`\`
+
+Desfazer o grupo (ou tirar um cliente/contato) não apaga clientes nem contatos: só solta os vínculos de contato que o
+grupo havia criado; vínculos feitos à mão continuam.
+
+#### Escrita em documentação
+
+\`POST /DocumentationItems\` — o \`Kind\` escolhe o formato; informe \`ProjectId\` **ou** \`ClientId\`:
+
+\`\`\`bash
+# link (só http/https)
+-d '{"Kind":"Link","ProjectId":"<id>","Title":"Postman da integração","Url":"https://exemplo.com/postman","Audience":"Technical","Tags":["API"]}'
+# texto (Markdown, até 200 KB; é um documento colaborativo)
+-d '{"Kind":"Text","ClientId":"<id>","Title":"Visão geral","Body":"## Resumo\\nO cliente usa três funis.","Audience":"Executive"}'
+# arquivo pequeno (até 8 MB) em base64 ...
+-d '{"Kind":"File","ProjectId":"<id>","FileName":"mapa.xlsx","ContentBase64":"UEsDBBQ...","Tags":["Integração"]}'
+# ... ou arquivo de até 25 MB baixado pelo servidor de um endereço https público
+-d '{"Kind":"File","ProjectId":"<id>","SourceUrl":"https://exemplo.com/arquitetura.pdf","Title":"Arquitetura"}'
+\`\`\`
+
+\`SourceUrl\` só aceita https público (sem localhost, redes internas, IPs privados, usuário/senha na URL ou portas
+diferentes de 443; redirecionamentos são revalidados). \`PATCH /DocumentationItems(<id>)\` muda \`Title\`, \`Url\`
+(links), \`Body\` (textos — substitui o conteúdo inteiro; quem estiver com o texto aberto no editor vê a nova versão ao
+reabrir), \`Audience\` e \`Tags\`. Nos itens \`Source=Task\` só \`Audience\` e \`Tags\` mudam (o link/anexo mora na tarefa).
+\`DELETE\` remove itens diretos (o arquivo também sai do Storage); itens de tarefa se removem na tarefa. Para marcar uma
+tarefa de projeto como "de documentação", \`PATCH /Tasks(<id>)\` com \`{"IsDocumentation": true}\`.
+
+Baixar um arquivo: \`GET /DocumentationItems(<id>)/Open.DownloadLink\` devolve um **link assinado e temporário** (10 min por
+padrão; \`ExpiresInSeconds\` até 3600). Trate-o como segredo.
 
 ### Consultas longas: QUERY e $query
 
@@ -278,9 +321,9 @@ export const TAG_DOCS: Record<string, string> = {
   Projects: "POST aceita a estrutura completa (Phases → Tasks com Ref/DependsOn) ou um `TemplateId` + `StartDate`.",
   Incidents: "Status muda por `Open.SetStatus` (ou PATCH Status) e avisa owner e stakeholders.",
   ClientGroups:
-    "Somente leitura. Contatos em `ContactIds` ficam ligados a todos os clientes membros. Um cliente só em um grupo, salvo configuração. Veja *Grupos de clientes e documentação* na introdução.",
+    "Criar, renomear (`PATCH Name`), desfazer (`DELETE`) e mexer em clientes/contatos pelas actions `Open.AddClient`, `Open.RemoveClient`, `Open.AddContact`, `Open.RemoveContact`. Contatos em `ContactIds` ficam ligados a todos os clientes membros. Um cliente só em um grupo, salvo configuração. Veja *Grupos de clientes e documentação* na introdução.",
   DocumentationItems:
-    "Somente leitura. `Source=Direct` (aba do projeto/cliente) ou `Task` (links e anexos das tarefas de documentação). Público: Technical, Executive, Both.",
+    "`POST` cria link, texto ou arquivo (`Kind`); `PATCH` muda título, link, texto, público e etiquetas; `DELETE` remove itens diretos; `Open.DownloadLink` gera o link temporário de um arquivo. `Source=Direct` (aba do projeto/cliente) ou `Task` (links e anexos das tarefas de documentação; só público e etiquetas mudam). Público: Technical, Executive, Both.",
 };
 
 /** Ícone do Open (mesmo do app: public/favicon.svg). */

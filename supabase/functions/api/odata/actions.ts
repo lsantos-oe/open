@@ -10,6 +10,8 @@ import * as intake from "../services/intake.ts";
 import { searchAll } from "../services/search.ts";
 import { resolveCode } from "../services/groups.ts";
 import * as closeout from "../services/closeout.ts";
+import * as docs from "../services/docs.ts";
+import * as groupsWrite from "../services/groups_write.ts";
 
 // deno-lint-ignore no-explicit-any
 type Body = any;
@@ -17,6 +19,8 @@ type Body = any;
 export interface WriteDef {
   create?: (ctx: Ctx, body: Body) => Promise<string>;
   update?: (ctx: Ctx, id: string, body: Body, ifMatch?: string | null) => Promise<void>;
+  /** DELETE /Set(id). Sem isso a exclusão não é permitida pela API. */
+  delete?: (ctx: Ctx, id: string) => Promise<void>;
   /** Exemplo de payload para a documentação. */
   example?: Record<string, unknown>;
   patchExample?: Record<string, unknown>;
@@ -96,6 +100,31 @@ export const WRITES: Record<string, WriteDef> = {
     create: diary.createRisk,
     update: diary.updateRisk,
     example: { ProjectId: "00000000-0000-4000-8000-0000000b0001", Description: "Atraso na liberação de acessos", Probability: "Medium", Impact: "High" },
+  },
+  ClientGroups: {
+    create: groupsWrite.createClientGroup,
+    update: groupsWrite.updateClientGroup,
+    delete: groupsWrite.deleteClientGroup,
+    example: {
+      Name: "Grupo Lockton",
+      ClientIds: ["00000000-0000-4000-8000-0000000c0001", "00000000-0000-4000-8000-0000000c0002"],
+      ContactIds: ["00000000-0000-4000-8000-0000000a0001"],
+    },
+    patchExample: { Name: "Grupo Lockton Américas" },
+  },
+  DocumentationItems: {
+    create: docs.createDocumentationItem,
+    update: docs.updateDocumentationItem,
+    delete: docs.deleteDocumentationItem,
+    example: {
+      Kind: "Link",
+      ProjectId: "00000000-0000-4000-8000-0000000b0001",
+      Title: "Coleção Postman da integração",
+      Url: "https://exemplo.com/postman",
+      Audience: "Technical",
+      Tags: ["API", "Integração"],
+    },
+    patchExample: { Audience: "Both", Tags: ["API"] },
   },
   Comments: {
     create: async (ctx, b) => {
@@ -357,6 +386,44 @@ export const ACTIONS: ActionDef[] = [
       run: (ctx, id, b) => closeout.completeOpenTasks(ctx, set === "Projects" ? "project" : "incident", id!, b),
     },
   ]),
+  // ── Grupos de clientes
+  ...(["AddClient", "RemoveClient"] as const).map((n): ActionDef => ({
+    name: n,
+    kind: "action",
+    boundTo: "ClientGroups",
+    scope: "write",
+    returnsEntity: "self",
+    returns: T("ClientGroup"),
+    description: n === "AddClient"
+      ? "Coloca um cliente no grupo (um cliente só pode estar em um grupo, salvo se a configuração permitir mais; os contatos do grupo passam a valer para ele)."
+      : "Tira o cliente do grupo (os vínculos de contato que o grupo havia criado para ele são soltos).",
+    params: [p("ClientId", "Edm.Guid", true)],
+    run: (ctx, id, b) => groupsWrite.groupClient(ctx, id!, b, n === "AddClient"),
+  })),
+  ...(["AddContact", "RemoveContact"] as const).map((n): ActionDef => ({
+    name: n,
+    kind: "action",
+    boundTo: "ClientGroups",
+    scope: "write",
+    returnsEntity: "self",
+    returns: T("ClientGroup"),
+    description: n === "AddContact"
+      ? "Coloca um contato direto no grupo: ele passa a estar ligado a TODOS os clientes membros (inclusive os que entrarem depois)."
+      : "Tira o contato do grupo (os vínculos que o grupo criou são soltos; vínculos feitos à mão continuam).",
+    params: [p("ContactId", "Edm.Guid", true)],
+    run: (ctx, id, b) => groupsWrite.groupContact(ctx, id!, b, n === "AddContact"),
+  })),
+  // ── Documentação
+  {
+    name: "DownloadLink",
+    kind: "function",
+    boundTo: "DocumentationItems",
+    scope: "read",
+    returns: "Edm.Untyped",
+    description: "Link assinado e temporário (padrão 10 min, máx. 1 h) para baixar um item do tipo arquivo. Parâmetro opcional: ExpiresInSeconds.",
+    params: [p("ExpiresInSeconds", "Edm.Int32")],
+    run: (ctx, id, b) => docs.documentationFileLink(ctx, id!, { ExpiresInSeconds: b?.ExpiresInSeconds === undefined ? undefined : Number(b.ExpiresInSeconds) }),
+  },
   // ── unbound
   {
     name: "MarkNotificationsRead",

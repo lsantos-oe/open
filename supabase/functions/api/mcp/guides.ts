@@ -26,11 +26,22 @@ Regras:
     algo, mostre o código e o link do app (<app>/r/<código> abre qualquer um).
 11. Grupos de clientes: um grupo reúne 2 ou mais clientes; use list_client_groups/get_client_group (visão compilada:
     clientes, contatos, projetos, incidentes e documentação). Um contato colocado direto no grupo vale para todos os
-    clientes membros. Um cliente só fica em um grupo, salvo se a configuração do sistema permitir mais. Grupos e
-    documentação são somente leitura por aqui — para alterar, a pessoa usa o app.
+    clientes membros. Um cliente só fica em um grupo, salvo se a configuração do sistema permitir mais. Para alterar:
+    create_client_group (nome único, 2+ clientes), update_client_group (renomear), delete_client_group (desfaz o grupo;
+    clientes e contatos continuam), add_group_client/remove_group_client e add_group_contact/remove_group_contact.
+    Se o banco recusar (ex.: cliente já em outro grupo), mostre a mensagem à pessoa — não tente contornar.
 12. Documentação (list_documentation): links, arquivos e textos de projetos e clientes, com público Technical,
-    Executive ou Both e etiquetas (Tags). Source=Task são links/anexos das tarefas de documentação do projeto. Não
-    invente conteúdo de arquivo: só resuma o que a listagem traz (título, URL, texto) e aponte o Link do app.`;
+    Executive ou Both e etiquetas (Tags, até 12 de até 30 caracteres). Source=Task são links/anexos das tarefas de
+    documentação do projeto: o conteúdo mora na tarefa e aqui só Audience/Tags mudam. Não invente conteúdo de arquivo:
+    só resuma o que a listagem traz (título, URL, texto) e aponte o Link do app. Para baixar um arquivo use
+    get_documentation_file_link (link temporário e privado: não o repita em lugares abertos).
+13. Escrever documentação: create_documentation_link (Url http/https), create_documentation_text (Markdown, até 200 KB),
+    create_documentation_file (FileName + ContentBase64 até ~8 MB, ou SourceUrl https público até 25 MB),
+    update_documentation_item (título, link, texto, público, etiquetas), delete_documentation_item (só itens diretos;
+    apagar arquivo é definitivo). Sempre diga a quem se destina (Technical, Executive ou Both) e as etiquetas, e confirme
+    antes de gravar. update_documentation_item com Body SUBSTITUI o texto todo: leia o texto atual
+    (list_documentation includeBody=true), altere e reenvie inteiro. Para marcar uma tarefa como "de documentação" use
+    update_task com IsDocumentation=true.`;
 
 export function modelGuide(): string {
   const lines = ["# Modelo de dados do Open", ""];
@@ -58,7 +69,7 @@ export function modelGuide(): string {
     "- Clientes: Status PreVenda, Implantacao ou SustentacaoNovosProjetos. Incidentes avisam owner e stakeholders a cada mudança de status.",
     "- Códigos curtos: letra da entidade + ano (2 dígitos) + sequência de 6 dígitos (C26000123), estáveis. C cliente, P projeto, I incidente, T tarefa/marco/reunião, K contato, G grupo, R risco, D documentação. O app abre /r/<código>.",
     "- Grupos de clientes: 2 ou mais clientes. Contato colocado direto no grupo (ContactIds) fica ligado a TODOS os clientes membros (inclusive os que entrarem depois); um cliente só em um grupo, salvo configuração. Abaixo de 2 clientes o app só avisa (BelowMinimum).",
-    "- Documentação (DocumentationItems): Source=Direct (item colocado na aba do projeto ou do cliente) ou Task (links e anexos das tarefas de documentação do projeto, espelhados). Público Technical/Executive/Both e etiquetas livres.",
+    "- Documentação (DocumentationItems): Source=Direct (item colocado na aba do projeto ou do cliente) ou Task (links e anexos das tarefas de documentação do projeto, espelhados; só Audience/Tags mudam). Público Technical/Executive/Both e etiquetas livres (até 12, até 30 caracteres). Texto até 200 KB; arquivo até 25 MB (inline até ~8 MB).",
   );
   return lines.join("\n");
 }

@@ -15,7 +15,7 @@
   },
   "tasks": {
     "dev": "deno run -A --watch --env-file=.env.local index.ts",
-    "test": "deno test -A tests/odata.test.ts tests/groups_docs.test.ts",
+    "test": "deno test -A tests/odata.test.ts tests/groups_docs.test.ts tests/docs_write.test.ts",
     "test:all": "deno run -A --env-file=.env.local tools/test-local.ts",
     "check": "deno check index.ts && deno run -A tools/sync-domain.ts --check",
     "sync-domain": "deno run -A tools/sync-domain.ts"

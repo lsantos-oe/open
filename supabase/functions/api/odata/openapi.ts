@@ -391,6 +391,19 @@ export function buildOpenApi(root: string): Json {
         : {}),
       ...(s.name === "Comments"
         ? { delete: { tags: [tag], summary: "Apagar comentário (autor ou admin)", operationId: "deleteComment", parameters: [idParam], responses: { "204": { description: "Comentário apagado" }, ...readErrors } } }
+        : w?.delete
+        ? {
+          delete: {
+            tags: [tag],
+            summary: s.name === "ClientGroups" ? "Desfazer o grupo (clientes e contatos continuam existindo)" : `Apagar ${n.one}`,
+            description: s.name === "DocumentationItems"
+              ? "Só itens diretos (Source=Direct); o arquivo sai do Storage. Itens de tarefas (Source=Task) se removem na tarefa. Com `Prefer: dry-run` só valida."
+              : "Com `Prefer: dry-run` só valida (nada é apagado).",
+            operationId: `delete${s.type}`,
+            parameters: [idParam, H.prefer],
+            responses: { "204": { description: "Apagado" }, "200": { description: "Simulação (Prefer: dry-run) — nada foi apagado" }, ...writeErrors },
+          },
+        }
         : {}),
     };
     for (const nv of s.navs) {

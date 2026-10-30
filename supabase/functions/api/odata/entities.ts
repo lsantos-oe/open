@@ -103,6 +103,9 @@ const Tasks: EntitySet = {
     p("BaselineDate", "Edm.Date", "baseline_date"),
     p("IsCritical", "Edm.Boolean", (a) => `coalesce(${a}.is_critical, false)`),
     p("HiddenFromPlan", "Edm.Boolean", (a) => `coalesce(${a}.hidden_from_plan, false)`),
+    p("IsDocumentation", "Edm.Boolean", (a) => `coalesce(${a}.is_documentation, false)`, {
+      description: "Tarefa de projeto marcada como de documentação: seus Links e anexos aparecem em DocumentationItems (Source=Task). Pode ser alterada por PATCH.",
+    }),
     p("Order", "Edm.Int32", (a) => `coalesce(${a}."order", 0)`),
     p("Links", "Edm.String", (a) => `coalesce(${a}.links, '[]'::jsonb)`, { complex: Complex.Link, collection: true }),
     p("Subtasks", "Edm.String", (a) => `coalesce(${a}.subtasks, '[]'::jsonb)`, {
@@ -478,7 +481,7 @@ const ClientGroups: EntitySet = {
   name: "ClientGroups",
   type: "ClientGroup",
   description:
-    "Grupos de clientes (2 ou mais clientes, ex.: empresas do mesmo conglomerado). Um contato colocado direto no grupo (ContactIds) fica ligado a TODOS os clientes membros; um cliente só pode estar em um grupo, salvo se a configuração do sistema permitir vários. Somente leitura na API.",
+    "Grupos de clientes (2 ou mais clientes, ex.: empresas do mesmo conglomerado). Um contato colocado direto no grupo (ContactIds) fica ligado a TODOS os clientes membros; um cliente só pode estar em um grupo, salvo se a configuração do sistema permitir vários. Alterações (criar, renomear, desfazer) por POST/PATCH/DELETE; clientes e contatos pelas actions AddClient, RemoveClient, AddContact e RemoveContact.",
   from: (a) => `public.client_groups ${a}`,
   props: [
     p("Id", "Edm.Guid", "id", { key: true, nullable: false }),
@@ -581,7 +584,7 @@ const DocumentationItems: EntitySet = {
   name: "DocumentationItems",
   type: "DocumentationItem",
   description:
-    "Documentação de projetos e clientes: links, arquivos e textos, cada um com público (Technical/Executive/Both) e etiquetas. Source=Direct são itens colocados direto na aba Documentação (de um projeto OU de um cliente); Source=Task são os links e anexos das tarefas de documentação dos projetos (espelhados: o conteúdo mora na tarefa, TaskId). O conteúdo de arquivos não é baixado pela API (HasFile indica que existe). Somente leitura.",
+    "Documentação de projetos e clientes: links, arquivos e textos, cada um com público (Technical/Executive/Both) e etiquetas. Source=Direct são itens colocados direto na aba Documentação (de um projeto OU de um cliente); Source=Task são os links e anexos das tarefas de documentação dos projetos (espelhados: o conteúdo mora na tarefa, TaskId). Escrita: POST (Kind Link, Text ou File — arquivo por ContentBase64 ou SourceUrl), PATCH (Title, Url, Body, Audience, Tags; nos espelhados só Audience e Tags) e DELETE (só itens diretos; o arquivo sai do Storage). O download é pela função Open.DownloadLink (link assinado e temporário).",
   from: docSource,
   props: [
     p("Id", "Edm.Guid", "id", { key: true, nullable: false }),
