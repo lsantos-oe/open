@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useRouteEntityId } from '@/hooks/useRouteEntityId'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
@@ -52,7 +53,7 @@ function fmtEntryDate(iso: string): string {
 
 export default function IncidentDetailPage() {
   const { t } = useTranslation()
-  const { id } = useParams<{ id: string }>()
+  const { id, pending } = useRouteEntityId('incidents')
   const navigate = useNavigate()
   const {
     incidents, clients, projects, teamDirectory, contacts,
@@ -92,6 +93,7 @@ export default function IncidentDetailPage() {
 
   const incident = incidents.find((i) => i.id === id)
 
+  if (!incident && pending) return null
   if (!incident) {
     return (
       <div className="p-6">

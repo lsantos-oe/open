@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useRouteEntityId } from '@/hooks/useRouteEntityId'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -41,7 +42,7 @@ const Empty = ({ children }: { children: string }) => <p className="text-sm py-6
  *  tarefas, notas e documentação. O que é adicionado aqui é só o que é do grupo (clientes e contatos). */
 export default function ClientGroupDetailPage() {
   const { t } = useTranslation()
-  const { id } = useParams<{ id: string }>()
+  const { id, pending } = useRouteEntityId('client_groups')
   const navigate = useNavigate()
   const openEntry = useEntryOpenerStore((s) => s.open)
   const { clientGroups, clients, projects, incidents, standaloneTasks, contacts, settings,
@@ -72,6 +73,7 @@ export default function ClientGroupDetailPage() {
   const groupTasks = useMemo(() => standaloneTasks.filter((t) => t.status !== 'done' && entryClientIds(t).some((c) => memberIds.has(c))), [standaloneTasks, memberIds])
   const notes = members.filter((m) => m.notes?.trim())
 
+  if (!group && pending) return null
   if (!group) {
     return (
       <div className="p-8">

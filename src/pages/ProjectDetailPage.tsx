@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useRouteEntityId } from '@/hooks/useRouteEntityId'
 import { createPortal } from 'react-dom'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -433,7 +434,7 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
 // ─── ProjectDetailPage ────────────────────────────────────────────────────────
 
 export default function ProjectDetailPage() {
-  const { id } = useParams<{ id: string }>()
+  const { id, pending } = useRouteEntityId('projects')
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -491,6 +492,7 @@ export default function ProjectDetailPage() {
     finally { setExportingReport(false) }
   }
 
+  if (!project && pending) return null
   if (!project) {
     return (
       <div className="p-8 text-center py-24" style={{ color: 'var(--text-tertiary)' }}>

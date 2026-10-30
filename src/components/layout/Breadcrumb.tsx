@@ -3,6 +3,7 @@ import { Link, useLocation, useParams, matchPath } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
 import { useRetroStore } from '@/stores/useRetroStore'
+import { useResolvedId } from '@/hooks/useRouteEntityId'
 
 interface Crumb { label: string; to?: string }
 
@@ -15,9 +16,13 @@ export function Breadcrumb() {
   const projects = useAppStore((s) => s.projects)
   const incidents = useAppStore((s) => s.incidents)
   const retros = useRetroStore((s) => s.retros)
+  // A URL pode trazer o uuid ou o código curto (C26000123): aqui vale o uuid.
+  const rawId = (['/wallet/groups/:id', '/wallet/:id', '/projects/:id', '/support/:id', '/retros/:id']
+    .map((p) => matchPath(p, pathname)?.params.id).find(Boolean))
+  const { id: resolvedId } = useResolvedId(rawId)
 
   const crumbs = useMemo<Crumb[]>(() => {
-    const id = (pattern: string) => matchPath(pattern, pathname)?.params.id
+    const id = (pattern: string) => (matchPath(pattern, pathname) ? resolvedId : undefined)
     let m: string | undefined
     if (pathname === '/') return [{ label: t('nav.home') }]
     if (pathname === '/wallet') return [{ label: t('nav.wallet') }]
@@ -38,7 +43,7 @@ export function Breadcrumb() {
     if (pathname === '/import') return [{ label: 'Importação' }]
     if (pathname === '/users') return [{ label: 'Usuários' }]
     return []
-  }, [pathname, t, clients, groups, projects, incidents, retros])
+  }, [pathname, t, clients, groups, projects, incidents, retros, resolvedId])
 
   if (crumbs.length === 0) return null
   return (

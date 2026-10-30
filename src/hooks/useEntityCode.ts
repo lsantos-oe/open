@@ -4,6 +4,8 @@ import type { CodeTable } from '@/utils/codes'
 
 // Código curto de uma coisa já carregada no app (o app guarda só o uuid): busca uma vez e guarda.
 const cache = new Map<string, string>()
+/** código curto → uuid, para abrir páginas por /…/C26000123 sem ir ao servidor de novo. */
+export const codeToId = new Map<string, string>()
 const inflight = new Map<string, Promise<string | undefined>>()
 
 function load(table: CodeTable, id: string): Promise<string | undefined> {
@@ -15,7 +17,7 @@ function load(table: CodeTable, id: string): Promise<string | undefined> {
     p = (async () => {
       const { data } = await supabase.from(table).select('code').eq('id', id).maybeSingle()
       const code = (data as { code?: string | null } | null)?.code ?? undefined
-      if (code) cache.set(key, code)
+      if (code) { cache.set(key, code); codeToId.set(code, id) }
       return code
     })().finally(() => inflight.delete(key))
     inflight.set(key, p)

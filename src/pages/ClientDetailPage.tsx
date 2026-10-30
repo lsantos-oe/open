@@ -1,4 +1,5 @@
 import DocumentationPanel from '@/components/docs/DocumentationPanel'
+import { useRouteEntityId } from '@/hooks/useRouteEntityId'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
 import { useState, useMemo, ReactNode } from 'react'
@@ -48,7 +49,7 @@ const EVENT_ICONS: Record<string, ReactNode> = {
 
 export default function ClientDetailPage() {
   const { t } = useTranslation()
-  const { id } = useParams<{ id: string }>()
+  const { id, pending } = useRouteEntityId('clients')
   const navigate = useNavigate()
   const { clients, projects, teamDirectory, contacts, updateClient, deleteClient, createContact, updateContact, linkContactToClient, unlinkContactFromClient, addCsAssignment, removeCsAssignment } = useAppStore()
   const [searchParams] = useSearchParams()
@@ -87,6 +88,7 @@ export default function ClientDetailPage() {
     [teamDirectory],
   )
 
+  if (!client && pending) return null
   if (!client) {
     return (
       <div className="p-6">

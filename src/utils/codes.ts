@@ -32,14 +32,15 @@ export interface ResolvedCode {
 /** Rota do app para um código resolvido. `code` entra como ?doc= para itens de documentação (a aba o destaca). */
 export function routeForResolved(r: ResolvedCode, code: string): { path: string; openEntryId?: string } {
   switch (r.kind) {
-    case 'client': return { path: `/wallet/${r.id}` }
-    case 'project': return { path: `/projects/${r.id}` }
-    case 'incident': return { path: `/support/${r.id}` }
-    case 'group': return { path: `/wallet/groups/${r.id}` }
+    // Com o código na URL, a barra de endereço mostra o ID (as páginas aceitam o código ou o uuid).
+    case 'client': return { path: `/wallet/${code}` }
+    case 'project': return { path: `/projects/${code}` }
+    case 'incident': return { path: `/support/${code}` }
+    case 'group': return { path: `/wallet/groups/${code}` }
     case 'contact': return { path: '/contacts' }
     case 'risk': return { path: r.projectId ? `/projects/${r.projectId}?tab=risks` : '/risks' }
     case 'entry':
-      if (r.projectId) return { path: `/projects/${r.projectId}`, openEntryId: r.id }
+      if (r.projectId) return { path: `/projects/${r.projectId}`, openEntryId: r.id }   // a página troca o uuid pelo código
       if (r.incidentId) return { path: `/support/${r.incidentId}`, openEntryId: r.id }
       return { path: '/tasks', openEntryId: r.id }
     case 'doc':
