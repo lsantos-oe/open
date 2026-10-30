@@ -319,9 +319,11 @@ export default function TasksPage() {
     [teamDirectory],
   )
 
-  const [view, setView] = useState<'kanban' | 'table' | 'capacity'>(() =>
-    (localStorage.getItem('pb-tasks-view') as 'kanban' | 'table' | 'capacity') ?? 'kanban',
-  )
+  const [view, setView] = useState<'kanban' | 'table' | 'capacity'>(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get('view')
+    if (fromUrl === 'kanban' || fromUrl === 'table' || fromUrl === 'capacity') return fromUrl
+    return (localStorage.getItem('pb-tasks-view') as 'kanban' | 'table' | 'capacity') ?? 'kanban'
+  })
   const [search, setSearch] = useState('')
   const [filterScope, setFilterScope] = useState<string[]>([])
   const [filterMember, setFilterMember] = useState<string[]>([])
@@ -349,12 +351,27 @@ export default function TasksPage() {
   useEffect(() => { localStorage.setItem('pb-tasks-view', view) }, [view])
 
   const [searchParams, setSearchParams] = useSearchParams()
+  // Tira só o parâmetro já usado (o ?view= continua, para o atalho da barra saber em que visão você está).
+  const dropParam = (key: string) => { const n = new URLSearchParams(searchParams); n.delete(key); setSearchParams(n, { replace: true }) }
   useEffect(() => {
     if (searchParams.get('new') === '1') {
       setNewTaskOpen(true)
-      setSearchParams({}, { replace: true })
+      dropParam('new')
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, setSearchParams])
+
+  // ?view=kanban|table|capacity (atalhos da barra superior) escolhe a visão; mudar de visão atualiza o endereço.
+  useEffect(() => {
+    const v = searchParams.get('view')
+    if ((v === 'kanban' || v === 'table' || v === 'capacity') && v !== view) setView(v)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+  useEffect(() => {
+    if (searchParams.get('view') === view) return
+    const n = new URLSearchParams(searchParams); n.set('view', view); setSearchParams(n, { replace: true })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -376,7 +393,7 @@ export default function TasksPage() {
     const card = allCards.find((c) => c.id === entryId)
     if (card) {
       setEditCard(card)
-      setSearchParams({}, { replace: true })
+      dropParam('entry')
     }
   }, [searchParams, setSearchParams, allCards])
 

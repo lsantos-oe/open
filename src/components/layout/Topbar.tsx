@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { Breadcrumb } from './Breadcrumb'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useCommandPaletteStore } from '@/stores/useCommandPaletteStore'
 import { NotificationBell } from './NotificationBell'
 import { ThemePref, setThemePref, useThemePref } from '@/utils/theme'
 import { EditProfileModal } from './EditProfileModal'
-import { PlusIcon, TasksIcon, SupportIcon, PortfolioIcon, ContactsIcon, WalletIcon } from '@/components/ui/icons'
+import { PlusIcon, TasksIcon, SupportIcon, PortfolioIcon, ContactsIcon, WalletIcon, UsersGroupIcon } from '@/components/ui/icons'
 
 const QUICK_CREATE = [
   { to: '/tasks', label: 'Nova tarefa', Icon: TasksIcon },
@@ -28,6 +29,7 @@ function getInitials(name: string): string {
 
 export function Topbar() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, profile, signOut } = useAuthStore()
   const toggleCommandPalette = useCommandPaletteStore((s) => s.toggle)
   const themePref = useThemePref()
@@ -89,6 +91,24 @@ export function Topbar() {
     width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
     background: active ? 'var(--text-primary)' : 'var(--surface-subtle)', color: active ? 'var(--surface-page)' : 'var(--text-secondary)',
   })
+  const onTasks = location.pathname === '/tasks'
+  const onCapacity = onTasks && new URLSearchParams(location.search).get('view') === 'capacity'
+  const shortcut = (label: string, Icon: typeof TasksIcon, active: boolean, to: string) => (
+    <button
+      key={label} onClick={() => navigate(to)} title={label} aria-label={label} aria-current={active ? 'page' : undefined}
+      className="flex items-center gap-1.5 h-8 px-2.5 rounded-full text-[13px] font-medium transition-colors"
+      style={{ background: active ? 'var(--text-primary)' : 'var(--surface-subtle)', color: active ? 'var(--surface-page)' : 'var(--text-secondary)' }}
+    >
+      <Icon className="w-3.5 h-3.5" />
+      <span className="hidden xl:inline">{label}</span>
+    </button>
+  )
+  const shortcuts = (
+    <div className="flex items-center gap-1.5">
+      {shortcut('Tarefas', TasksIcon, onTasks && !onCapacity, '/tasks?view=kanban')}
+      {shortcut('Carga', UsersGroupIcon, onCapacity, '/tasks?view=capacity')}
+    </div>
+  )
   const themeIcons: Record<ThemePref, ReactNode> = {
     auto: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></svg>,
     light: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4" /></svg>,
@@ -98,6 +118,8 @@ export function Topbar() {
   return (
     <>
       <div className="flex items-center shrink-0 px-6 gap-2" style={{ height: 56, background: 'var(--surface-page)' }}>
+        <Breadcrumb />
+        <div className="flex-1" />
         <button
           onClick={toggleCommandPalette}
           className="flex items-center gap-2.5 transition-colors hover:opacity-90 flex-1"
@@ -110,6 +132,9 @@ export function Topbar() {
         </button>
 
         <div className="flex-1" />
+
+        {/* Atalhos fixos */}
+        {shortcuts}
 
         {/* Criar e importar */}
         <div ref={quickCreateRef} style={{ position: 'relative' }}>
