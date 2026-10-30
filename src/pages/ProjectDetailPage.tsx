@@ -11,8 +11,7 @@ import StatusBadge from '@/components/StatusBadge'
 import { SearchIcon } from '@/components/ui/icons'
 import { ProjectStatus, Project, Entry, AppLanguage, TeamMember } from '@/types'
 import { generateStatusReport, ReportConfig } from '@/utils/statusReport'
-import { CopyLinkButton } from '@/components/ui/CopyLinkButton'
-import { EntityCode } from '@/components/ui/CodeBadge'
+import { EntityCodeLink } from '@/components/ui/CodeBadge'
 import { useSmartPosition } from '@/hooks/useSmartPosition'
 import ReportConfigModal from '@/components/report/ReportConfigModal'
 import ReportLinkModal from '@/components/report/ReportLinkModal'
@@ -88,7 +87,7 @@ function GhostBtn({ onClick, disabled, children }: { onClick: () => void; disabl
 
 // ─── MoreMenu ─────────────────────────────────────────────────────────────────
 
-function MoreMenu({ onImportUpdate, onExportJson, onDuplicate, onArchive }: { onImportUpdate: () => void; onExportJson: () => void; onDuplicate: () => void; onArchive: () => void }) {
+function MoreMenu({ onImportUpdate, onDuplicate, onArchive }: { onImportUpdate: () => void; onDuplicate: () => void; onArchive: () => void }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const { triggerRef, popoverRef, position } = useSmartPosition(open)
@@ -132,11 +131,9 @@ function MoreMenu({ onImportUpdate, onExportJson, onDuplicate, onArchive }: { on
       <button
         ref={triggerRef as any}
         onClick={() => setOpen(v => !v)}
-        className="flex items-center justify-center transition-colors"
-        style={{ width: 28, height: 28, borderRadius: 'var(--radius-md)', color: 'var(--text-tertiary)' }}
-        onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.background = 'var(--surface-subtle)' }}
-        onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-tertiary)'; e.currentTarget.style.background = '' }}
-        title="Mais opções"
+        className="flex items-center justify-center transition-colors hover:opacity-80"
+        style={{ width: 32, height: 32, borderRadius: '50%', color: 'var(--text-secondary)', background: 'var(--surface-subtle)' }}
+        aria-label="Mais opções" title="Mais opções"
       >
         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
           <circle cx="10" cy="4" r="1.5" /><circle cx="10" cy="10" r="1.5" /><circle cx="10" cy="16" r="1.5" />
@@ -146,15 +143,11 @@ function MoreMenu({ onImportUpdate, onExportJson, onDuplicate, onArchive }: { on
         <div
           ref={popoverRef as any}
           className="py-1 w-52"
-          style={{ position: 'fixed', ...position, zIndex: 1000, background: 'var(--surface-card)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)' }}
+          style={{ position: 'fixed', ...position, zIndex: 1000, background: 'var(--surface-card)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)' }}
         >
           {menuItem(onImportUpdate, false,
             <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M8 12l4-4m0 0l4 4m-4-4v12" /></svg>,
             t('import.importUpdate'),
-          )}
-          {menuItem(onExportJson, false,
-            <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>,
-            t('project.exportJson'),
           )}
           {sep}
           {menuItem(onDuplicate, false,
@@ -166,6 +159,59 @@ function MoreMenu({ onImportUpdate, onExportJson, onDuplicate, onArchive }: { on
             <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}><path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>,
             t('project.archiveTitle'),
           )}
+        </div>,
+        document.body,
+      )}
+    </>
+  )
+}
+
+// ─── ExportMenu ───────────────────────────────────────────────────────────────
+
+function ExportMenu({ busy, onReport, onCsv, onJson }: { busy: boolean; onReport: () => void; onCsv?: () => void; onJson: () => void }) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const { triggerRef, popoverRef, position } = useSmartPosition(open)
+
+  useEffect(() => {
+    if (!open) return
+    const down = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node) && triggerRef.current && !triggerRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', down); document.addEventListener('keydown', key)
+    return () => { document.removeEventListener('mousedown', down); document.removeEventListener('keydown', key) }
+  }, [open])
+
+  const item = (label: string, hint: string, run: () => void) => (
+    <button
+      key={label}
+      onClick={() => { setOpen(false); run() }}
+      className="w-full text-left px-3 py-2 rounded-[var(--radius-md)] transition-colors hover:bg-[var(--surface-subtle)]"
+    >
+      <span className="block text-[13px]" style={{ color: 'var(--text-primary)' }}>{label}</span>
+      <span className="block text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>{hint}</span>
+    </button>
+  )
+
+  return (
+    <>
+      <button
+        ref={triggerRef as any}
+        onClick={() => setOpen((v) => !v)}
+        disabled={busy}
+        aria-expanded={open}
+        className="flex items-center gap-1.5 h-8 px-3.5 rounded-full text-[13px] font-medium transition-colors disabled:opacity-50"
+        style={{ background: 'var(--surface-subtle)', color: 'var(--text-primary)' }}
+      >
+        {busy ? t('report.generating') : 'Exportar'}
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text-tertiary)' }}><path d="M6 9l6 6 6-6" /></svg>
+      </button>
+      {open && createPortal(
+        <div ref={popoverRef as any} className="w-64 p-1.5" style={{ position: 'fixed', ...position, zIndex: 1000, background: 'var(--surface-card)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)' }}>
+          {item('Relatório', 'Status report em PDF ou link para compartilhar', onReport)}
+          {onCsv && item('Plano em CSV', 'Fases, tarefas e datas para planilha', onCsv)}
+          {item('Backup em JSON', 'Todos os dados do projeto', onJson)}
         </div>,
         document.body,
       )}
@@ -472,23 +518,9 @@ export default function ProjectDetailPage() {
   return (
     <div className="flex flex-col min-h-full min-w-0">
 
-      {/* ── Topbar ── */}
-      <div
-        className="flex items-center gap-3 px-5 shrink-0"
-        style={{ height: 52, background: 'var(--surface-card)', borderBottom: '0.5px solid var(--border-default)' }}
-      >
-        {/* Breadcrumb + project name */}
-        <div className="flex items-center gap-1.5 min-w-0">
-          <button
-            onClick={() => navigate('/portfolio')}
-            className="text-[11.5px] transition-colors whitespace-nowrap shrink-0"
-            style={{ color: 'var(--text-tertiary)' }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}
-          >
-            ← {t('nav.portfolio')}
-          </button>
-          <span style={{ color: 'var(--border-strong)', fontSize: 11.5 }}>·</span>
+      {/* ── Cabeçalho: nome, estado e ID à esquerda; exportar e mais opções à direita ── */}
+      <div className="flex items-center gap-3 px-5 pt-5 pb-1 shrink-0" style={{ background: 'var(--surface-page)' }}>
+        <div className="flex items-center gap-3 min-w-0">
           {editingName ? (
             <input
               autoFocus
@@ -499,80 +531,51 @@ export default function ProjectDetailPage() {
                 if (e.key === 'Enter') e.currentTarget.blur()
                 if (e.key === 'Escape') setEditingName(false)
               }}
-              className="text-[15px] font-[500] bg-transparent outline-none border-b"
+              className="text-xl font-semibold bg-transparent outline-none border-b"
               style={{ color: 'var(--text-primary)', borderColor: 'var(--text-tertiary)', width: `${Math.min(60, Math.max(10, nameDraft.length + 2))}ch` }}
             />
           ) : (
-            <span
+            <h1
               onClick={startEditName}
-              className="text-[15px] font-[500] truncate cursor-text hover:opacity-70 transition-opacity"
+              className="text-xl font-semibold truncate cursor-text hover:opacity-70 transition-opacity"
               style={{ color: 'var(--text-primary)' }}
               title={t('project.editNameHint')}
             >
               {project.name}
-            </span>
+            </h1>
           )}
+          <StatusBadge
+            value={project.status}
+            onChange={(s) => updateProject(project.id, { status: s as ProjectStatus })}
+            options={[
+              { value: 'backlog', label: t('status.backlog') },
+              { value: 'planning', label: t('status.planning') },
+              { value: 'in_progress', label: t('status.in_progress') },
+              { value: 'done', label: t('status.done') },
+            ]}
+          />
+          {/* Atraso é calculado pela variação da baseline, não é um status escolhido */}
+          {delayed && <Badge variant="red" size="sm">{t('project.delayed')}</Badge>}
+          <EntityCodeLink table="projects" id={project.id} />
         </div>
 
-        {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Delayed badge — computed from baseline variance, not a status the user picks */}
-        {delayed && <Badge variant="red">{t('project.delayed')}</Badge>}
-
-        {/* Status badge (clickable dropdown) */}
-        <StatusBadge
-          value={project.status}
-          onChange={(s) => updateProject(project.id, { status: s as ProjectStatus })}
-          options={[
-            { value: 'backlog', label: t('status.backlog') },
-            { value: 'planning', label: t('status.planning') },
-            { value: 'in_progress', label: t('status.in_progress') },
-            { value: 'done', label: t('status.done') },
-          ]}
+        <ExportMenu
+          busy={exportingReport}
+          onReport={() => setShowReportModal(true)}
+          onCsv={activeTab === 'plan' ? () => exportProjectCsv(project, settings.holidays) : undefined}
+          onJson={() => exportProjectToJson(project, storeClients)}
         />
-
-        <EntityCode table="projects" id={project.id} />
-
-        {/* Copy shareable link */}
-        <CopyLinkButton url={`${window.location.origin}/projects/${project.id}`} size="xs" />
-
-        {/* Export report */}
-        <GhostBtn onClick={() => setShowReportModal(true)} disabled={exportingReport}>
-          {exportingReport ? (
-            <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-          ) : (
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-            </svg>
-          )}
-          {exportingReport ? t('report.generating') : t('report.exportBtn')}
-        </GhostBtn>
-
-        {/* Export CSV — only while the Plano tab is active */}
-        {activeTab === 'plan' && (
-          <GhostBtn onClick={() => exportProjectCsv(project, settings.holidays)}>
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            {t('plan.exportCsv')}
-          </GhostBtn>
-        )}
-
-        {/* More options */}
         <MoreMenu
           onImportUpdate={() => setShowImportModal(true)}
-          onExportJson={() => exportProjectToJson(project, storeClients)}
           onDuplicate={() => setShowDuplicateModal(true)}
           onArchive={() => setShowArchiveModal(true)}
         />
       </div>
 
       {/* ── Anchor nav ── */}
-      <div className="px-5 pt-3 shrink-0" style={{ background: 'var(--surface-card)' }}>
+      <div className="px-5 pt-2 shrink-0" style={{ background: 'var(--surface-page)' }}>
         <AnchorNav
           items={TAB_IDS.map((tid) => ({
             id: tid,
@@ -585,7 +588,7 @@ export default function ProjectDetailPage() {
           }))}
           onNavigate={selectTab}
           active={activeTab}
-          background="var(--surface-card)"
+          background="var(--surface-page)"
         />
       </div>
 

@@ -14,11 +14,10 @@ import EntryBoard, { BoardCard } from '@/components/plan/EntryBoard'
 import IncidentEntryModal from '@/components/plan/IncidentEntryModal'
 import OwnersField from '@/components/plan/OwnersField'
 import { AnchorNav } from '@/components/ui/AnchorNav'
-import { EntityCode } from '@/components/ui/CodeBadge'
+import { EntityCodeLink } from '@/components/ui/CodeBadge'
 import { StatusDot } from '@/components/ui/StatusDot'
 import { AvatarStack } from '@/components/ui/AvatarStack'
 import { contactsForClients } from '@/utils/contacts'
-import { CopyLinkButton } from '@/components/ui/CopyLinkButton'
 import { EntityAttachments } from '@/components/ui/EntityAttachments'
 import DocField from '@/components/editor/DocField'
 import { SignalBadges, signalRowTint } from '@/components/ui/SignalBadges'
@@ -186,9 +185,8 @@ export default function IncidentDetailPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'var(--border-default)' }}>
+      <div className="flex items-center justify-between gap-3 px-6 pt-5 pb-1">
         <div className="flex items-center gap-3 min-w-0">
-          <Link to="/support" className="text-sm shrink-0" style={{ color: 'var(--text-tertiary)' }}>← {t('incident.title')}</Link>
           {editingTitle ? (
             <input
               autoFocus
@@ -205,7 +203,7 @@ export default function IncidentDetailPage() {
           ) : (
             <h1
               onClick={startEditTitle}
-              className="text-base font-semibold truncate cursor-text hover:opacity-70 transition-opacity"
+              className="text-xl font-semibold truncate cursor-text hover:opacity-70 transition-opacity"
               style={{ color: 'var(--text-primary)' }}
             >
               {incident.title}
@@ -214,8 +212,7 @@ export default function IncidentDetailPage() {
           <Badge variant={STATUS_VARIANT[incident.status]}>{t(`incident.status_${incident.status}`)}</Badge>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <EntityCode table="incidents" id={incident.id} />
-          <CopyLinkButton url={`${window.location.origin}/support/${incident.id}`} size="sm" />
+          <EntityCodeLink table="incidents" id={incident.id} />
           <Button variant="secondary" size="sm" onClick={() => setShowDeleteConfirm(true)}>{t('incident.delete')}</Button>
         </div>
       </div>

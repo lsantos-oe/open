@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { AnchorNav } from '@/components/ui/AnchorNav'
-import { EntityCode } from '@/components/ui/CodeBadge'
+import { EntityCodeLink } from '@/components/ui/CodeBadge'
 import { StatusDot } from '@/components/ui/StatusDot'
 import DocumentationPanel from '@/components/docs/DocumentationPanel'
 import { AddClientsModal, GroupContactModal } from '@/components/clients/GroupModals'
@@ -101,9 +101,8 @@ export default function ClientGroupDetailPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-3 px-6 py-4 border-b" style={{ borderColor: 'var(--border-default)' }}>
+      <div className="flex items-center justify-between gap-3 px-6 pt-5 pb-1">
         <div className="flex items-center gap-3 min-w-0">
-          <Link to="/wallet?tab=groups" className="text-sm shrink-0" style={{ color: 'var(--text-tertiary)' }}>← Grupos</Link>
           {renaming ? (
             <div className="flex items-center gap-2">
               <Input autoFocus value={nameDraft} onChange={(e) => setNameDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') void saveName(); if (e.key === 'Escape') setRenaming(false) }} aria-label="Nome do grupo" style={{ width: 280 }} />
@@ -113,8 +112,8 @@ export default function ClientGroupDetailPage() {
             </div>
           ) : (
             <>
-              <h1 className="text-base font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{group.name}</h1>
-              <EntityCode table="client_groups" id={group.id} />
+              <h1 className="text-xl font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{group.name}</h1>
+              <EntityCodeLink table="client_groups" id={group.id} />
               <button className="text-xs shrink-0" style={{ color: 'var(--text-tertiary)' }} onClick={() => { setNameDraft(group.name); setRenaming(true) }}>renomear</button>
             </>
           )}

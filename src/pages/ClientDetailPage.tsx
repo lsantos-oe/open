@@ -16,7 +16,7 @@ import {
   PersonIcon, CalendarIcon, CheckCircleIcon, NoteIcon,
 } from '@/components/ui/icons'
 import { contactsForClient } from '@/utils/contacts'
-import { EntityCode } from '@/components/ui/CodeBadge'
+import { EntityCodeLink } from '@/components/ui/CodeBadge'
 import { AddToGroupModal } from '@/components/clients/GroupModals'
 import { groupsOfClient } from '@/utils/clientGroups'
 import DocField from '@/components/editor/DocField'
@@ -181,11 +181,10 @@ export default function ClientDetailPage() {
   return (
     <div>
       {/* Topbar */}
-      <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'var(--border-default)' }}>
+      <div className="flex items-center justify-between gap-3 px-6 pt-5 pb-1">
         <div className="flex items-center gap-3 min-w-0">
-          <Link to="/wallet" className="text-sm shrink-0" style={{ color: 'var(--text-tertiary)' }}>← Carteira</Link>
-          <h1 className="text-base font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{client.name}</h1>
-          <EntityCode table="clients" id={client.id} />
+          <h1 className="text-xl font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{client.name}</h1>
+          <EntityCodeLink table="clients" id={client.id} />
           {groupsOfClient(clientGroups, client.id).map((g) => (
             <Link key={g.id} to={`/wallet/groups/${g.id}`} className="shrink-0 hover:opacity-80" title="Abrir o grupo">
               <Badge variant="primary" size="sm">Grupo · {g.name}</Badge>

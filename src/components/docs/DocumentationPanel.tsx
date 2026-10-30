@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { Badge, BadgeVariant } from '@/components/ui/Badge'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { CodeBadge } from '@/components/ui/CodeBadge'
+import { CodeLink } from '@/components/ui/CodeBadge'
 import { normalizeCode } from '@/utils/codes'
 import { Button } from '@/components/ui/Button'
 import { SearchInput } from '@/components/ui/SearchInput'
@@ -341,7 +341,7 @@ function DocRow({
         {preview && <p className="text-[13px] mt-0.5 line-clamp-2 break-words" style={{ color: 'var(--text-tertiary)' }}>{preview}</p>}
         <p className="text-[11.5px] mt-1 flex flex-wrap items-center gap-x-1" style={{ color: 'var(--text-tertiary)' }}>
           <span>{meta}</span>
-          {item.code && <CodeBadge code={item.code} />}
+          {item.code && <CodeLink code={item.code} />}
         </p>
         {item.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-1.5">
