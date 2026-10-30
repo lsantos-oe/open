@@ -107,7 +107,7 @@ async function loadData(): Promise<void> {
   const app = useAppStore.getState()
   await Promise.all([
     app.loadProjects(), app.loadSettings(), app.loadTeamDirectory(), app.loadClients(),
-    app.loadIncidents(), app.loadContacts(), app.loadStandaloneTasks(),
+    app.loadIncidents(), app.loadContacts(), app.loadStandaloneTasks(), app.loadClientGroups(),
   ])
 }
 

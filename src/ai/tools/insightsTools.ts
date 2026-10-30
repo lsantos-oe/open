@@ -35,7 +35,7 @@ export function currentUserName(ctx: ReadCtx): string | undefined {
 
 type Resolved = { project: Project } | { error: string; matches?: { id: string; name: string }[] }
 
-function resolveProject(ctx: ReadCtx, input: Record<string, unknown>): Resolved {
+export function resolveProject(ctx: ReadCtx, input: Record<string, unknown>): Resolved {
   if (input.projectId) {
     const project = ctx.projects.find((p) => p.id === input.projectId)
     return project ? { project } : { error: 'Projeto não encontrado.' }

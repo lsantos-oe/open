@@ -5,9 +5,10 @@ import { useAppStore } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useToastStore } from '@/stores/useToastStore'
 import {
-  asAudience, AttachmentRowLite, directFromRow, DocAudience, DocItem, DocItemRow, DocMeta, documentationEntries,
-  DOC_MAX_FILE_BYTES, fileKey, formatBytes, mirroredFiles, mirroredLinks, normalizeTags, safeFileName, sortDocItems,
+  AttachmentRowLite, directFromRow, DocAudience, DocItem, DocItemRow, DocMeta, documentationEntries,
+  DOC_MAX_FILE_BYTES, formatBytes, mirroredFiles, mirroredLinks, normalizeTags, safeFileName, sortDocItems,
 } from '@/utils/documentation'
+import { fetchDocumentation } from '@/utils/documentationFetch'
 
 const BUCKET = 'project-files'
 
@@ -64,48 +65,11 @@ export function useDocumentation(scope: DocScope) {
 
   const load = useCallback(async () => {
     try {
-      // Uma consulta de cada vez (o supabase-js disputa o lock da sessão quando várias começam juntas).
-      const itemRows: DocItemRow[] = []
-      if (scope.kind === 'project') {
-        const own = await supabase.from('documentation_items').select('*').eq('project_id', scope.id)
-        if (own.error) throw new Error(own.error.message)
-        itemRows.push(...((own.data ?? []) as DocItemRow[]))
-      } else if (clientIds.length > 0) {
-        const own = await supabase.from('documentation_items').select('*').in('client_id', clientIds)
-        if (own.error) throw new Error(own.error.message)
-        itemRows.push(...((own.data ?? []) as DocItemRow[]))
-      }
-      if (scope.kind !== 'project' && projectIds.length > 0) {
-        const fromProjects = await supabase.from('documentation_items').select('*').in('project_id', projectIds)
-        if (fromProjects.error) throw new Error(fromProjects.error.message)
-        itemRows.push(...((fromProjects.data ?? []) as DocItemRow[]))
-      }
-
-      let attRows: AttachmentRowLite[] = []
-      if (docEntryIds.length > 0) {
-        const att = await supabase.from('attachments').select('id, entity_id, storage_path, name, size, uploaded_by, created_at')
-          .eq('entity_type', 'entry').in('entity_id', docEntryIds)
-        if (att.error) throw new Error(att.error.message)
-        attRows = (att.data ?? []) as AttachmentRowLite[]
-      }
-
-      // Classificação dos itens espelhados: chaves dos anexos + dos links (que vêm da memória).
-      const linkKeys = projects.flatMap((p) => documentationEntries(p).flatMap((e) => (e.links ?? []).map((l) => `entry-link:${e.id}:${l.id}`)))
-      const keys = [...linkKeys, ...attRows.map((a) => fileKey(a.id))]
-      const metaMap: Record<string, DocMeta> = {}
-      if (keys.length > 0) {
-        // Todo item espelhado precisa de uma linha de classificação para ter código curto: o banco cria as que faltam.
-        await supabase.rpc('documentation_ensure_codes', { p_keys: keys })   // sem a migration de códigos, segue sem código
-        const m = await supabase.from('documentation_meta').select('*').in('source_key', keys)
-        if (m.error) throw new Error(m.error.message)
-        for (const r of (m.data ?? []) as { source_key: string; audience: string; tags: string[] | null; code?: string | null }[]) {
-          metaMap[r.source_key] = { audience: asAudience(r.audience), tags: r.tags ?? [], code: r.code ?? undefined }
-        }
-      }
+      const data = await fetchDocumentation(scope.kind === 'project' ? { kind: 'project', projectId: scope.id, projects } : { kind: 'clients', clientIds, projects })
       if (!alive.current) return
-      setRows(itemRows)
-      setAttachments(attRows)
-      setMeta(metaMap)
+      setRows(data.rows)
+      setAttachments(data.attachments)
+      setMeta(data.meta)
       setError(null)
     } catch (e) {
       if (alive.current) setError(e instanceof Error ? e.message : 'Erro ao carregar a documentação.')

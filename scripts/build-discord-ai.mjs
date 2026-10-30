@@ -19,6 +19,8 @@ await build({
   outfile: out,
   alias: {
     '@/lib/supabase': path.join(root, 'server/discordAi/supabaseShim.ts'),
+    // O pdf.js (grande, com worker) não roda aqui: no Discord o assistente avisa que não lê PDF.
+    '@/utils/docPdf': path.join(root, 'src/utils/docPdfUnavailable.ts'),
     '@': path.join(root, 'src'),
   },
   // exceljs só é carregado sob demanda pela importação por planilha, que o assistente não usa.

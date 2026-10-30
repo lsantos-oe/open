@@ -7,6 +7,7 @@ import { listPhasesTool, createTaskTool, updateTaskTool, reorderTaskTool, conver
 import { generateStatusReportMarkdownTool } from './reportTools'
 import { proposeExtractedItemsTool } from './extractionTools'
 import { rememberTool, forgetTool } from './memoryTools'
+import { listDocumentationTool, readDocumentationTool } from './documentationTools'
 import {
   listTasksTool, searchTasksTool, getTaskTool, getProjectOverviewTool, getProjectDetailsTool, listProjectsTool, workloadTool,
   listIncidentsTool, getIncidentDetailsTool, listClientsTool, getClientDetailsTool, listOpenPointsTool, searchKnowledgeTool, listUsersTool,
@@ -50,6 +51,8 @@ export const ALL_TOOLS: AiTool[] = [
   listOpenPointsTool,
   searchKnowledgeTool,
   listUsersTool,
+  listDocumentationTool,
+  readDocumentationTool,
   rememberTool,
   forgetTool,
 ]
