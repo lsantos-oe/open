@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { UserPicker } from '@/components/plan/UserPicker'
 import { useRouteEntityId } from '@/hooks/useRouteEntityId'
 import { createPortal } from 'react-dom'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
@@ -346,10 +347,7 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
 
           {/* Líder */}
           <Field label={t('project.pm')} required>
-            <Select value={pmMemberId} onChange={(e) => setPmMemberId(e.target.value)}>
-              <option value="">{t('project.pmPlaceholder')}</option>
-              {teamMembers.map((m) => <option key={m.id} value={m.userId ?? ''}>{m.name}</option>)}
-            </Select>
+            <UserPicker value={pmMemberId} onChange={setPmMemberId} teamMembers={teamMembers} />
             {errors.pm && <p className="text-xs text-[var(--color-danger-text)] mt-1">{errors.pm}</p>}
           </Field>
 
@@ -362,7 +360,7 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
                   type="button"
                   onClick={() => setLanguage(l)}
                   className={`flex-1 py-2 text-xs font-medium rounded-[var(--radius-md)] border transition-colors ${
-                    language === l ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--text-tertiary)]'
+                    language === l ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-subtle)] text-[var(--text-secondary)] border-transparent hover:border-[var(--text-tertiary)]'
                   }`}
                 >
                   {label}
@@ -398,7 +396,7 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
                       type="button"
                       onClick={() => setDevType(v)}
                       className={`flex-1 py-1.5 text-xs font-medium rounded-[var(--radius-md)] border transition-colors ${
-                        devType === v ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--text-tertiary)]'
+                        devType === v ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-subtle)] text-[var(--text-secondary)] border-transparent hover:border-[var(--text-tertiary)]'
                       }`}
                     >
                       {t(`project.${v}`)}
@@ -408,10 +406,7 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
               </Field>
 
               <Field label={t('project.devLead')}>
-                <Select value={devLeadMemberId} onChange={(e) => setDevLeadMemberId(e.target.value)}>
-                  <option value="">{t('project.devLeadPlaceholder')}</option>
-                  {teamMembers.map((m) => <option key={m.id} value={m.userId ?? ''}>{m.name}</option>)}
-                </Select>
+                <UserPicker value={devLeadMemberId} onChange={setDevLeadMemberId} teamMembers={teamMembers} />
               </Field>
 
               {devType === 'integration' && (

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/store/useAppStore'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -37,11 +38,11 @@ export function GroupsTab({ newOpen, onNew, onNewClose }: { newOpen: boolean; on
 
   return (
     <div>
-      {groups.length > 0 && (
-        <div className="flex items-center gap-2 mb-4">
-          <SearchInput value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar grupo ou cliente…" aria-label="Buscar grupo" />
-        </div>
-      )}
+      <div className="flex items-center gap-2 mb-4">
+        {groups.length > 0 && <SearchInput value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar grupo ou cliente…" aria-label="Buscar grupo" />}
+        <div className="flex-1" />
+        <Button size="sm" onClick={onNew}>+ Grupo</Button>
+      </div>
 
       {groups.length === 0 ? (
         <EmptyState

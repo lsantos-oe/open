@@ -23,9 +23,11 @@ interface Props {
   newContactClientIds?: string[]
   /** Versão compacta para células de tabela: sem caixa ao redor, uma linha só. */
   inline?: boolean
+  /** Só usuários do Open (sem contatos nem texto livre): some o seletor de origem. */
+  usersOnly?: boolean
 }
 
-export default function OwnersField({ owners, onChange, teamMembers, max, kind, contacts, newContactClientIds, inline }: Props) {
+export default function OwnersField({ owners, onChange, teamMembers, max, kind, contacts, newContactClientIds, inline, usersOnly }: Props) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<'member' | 'contact' | 'text'>('member')
@@ -122,7 +124,7 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind, 
     </button>
   )
 
-  const sources = (contacts ? (['member', 'contact', 'text'] as const) : (['member', 'text'] as const))
+  const sources = usersOnly ? (['member'] as const) : (contacts ? (['member', 'contact', 'text'] as const) : (['member', 'text'] as const))
 
   return (
     <div className="relative">
@@ -153,7 +155,7 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind, 
           onMouseDown={(e) => e.stopPropagation()}
         >
           {/* Origem: pílulas num trilho suave */}
-          <div className="flex gap-0.5 p-0.5 mb-2" style={{ background: 'var(--badge-gray-bg)', borderRadius: 'var(--radius-pill)' }} role="tablist">
+          {sources.length > 1 && <div className="flex gap-0.5 p-0.5 mb-2" style={{ background: 'var(--badge-gray-bg)', borderRadius: 'var(--radius-pill)' }} role="tablist">
             {sources.map((t_) => (
               <button
                 key={t_}
@@ -171,7 +173,7 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind, 
                 {t_ === 'member' ? t('entry.fromTeam') : t_ === 'contact' ? t('entry.fromContact') : t('entry.freeText')}
               </button>
             ))}
-          </div>
+          </div>}
 
           {tab === 'text' ? (
             <div className="flex gap-1.5">

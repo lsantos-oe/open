@@ -162,7 +162,7 @@ export default function TeamTab({ project }: Props) {
                   className={`text-xs px-3 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${
                     form.role === r
                       ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]'
-                      : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-strong)] hover:border-[var(--oe-primary-mid)]'
+                      : 'bg-[var(--surface-subtle)] text-[var(--text-secondary)] border-transparent hover:text-[var(--text-primary)]'
                   }`}
                 >
                   {r}

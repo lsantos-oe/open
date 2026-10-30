@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, CSSProperties, ReactNode } from 'react'
+import { TrashButton } from '@/components/ui/TrashButton'
 import { Select, Input, Field } from '@/components/ui/Input'
 import { EntityCodeLink } from '@/components/ui/CodeBadge'
 import RichTextInput from '@/components/editor/RichTextInput'
@@ -627,9 +628,7 @@ export default function EntryModal({
       {isEdit && (
         <div className="flex-1 flex items-center gap-2 min-w-0">
           {deleteStep === 'idle' ? (
-            <Button variant="ghost" size="sm" onClick={() => setDeleteStep('confirm')}>
-              <span style={{ color: 'var(--color-danger-text)' }}>{t('entry.deleteEntry')}</span>
-            </Button>
+            <TrashButton label={t('entry.deleteEntry')} onClick={() => setDeleteStep('confirm')} />
           ) : (
             <>
               {dependentCount > 0 && (

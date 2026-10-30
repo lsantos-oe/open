@@ -33,19 +33,11 @@ export default function RetrosPage() {
 
   return (
     <div className="p-6 max-w-[1200px] mx-auto">
-      <div className="flex items-start justify-between gap-4 mb-5">
-        <div>
-          <h1 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{t('retro.title')}</h1>
-          <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>{t('retro.subtitle')}</p>
-        </div>
-        <Button onClick={() => setShowNew(true)}>{t('addBtn.retro')}</Button>
+      <div className="flex items-center gap-2 mb-4">
+        {retros.length > 0 && <SearchInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('retro.search')} />}
+        <div className="flex-1" />
+        <Button size="sm" onClick={() => setShowNew(true)}>{t('addBtn.retro')}</Button>
       </div>
-
-      {retros.length > 0 && (
-        <div className="flex items-center gap-2 mb-4">
-          <SearchInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('retro.search')} />
-        </div>
-      )}
 
       {loaded && retros.length === 0 ? (
         <EmptyState
@@ -56,7 +48,7 @@ export default function RetrosPage() {
       ) : filtered.length === 0 && loaded ? (
         <p className="text-sm text-center py-12" style={{ color: 'var(--text-tertiary)' }}>{t('retro.noResults')}</p>
       ) : (
-        <div className="overflow-x-auto rounded-[var(--radius-lg)] border" style={{ borderColor: 'var(--border-default)', background: 'var(--surface-card)' }}>
+        <div className="oe-card overflow-hidden overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead>
               <tr style={{ borderBottom: '0.5px solid var(--border-default)' }}>

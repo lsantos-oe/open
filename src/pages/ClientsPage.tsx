@@ -168,16 +168,6 @@ export default function ClientsPage() {
 
   return (
     <div className="p-8 max-w-screen-xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{t('nav.wallet')}</h1>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{filtered.length} / {clients.length} {clients.length !== 1 ? t('wallet.clients') : t('wallet.client')}</p>
-        </div>
-        {tab === 'clients'
-          ? <Button onClick={openAdd}>{t('addBtn.client')}</Button>
-          : <Button onClick={() => setNewGroupOpen(true)}>{t('addBtn.group')}</Button>}
-      </div>
-
       <div className="flex gap-1 mb-5" role="tablist" aria-label="Carteira">
         {([['clients', `Clientes`, clients.length], ['groups', 'Grupos', clientGroups.length]] as const).map(([id, label, n]) => (
           <button
@@ -216,6 +206,7 @@ export default function ClientsPage() {
           ]}
         />
         <div className="flex-1" />
+        <span className="text-xs tabular-nums" style={{ color: 'var(--text-tertiary)' }}>{filtered.length} / {clients.length}</span>
         {view === 'list' && <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />}
         <FilterMenu
           toggles={[{ label: 'Só os meus', checked: onlyMine, onChange: setOnlyMine }]}
@@ -241,6 +232,7 @@ export default function ClientsPage() {
             />
           </Field>
         </FilterMenu>
+        <Button size="sm" onClick={openAdd}>{t('addBtn.client')}</Button>
       </div>
 
       {sorted.length === 0 ? (

@@ -76,11 +76,19 @@ function IncidentCard({ incident, clientLabel, onClick, ghost = false }: {
       className="w-full text-left rounded-[var(--radius-xl)] p-3 hover:shadow-[var(--shadow-sm)] transition-all"
       style={{ background: 'var(--surface-card)', boxShadow: ghost ? 'var(--shadow-md)' : undefined }}
     >
-      <p className="font-medium text-sm mb-1 line-clamp-2" style={{ color: 'var(--text-primary)' }}>{incident.title}</p>
-      <p className="text-xs mb-2" style={{ color: 'var(--text-tertiary)' }}>{clientLabel}</p>
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <span className="flex-1 truncate text-[11.5px] font-medium" style={{ color: 'var(--text-tertiary)' }}>{clientLabel || '—'}</span>
+        <span
+          title={`${t('incident.priority' as any) === 'incident.priority' ? 'Prioridade' : t('incident.priority' as any)}: ${t(`risk.${incident.priority}`)}`}
+          aria-label={`Prioridade ${t(`risk.${incident.priority}`)}`}
+          className="shrink-0"
+          style={{ width: 7, height: 7, borderRadius: 1, background: PRIORITY_COLOR[incident.priority] }}
+        />
+      </div>
+      <p className="font-medium text-[13px] mb-2 line-clamp-2" style={{ color: 'var(--text-primary)' }}>{incident.title}</p>
       <div className="flex items-center justify-between">
         <AvatarStack people={incident.owner ? [{ name: incident.owner.name }] : []} size={18} />
-        <StatusDot color={PRIORITY_COLOR[incident.priority]} label={t(`risk.${incident.priority}`)} />
+        <span className="text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>{t(`risk.${incident.priority}`)}</span>
       </div>
     </div>
   )
@@ -359,14 +367,6 @@ export default function IncidentsPage() {
 
   return (
     <div className="p-8 max-w-screen-xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{t('incident.title')}</h1>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{filtered.length} / {incidents.length}</p>
-        </div>
-        <Button onClick={openAdd}>{t('addBtn.incident')}</Button>
-      </div>
-
       {incidents.length > 0 && (
         <div className="flex items-center gap-2 mb-5 flex-wrap">
           <SearchInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar incidente..." />
@@ -379,6 +379,7 @@ export default function IncidentsPage() {
             ]}
           />
           <div className="flex-1" />
+          <span className="text-xs tabular-nums" style={{ color: 'var(--text-tertiary)' }}>{filtered.length} / {incidents.length}</span>
           {view === 'list' && <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />}
           <FilterMenu
           toggles={[{ label: 'Só os meus', checked: onlyMine, onChange: setOnlyMine }]}
@@ -422,6 +423,7 @@ export default function IncidentsPage() {
               />
             </Field>
           </FilterMenu>
+          <Button size="sm" onClick={openAdd}>{t('addBtn.incident')}</Button>
         </div>
       )}
 

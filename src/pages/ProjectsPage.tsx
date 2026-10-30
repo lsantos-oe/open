@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { UserPicker } from '@/components/plan/UserPicker'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { exportAllProjectsToJson } from '@/utils/exportJson'
 import { useTranslation } from 'react-i18next'
@@ -143,35 +144,11 @@ function FilterBar({ filters, setFilters, clients, pms, toggles }: FilterBarProp
       </Field>
 
       <Field label={t('portfolio.colType')}>
-        <div className="flex rounded-[var(--radius-md)] border border-[var(--border-default)] overflow-hidden">
-          {([['', t('project.filterAll')], ['nova_conta', t('project.nova_conta')], ['novo_projeto', t('project.novo_projeto')]] as [string, string][]).map(([v, l]) => (
-            <button
-              key={v}
-              onClick={() => setFilters({ ...filters, type: v })}
-              className={`flex-1 px-2 py-1.5 text-xs font-medium transition-colors ${
-                filters.type === v ? 'bg-[var(--text-primary)] text-[var(--surface-page)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'
-              }`}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
+        <ViewToggle value={filters.type} onChange={(v) => setFilters({ ...filters, type: v })} options={([['', t('project.filterAll')], ['nova_conta', t('project.nova_conta')], ['novo_projeto', t('project.novo_projeto')]] as [string, string][]).map(([value, label]) => ({ value, label }))} />
       </Field>
 
       <Field label={t('portfolio.colDev')}>
-        <div className="flex rounded-[var(--radius-md)] border border-[var(--border-default)] overflow-hidden">
-          {([['', t('project.filterAll')], ['with', t('project.filterWithDev')], ['without', t('project.filterWithoutDev')]] as [string, string][]).map(([v, l]) => (
-            <button
-              key={v}
-              onClick={() => setFilters({ ...filters, dev: v })}
-              className={`flex-1 px-2 py-1.5 text-xs font-medium transition-colors ${
-                filters.dev === v ? 'bg-[var(--text-primary)] text-[var(--surface-page)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)]'
-              }`}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
+        <ViewToggle value={filters.dev} onChange={(v) => setFilters({ ...filters, dev: v })} options={([['', t('project.filterAll')], ['with', t('project.filterWithDev')], ['without', t('project.filterWithoutDev')]] as [string, string][]).map(([value, label]) => ({ value, label }))} />
       </Field>
     </FilterMenu>
   )
@@ -665,10 +642,7 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
 
             {/* Líder */}
             <Field label={t('project.pm')} required>
-              <Select value={pmMemberId} onChange={(e) => setPmMemberId(e.target.value)}>
-                <option value="">{t('project.pmPlaceholder')}</option>
-                {teamMembers.map((m) => <option key={m.id} value={m.userId ?? ''}>{m.name}</option>)}
-              </Select>
+              <UserPicker value={pmMemberId} onChange={setPmMemberId} teamMembers={teamMembers} />
               {errors.pm && <p className="text-xs text-[var(--color-danger-text)] mt-1">{errors.pm}</p>}
             </Field>
 
@@ -681,7 +655,7 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
                     type="button"
                     onClick={() => setLanguage(l)}
                     className={`flex-1 py-2 text-xs font-medium rounded-[var(--radius-md)] border transition-colors ${
-                      language === l ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--text-tertiary)]'
+                      language === l ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-subtle)] text-[var(--text-secondary)] border-transparent hover:border-[var(--text-tertiary)]'
                     }`}
                   >
                     {label}
@@ -719,7 +693,7 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
                       type="button"
                       onClick={() => setDevType(v)}
                       className={`flex-1 py-1.5 text-xs font-medium rounded-[var(--radius-md)] border transition-colors ${
-                        devType === v ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--text-tertiary)]'
+                        devType === v ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-subtle)] text-[var(--text-secondary)] border-transparent hover:border-[var(--text-tertiary)]'
                       }`}
                     >
                       {t(`project.${v}`)}
@@ -730,10 +704,7 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
 
               {/* Dev lead */}
               <Field label={t('project.devLead')}>
-                <Select value={devLeadMemberId} onChange={(e) => setDevLeadMemberId(e.target.value)}>
-                  <option value="">{t('project.devLeadPlaceholder')}</option>
-                  {teamMembers.map((m) => <option key={m.id} value={m.userId ?? ''}>{m.name}</option>)}
-                </Select>
+                <UserPicker value={devLeadMemberId} onChange={setDevLeadMemberId} teamMembers={teamMembers} />
               </Field>
 
               {devType === 'integration' && (
@@ -1102,21 +1073,6 @@ export default function ProjectsPage() {
 
   return (
     <div className="p-8 max-w-screen-xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">{t('nav.portfolio')}</h1>
-          <p className="text-sm text-[var(--text-tertiary)] mt-0.5">
-            {filtered.length} / {projects.length}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button onClick={() => setModalOpen(true)}>
-            {t('addBtn.project')}
-          </Button>
-        </div>
-      </div>
-
       {!projectsLoading && projects.length > 0 && (
         <PmoDashboard projects={projects.filter((p) => !p.archived)} clients={storeClients} holidays={settings.holidays} />
       )}
@@ -1138,8 +1094,10 @@ export default function ProjectsPage() {
             ]}
           />
           <div className="flex-1" />
+          <span className="text-xs tabular-nums" style={{ color: 'var(--text-tertiary)' }}>{filtered.length} / {projects.length}</span>
           {view === 'list' && <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />}
           <FilterBar filters={filters} setFilters={setFilters} clients={storeClients} pms={pms} toggles={[{ label: 'Só os meus', checked: onlyMine, onChange: setOnlyMine }, { label: t('project.delayed'), checked: onlyDelayed, onChange: setOnlyDelayed }]} />
+          <Button size="sm" onClick={() => setModalOpen(true)}>{t('addBtn.project')}</Button>
         </div>
       )}
 

@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react'
+import { ViewToggle } from '@/components/ui/ViewToggle'
+import { TrashButton } from '@/components/ui/TrashButton'
 import { useRouteEntityId } from '@/hooks/useRouteEntityId'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -215,7 +217,7 @@ export default function IncidentDetailPage() {
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <EntityCodeLink table="incidents" id={incident.id} />
-          <Button variant="secondary" size="sm" onClick={() => setShowDeleteConfirm(true)}>{t('incident.delete')}</Button>
+          <TrashButton label={t('incident.delete')} onClick={() => setShowDeleteConfirm(true)} />
         </div>
       </div>
 
@@ -300,16 +302,17 @@ export default function IncidentDetailPage() {
               </Field>
 
               <Field label={t('incident.stakeholders')}>
-                {incident.stakeholders.length === 0 ? (
-                  <p className="text-sm mb-2" style={{ color: 'var(--text-tertiary)' }}>{t('incident.noStakeholders')}</p>
-                ) : (
-                  <div className="flex flex-wrap gap-1.5 mb-2">
-                    {incident.stakeholders.map((o) => (
-                      <Chip key={o.id} person={o.name} onRemove={() => removeIncidentStakeholder(incident.id, o.id)} removeLabel={`Remover ${o.name}`}>{o.name}{o.role ? ` · ${o.role}` : ''}</Chip>
-                    ))}
-                  </div>
-                )}
-                <Button size="sm" variant="secondary" onClick={openAddStakeholder}>{t('incident.addStakeholder')}</Button>
+                <OwnersField
+                  owners={incident.stakeholders}
+                  onChange={(next) => {
+                    const cur = incident.stakeholders
+                    next.filter((n) => !cur.some((c) => c.id === n.id)).forEach((o) => addIncidentStakeholder(incident.id, o))
+                    cur.filter((c) => !next.some((n) => n.id === c.id)).forEach((o) => removeIncidentStakeholder(incident.id, o.id))
+                  }}
+                  teamMembers={directoryAsTeam}
+                  contacts={allContacts}
+                  newContactClientIds={linkedClients.map((c) => c.id)}
+                />
               </Field>
             </div>
           </div>
@@ -322,22 +325,7 @@ export default function IncidentDetailPage() {
 
               {incident.entries.length > 0 && (
                 <>
-                  <div className="flex rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
-                    <button
-                      onClick={() => changeTaskView('kanban')}
-                      className="px-3 py-1.5 text-xs font-medium transition-colors"
-                      style={{ background: taskView === 'kanban' ? 'var(--text-primary)' : 'var(--surface-card)', color: taskView === 'kanban' ? 'var(--surface-page)' : 'var(--text-secondary)' }}
-                    >
-                      {t('actions.viewKanban')}
-                    </button>
-                    <button
-                      onClick={() => changeTaskView('table')}
-                      className="px-3 py-1.5 text-xs font-medium transition-colors"
-                      style={{ background: taskView === 'table' ? 'var(--text-primary)' : 'var(--surface-card)', color: taskView === 'table' ? 'var(--surface-page)' : 'var(--text-secondary)' }}
-                    >
-                      {t('actions.viewTable')}
-                    </button>
-                  </div>
+                  <ViewToggle value={taskView} onChange={changeTaskView} options={[{ value: 'kanban', label: t('actions.viewKanban') }, { value: 'table', label: t('actions.viewTable') }]} />
 
                   <Select value={taskFilterStatus} onChange={(e) => setTaskFilterStatus(e.target.value)} className="!py-1.5">
                     <option value="">{t('tasks.filterStatus')}</option>
@@ -446,98 +434,6 @@ export default function IncidentDetailPage() {
         </div>
       </Modal>
 
-      {/* Add stakeholder modal */}
-      <Modal
-        open={showStakeholder}
-        title={t('incident.addStakeholder')}
-        onClose={() => setShowStakeholder(false)}
-        size="sm"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setShowStakeholder(false)}>{t('actions.cancel')}</Button>
-            <Button onClick={saveStakeholder}>{t('actions.save')}</Button>
-          </>
-        }
-      >
-        <div className="space-y-3">
-          <div className="flex gap-2">
-            <button type="button" onClick={() => setStakeholderMode('member')} className={`flex-1 text-xs font-medium px-2 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${stakeholderMode === 'member' ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}>{t('entry.fromUser')}</button>
-            <button type="button" onClick={() => setStakeholderMode('contact')} className={`flex-1 text-xs font-medium px-2 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${stakeholderMode === 'contact' ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}>{t('incident.fromContact')}</button>
-            <button type="button" onClick={() => setStakeholderMode('text')} className={`flex-1 text-xs font-medium px-2 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${stakeholderMode === 'text' ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}>{t('entry.freeText')}</button>
-          </div>
-          {stakeholderMode === 'member' && (
-            <Field label={t('entry.fromUser')}>
-              <Select value={stakeholderUserId} onChange={(e) => setStakeholderUserId(e.target.value)}>
-                <option value="">Selecione...</option>
-                {teamDirectory.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name ?? p.email}</option>)}
-              </Select>
-            </Field>
-          )}
-          {stakeholderMode === 'contact' && (
-            linkedClients.length === 0 ? (
-              <Field label={t('incident.fromContact')}>
-                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Vincule um cliente a este incidente primeiro.</p>
-              </Field>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setContactCreateMode(false)}
-                    className={`flex-1 text-xs font-medium px-2 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${!contactCreateMode ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}
-                  >
-                    Contato existente
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setContactCreateMode(true)}
-                    className={`flex-1 text-xs font-medium px-2 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${contactCreateMode ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}
-                  >
-                    + Novo contato
-                  </button>
-                </div>
-
-                {!contactCreateMode ? (
-                  <Field label={t('incident.fromContact')}>
-                    {allContacts.length === 0 ? (
-                      <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Nenhum contato cadastrado nos clientes vinculados — use "+ Novo contato".</p>
-                    ) : (
-                      <Select value={stakeholderContactKey} onChange={(e) => setStakeholderContactKey(e.target.value)}>
-                        <option value="">Selecione...</option>
-                        {allContacts.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.clientName})</option>)}
-                      </Select>
-                    )}
-                  </Field>
-                ) : (
-                  <div className="space-y-3">
-                    {linkedClients.length > 1 && (
-                      <Field label="Cliente" required>
-                        <Select value={newContactClientId} onChange={(e) => setNewContactClientId(e.target.value)}>
-                          {linkedClients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </Select>
-                      </Field>
-                    )}
-                    <Field label="Nome" required>
-                      <Input autoFocus value={newContactForm.name} onChange={(e) => setNewContactForm((f) => ({ ...f, name: e.target.value }))} />
-                    </Field>
-                    <Field label="Cargo">
-                      <Input value={newContactForm.role} onChange={(e) => setNewContactForm((f) => ({ ...f, role: e.target.value }))} />
-                    </Field>
-                    <Field label="E-mail">
-                      <Input type="email" value={newContactForm.email} onChange={(e) => setNewContactForm((f) => ({ ...f, email: e.target.value }))} />
-                    </Field>
-                  </div>
-                )}
-              </div>
-            )
-          )}
-          {stakeholderMode === 'text' && (
-            <Field label={t('entry.freeText')}>
-              <Input autoFocus value={stakeholderName} onChange={(e) => setStakeholderName(e.target.value)} placeholder="Nome" />
-            </Field>
-          )}
-        </div>
-      </Modal>
 
       {taskModal && (
         <IncidentEntryModal

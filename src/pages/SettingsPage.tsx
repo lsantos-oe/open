@@ -412,7 +412,7 @@ export default function SettingsPage() {
                 key={v}
                 onClick={() => setArchivedFilter(v)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-[var(--radius-pill)] border transition-colors ${
-                  archivedFilter === v ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'
+                  archivedFilter === v ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-subtle)] text-[var(--text-secondary)] border-transparent'
                 }`}
               >
                 {l}

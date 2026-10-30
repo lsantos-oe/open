@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { ViewToggle } from '@/components/ui/ViewToggle'
 import { Select } from '@/components/ui/Input'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
@@ -83,22 +84,7 @@ export default function KanbanPage({ projectId }: { projectId: string }) {
       <div className="flex flex-col">
         {/* Toolbar */}
         <div className="flex items-center flex-wrap gap-2 mb-4">
-          <div className="flex rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
-            <button
-              onClick={() => changeView('kanban')}
-              className="px-3 py-1.5 text-xs font-medium transition-colors"
-              style={{ background: view === 'kanban' ? 'var(--text-primary)' : 'var(--surface-card)', color: view === 'kanban' ? 'var(--surface-page)' : 'var(--text-secondary)' }}
-            >
-              {t('actions.viewKanban')}
-            </button>
-            <button
-              onClick={() => changeView('table')}
-              className="px-3 py-1.5 text-xs font-medium transition-colors"
-              style={{ background: view === 'table' ? 'var(--text-primary)' : 'var(--surface-card)', color: view === 'table' ? 'var(--surface-page)' : 'var(--text-secondary)' }}
-            >
-              {t('actions.viewTable')}
-            </button>
-          </div>
+          <ViewToggle value={view} onChange={changeView} options={[{ value: 'kanban', label: t('actions.viewKanban') }, { value: 'table', label: t('actions.viewTable') }]} />
 
           <Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="!py-1.5">
             <option value="">{t('tasks.filterStatus')}</option>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { TrashButton } from '@/components/ui/TrashButton'
 import { useRouteEntityId } from '@/hooks/useRouteEntityId'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
@@ -120,7 +121,7 @@ export default function ClientGroupDetailPage() {
             </>
           )}
         </div>
-        <Button variant="secondary" size="sm" onClick={() => setConfirmDelete(true)}>Desfazer grupo</Button>
+        <TrashButton label="Desfazer grupo" onClick={() => setConfirmDelete(true)} />
       </div>
 
       {isUnderMinimum(group) && (

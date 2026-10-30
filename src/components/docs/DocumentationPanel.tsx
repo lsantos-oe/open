@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { ViewToggle } from '@/components/ui/ViewToggle'
 import { Badge, BadgeVariant } from '@/components/ui/Badge'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { CodeLink } from '@/components/ui/CodeBadge'
@@ -30,25 +31,8 @@ const KIND_ICON: Record<DocKind, ReactNode> = {
 
 const fmtDate = (iso?: string) => (iso ? new Date(iso).toLocaleDateString('pt-BR') : '')
 
-function Segmented<T extends string>({ value, onChange, options, label }: { value: T; onChange: (v: T) => void; options: { value: T; label: string }[]; label: string }) {
-  return (
-    <div className="flex rounded-[var(--radius-md)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }} role="group" aria-label={label}>
-      {options.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          aria-pressed={value === o.value}
-          onClick={() => onChange(o.value)}
-          className="px-3 py-1.5 text-xs font-medium transition-colors"
-          style={value === o.value
-            ? { background: 'var(--text-primary)', color: 'var(--surface-page)' }
-            : { background: 'var(--surface-card)', color: 'var(--text-secondary)' }}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
-  )
+function Segmented<T extends string>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: { value: T; label: string }[]; label: string }) {
+  return <ViewToggle value={value} onChange={onChange} options={options} />
 }
 
 /** Aba Documentação de um projeto ou de um cliente: links, arquivos e caixas de texto, com público
@@ -188,7 +172,7 @@ export default function DocumentationPanel({ scope }: Props) {
                     className="text-[11.5px] px-2 py-0.5 rounded-[var(--radius-pill)] border transition-colors"
                     style={active
                       ? { background: 'var(--text-primary)', color: 'var(--surface-page)', borderColor: 'var(--text-primary)' }
-                      : { background: 'var(--surface-card)', color: 'var(--text-secondary)', borderColor: 'var(--border-default)' }}
+                      : { background: 'var(--surface-subtle)', color: 'var(--text-secondary)', borderColor: 'transparent' }}
                   >
                     {t}
                   </button>

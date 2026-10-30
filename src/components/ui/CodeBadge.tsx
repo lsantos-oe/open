@@ -30,7 +30,7 @@ export function EntityCode({ table, id, className }: { table: CodeTable; id: str
   return <CodeBadge code={code} className={className} />
 }
 
-/** ID + link num botão só: mostra o código e, ao clicar, copia o link curto (o ID aparece na dica). Para cabeçalhos. */
+/** Botão só com o ícone de link: copia o link curto do item. O ID aparece na dica (e na barra de endereço). */
 export function CodeLink({ code, className = '' }: { code?: string; className?: string }) {
   const [copied, setCopied] = useState(false)
   if (!code) return null
@@ -39,16 +39,17 @@ export function CodeLink({ code, className = '' }: { code?: string; className?: 
     setCopied(true)
     setTimeout(() => setCopied(false), 1600)
   }
+  const label = copied ? 'Link copiado' : `Copiar link (${code})`
   return (
     <button
-      type="button" onClick={() => void copy()}
-      title={`Copiar o link de ${code}`} aria-label={`Copiar o link de ${code}`}
-      className={`inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[11.5px] font-mono transition-colors hover:opacity-80 shrink-0 ${className}`}
-      style={{ background: 'var(--badge-gray-bg)', color: copied ? 'var(--color-success-text)' : 'var(--text-secondary)' }}
+      type="button" onClick={() => void copy()} title={label} aria-label={label}
+      className={`inline-flex items-center justify-center h-7 w-7 rounded-full transition-colors hover:bg-[var(--surface-subtle)] shrink-0 ${className}`}
+      style={{ color: copied ? 'var(--color-success-text)' : 'var(--text-tertiary)' }}
     >
-      {copied ? 'link copiado' : code}
-      {!copied && (
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {copied ? (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7" /></svg>
+      ) : (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1" />
         </svg>
       )}

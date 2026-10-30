@@ -190,6 +190,7 @@ function TaskCard({ card, onClick, ghost = false }: {
         <span style={{ flex: 1, fontSize: 11.5, color: 'var(--text-tertiary)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {scopeLabel(card)}
         </span>
+        <SignalBadges entry={card} today={today} size="xs" className="shrink-0" />
         {hasComments && (
           <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 11.5, color: 'var(--text-disabled)' }}>
             <ChatBubbleIcon className="w-3 h-3" />{card.comments.length}
@@ -212,8 +213,6 @@ function TaskCard({ card, onClick, ghost = false }: {
       <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.4, marginBottom: 6, overflowWrap: 'anywhere' }}>
         {card.name}
       </p>
-
-      <SignalBadges entry={card} today={today} className="mb-2" />
 
       {/* Footer: owner avatars + hidden badge + date */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
@@ -859,16 +858,6 @@ export default function TasksPage() {
 
   return (
     <div className="p-8 max-w-screen-xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{t('tasks.title')}</h1>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{filteredCards.length} / {allCards.length}</p>
-        </div>
-        <Button onClick={() => setNewTaskOpen(true)}>
-          {t('addBtn.task')}
-        </Button>
-      </div>
-
       {/* Toolbar */}
       <div className="flex items-center gap-2 mb-5 flex-wrap">
         <SearchInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar tarefa..." />
@@ -882,6 +871,7 @@ export default function TasksPage() {
           ]}
         />
         <div style={{ flex: 1 }} />
+        <span className="text-xs tabular-nums" style={{ color: 'var(--text-tertiary)' }}>{filteredCards.length} / {allCards.length}</span>
 
         {view === 'table' && <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />}
         {view !== 'capacity' && (
@@ -948,6 +938,7 @@ export default function TasksPage() {
           </Field>
 
         </FilterMenu>
+        <Button size="sm" onClick={() => setNewTaskOpen(true)}>{t('addBtn.task')}</Button>
       </div>
 
       {view === 'table' && (

@@ -20,8 +20,8 @@ const ICON_PATH: Record<EntrySignal, string[]> = {
 }
 
 /** Sinal só com ícone (o nome aparece ao passar o mouse e para leitores de tela). */
-function SignalIcon({ signal, size = 'md' }: { signal: EntrySignal; size?: 'sm' | 'md' }) {
-  const box = size === 'sm' ? 18 : 22
+function SignalIcon({ signal, size = 'md' }: { signal: EntrySignal; size?: 'xs' | 'sm' | 'md' }) {
+  const box = size === 'xs' ? 15 : size === 'sm' ? 18 : 22
   const tone = TONE[signal]
   return (
     <span
@@ -29,7 +29,7 @@ function SignalIcon({ signal, size = 'md' }: { signal: EntrySignal; size?: 'sm' 
       className="inline-flex items-center justify-center shrink-0"
       style={{ width: box, height: box, borderRadius: '50%', background: tone.bg, color: tone.fg }}
     >
-      <svg width={size === 'sm' ? 11 : 13} height={size === 'sm' ? 11 : 13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <svg width={size === 'xs' ? 9 : size === 'sm' ? 11 : 13} height={size === 'xs' ? 9 : size === 'sm' ? 11 : 13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         {ICON_PATH[signal].map((d, i) => <path key={i} d={d} />)}
       </svg>
     </span>
@@ -47,8 +47,8 @@ interface Props {
    *  fresh `new Date()` per row. */
   today?: string
   className?: string
-  /** sm = ícone de 18px (tabelas). */
-  size?: 'sm' | 'md'
+  /** xs = 15px (cartões do kanban), sm = 18px (tabelas), md = 22px. */
+  size?: 'xs' | 'sm' | 'md'
 }
 
 /** Shared signal icons (Atrasado/Parado/Bloqueado) — the single place this is

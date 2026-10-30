@@ -126,14 +126,6 @@ export default function ContactsPage() {
 
   return (
     <div className="p-8 max-w-screen-xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{t('nav.contacts')}</h1>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{filtered.length} / {contacts.length} {contacts.length !== 1 ? t('contacts.contacts') : t('contacts.contact')}</p>
-        </div>
-        <Button onClick={openAdd}>{t('addBtn.contact')}</Button>
-      </div>
-
       <div className="flex items-center gap-2 mb-4 flex-wrap">
         <SearchInput
           value={query}
@@ -141,6 +133,7 @@ export default function ContactsPage() {
           placeholder={t('contacts.searchPlaceholder')}
         />
         <div className="flex-1" />
+        <span className="text-xs tabular-nums" style={{ color: 'var(--text-tertiary)' }}>{filtered.length} / {contacts.length}</span>
         <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />
         <FilterMenu activeCount={filterClientId.length} onClear={() => setFilterClientId([])}>
           <Field label={t('contacts.linkedClient')}>
@@ -152,6 +145,7 @@ export default function ContactsPage() {
             />
           </Field>
         </FilterMenu>
+        <Button size="sm" onClick={openAdd}>{t('addBtn.contact')}</Button>
       </div>
 
       {sorted.length === 0 ? (

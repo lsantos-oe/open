@@ -1,4 +1,5 @@
 import DocumentationPanel from '@/components/docs/DocumentationPanel'
+import { TrashButton } from '@/components/ui/TrashButton'
 import { useRouteEntityId } from '@/hooks/useRouteEntityId'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/Badge'
@@ -196,7 +197,7 @@ export default function ClientDetailPage() {
             <button className="text-xs shrink-0" style={{ color: 'var(--text-tertiary)' }} onClick={() => setAddToGroup(true)}>{t('addBtn.group')}</button>
           )}
         </div>
-        <Button variant="secondary" size="sm" onClick={() => setShowArchiveConfirm(true)}>Excluir cliente</Button>
+        <TrashButton label="Excluir cliente" onClick={() => setShowArchiveConfirm(true)} />
       </div>
 
       <div className="px-6 pt-3">
@@ -442,34 +443,21 @@ export default function ClientDetailPage() {
         }
       >
         <div className="space-y-3">
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setCsMode('directory')}
-              className={`flex-1 text-xs font-medium px-3 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${csMode === 'directory' ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}
-            >
-              Usuário
-            </button>
-            <button
-              type="button"
-              onClick={() => setCsMode('text')}
-              className={`flex-1 text-xs font-medium px-3 py-1.5 rounded-[var(--radius-pill)] border transition-colors ${csMode === 'text' ? 'bg-[var(--text-primary)] text-[var(--surface-page)] border-[var(--text-primary)]' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'}`}
-            >
-              Texto livre
-            </button>
-          </div>
-          {csMode === 'directory' ? (
-            <Field label="Usuário" required>
-              <Select value={csUserId} onChange={(e) => setCsUserId(e.target.value)}>
-                <option value="">Selecione...</option>
-                {teamDirectory.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name ?? p.email}</option>)}
-              </Select>
-            </Field>
-          ) : (
-            <Field label="Nome" required>
-              <Input autoFocus value={csName} onChange={(e) => setCsName(e.target.value)} placeholder="Nome" />
-            </Field>
-          )}
+          <Field label="Responsável de CS" required>
+            <OwnersField
+              owners={csMode === 'directory'
+                ? (csUserId ? [{ id: `cs:${csUserId}`, type: 'member' as const, memberId: csUserId, name: teamDirectory.find((p) => p.id === csUserId)?.name ?? '' }] : [])
+                : (csName.trim() ? [{ id: 'cs:text', type: 'text' as const, name: csName.trim() }] : [])}
+              onChange={(next) => {
+                const o = next[next.length - 1]
+                if (!o) { setCsUserId(''); setCsName(''); return }
+                if (o.type === 'member') { setCsMode('directory'); setCsUserId(o.memberId ?? ''); setCsName('') }
+                else { setCsMode('text'); setCsName(o.name); setCsUserId('') }
+              }}
+              teamMembers={directoryAsTeam}
+              max={1}
+            />
+          </Field>
           <Field label="Desde" required>
             <Input type="date" value={csDate} onChange={(e) => setCsDate(e.target.value)} />
           </Field>

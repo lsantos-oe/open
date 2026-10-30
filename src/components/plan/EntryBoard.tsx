@@ -141,6 +141,7 @@ function BoardEntryCard({ card, onClick, ghost = false }: {
             {card._phaseName}
           </span>
         )}
+        <SignalBadges entry={card} today={today} size="xs" className="shrink-0" />
         {hasComments && (
           <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 11.5, color: 'var(--text-disabled)' }}>
             <ChatBubbleIcon className="w-3 h-3" />{card.comments.length}
@@ -163,8 +164,6 @@ function BoardEntryCard({ card, onClick, ghost = false }: {
       <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.4, marginBottom: 6, overflowWrap: 'anywhere' }}>
         {card.name}
       </p>
-
-      <SignalBadges entry={card} today={today} className="mb-2" />
 
       {/* Footer: owners + date + hidden badge */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>

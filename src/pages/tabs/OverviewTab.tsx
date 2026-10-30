@@ -282,7 +282,7 @@ function EditableDevField({ project, onSave }: {
                     className="flex-1 px-3 py-1.5 rounded-[var(--radius-md)] border text-xs font-medium"
                     style={devType === v
                       ? { background: 'var(--text-primary)', color: 'var(--surface-page)', borderColor: 'var(--text-primary)' }
-                      : { background: 'var(--surface-card)', color: 'var(--text-secondary)', borderColor: 'var(--border-default)' }}
+                      : { background: 'var(--surface-subtle)', color: 'var(--text-secondary)', borderColor: 'transparent' }}
                   >
                     {t(`project.${v}`)}
                   </button>

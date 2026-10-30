@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { ViewToggle } from '@/components/ui/ViewToggle'
 import { useTranslation } from 'react-i18next'
 import { useAppStore, DiaryScope } from '@/store/useAppStore'
 import { OpenPoint, OpenPointStatus, OpenPointPriority, Phase, EntryOwner, TeamMember } from '@/types'
@@ -217,23 +218,14 @@ export default function OpenPointsTab({ scope, openPoints, phases }: Props) {
     <div>
       {/* Toolbar */}
       <div className="flex items-center gap-3 mb-4">
-        <div className="flex rounded-[var(--radius-md)] overflow-hidden border" style={{ borderColor: 'var(--border-default)' }}>
-          {(['all', 'open', 'resolved'] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className="px-3 py-1.5 text-xs font-medium transition-colors"
-              style={{
-                background: filter === f ? 'var(--oe-primary)' : 'var(--surface-card)',
-                color: filter === f ? '#fff' : 'var(--text-secondary)',
-              }}
-            >
-              {t(`diary.filter${f.charAt(0).toUpperCase() + f.slice(1)}`)}
-              {f === 'open' && counts.open > 0 && <span className="ml-1">({counts.open})</span>}
-              {f === 'resolved' && counts.resolved > 0 && <span className="ml-1">({counts.resolved})</span>}
-            </button>
-          ))}
-        </div>
+        <ViewToggle
+          value={filter}
+          onChange={setFilter}
+          options={(['all', 'open', 'resolved'] as const).map((f) => ({
+            value: f,
+            label: `${t(`diary.filter${f.charAt(0).toUpperCase() + f.slice(1)}`)}${f === 'open' && counts.open > 0 ? ` (${counts.open})` : ''}${f === 'resolved' && counts.resolved > 0 ? ` (${counts.resolved})` : ''}`,
+          }))}
+        />
         <div className="flex-1" />
         <Button onClick={openAdd}>{t('diary.addOpenPoint')}</Button>
       </div>

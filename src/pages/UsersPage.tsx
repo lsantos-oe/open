@@ -77,15 +77,6 @@ export function UsersManagementPanel() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Usuários</h1>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-            {teamDirectory.length} com acesso · {invitedUsers.length} convite(s) pendente(s)
-          </p>
-        </div>
-        <Button onClick={openInvite}>{t('addBtn.user')}</Button>
-      </div>
 
       <div className="flex items-center gap-2 mb-4 flex-wrap">
         <SearchInput
@@ -94,6 +85,7 @@ export function UsersManagementPanel() {
           placeholder="Buscar por nome ou e-mail..."
         />
         <div className="flex-1" />
+        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{teamDirectory.length} com acesso · {invitedUsers.length} convite(s) pendente(s)</span>
         <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />
         <FilterMenu
           activeCount={roleFilter.length + statusFilter.length}
@@ -116,6 +108,7 @@ export function UsersManagementPanel() {
             />
           </Field>
         </FilterMenu>
+        <Button size="sm" onClick={openInvite}>{t('addBtn.user')}</Button>
       </div>
 
       {/* Active users */}
