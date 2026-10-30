@@ -29,7 +29,7 @@ export default function VoteButton({ count, voted, disabled, title, onToggle }: 
       style={{
         borderRadius: 'var(--radius-pill)',
         border: '1px solid',
-        borderColor: voted ? 'var(--oe-primary)' : 'var(--border-default)',
+        borderColor: voted ? 'var(--text-primary)' : 'transparent',
         background: voted ? 'var(--oe-primary-light, var(--surface-subtle))' : 'transparent',
         color: voted ? 'var(--text-primary)' : 'var(--text-secondary)',
         fontWeight: voted ? 600 : 400,

@@ -52,7 +52,7 @@ export function EntityLinksPicker({ value, onChange }: { value: RetroLinkRef[]; 
       onChange={(keys) => onChange(keys.map(parseKey))}
       options={options}
       placeholder={t('retro.linksPlaceholder')}
-      className="flex items-center justify-between gap-2 w-full border border-[var(--border-default)] bg-[var(--surface-input)] px-2.5 py-1.5 text-[13px] text-left focus:border-[var(--text-tertiary)] focus:outline-none transition-colors"
+      className="flex items-center justify-between gap-2 w-full border border-transparent bg-[var(--surface-subtle)] px-2.5 py-1.5 text-[13px] text-left focus:border-[var(--text-tertiary)] focus:outline-none transition-colors"
     />
   )
 }

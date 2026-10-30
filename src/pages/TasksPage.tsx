@@ -1,4 +1,5 @@
 import { boardStatus } from '@/utils/statusCalc'
+import { useAppliedQuery } from '@/utils/quickAccess'
 import { CapacityView } from '@/components/tasks/CapacityView'
 import type { CapTask } from '@/utils/capacity'
 import { entryClientIds } from '@/utils/entryClients'
@@ -330,6 +331,7 @@ export default function TasksPage() {
   const [filterClientId, setFilterClientId] = useState<string[]>([])
   const [onlyOverdue, setOnlyOverdue] = useState(false)
   const [onlyMine, setOnlyMine] = useState(false)
+  useAppliedQuery((q) => { if (q.get('mine') === '1') setOnlyMine(true); if (q.get('overdue') === '1') setOnlyOverdue(true) }, { watchView: false })
   const [activeId, setActiveId] = useState<string | null>(null)
   const [newTaskOpen, setNewTaskOpen] = useState(false)
   /** Raia onde o duplo clique aconteceu: a tarefa nova já nasce nesse status. */

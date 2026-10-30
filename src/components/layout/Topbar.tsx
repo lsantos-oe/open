@@ -6,7 +6,8 @@ import { useCommandPaletteStore } from '@/stores/useCommandPaletteStore'
 import { NotificationBell } from './NotificationBell'
 import { ThemePref, setThemePref, useThemePref } from '@/utils/theme'
 import { EditProfileModal } from './EditProfileModal'
-import { PlusIcon, TasksIcon, SupportIcon, PortfolioIcon, ContactsIcon, WalletIcon, UsersGroupIcon } from '@/components/ui/icons'
+import { PlusIcon, TasksIcon, SupportIcon, PortfolioIcon, ContactsIcon, WalletIcon, UsersGroupIcon, RetroIcon } from '@/components/ui/icons'
+import { QUICK_PRESETS, QuickPreset, presetActive, useQuickAccess } from '@/utils/quickAccess'
 
 const QUICK_CREATE = [
   { to: '/tasks', label: 'Nova tarefa', Icon: TasksIcon },
@@ -91,22 +92,26 @@ export function Topbar() {
     width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
     background: active ? 'var(--text-primary)' : 'var(--surface-subtle)', color: active ? 'var(--surface-page)' : 'var(--text-secondary)',
   })
-  const onTasks = location.pathname === '/tasks'
-  const onCapacity = onTasks && new URLSearchParams(location.search).get('view') === 'capacity'
-  const shortcut = (label: string, Icon: typeof TasksIcon, active: boolean, to: string) => (
-    <button
-      key={label} onClick={() => navigate(to)} title={label} aria-label={label} aria-current={active ? 'page' : undefined}
-      className="flex items-center gap-1.5 h-8 px-2.5 rounded-full text-[13px] font-medium transition-colors"
-      style={{ background: active ? 'var(--text-primary)' : 'var(--surface-subtle)', color: active ? 'var(--surface-page)' : 'var(--text-secondary)' }}
-    >
-      <Icon className="w-3.5 h-3.5" />
-      <span className="hidden xl:inline">{label}</span>
-    </button>
-  )
-  const shortcuts = (
+  const quickIds = useQuickAccess()
+  const iconFor: Record<QuickPreset['icon'], typeof TasksIcon> = { tasks: TasksIcon, people: UsersGroupIcon, projects: PortfolioIcon, incidents: SupportIcon, wallet: WalletIcon, contacts: ContactsIcon, retros: RetroIcon }
+  const shortcuts = quickIds.length > 0 && (
     <div className="flex items-center gap-1.5">
-      {shortcut('Tarefas', TasksIcon, onTasks && !onCapacity, '/tasks?view=kanban')}
-      {shortcut('Carga', UsersGroupIcon, onCapacity, '/tasks?view=capacity')}
+      {quickIds.map((id) => {
+        const preset = QUICK_PRESETS.find((p) => p.id === id)
+        if (!preset) return null
+        const Icon = iconFor[preset.icon]
+        const active = presetActive(preset, location.pathname, location.search)
+        return (
+          <button
+            key={id} onClick={() => navigate(preset.path, { state: { qa: Date.now() } })} title={preset.label} aria-label={preset.label} aria-current={active ? 'page' : undefined}
+            className="flex items-center gap-1.5 h-8 px-2.5 rounded-full text-[13px] font-medium transition-colors"
+            style={{ background: active ? 'var(--text-primary)' : 'var(--surface-subtle)', color: active ? 'var(--surface-page)' : 'var(--text-secondary)' }}
+          >
+            <Icon className="w-3.5 h-3.5" />
+            <span className="hidden xl:inline">{preset.short}</span>
+          </button>
+        )
+      })}
     </div>
   )
   const themeIcons: Record<ThemePref, ReactNode> = {

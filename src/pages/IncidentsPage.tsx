@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
+import { useAppliedQuery } from '@/utils/quickAccess'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, useDroppable, useDraggable } from '@dnd-kit/core'
@@ -159,6 +160,10 @@ export default function IncidentsPage() {
   const [clientFilter, setClientFilter] = useState<string[]>([])
   const [ownerFilter, setOwnerFilter] = useState<string[]>([])
   const [onlyMine, setOnlyMine] = useState(false)
+  useAppliedQuery((q) => {
+    const v = q.get('view'); if (v === 'list' || v === 'kanban') setView(v)
+    if (q.get('mine') === '1') setOnlyMine(true)
+  })
 
   useEffect(() => { localStorage.setItem('pb-support-view', view) }, [view])
   const [showAdd, setShowAdd] = useState(false)

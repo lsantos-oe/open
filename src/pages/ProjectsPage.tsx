@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useAppliedQuery } from '@/utils/quickAccess'
 import { UserPicker } from '@/components/plan/UserPicker'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { exportAllProjectsToJson } from '@/utils/exportJson'
@@ -960,6 +961,11 @@ export default function ProjectsPage() {
   const [filters, setFilters] = useState<Filters>({ clientIds: [], pms: [], type: '', dev: '', statuses: [] })
   const [onlyMine, setOnlyMine] = useState(false)
   const [onlyDelayed, setOnlyDelayed] = useState(false)
+  useAppliedQuery((q) => {
+    const v = q.get('view'); if (v === 'list' || v === 'kanban') setView(v)
+    if (q.get('mine') === '1') setOnlyMine(true)
+    if (q.get('delayed') === '1') setOnlyDelayed(true)
+  })
   const [modalOpen, setModalOpen] = useState(false)
   /** Raia do Kanban onde o duplo clique aconteceu: o projeto nasce nesse status. */
   const [newProjectStatus, setNewProjectStatus] = useState<ProjectStatus | undefined>(undefined)

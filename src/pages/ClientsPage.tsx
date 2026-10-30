@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useAppliedQuery } from '@/utils/quickAccess'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
@@ -62,6 +63,10 @@ export default function ClientsPage() {
   const [countryFilter, setCountryFilter] = useState<string[]>([])
   const [ownerFilter, setOwnerFilter] = useState<string[]>([])
   const [onlyMine, setOnlyMine] = useState(false)
+  useAppliedQuery((q) => {
+    const v = q.get('view'); if (v === 'list' || v === 'kanban') setView(v)
+    if (q.get('mine') === '1') setOnlyMine(true)
+  })
 
   const [searchParams, setSearchParams] = useSearchParams()
   const tab: 'clients' | 'groups' = searchParams.get('tab') === 'groups' ? 'groups' : 'clients'

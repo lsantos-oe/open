@@ -23,7 +23,7 @@ interface Props {
 export function StatusPill({ status }: { status: RetroCard['actionStatus'] }) {
   const { t } = useTranslation()
   return (
-    <span className="inline-block whitespace-nowrap text-[11.5px] font-[500] px-1.5 py-[1px]" style={{ ...ACTION_STATUS_STYLE[status], borderRadius: 'var(--radius-pill)' }}>
+    <span className="inline-block whitespace-nowrap text-[11.5px] font-[500] px-2 py-0.5 rounded-[var(--radius-pill)]" style={{ ...ACTION_STATUS_STYLE[status], borderRadius: 'var(--radius-pill)' }}>
       {t(`retro.actionStatus_${status}`)}
     </span>
   )
@@ -42,8 +42,8 @@ export default function RetroActionCard({ card, subActions, links, addresses, co
       tabIndex={0}
       onClick={() => onOpen(card.id)}
       onKeyDown={(e) => { if (e.key === 'Enter') onOpen(card.id) }}
-      className="p-2.5 text-[13px] rounded-[var(--radius-md)] border cursor-pointer hover:border-[var(--text-tertiary)] transition-colors"
-      style={{ background: 'var(--surface-card)', borderColor: 'var(--border-default)', color: 'var(--text-primary)', opacity: faded ? 0.75 : 1 }}
+      className="p-3 text-[13px] rounded-[var(--radius-xl)] cursor-pointer hover:shadow-[var(--shadow-sm)] transition-colors"
+      style={{ background: 'var(--surface-card)', color: 'var(--text-primary)', opacity: faded ? 0.75 : 1 }}
     >
       <div className="flex items-start justify-between gap-2">
         <p className="whitespace-pre-wrap break-words font-medium" style={{ textDecoration: card.actionStatus === 'dropped' ? 'line-through' : undefined }}>{card.text}</p>

@@ -75,8 +75,8 @@ export default function RetroCardItem({ card, mine, canEditText, canLink, links,
 
   return (
     <div
-      className="p-2.5 text-[13px] rounded-[var(--radius-md)] border"
-      style={{ background: 'var(--surface-card)', borderColor: 'var(--border-default)', color: 'var(--text-primary)' }}
+      className="p-3 text-[13px] rounded-[var(--radius-xl)]"
+      style={{ background: 'var(--surface-card)', color: 'var(--text-primary)' }}
     >
       {editing ? (
         <div className="space-y-2">

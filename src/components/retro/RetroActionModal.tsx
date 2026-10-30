@@ -235,7 +235,7 @@ export default function RetroActionModal({ retro, cardId, userId, isAdmin, nameO
               <ul className="space-y-2">
                 {history.map((r) => (
                   <li key={r.id} className="text-[13px]">
-                    <span className="inline-block px-1.5 py-[1px] text-[11.5px] font-[500]" style={{ ...REVIEW_OUTCOME_STYLE[r.outcome], borderRadius: 'var(--radius-pill)' }}>
+                    <span className="inline-block px-2 py-0.5 rounded-[var(--radius-pill)] text-[11.5px] font-[500]" style={{ ...REVIEW_OUTCOME_STYLE[r.outcome], borderRadius: 'var(--radius-pill)' }}>
                       {t(`retro.outcomeDone_${r.outcome}`)}
                     </span>
                     <span className="ml-1.5 text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>{t('retro.reviewedIn', { title: retroTitle(r.retroId) })}</span>

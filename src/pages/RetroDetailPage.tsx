@@ -110,8 +110,7 @@ export default function RetroDetailPage() {
 
       {/* Fases: stepper + ação do condutor */}
       <section
-        className="mb-6 p-4 rounded-[var(--radius-lg)] border"
-        style={{ background: 'var(--surface-card)', borderColor: 'var(--border-default)' }}
+        className="mb-6 p-4 oe-card"
       >
         <ol className="flex items-center gap-1 flex-wrap mb-3">
           {RETRO_PHASES.map((p, i) => {

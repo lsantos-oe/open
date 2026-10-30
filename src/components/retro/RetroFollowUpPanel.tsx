@@ -51,8 +51,7 @@ export default function RetroFollowUpPanel({ retro, canReview, onOpenAction }: P
 
   return (
     <section
-      className="mb-6 rounded-[var(--radius-lg)] border"
-      style={{ background: 'var(--surface-card)', borderColor: 'var(--border-default)' }}
+      className="mb-6 oe-card"
     >
       <div className="flex items-center justify-between gap-3 px-4 py-3">
         <div className="min-w-0">
@@ -105,7 +104,7 @@ export default function RetroFollowUpPanel({ retro, canReview, onOpenAction }: P
                       </div>
                       {review ? (
                         <div className="mt-2 text-[11.5px]">
-                          <span className="inline-block px-1.5 py-[1px] font-[500]" style={{ ...REVIEW_OUTCOME_STYLE[review.outcome], borderRadius: 'var(--radius-pill)' }}>
+                          <span className="inline-block px-2 py-0.5 rounded-[var(--radius-pill)] font-[500]" style={{ ...REVIEW_OUTCOME_STYLE[review.outcome], borderRadius: 'var(--radius-pill)' }}>
                             {t('retro.reviewedAs', { outcome: t(`retro.outcomeDone_${review.outcome}`) })}
                           </span>
                           {review.note && <span className="ml-2" style={{ color: 'var(--text-secondary)' }}>{review.note}</span>}

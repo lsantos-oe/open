@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { QUICK_PRESETS, QUICK_SLOTS, setQuickAccess, useQuickAccess } from '@/utils/quickAccess'
 import { ThemePref, setThemePref, useThemePref } from '@/utils/theme'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -66,6 +67,7 @@ export default function SettingsPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const themePref = useThemePref()
+  const quickIds = useQuickAccess()
   const { profile } = useAuthStore()
   const isAdmin = profile?.role === 'admin'
   const { hasKey, saving: savingAiKey, saveKey: saveAiKey, removeKey: removeAiKey } = useAiStore()
@@ -205,6 +207,22 @@ export default function SettingsPage() {
                 { value: 'es', label: '🇪🇸 Español' },
               ]}
             />
+          </Section>
+
+          <Section title="Acesso rápido" description="Até dois atalhos na barra superior, já com a vista e o filtro aplicados. Salvo apenas neste navegador.">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
+              {Array.from({ length: QUICK_SLOTS }, (_, i) => (
+                <Field key={i} label={`Atalho ${i + 1}`}>
+                  <Select
+                    value={quickIds[i] ?? ''}
+                    onChange={(e) => { const next = [...quickIds]; next[i] = e.target.value; setQuickAccess(next.filter(Boolean)) }}
+                  >
+                    <option value="">Nenhum</option>
+                    {QUICK_PRESETS.map((p) => <option key={p.id} value={p.id} disabled={quickIds.includes(p.id) && quickIds[i] !== p.id}>{p.label}</option>)}
+                  </Select>
+                </Field>
+              ))}
+            </div>
           </Section>
 
           <Section title="Aparência" description="Automático segue o modo claro ou escuro do seu computador. Salvo apenas neste navegador.">
