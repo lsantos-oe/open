@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useEntryOpenerStore } from '@/stores/useEntryOpenerStore'
-import { Badge } from '@/components/ui/Badge'
+import { Badge, BadgeVariant } from '@/components/ui/Badge'
 import { isEntryMine, isIncidentMine } from '@/utils/involvement'
 import { useBacklogTasksPref } from '@/stores/useBacklogTasksPref'
 import { entryClientIds } from '@/utils/entryClients'
@@ -17,8 +17,8 @@ interface MyTask {
   scopeName: string
 }
 
-const INCIDENT_STATUS_VARIANT: Record<IncidentStatus, 'gray' | 'primary' | 'orange' | 'green' | 'red'> = {
-  open: 'gray', in_progress: 'primary', waiting_on_client: 'orange', resolved: 'green', closed: 'red',
+const INCIDENT_STATUS_VARIANT: Record<IncidentStatus, BadgeVariant> = {
+  open: 'gray', in_progress: 'blue', waiting_on_client: 'yellow', resolved: 'green', closed: 'gray',
 }
 
 function taskDueDate(entry: Entry): string | undefined {

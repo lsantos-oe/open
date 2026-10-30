@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { useSmartPosition } from '@/hooks/useSmartPosition'
 import type { SearchableOption } from './SearchableSelect'
+import { SelectChevron } from './Input'
 
 interface Props {
   values: string[]
@@ -90,7 +91,7 @@ export function MultiSelect({ values, onChange, options, placeholder, disabled, 
         }}
       >
         <span className="truncate">{summary}</span>
-        <ChevronIcon />
+        <SelectChevron />
       </button>
       {open && !disabled && createPortal(
         <div
@@ -157,13 +158,5 @@ export function MultiSelect({ values, onChange, options, placeholder, disabled, 
         document.body,
       )}
     </div>
-  )
-}
-
-function ChevronIcon() {
-  return (
-    <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: 'var(--text-tertiary)' }}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
-    </svg>
   )
 }

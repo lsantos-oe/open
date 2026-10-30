@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, CSSProperties, ReactNode } from 'react'
+import { EntityCode } from '@/components/ui/CodeBadge'
 import RichTextInput from '@/components/editor/RichTextInput'
 import EntryComments from './EntryComments'
 import { useTranslation } from 'react-i18next'
@@ -668,6 +669,7 @@ export default function EntryModal({
 
         {/* ── LEFT COLUMN ── */}
         <div style={{ flex: 2, padding: 24, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {mode === 'edit' && entry && <div className="-mb-3"><EntityCode table="entries" id={entry.id} /></div>}
 
           {/* Copy link + related entities (edit mode only — nothing to link to before it's saved) */}
           {mode === 'edit' && entry && (
@@ -741,6 +743,7 @@ export default function EntryModal({
                 onChange={(next) => set('owners', [...next, ...form.owners.filter((o) => o.kind !== 'executor')])}
                 teamMembers={selectedTeam}
                 contacts={selectedContacts}
+                newContactClientIds={selectedProject?.clientIds.length ? selectedProject.clientIds : !form.projectId ? clientFilter : undefined}
                 kind="executor"
               />
             </div>
@@ -751,6 +754,7 @@ export default function EntryModal({
                 onChange={(next) => set('owners', [...form.owners.filter((o) => o.kind !== 'validator'), ...next])}
                 teamMembers={selectedTeam}
                 contacts={selectedContacts}
+                newContactClientIds={selectedProject?.clientIds.length ? selectedProject.clientIds : !form.projectId ? clientFilter : undefined}
                 max={1}
                 kind="validator"
               />

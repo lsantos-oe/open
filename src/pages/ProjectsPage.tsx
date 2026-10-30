@@ -255,9 +255,7 @@ function ListView({ projects, holidays, onOpen, selected, onToggle, sortField, s
                   <div className="flex items-center gap-2 min-w-0">
                     <p className="font-medium text-[var(--text-primary)] truncate" title={p.name}>{p.name}</p>
                     {isArchived && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-[var(--radius-pill)] font-medium shrink-0" style={{ background: 'var(--surface-subtle)', color: 'var(--text-tertiary)', border: '0.5px solid var(--border-default)' }}>
-                        {t('project.archived')}
-                      </span>
+                      <Badge size="sm" className="shrink-0">{t('project.archived')}</Badge>
                     )}
                   </div>
                 </td>
@@ -340,9 +338,7 @@ function KanbanView({ projects, holidays, onOpen, selected, onToggle, onCreate }
           >
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">{t(`project.${status}`)}</span>
-              <span className="bg-[var(--surface-card)] text-[var(--text-secondary)] rounded-[var(--radius-pill)] text-xs px-2 py-0.5 font-medium border border-[var(--border-default)]">
-                {cards.length}
-              </span>
+              <Badge size="sm">{cards.length}</Badge>
             </div>
             <div className="space-y-2">
               {cards.length === 0 && (
@@ -542,9 +538,7 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
                   {isActive && (
                     <div className="mt-3 flex flex-wrap gap-1">
                       {tpl.phases.map((ph) => (
-                        <span key={ph.id} className="text-[10px] bg-[var(--color-info-bg)] text-[var(--color-info-text)] px-2 py-0.5 rounded-[var(--radius-pill)]">
-                          {ph.nameKey ? i18n.t(ph.nameKey) : ph.name}
-                        </span>
+                        <Badge key={ph.id} variant="blue" size="sm">{ph.nameKey ? i18n.t(ph.nameKey) : ph.name}</Badge>
                       ))}
                     </div>
                   )}

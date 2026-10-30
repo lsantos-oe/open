@@ -19,6 +19,8 @@ import { SelectionBar } from '@/components/ui/SelectionBar'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { MineToggle } from '@/components/ui/MineToggle'
 import { ViewToggle } from '@/components/ui/ViewToggle'
+import { GroupsTab } from '@/components/clients/GroupsTab'
+import { AddToGroupModal, NewGroupModal } from '@/components/clients/GroupModals'
 import { ListIcon, KanbanIcon, FolderIcon } from '@/components/ui/icons'
 import { isClientMine } from '@/utils/involvement'
 import { findCountry } from '@/data/countries'
@@ -61,6 +63,13 @@ export default function ClientsPage() {
   const [countryFilter, setCountryFilter] = useState<string[]>([])
   const [ownerFilter, setOwnerFilter] = useState<string[]>([])
   const [onlyMine, setOnlyMine] = useState(false)
+
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab: 'clients' | 'groups' = searchParams.get('tab') === 'groups' ? 'groups' : 'clients'
+  const clientGroups = useAppStore((s) => s.clientGroups)
+  const [newGroupOpen, setNewGroupOpen] = useState(false)
+  const [groupFromSelection, setGroupFromSelection] = useState(false)
+  const [addToGroupOpen, setAddToGroupOpen] = useState(false)
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkOwnersOpen, setBulkOwnersOpen] = useState(false)
@@ -143,7 +152,6 @@ export default function ClientsPage() {
     setShowAdd(true)
   }
 
-  const [searchParams, setSearchParams] = useSearchParams()
   useEffect(() => {
     if (searchParams.get('new') === '1') {
       openAdd()
@@ -166,8 +174,33 @@ export default function ClientsPage() {
           <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{t('nav.wallet')}</h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{filtered.length} / {clients.length} {clients.length !== 1 ? t('wallet.clients') : t('wallet.client')}</p>
         </div>
-        <Button onClick={openAdd}>+ {t('wallet.client')}</Button>
+        {tab === 'clients'
+          ? <Button onClick={openAdd}>+ {t('wallet.client')}</Button>
+          : <Button onClick={() => setNewGroupOpen(true)}>+ Grupo</Button>}
       </div>
+
+      <div className="flex gap-1 mb-5 border-b" style={{ borderColor: 'var(--border-default)' }} role="tablist" aria-label="Carteira">
+        {([['clients', `Clientes`, clients.length], ['groups', 'Grupos', clientGroups.length]] as const).map(([id, label, n]) => (
+          <button
+            key={id}
+            role="tab"
+            aria-selected={tab === id}
+            onClick={() => { setSelected(new Set()); setSearchParams(id === 'groups' ? { tab: 'groups' } : {}, { replace: true }) }}
+            className="px-3 py-2 text-[13px] font-medium -mb-px border-b-2 transition-colors"
+            style={tab === id
+              ? { borderColor: 'var(--oe-primary)', color: 'var(--oe-primary)' }
+              : { borderColor: 'transparent', color: 'var(--text-tertiary)' }}
+          >
+            {label} <span className="text-[11px] font-normal ml-0.5" style={{ color: 'var(--text-tertiary)' }}>{n}</span>
+          </button>
+        ))}
+      </div>
+
+      {tab === 'groups' && (
+        <GroupsTab newOpen={newGroupOpen} onNew={() => setNewGroupOpen(true)} onNewClose={() => setNewGroupOpen(false)} />
+      )}
+
+      {tab === 'clients' && <>
 
       <div className="flex items-center gap-2 mb-4 flex-wrap">
         <SearchInput
@@ -331,6 +364,8 @@ export default function ClientsPage() {
         </div>
       )}
 
+      </>}
+
       <Modal
         open={showAdd}
         title={t('wallet.newClientTitle')}
@@ -393,7 +428,38 @@ export default function ClientsPage() {
         >
           {t('wallet.archive')}
         </button>
+        {selected.size >= 2 && (
+          <button
+            onClick={() => { setGroupFromSelection(true) }}
+            className="text-xs px-2 py-1 rounded-[var(--radius-md)]"
+            style={{ background: 'rgba(255,255,255,0.15)' }}
+          >
+            Agrupar
+          </button>
+        )}
+        {clientGroups.length > 0 && (
+          <button
+            onClick={() => setAddToGroupOpen(true)}
+            className="text-xs px-2 py-1 rounded-[var(--radius-md)]"
+            style={{ background: 'rgba(255,255,255,0.15)' }}
+          >
+            Adicionar a grupo
+          </button>
+        )}
       </SelectionBar>
+
+      <NewGroupModal
+        open={groupFromSelection}
+        onClose={() => setGroupFromSelection(false)}
+        initialClientIds={[...selected]}
+        onCreated={(gid) => { setSelected(new Set()); navigate(`/wallet/groups/${gid}`) }}
+      />
+      <AddToGroupModal
+        open={addToGroupOpen}
+        onClose={() => setAddToGroupOpen(false)}
+        clientIds={[...selected]}
+        onDone={(gid) => { setSelected(new Set()); navigate(`/wallet/groups/${gid}`) }}
+      />
 
       <Modal
         open={bulkOwnersOpen}

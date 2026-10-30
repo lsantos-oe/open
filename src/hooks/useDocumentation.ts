@@ -11,7 +11,7 @@ import {
 
 const BUCKET = 'project-files'
 
-export type DocScope = { kind: 'project'; id: string } | { kind: 'client'; id: string }
+export type DocScope = { kind: 'project'; id: string } | { kind: 'client'; id: string } | { kind: 'group'; id: string }
 
 export interface NewDocInput {
   title: string
@@ -24,6 +24,7 @@ export interface NewDocInput {
  *  • Projeto: itens colocados direto na aba + links e arquivos das tarefas de documentação do projeto (espelhados:
  *    o conteúdo continua na tarefa).
  *  • Cliente: itens do próprio cliente + tudo da documentação dos projetos ligados a ele.
+ *  • Grupo: o mesmo, somado para todos os clientes membros (só leitura: itens novos entram no cliente ou no projeto).
  *
  *  Os links vêm ao vivo da memória do app; o resto (itens diretos, anexos, classificação) é buscado ao abrir e
  *  atualizado quando outra pessoa mexe (Realtime). */
@@ -33,16 +34,24 @@ export function useDocumentation(scope: DocScope) {
   const userId = useAuthStore((s) => s.user?.id)
   const addToast = useToastStore((s) => s.addToast)
 
+  const group = useAppStore((s) => (scope.kind === 'group' ? s.clientGroups.find((g) => g.id === scope.id) : undefined))
+  /** Clientes cujos itens diretos entram (cliente: ele; grupo: os membros). */
+  const clientIds = useMemo(
+    () => (scope.kind === 'client' ? [scope.id] : scope.kind === 'group' ? group?.clientIds ?? [] : []),
+    [scope.kind, scope.id, group],
+  )
+  const clientsKey = clientIds.join(',')
   const projects = useMemo(
     () => (scope.kind === 'project'
       ? allProjects.filter((p) => p.id === scope.id)
-      : allProjects.filter((p) => !p.archived && p.clientIds.includes(scope.id))),
-    [allProjects, scope.kind, scope.id],
+      : allProjects.filter((p) => !p.archived && p.clientIds.some((c) => clientIds.includes(c)))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [allProjects, scope.kind, scope.id, clientsKey],
   )
   const projectNames = useMemo(() => new Map(projects.map((p) => [p.id, p.name])), [projects])
   const docEntryIds = useMemo(() => projects.flatMap((p) => documentationEntries(p).map((e) => e.id)), [projects])
   const projectIds = useMemo(() => projects.map((p) => p.id), [projects])
-  const idsKey = `${projectIds.join(',')}|${docEntryIds.join(',')}`
+  const idsKey = `${clientsKey}|${projectIds.join(',')}|${docEntryIds.join(',')}`
 
   const [rows, setRows] = useState<DocItemRow[]>([])
   const [attachments, setAttachments] = useState<AttachmentRowLite[]>([])
@@ -57,10 +66,16 @@ export function useDocumentation(scope: DocScope) {
     try {
       // Uma consulta de cada vez (o supabase-js disputa o lock da sessão quando várias começam juntas).
       const itemRows: DocItemRow[] = []
-      const own = await supabase.from('documentation_items').select('*').eq(scope.kind === 'project' ? 'project_id' : 'client_id', scope.id)
-      if (own.error) throw new Error(own.error.message)
-      itemRows.push(...((own.data ?? []) as DocItemRow[]))
-      if (scope.kind === 'client' && projectIds.length > 0) {
+      if (scope.kind === 'project') {
+        const own = await supabase.from('documentation_items').select('*').eq('project_id', scope.id)
+        if (own.error) throw new Error(own.error.message)
+        itemRows.push(...((own.data ?? []) as DocItemRow[]))
+      } else if (clientIds.length > 0) {
+        const own = await supabase.from('documentation_items').select('*').in('client_id', clientIds)
+        if (own.error) throw new Error(own.error.message)
+        itemRows.push(...((own.data ?? []) as DocItemRow[]))
+      }
+      if (scope.kind !== 'project' && projectIds.length > 0) {
         const fromProjects = await supabase.from('documentation_items').select('*').in('project_id', projectIds)
         if (fromProjects.error) throw new Error(fromProjects.error.message)
         itemRows.push(...((fromProjects.data ?? []) as DocItemRow[]))
@@ -79,10 +94,12 @@ export function useDocumentation(scope: DocScope) {
       const keys = [...linkKeys, ...attRows.map((a) => fileKey(a.id))]
       const metaMap: Record<string, DocMeta> = {}
       if (keys.length > 0) {
-        const m = await supabase.from('documentation_meta').select('source_key, audience, tags').in('source_key', keys)
+        // Todo item espelhado precisa de uma linha de classificação para ter código curto: o banco cria as que faltam.
+        await supabase.rpc('documentation_ensure_codes', { p_keys: keys })   // sem a migration de códigos, segue sem código
+        const m = await supabase.from('documentation_meta').select('*').in('source_key', keys)
         if (m.error) throw new Error(m.error.message)
-        for (const r of (m.data ?? []) as { source_key: string; audience: string; tags: string[] | null }[]) {
-          metaMap[r.source_key] = { audience: asAudience(r.audience), tags: r.tags ?? [] }
+        for (const r of (m.data ?? []) as { source_key: string; audience: string; tags: string[] | null; code?: string | null }[]) {
+          metaMap[r.source_key] = { audience: asAudience(r.audience), tags: r.tags ?? [], code: r.code ?? undefined }
         }
       }
       if (!alive.current) return
@@ -125,9 +142,12 @@ export function useDocumentation(scope: DocScope) {
     return false
   }
 
+  // Grupo é só leitura: quem adiciona escolhe o cliente (ou o projeto) onde o item vai morar.
   const scopeCols = scope.kind === 'project' ? { project_id: scope.id, client_id: null } : { client_id: scope.id, project_id: null }
+  const readOnlyScope = scope.kind === 'group'
 
   const addLink = useCallback(async (input: NewDocInput & { url: string }): Promise<boolean> => {
+    if (readOnlyScope) return false
     const { error: e } = await supabase.from('documentation_items').insert({
       ...scopeCols, kind: 'link', title: input.title.trim(), url: input.url.trim(), audience: input.audience, tags: normalizeTags(input.tags), created_by: userId,
     })
@@ -138,6 +158,7 @@ export function useDocumentation(scope: DocScope) {
   }, [scope.kind, scope.id, userId, load])
 
   const addFile = useCallback(async (input: NewDocInput & { file: File }): Promise<boolean> => {
+    if (readOnlyScope) return false
     if (input.file.size > DOC_MAX_FILE_BYTES) return fail(new Error(`"${input.file.name}" passa de ${formatBytes(DOC_MAX_FILE_BYTES)}`), 'Arquivo grande demais')
     const path = `documentation/${scope.kind}/${scope.id}/${uuid()}_${safeFileName(input.file.name)}`
     const up = await supabase.storage.from(BUCKET).upload(path, input.file, { upsert: false })
@@ -157,6 +178,7 @@ export function useDocumentation(scope: DocScope) {
 
   /** Cria a caixa de texto vazia e devolve o id, para abrir o editor. */
   const addText = useCallback(async (input: NewDocInput): Promise<string | null> => {
+    if (readOnlyScope) return null
     const { data, error: e } = await supabase.from('documentation_items').insert({
       ...scopeCols, kind: 'text', title: input.title.trim(), body: '', audience: input.audience, tags: normalizeTags(input.tags), created_by: userId,
     }).select('id').single()
@@ -174,7 +196,7 @@ export function useDocumentation(scope: DocScope) {
         source_key: item.key, audience: patch.audience, tags, updated_by: userId, updated_at: new Date().toISOString(),
       })
       if (e) return fail(e, 'Não foi possível salvar')
-      setMeta((m) => ({ ...m, [item.key]: { audience: patch.audience, tags } }))
+      setMeta((m) => ({ ...m, [item.key]: { audience: patch.audience, tags, code: m[item.key]?.code } }))
       return true
     }
     const fields: Record<string, unknown> = { audience: patch.audience, tags }
@@ -208,5 +230,5 @@ export function useDocumentation(scope: DocScope) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  return { items, loading, error, reload: load, personName, projects, addLink, addFile, addText, updateItem, removeItem, openFile }
+  return { items, loading, error, reload: load, personName, projects, clientIds, addLink, addFile, addText, updateItem, removeItem, openFile }
 }

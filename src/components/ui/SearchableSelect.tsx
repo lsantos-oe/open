@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { useSmartPosition } from '@/hooks/useSmartPosition'
+import { SelectChevron } from './Input'
 
 export interface SearchableOption {
   id: string
@@ -76,9 +77,10 @@ export function SearchableSelect({ value, onChange, options, placeholder, emptyO
         onChange={(e) => { setQuery(e.target.value); if (!open) setOpen(true) }}
         onFocus={() => setOpen(true)}
         placeholder={placeholder ?? selected?.label ?? ''}
-        className={className}
+        className={`${className} pr-8`}
         style={{ borderRadius: 'var(--radius-md)', cursor: disabled ? 'default' : 'text', ...style }}
       />
+      <SelectChevron className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
       {open && !disabled && createPortal(
         <div
           ref={popoverRef as React.RefObject<HTMLDivElement>}

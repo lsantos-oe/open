@@ -1,6 +1,7 @@
 import { isDocumentationName } from '@/utils/documentation'
 import { CloseOutTarget, isClosingIncidentStatus, localTodayISO, openTasksOfIncident, openTasksOfProject } from '@/utils/closeOut'
 import { normalizeEntryClients } from '@/utils/entryClients'
+import { normalizeGroupName } from '@/utils/clientGroups'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { v4 as uuid } from 'uuid'
@@ -9,7 +10,7 @@ import {
   Project, Phase, Entry, Risk, ActionTask, DelayLogEntry, TeamMember, Link, EntryComment,
   AppSettings, ProjectTemplate, IncidentTemplate, AppLanguage, EntryStatus, RiskFlag, Workdays,
   OpenPoint, MeetingLog, MeetingItem, HistoryEntry, HistoryEventType, DiaryComment, FileAttachment,
-  Client, ClientContact, ClientCsAssignment, ClientStatus,
+  Client, ClientContact, ClientGroup, ClientCsAssignment, ClientStatus,
   Incident, IncidentStatus, EntryOwner, ReportLink,
 } from '@/types'
 import { applyDateChange } from '@/utils/dateEngine'
@@ -150,6 +151,7 @@ interface AppStore {
   archivedClientsLoaded: boolean
   contacts: ClientContact[]
   contactsLoading: boolean
+  clientGroups: ClientGroup[]
   incidents: Incident[]
   incidentsLoading: boolean
 
@@ -162,6 +164,7 @@ interface AppStore {
   loadClients: () => Promise<void>
   loadArchivedClients: () => Promise<void>
   loadContacts: () => Promise<void>
+  loadClientGroups: () => Promise<void>
   archiveClient: (id: string) => Promise<void>
   unarchiveClient: (id: string) => Promise<void>
   loadIncidents: () => Promise<void>
@@ -186,10 +189,23 @@ interface AppStore {
   deleteClient: (id: string) => void
   // Contacts (shared base — Fase 8.7)
   createContact: (data: { name: string; role?: string; email?: string; phone?: string; clientIds?: string[] }) => string
+  /** Igual a createContact, mas espera o banco gravar antes de devolver (para quem vai referenciar o contato em seguida). */
+  createContactNow: (data: { name: string; role?: string; email?: string; phone?: string; clientIds?: string[] }) => Promise<ClientContact | null>
   updateContact: (id: string, patch: Partial<Omit<ClientContact, 'id' | 'clientIds'>>) => void
   deleteContact: (id: string) => void
   linkContactToClient: (contactId: string, clientId: string) => void
   unlinkContactFromClient: (contactId: string, clientId: string) => void
+  // Grupos de clientes. As ações que mexem em membros/contatos esperam o banco (ele confere as regras e
+  // materializa os vínculos de contato) e recarregam; devolvem false se o banco recusou (a mensagem vai num aviso).
+  createClientGroup: (name: string, clientIds: string[]) => Promise<string | null>
+  renameClientGroup: (id: string, name: string) => Promise<boolean>
+  deleteClientGroup: (id: string) => Promise<boolean>
+  addClientsToGroup: (groupId: string, clientIds: string[]) => Promise<boolean>
+  removeClientFromGroup: (groupId: string, clientId: string) => Promise<boolean>
+  addContactToGroup: (groupId: string, contactId: string) => Promise<boolean>
+  removeContactFromGroup: (groupId: string, contactId: string) => Promise<boolean>
+  /** Cria um contato novo já dentro do grupo (ligado a todos os clientes membros). */
+  createContactInGroup: (groupId: string, data: { name: string; role?: string; email?: string; phone?: string }) => Promise<boolean>
   addCsAssignment: (clientId: string, assignment: Omit<ClientCsAssignment, 'id'>) => void
   updateCsAssignment: (clientId: string, assignmentId: string, patch: Partial<ClientCsAssignment>) => void
   removeCsAssignment: (clientId: string, assignmentId: string) => void
@@ -690,6 +706,7 @@ async function syncGlobalSettings(settings: AppSettings, userId: string): Promis
     defaultLanguage: settings.defaultLanguage,
     dateFormat: settings.dateFormat,
     workdays: settings.workdays,
+    allowMultipleClientGroups: settings.allowMultipleClientGroups ?? false,
   }
   const { error } = await supabase
     .from('settings')
@@ -716,6 +733,7 @@ export const useAppStore = create<AppStore>()(
       archivedClientsLoaded: false,
       contacts: [],
       contactsLoading: false,
+      clientGroups: [],
       incidents: [],
       incidentsLoading: false,
       standaloneTasks: [],
@@ -819,6 +837,7 @@ export const useAppStore = create<AppStore>()(
               ...(v.defaultLanguage !== undefined && { defaultLanguage: v.defaultLanguage }),
               ...(v.dateFormat !== undefined && { dateFormat: v.dateFormat }),
               ...(v.workdays !== undefined && { workdays: v.workdays }),
+              ...(v.allowMultipleClientGroups !== undefined && { allowMultipleClientGroups: v.allowMultipleClientGroups }),
             },
           }))
         } catch {
@@ -978,6 +997,31 @@ export const useAppStore = create<AppStore>()(
         } catch (err) {
           useToastStore.getState().addToast(err instanceof Error ? err.message : 'Erro ao carregar contatos')
           set({ contactsLoading: false })
+        }
+      },
+
+      async loadClientGroups() {
+        try {
+          const [groupsRes, membersRes, contactsRes] = await Promise.all([
+            supabase.from('client_groups').select('*').order('name'),
+            supabase.from('client_group_members').select('group_id, client_id'),
+            supabase.from('client_group_contacts').select('group_id, contact_id'),
+          ])
+          if (groupsRes.error) throw new Error(groupsRes.error.message)
+          if (membersRes.error) throw new Error(membersRes.error.message)
+          if (contactsRes.error) throw new Error(contactsRes.error.message)
+          const clientGroups: ClientGroup[] = (groupsRes.data ?? []).map((g) => ({
+            id: g.id,
+            name: g.name,
+            createdAt: g.created_at ?? undefined,
+            clientIds: (membersRes.data ?? []).filter((m) => m.group_id === g.id).map((m) => m.client_id),
+            contactIds: (contactsRes.data ?? []).filter((c) => c.group_id === g.id).map((c) => c.contact_id),
+          }))
+          set({ clientGroups })
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : ''
+          if (/does not exist|schema cache/i.test(msg)) return   // migration de grupos ainda não aplicada: o app segue sem grupos
+          useToastStore.getState().addToast(msg || 'Erro ao carregar grupos de clientes')
         }
       },
 
@@ -2806,7 +2850,7 @@ export const useAppStore = create<AppStore>()(
       updateSettings(patch) {
         const prev = get().settings
         set((s) => ({ settings: { ...s.settings, ...patch } }))
-        const globalKeys: (keyof AppSettings)[] = ['holidays', 'holidayNames', 'defaultLanguage', 'dateFormat', 'workdays']
+        const globalKeys: (keyof AppSettings)[] = ['holidays', 'holidayNames', 'defaultLanguage', 'dateFormat', 'workdays', 'allowMultipleClientGroups']
         const hasGlobal = (Object.keys(patch) as (keyof AppSettings)[]).some((k) => globalKeys.includes(k))
         if (hasGlobal) {
           sync(async () => syncGlobalSettings(get().settings, getUserId()), () => set({ settings: prev }))
@@ -3330,6 +3374,29 @@ export const useAppStore = create<AppStore>()(
         return newContact.id
       },
 
+      async createContactNow(data) {
+        const contact: ClientContact = {
+          id: uuid(), name: data.name, role: data.role, email: data.email, phone: data.phone,
+          clientIds: data.clientIds ?? [], createdAt: new Date().toISOString(),
+        }
+        try {
+          const { error } = await supabase.from('contacts').insert(storeClientContactToDb(contact))
+          if (error) throw new Error(error.message)
+          if (contact.clientIds.length > 0) {
+            const { error: linkError } = await supabase.from('contact_clients').insert(contact.clientIds.map((client_id) => ({ contact_id: contact.id, client_id })))
+            if (linkError) {
+              await supabase.from('contacts').delete().eq('id', contact.id)
+              throw new Error(linkError.message)
+            }
+          }
+          set((s) => ({ contacts: [...s.contacts, contact] }))
+          return contact
+        } catch (err) {
+          useToastStore.getState().addToast(err instanceof Error ? err.message : 'Não foi possível criar o contato')
+          return null
+        }
+      },
+
       updateContact(id, patch) {
         const prev = get().contacts
         set((s) => ({ contacts: s.contacts.map((c) => c.id === id ? { ...c, ...patch } : c) }))
@@ -3378,6 +3445,87 @@ export const useAppStore = create<AppStore>()(
           const { error } = await supabase.from('contact_clients').delete().eq('contact_id', contactId).eq('client_id', clientId)
           if (error) throw new Error(error.message)
         }, () => set({ contacts: prev }))
+      },
+
+      async createClientGroup(name, clientIds) {
+        const id = uuid()
+        try {
+          const { error } = await supabase.from('client_groups').insert({ id, name: normalizeGroupName(name) })
+          if (error) throw new Error(error.message)
+          if (clientIds.length > 0) {
+            const { error: mErr } = await supabase.from('client_group_members').insert(clientIds.map((client_id) => ({ group_id: id, client_id })))
+            if (mErr) {
+              await supabase.from('client_groups').delete().eq('id', id)   // não deixa um grupo pela metade
+              throw new Error(mErr.message)
+            }
+          }
+          await get().loadClientGroups()
+          return id
+        } catch (err) {
+          useToastStore.getState().addToast(err instanceof Error ? err.message : 'Erro ao criar o grupo')
+          return null
+        }
+      },
+
+      async renameClientGroup(id, name) {
+        const prev = get().clientGroups
+        set((s) => ({ clientGroups: s.clientGroups.map((g) => (g.id === id ? { ...g, name: normalizeGroupName(name) } : g)) }))
+        const { error } = await supabase.from('client_groups').update({ name: normalizeGroupName(name) }).eq('id', id)
+        if (error) {
+          set({ clientGroups: prev })
+          useToastStore.getState().addToast(error.message.includes('client_groups_name_uniq') ? 'Já existe um grupo com esse nome.' : error.message)
+          return false
+        }
+        return true
+      },
+
+      async deleteClientGroup(id) {
+        const { error } = await supabase.from('client_groups').delete().eq('id', id)
+        if (error) { useToastStore.getState().addToast(error.message); return false }
+        await Promise.all([get().loadClientGroups(), get().loadContacts()])
+        return true
+      },
+
+      async addClientsToGroup(groupId, clientIds) {
+        const { error } = await supabase.from('client_group_members').insert(clientIds.map((client_id) => ({ group_id: groupId, client_id })))
+        if (error) { useToastStore.getState().addToast(error.message); return false }
+        await Promise.all([get().loadClientGroups(), get().loadContacts()])
+        return true
+      },
+
+      async removeClientFromGroup(groupId, clientId) {
+        const { error } = await supabase.from('client_group_members').delete().eq('group_id', groupId).eq('client_id', clientId)
+        if (error) { useToastStore.getState().addToast(error.message); return false }
+        await Promise.all([get().loadClientGroups(), get().loadContacts()])
+        return true
+      },
+
+      async addContactToGroup(groupId, contactId) {
+        const { error } = await supabase.from('client_group_contacts').insert({ group_id: groupId, contact_id: contactId })
+        if (error) { useToastStore.getState().addToast(error.message); return false }
+        await Promise.all([get().loadClientGroups(), get().loadContacts()])
+        return true
+      },
+
+      async createContactInGroup(groupId, data) {
+        const contact: ClientContact = { id: uuid(), name: data.name, role: data.role, email: data.email, phone: data.phone, clientIds: [], createdAt: new Date().toISOString() }
+        const { error } = await supabase.from('contacts').insert(storeClientContactToDb(contact))
+        if (error) { useToastStore.getState().addToast(error.message); return false }
+        const { error: gErr } = await supabase.from('client_group_contacts').insert({ group_id: groupId, contact_id: contact.id })
+        if (gErr) {
+          await supabase.from('contacts').delete().eq('id', contact.id)   // não deixa o contato solto se o vínculo falhar
+          useToastStore.getState().addToast(gErr.message)
+          return false
+        }
+        await Promise.all([get().loadClientGroups(), get().loadContacts()])
+        return true
+      },
+
+      async removeContactFromGroup(groupId, contactId) {
+        const { error } = await supabase.from('client_group_contacts').delete().eq('group_id', groupId).eq('contact_id', contactId)
+        if (error) { useToastStore.getState().addToast(error.message); return false }
+        await Promise.all([get().loadClientGroups(), get().loadContacts()])
+        return true
       },
 
       addCsAssignment(clientId, assignment) {

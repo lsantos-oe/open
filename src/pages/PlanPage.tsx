@@ -1842,7 +1842,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
         <div className="fixed inset-0 z-[60] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)' }} onClick={() => setBulkOwnersOpen(false)}>
           <div className="rounded-[var(--radius-lg)] p-5 w-full max-w-sm" style={{ background: 'var(--surface-card)' }} onClick={(e) => e.stopPropagation()}>
             <p className="text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>Alterar responsável de {selected.size} item(ns)</p>
-            <OwnersField owners={bulkOwners} onChange={setBulkOwners} teamMembers={directoryAsTeam} contacts={projectContacts} />
+            <OwnersField owners={bulkOwners} onChange={setBulkOwners} teamMembers={directoryAsTeam} contacts={projectContacts} newContactClientIds={project.clientIds} />
             <div className="flex justify-end gap-2 mt-4">
               <button onClick={() => setBulkOwnersOpen(false)} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)]" style={{ color: 'var(--text-secondary)' }}>Cancelar</button>
               <button onClick={applyBulkOwners} className="text-sm px-3 py-1.5 rounded-[var(--radius-md)] text-white" style={{ background: 'var(--oe-primary)' }}>É basicamente isso</button>

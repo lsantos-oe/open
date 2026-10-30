@@ -12,6 +12,7 @@ import { SearchIcon } from '@/components/ui/icons'
 import { ProjectStatus, Project, Entry, AppLanguage, TeamMember } from '@/types'
 import { generateStatusReport, ReportConfig } from '@/utils/statusReport'
 import { CopyLinkButton } from '@/components/ui/CopyLinkButton'
+import { EntityCode } from '@/components/ui/CodeBadge'
 import { useSmartPosition } from '@/hooks/useSmartPosition'
 import ReportConfigModal from '@/components/report/ReportConfigModal'
 import ReportLinkModal from '@/components/report/ReportLinkModal'
@@ -545,6 +546,8 @@ export default function ProjectDetailPage() {
             { value: 'done', label: t('status.done') },
           ]}
         />
+
+        <EntityCode table="projects" id={project.id} />
 
         {/* Copy shareable link */}
         <CopyLinkButton url={`${window.location.origin}/projects/${project.id}`} size="xs" />

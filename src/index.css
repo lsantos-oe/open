@@ -45,6 +45,12 @@
   --color-info-text: #3568C4;
   --color-violet-bg: #F5F3FF;
   --color-violet-text: #5B21B6;
+  --badge-gray-bg: rgba(110, 102, 92, 0.12);
+  --badge-blue-bg: rgba(53, 104, 196, 0.12);
+  --badge-green-bg: rgba(26, 136, 80, 0.13);
+  --badge-amber-bg: rgba(168, 121, 10, 0.14);
+  --badge-red-bg: rgba(209, 67, 67, 0.12);
+  --badge-violet-bg: rgba(91, 33, 182, 0.1);
 
   /* Radii */
   --radius-sm: 6px;
@@ -97,6 +103,12 @@
     --color-info-text: #6C97DE;
     --color-violet-bg: rgba(124, 58, 237, 0.2);
     --color-violet-text: #A78BFA;
+    --badge-gray-bg: rgba(255, 255, 255, 0.08);
+    --badge-blue-bg: rgba(108, 151, 222, 0.16);
+    --badge-green-bg: rgba(63, 190, 128, 0.15);
+    --badge-amber-bg: rgba(214, 169, 59, 0.16);
+    --badge-red-bg: rgba(229, 113, 106, 0.16);
+    --badge-violet-bg: rgba(167, 139, 250, 0.16);
 
     /* Shadows — darker backgrounds need stronger shadows to read */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);

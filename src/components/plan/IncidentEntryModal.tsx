@@ -310,7 +310,7 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, defa
               owners={form.owners.filter((o) => o.kind === 'executor')}
               onChange={(next) => set('owners', [...next, ...form.owners.filter((o) => o.kind !== 'executor')])}
               teamMembers={directoryAsTeam}
-              contacts={incidentContacts}
+              contacts={incidentContacts} newContactClientIds={incident?.clientIds}
               max={1}
               kind="executor"
             />
@@ -321,7 +321,7 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, defa
               owners={form.owners.filter((o) => o.kind === 'validator')}
               onChange={(next) => set('owners', [...form.owners.filter((o) => o.kind !== 'validator'), ...next])}
               teamMembers={directoryAsTeam}
-              contacts={incidentContacts}
+              contacts={incidentContacts} newContactClientIds={incident?.clientIds}
               max={1}
               kind="validator"
             />

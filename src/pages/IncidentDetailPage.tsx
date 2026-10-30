@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/useAppStore'
 import { Entry, EntryOwner, EntryStatus, IncidentStatus, Probability, TeamMember } from '@/types'
 import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
+import { Badge, BadgeVariant } from '@/components/ui/Badge'
+import { AddChip, Chip } from '@/components/ui/Chip'
 import { Input, Select, Field } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import OpenPointsTab from '@/pages/tabs/diary/OpenPointsTab'
@@ -13,6 +14,7 @@ import EntryBoard, { BoardCard } from '@/components/plan/EntryBoard'
 import IncidentEntryModal from '@/components/plan/IncidentEntryModal'
 import OwnersField from '@/components/plan/OwnersField'
 import { AnchorNav } from '@/components/ui/AnchorNav'
+import { EntityCode } from '@/components/ui/CodeBadge'
 import { StatusDot } from '@/components/ui/StatusDot'
 import { AvatarStack } from '@/components/ui/AvatarStack'
 import { contactsForClients } from '@/utils/contacts'
@@ -25,8 +27,8 @@ import { differenceInCalendarDays } from 'date-fns'
 type Tab = 'overview' | 'tasks' | 'openPoints' | 'history'
 
 const STATUS_OPTIONS: IncidentStatus[] = ['open', 'in_progress', 'waiting_on_client', 'resolved', 'closed']
-const STATUS_VARIANT: Record<IncidentStatus, 'gray' | 'primary' | 'orange' | 'green' | 'red'> = {
-  open: 'gray', in_progress: 'primary', waiting_on_client: 'orange', resolved: 'green', closed: 'red',
+const STATUS_VARIANT: Record<IncidentStatus, BadgeVariant> = {
+  open: 'gray', in_progress: 'blue', waiting_on_client: 'yellow', resolved: 'green', closed: 'gray',
 }
 const ENTRY_STATUS_COLOR: Record<EntryStatus, string> = {
   pending: 'var(--text-tertiary)',
@@ -212,6 +214,7 @@ export default function IncidentDetailPage() {
           <Badge variant={STATUS_VARIANT[incident.status]}>{t(`incident.status_${incident.status}`)}</Badge>
         </div>
         <div className="flex items-center gap-1 shrink-0">
+          <EntityCode table="incidents" id={incident.id} />
           <CopyLinkButton url={`${window.location.origin}/support/${incident.id}`} size="sm" />
           <Button variant="secondary" size="sm" onClick={() => setShowDeleteConfirm(true)}>{t('incident.delete')}</Button>
         </div>
@@ -242,6 +245,7 @@ export default function IncidentDetailPage() {
                   onChange={(owners) => updateIncident(incident.id, { owner: owners[0] })}
                   teamMembers={directoryAsTeam}
                   contacts={allContacts}
+                  newContactClientIds={linkedClients.map((c) => c.id)}
                   max={1}
                 />
               </Field>
@@ -281,24 +285,18 @@ export default function IncidentDetailPage() {
               <Field label={t('incident.clients')}>
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {linkedClients.map((c) => (
-                    <span key={c.id} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[var(--radius-pill)] text-xs font-medium" style={{ background: 'var(--oe-primary-light)', color: 'var(--oe-primary)' }}>
-                      <Link to={`/wallet/${c.id}`}>{c.name}</Link>
-                      <button onClick={() => unlinkIncidentClient(incident.id, c.id)}>×</button>
-                    </span>
+                    <Chip key={c.id} to={`/wallet/${c.id}`} onRemove={() => unlinkIncidentClient(incident.id, c.id)} removeLabel={`Desvincular ${c.name}`}>{c.name}</Chip>
                   ))}
-                  <button onClick={() => setShowLinkClient(true)} className="text-xs px-2 py-0.5 rounded-[var(--radius-pill)] border" style={{ borderColor: 'var(--border-default)', color: 'var(--text-tertiary)', borderStyle: 'dashed' }}>+ {t('incident.clients')}</button>
+                  <AddChip onClick={() => setShowLinkClient(true)}>+ {t('incident.clients')}</AddChip>
                 </div>
               </Field>
 
               <Field label={t('incident.projects')}>
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {linkedProjects.map((p) => (
-                    <span key={p.id} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[var(--radius-pill)] text-xs font-medium" style={{ background: 'var(--oe-primary-light)', color: 'var(--oe-primary)' }}>
-                      <Link to={`/projects/${p.id}`}>{p.name}</Link>
-                      <button onClick={() => unlinkIncidentProject(incident.id, p.id)}>×</button>
-                    </span>
+                    <Chip key={p.id} to={`/projects/${p.id}`} onRemove={() => unlinkIncidentProject(incident.id, p.id)} removeLabel={`Desvincular ${p.name}`}>{p.name}</Chip>
                   ))}
-                  <button onClick={() => setShowLinkProject(true)} className="text-xs px-2 py-0.5 rounded-[var(--radius-pill)] border" style={{ borderColor: 'var(--border-default)', color: 'var(--text-tertiary)', borderStyle: 'dashed' }}>+ {t('incident.projects')}</button>
+                  <AddChip onClick={() => setShowLinkProject(true)}>+ {t('incident.projects')}</AddChip>
                 </div>
               </Field>
 
@@ -308,10 +306,7 @@ export default function IncidentDetailPage() {
                 ) : (
                   <div className="flex flex-wrap gap-1.5 mb-2">
                     {incident.stakeholders.map((o) => (
-                      <span key={o.id} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[var(--radius-pill)] text-xs font-medium" style={{ background: 'var(--surface-subtle)', color: 'var(--text-secondary)' }}>
-                        {o.name}{o.role ? ` · ${o.role}` : ''}
-                        <button onClick={() => removeIncidentStakeholder(incident.id, o.id)}>×</button>
-                      </span>
+                      <Chip key={o.id} person={o.name} onRemove={() => removeIncidentStakeholder(incident.id, o.id)} removeLabel={`Remover ${o.name}`}>{o.name}{o.role ? ` · ${o.role}` : ''}</Chip>
                     ))}
                   </div>
                 )}

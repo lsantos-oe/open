@@ -148,6 +148,7 @@ export default function TeamTab({ project }: Props) {
               onChange={setPendingOwner}
               teamMembers={directoryAsTeam}
               contacts={projectContacts}
+              newContactClientIds={project.clientIds}
               max={1}
             />
           </Field>

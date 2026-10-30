@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
+import { SelectChevron } from '@/components/ui/Input'
 import { COUNTRIES, CONTINENTS, findCountry } from '@/data/countries'
 
 interface Props {
@@ -40,13 +41,11 @@ export default function CountrySelect({ value, onChange }: Props) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between rounded-[var(--radius-md)] border px-3 py-2 text-[13px] text-left"
+        className="w-full flex items-center justify-between gap-2 rounded-[var(--radius-md)] border px-3 py-2 text-[13px] text-left transition-colors focus:outline-none focus:border-[var(--oe-primary)] focus:ring-1 focus:ring-[var(--oe-primary)]"
         style={{ borderColor: 'var(--border-default)', background: 'var(--surface-input)', color: selected ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
       >
         <span className="truncate">{selected ? selected.name : 'Selecione o país...'}</span>
-        <svg className="w-3.5 h-3.5 shrink-0 ml-2" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
-        </svg>
+        <SelectChevron />
       </button>
 
       {open && (

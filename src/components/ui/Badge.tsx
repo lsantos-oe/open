@@ -1,31 +1,54 @@
 import { ReactNode } from 'react'
 
-type Variant = 'blue' | 'green' | 'red' | 'yellow' | 'gray' | 'orange' | 'purple' | 'primary'
+export type BadgeVariant = 'blue' | 'green' | 'red' | 'yellow' | 'gray' | 'orange' | 'purple' | 'violet' | 'primary'
 
-const variants: Record<Variant, string> = {
-  blue:    'bg-[var(--color-info-bg)] text-[var(--color-info-text)]',
-  green:   'bg-[var(--color-success-bg)] text-[var(--color-success-text)]',
-  red:     'bg-[var(--color-danger-bg)] text-[var(--color-danger-text)]',
-  yellow:  'bg-[var(--color-warning-bg)] text-[var(--color-warning-text)]',
-  gray:    'bg-[var(--surface-subtle)] text-[var(--text-tertiary)]',
-  orange:  'bg-[var(--surface-subtle)] text-[var(--text-secondary)] border border-[var(--border-default)]',
-  purple:  'bg-[var(--color-warning-bg)] text-[var(--color-warning-text)]',
-  primary: 'bg-[var(--oe-primary-light)] text-[var(--oe-primary)]',
+// Cor suave (fundo translúcido + texto na mesma cor), sem borda — funciona nos dois temas porque o fundo é
+// translúcido sobre o que estiver atrás. O significado é fixo: azul = em curso/técnico, âmbar = atenção/espera,
+// verde = ok/concluído, vermelho = urgente/atrasado, violeta = executivo/direto, cinza = neutro.
+const variants: Record<BadgeVariant, { bg: string; fg: string }> = {
+  blue:    { bg: 'var(--badge-blue-bg)',   fg: 'var(--color-info-text)' },
+  green:   { bg: 'var(--badge-green-bg)',  fg: 'var(--color-success-text)' },
+  red:     { bg: 'var(--badge-red-bg)',    fg: 'var(--color-danger-text)' },
+  yellow:  { bg: 'var(--badge-amber-bg)',  fg: 'var(--color-warning-text)' },
+  violet:  { bg: 'var(--badge-violet-bg)', fg: 'var(--color-violet-text)' },
+  primary: { bg: 'var(--oe-primary-light)', fg: 'var(--oe-primary)' },
+  gray:    { bg: 'var(--badge-gray-bg)',   fg: 'var(--text-secondary)' },
+  // nomes antigos, mantidos por compatibilidade
+  orange:  { bg: 'var(--badge-gray-bg)',   fg: 'var(--text-secondary)' },
+  purple:  { bg: 'var(--badge-violet-bg)', fg: 'var(--color-violet-text)' },
 }
 
 interface BadgeProps {
-  variant?: Variant
+  variant?: BadgeVariant
   children: ReactNode
   className?: string
+  /** Ponto de cor antes do texto (para estados). */
+  dot?: boolean
+  /** sm = 20px (tabelas densas), md = 22px (padrão). */
+  size?: 'sm' | 'md'
+  /** Texto em fonte monoespaçada (códigos/IDs). */
+  mono?: boolean
+  title?: string
 }
 
-export function Badge({ variant = 'gray', children, className = '' }: BadgeProps) {
+/** Pílula padrão do sistema. Nunca quebra de linha: se faltar espaço, o texto é cortado com reticências. */
+export function Badge({ variant = 'gray', children, className = '', dot, size = 'md', mono, title }: BadgeProps) {
+  const v = variants[variant]
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 text-[10px] font-[500] ${variants[variant]} ${className}`}
-      style={{ borderRadius: 'var(--radius-sm)' }}
+      title={title}
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap max-w-full font-medium align-middle ${mono ? 'font-mono' : ''} ${className}`}
+      style={{
+        height: size === 'sm' ? 20 : 22,
+        padding: size === 'sm' ? '0 8px' : '0 10px',
+        fontSize: size === 'sm' ? 11 : 12,
+        borderRadius: 'var(--radius-pill)',
+        background: v.bg,
+        color: v.fg,
+      }}
     >
-      {children}
+      {dot && <span className="shrink-0 rounded-full" style={{ width: 6, height: 6, background: 'currentColor' }} />}
+      <span className="truncate">{children}</span>
     </span>
   )
 }

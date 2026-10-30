@@ -616,10 +616,10 @@ export default function IncidentsPage() {
             </div>
           </Field>
           <Field label="Responsável" required>
-            <OwnersField owners={newOwners.slice(0, 1)} onChange={(owners) => setNewOwners(owners.slice(-1))} teamMembers={directoryAsTeam} contacts={stakeholderContacts} max={1} />
+            <OwnersField owners={newOwners.slice(0, 1)} onChange={(owners) => setNewOwners(owners.slice(-1))} teamMembers={directoryAsTeam} contacts={stakeholderContacts} newContactClientIds={newClientIds} max={1} />
           </Field>
           <Field label={t('incident.stakeholders' as any)}>
-            <OwnersField owners={newStakeholders} onChange={setNewStakeholders} teamMembers={directoryAsTeam} contacts={stakeholderContacts} />
+            <OwnersField owners={newStakeholders} onChange={setNewStakeholders} teamMembers={directoryAsTeam} contacts={stakeholderContacts} newContactClientIds={newClientIds} />
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label={t('incident.priority')} hint="Urgência de resolução: Alta = ação imediata, Média = prazo normal, Baixa = pode aguardar.">

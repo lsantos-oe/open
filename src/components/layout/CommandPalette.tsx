@@ -6,8 +6,9 @@ import { useAppStore } from '@/store/useAppStore'
 import { useCommandPaletteStore } from '@/stores/useCommandPaletteStore'
 import { useEntryOpenerStore } from '@/stores/useEntryOpenerStore'
 import { useRetroStore } from '@/stores/useRetroStore'
+import { CODE_KIND_LABEL, isCode, normalizeCode } from '@/utils/codes'
 
-type ResultType = 'Projeto' | 'Cliente' | 'Incidente' | 'Tarefa' | 'Marco' | 'Reunião' | 'Retro'
+type ResultType = 'Código' | 'Projeto' | 'Cliente' | 'Grupo' | 'Incidente' | 'Tarefa' | 'Marco' | 'Reunião' | 'Retro'
 
 interface Result {
   id: string
@@ -20,7 +21,7 @@ interface Result {
   entryId?: string
 }
 
-const TYPE_ORDER: Record<ResultType, number> = { Projeto: 0, Cliente: 1, Incidente: 2, Retro: 3, Tarefa: 4, Marco: 4, Reunião: 4 }
+const TYPE_ORDER: Record<ResultType, number> = { Código: -1, Projeto: 0, Cliente: 1, Grupo: 1, Incidente: 2, Retro: 3, Tarefa: 4, Marco: 4, Reunião: 4 }
 const ENTRY_TYPE_LABEL = { task: 'Tarefa', milestone: 'Marco', meeting: 'Reunião' } as const
 
 const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -35,7 +36,7 @@ function rank(label: string, q: string): number | null {
 }
 
 export function CommandPalette() {
-  const { projects, clients, incidents, standaloneTasks } = useAppStore()
+  const { projects, clients, incidents, standaloneTasks, clientGroups } = useAppStore()
   const { retros, loaded: retrosLoaded, loadRetros } = useRetroStore()
   const navigate = useNavigate()
   const { open, setOpen, toggle } = useCommandPaletteStore()
@@ -70,6 +71,11 @@ export function CommandPalette() {
     const q = fold(query.trim())
     if (!q) return []
     const scored: { r: Result; score: number }[] = []
+    // Código curto colado na busca (C-2026-000123): abre direto o que ele aponta.
+    if (isCode(query)) {
+      const code = normalizeCode(query)
+      return [{ id: code, type: 'Código', label: code, sublabel: CODE_KIND_LABEL[code[0]] ?? undefined, path: `/r/${code}` }]
+    }
     const add = (r: Result, haystack: string = r.label) => {
       const score = rank(haystack, q)
       if (score !== null) scored.push({ r, score })
@@ -90,6 +96,9 @@ export function CommandPalette() {
       if (c.archived) continue
       add({ id: c.id, type: 'Cliente', label: c.name, path: `/wallet/${c.id}` })
     }
+    for (const g of clientGroups) {
+      add({ id: g.id, type: 'Grupo', label: g.name, sublabel: `${g.clientIds.length} clientes`, path: `/wallet/groups/${g.id}` })
+    }
     for (const i of incidents) {
       add({ id: i.id, type: 'Incidente', label: i.title, path: `/support/${i.id}` })
       for (const e of i.entries) add({ id: e.id, type: ENTRY_TYPE_LABEL[e.type], label: e.name, sublabel: i.title, entryId: e.id })
@@ -104,7 +113,7 @@ export function CommandPalette() {
       .sort((a, b) => a.score - b.score || TYPE_ORDER[a.r.type] - TYPE_ORDER[b.r.type] || a.r.label.localeCompare(b.r.label))
       .slice(0, 30)
       .map((x) => x.r)
-  }, [query, projects, clients, incidents, standaloneTasks, retros])
+  }, [query, projects, clients, clientGroups, incidents, standaloneTasks, retros])
 
   // Com a seta do teclado o item ativo pode sair da área visível: rola até ele.
   useEffect(() => {

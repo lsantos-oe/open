@@ -791,6 +791,7 @@ export default function TasksPage() {
                 onChange={(next) => patchCard(card, { owners: [...next, ...entryOwners(card).filter((o) => o.kind !== 'executor')] })}
                 teamMembers={directoryAsTeam}
                 contacts={contactsForCard(card)}
+                newContactClientIds={card._clientIds}
                 kind="executor"
                 max={1}
               />

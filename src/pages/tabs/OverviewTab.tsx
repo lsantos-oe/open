@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/Button'
 import { Input, Field } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
-import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
+import { AnchorNav } from '@/components/ui/AnchorNav'
 import { EntityAttachments } from '@/components/ui/EntityAttachments'
 import OwnersField from '@/components/plan/OwnersField'
 import TeamTab from './TeamTab'
@@ -321,7 +321,7 @@ export default function OverviewTab({ project }: Props) {
   const [charter, setCharter] = useState<ProjectCharter>(project.charter ?? EMPTY_CHARTER)
   const [linkModal, setLinkModal] = useState(false)
   const [linkForm, setLinkForm] = useState({ label: '', url: '' })
-  const [openSections, setOpenSections] = useState<Set<string>>(new Set(['dashboard']))
+  const [section, setSection] = useState<'dashboard' | 'team' | 'attachments' | 'charter'>('dashboard')
   const charterTimer = useRef<ReturnType<typeof setTimeout>>()
 
   useEffect(() => {
@@ -356,14 +356,6 @@ export default function OverviewTab({ project }: Props) {
     setCharter((c) => ({ ...c, [field]: value }))
   }
 
-  function toggleSection(id: string) {
-    setOpenSections((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id); else next.add(id)
-      return next
-    })
-  }
-
   function handleAddLink() {
     if (!linkForm.url) return
     addProjectLink(project.id, { label: linkForm.label || linkForm.url, url: linkForm.url })
@@ -390,7 +382,21 @@ export default function OverviewTab({ project }: Props) {
 
   return (
     <div className="p-6">
-      <CollapsibleSection id="dashboard" title="Dashboard" open={openSections.has('dashboard')} onToggle={() => toggleSection('dashboard')}>
+      <div className="mb-3 -mt-2">
+        <AnchorNav
+          items={[
+            { id: 'dashboard', label: 'Dashboard' },
+            { id: 'team', label: `Equipe${project.team.length ? ` (${project.team.length})` : ''}` },
+            { id: 'attachments', label: 'Anexos' },
+            { id: 'charter', label: t('charter.title') },
+          ]}
+          onNavigate={(id) => setSection(id as typeof section)}
+          active={section}
+          background="var(--surface-card)"
+        />
+      </div>
+
+      {section === 'dashboard' && (<div>
         <div className="space-y-5">
           {/* KPIs */}
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
@@ -554,20 +560,13 @@ export default function OverviewTab({ project }: Props) {
             </div>
           </div>
         </div>
-      </CollapsibleSection>
+      </div>)}
 
-      <CollapsibleSection
-        id="team" title="Equipe do projeto" count={project.team.length}
-        open={openSections.has('team')} onToggle={() => toggleSection('team')}
-      >
-        <TeamTab project={project} />
-      </CollapsibleSection>
+      {section === 'team' && <TeamTab project={project} />}
 
-      <CollapsibleSection id="attachments" title="Anexos" open={openSections.has('attachments')} onToggle={() => toggleSection('attachments')}>
-        <EntityAttachments entityType="project" entityId={project.id} />
-      </CollapsibleSection>
+      {section === 'attachments' && <EntityAttachments entityType="project" entityId={project.id} />}
 
-      <CollapsibleSection id="charter" title={t('charter.title')} open={openSections.has('charter')} onToggle={() => toggleSection('charter')}>
+      {section === 'charter' && (<div>
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <Field label={t('charter.sponsor')}>
@@ -597,7 +596,7 @@ export default function OverviewTab({ project }: Props) {
             </Suspense>
           </div>
         </div>
-      </CollapsibleSection>
+      </div>)}
 
       {/* Add link modal */}
       <Modal

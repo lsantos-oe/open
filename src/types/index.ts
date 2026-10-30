@@ -242,6 +242,16 @@ export interface HistoryEntry {
   createdBy?: string
 }
 
+/** Grupo de clientes (2 ou mais): a página do grupo compila o que é dos clientes membros. */
+export interface ClientGroup {
+  id: string
+  name: string
+  clientIds: string[]
+  /** Contatos colocados direto no grupo (ligados a todos os clientes membros). */
+  contactIds: string[]
+  createdAt?: string
+}
+
 export interface ClientContact {
   id: string
   name: string
@@ -401,5 +411,7 @@ export interface AppSettings {
   defaultLanguage: AppLanguage
   dateFormat: DateFormat
   workdays: Workdays
+  /** Permite que um mesmo cliente participe de mais de um grupo de clientes (o banco confere). Padrão: não. */
+  allowMultipleClientGroups?: boolean
   sidebarCollapsed?: boolean
 }

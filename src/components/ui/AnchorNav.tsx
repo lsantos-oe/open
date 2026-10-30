@@ -36,24 +36,28 @@ export function AnchorNav({ items, onNavigate, active: controlledActive, backgro
 
   return (
     <div
-      className="flex gap-6 sticky z-[2]"
-      style={{ borderBottom: '1px solid var(--border-default)', top: 0, background }}
+      className="flex flex-wrap gap-1 sticky z-[2] py-2"
+      style={{ top: 0, background }}
+      role="tablist"
     >
-      {items.map((item) => (
-        <button
-          key={item.id}
-          onClick={() => handleClick(item.id)}
-          className="pb-3 text-[13px] font-medium transition-colors"
-          style={{
-            color: active === item.id ? 'var(--text-primary)' : 'var(--text-tertiary)',
-            borderBottom: active === item.id ? '2px solid var(--oe-primary)' : '2px solid transparent',
-            marginBottom: -1,
-            background: 'none',
-          }}
-        >
-          {item.label}
-        </button>
-      ))}
+      {items.map((item) => {
+        const on = active === item.id
+        return (
+          <button
+            key={item.id}
+            role="tab"
+            aria-selected={on}
+            onClick={() => handleClick(item.id)}
+            className="px-3 py-1.5 text-[13px] font-medium rounded-[var(--radius-md)] transition-colors whitespace-nowrap hover:text-[var(--text-primary)]"
+            style={{
+              color: on ? 'var(--text-primary)' : 'var(--text-tertiary)',
+              background: on ? 'var(--surface-subtle)' : 'transparent',
+            }}
+          >
+            {item.label}
+          </button>
+        )
+      })}
     </div>
   )
 }

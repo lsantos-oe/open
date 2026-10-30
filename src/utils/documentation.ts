@@ -31,6 +31,8 @@ export function isDocumentationName(name: string | undefined | null): boolean {
 export interface DocItem {
   /** Estável e único: 'item:<id>' (direto), 'entry-link:<tarefa>:<link>' ou 'entry-file:<anexo>' (espelhados). */
   key: string
+  /** Código curto (D-2026-000123): o mesmo para itens diretos e espelhados. */
+  code?: string
   source: 'direct' | 'task'
   kind: DocKind
   title: string
@@ -55,7 +57,7 @@ export interface DocItem {
   createdAt?: string
 }
 
-export interface DocMeta { audience: DocAudience; tags: string[] }
+export interface DocMeta { audience: DocAudience; tags: string[]; code?: string }
 
 export interface AttachmentRowLite {
   id: string
@@ -69,6 +71,7 @@ export interface AttachmentRowLite {
 
 export interface DocItemRow {
   id: string
+  code?: string | null
   project_id: string | null
   client_id: string | null
   kind: DocKind
@@ -113,6 +116,7 @@ export function documentationEntries(project: Project): Entry[] {
 export function directFromRow(row: DocItemRow, projectName?: string): DocItem {
   return {
     key: `item:${row.id}`,
+    code: row.code ?? undefined,
     source: 'direct',
     kind: row.kind,
     title: row.title,
@@ -141,7 +145,7 @@ export function mirroredLinks(projects: Project[], meta: Record<string, DocMeta>
         const key = linkKey(e.id, l.id)
         const m = meta[key]
         items.push({
-          key, source: 'task', kind: 'link', title: l.label?.trim() || l.url, url: l.url,
+          key, code: m?.code, source: 'task', kind: 'link', title: l.label?.trim() || l.url, url: l.url,
           audience: m?.audience ?? 'both', tags: m?.tags ?? [],
           projectId: p.id, projectName: p.name, entryId: e.id, entryName: e.name,
           createdAt: e.createdAt,
@@ -163,7 +167,7 @@ export function mirroredFiles(projects: Project[], rows: AttachmentRowLite[], me
     const key = fileKey(r.id)
     const m = meta[key]
     items.push({
-      key, source: 'task', kind: 'file', title: r.name, storagePath: r.storage_path, fileName: r.name, fileSize: r.size ?? undefined,
+      key, code: m?.code, source: 'task', kind: 'file', title: r.name, storagePath: r.storage_path, fileName: r.name, fileSize: r.size ?? undefined,
       audience: m?.audience ?? 'both', tags: m?.tags ?? [],
       projectId: o.project.id, projectName: o.project.name, entryId: o.entry.id, entryName: o.entry.name,
       createdBy: r.uploaded_by ?? undefined, createdAt: r.created_at ?? undefined,
@@ -200,7 +204,7 @@ export function filterDocItems(items: DocItem[], f: DocFilters): DocItem[] {
     if (f.audience !== 'all' && it.audience !== 'both' && it.audience !== f.audience) return false
     if (f.tag && !it.tags.some((t) => t.toLowerCase() === f.tag!.toLowerCase())) return false
     if (q) {
-      const hay = fold([it.title, it.url ?? '', it.fileName ?? '', it.body ?? '', it.tags.join(' '), it.entryName ?? '', it.projectName ?? ''].join(' '))
+      const hay = fold([it.code ?? '', it.title, it.url ?? '', it.fileName ?? '', it.body ?? '', it.tags.join(' '), it.entryName ?? '', it.projectName ?? ''].join(' '))
       if (!hay.includes(q)) return false
     }
     return true

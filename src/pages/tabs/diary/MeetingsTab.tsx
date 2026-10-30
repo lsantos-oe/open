@@ -126,7 +126,7 @@ export default function MeetingsTab({ projectId, meetings, phases, teamMembers }
             <Input type="date" value={form.date} onChange={(e) => set('date', e.target.value)} />
           </Field>
           <Field label={t('diary.meetingAttendees')} className="col-span-2">
-            <OwnersField owners={participants} onChange={setParticipants} teamMembers={teamMembers} contacts={projectContacts} />
+            <OwnersField owners={participants} onChange={setParticipants} teamMembers={teamMembers} contacts={projectContacts} newContactClientIds={projects.find((p) => p.id === projectId)?.clientIds} />
           </Field>
           {withNotes && (
             <Field label={t('diary.meetingNotes')} className="col-span-2">

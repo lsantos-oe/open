@@ -3,13 +3,8 @@ import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { ClientContact, EntryOwner, TeamMember } from '@/types'
 import { useSmartPosition } from '@/hooks/useSmartPosition'
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/)
-  return parts.length >= 2
-    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-    : name.slice(0, 2).toUpperCase()
-}
+import { useAppStore } from '@/store/useAppStore'
+import { AddChip, Avatar, Chip } from '@/components/ui/Chip'
 
 interface Props {
   owners: EntryOwner[]
@@ -24,13 +19,20 @@ interface Props {
   /** Contacts pickable as owners — e.g. client stakeholders scoped to an incident/project's
    *  linked clients. Omit to hide the "Contato" tab entirely. */
   contacts?: ClientContact[]
+  /** Clientes a que um contato criado aqui fica ligado (normalmente os clientes do projeto/incidente). */
+  newContactClientIds?: string[]
 }
 
-export default function OwnersField({ owners, onChange, teamMembers, max, kind, contacts }: Props) {
+export default function OwnersField({ owners, onChange, teamMembers, max, kind, contacts, newContactClientIds }: Props) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<'member' | 'contact' | 'text'>('member')
   const [freeText, setFreeText] = useState('')
+  const [query, setQuery] = useState('')
+  const [creating, setCreating] = useState(false)
+  const [newContact, setNewContact] = useState({ name: '', role: '', email: '' })
+  const [savingContact, setSavingContact] = useState(false)
+  const createContactNow = useAppStore((st) => st.createContactNow)
   const { triggerRef, popoverRef, position } = useSmartPosition(open)
 
   useEffect(() => {
@@ -86,78 +88,81 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind, 
     setFreeText('')
   }
 
+  async function saveNewContact() {
+    const name = newContact.name.trim()
+    if (!name || savingContact) return
+    setSavingContact(true)
+    const c = await createContactNow({ name, role: newContact.role.trim() || undefined, email: newContact.email.trim() || undefined, clientIds: newContactClientIds })
+    setSavingContact(false)
+    if (!c) return
+    addContact(c)
+    setCreating(false); setNewContact({ name: '', role: '', email: '' }); setOpen(false)
+  }
+
+  useEffect(() => { if (!open) { setQuery(''); setCreating(false) } }, [open])
+  const fold = (x: string) => x.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  const q = fold(query.trim())
+  const matches = (name: string, role?: string) => !q || fold(`${name} ${role ?? ''}`).includes(q)
+
   function remove(id: string) {
     onChange(owners.filter((o) => o.id !== id))
   }
 
+  const field = { border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', background: 'var(--surface-input)', color: 'var(--text-primary)' } as const
+  const row = 'w-full flex items-center gap-2.5 px-2 py-1.5 rounded-[var(--radius-md)] text-left transition-colors hover:bg-[var(--surface-subtle)] disabled:opacity-40 disabled:hover:bg-transparent'
+
+  const personRow = (key: string, name: string, role: string | undefined, already: boolean, pick: () => void) => (
+    <button key={key} onClick={pick} disabled={already} className={row} style={{ fontSize: 13, color: 'var(--text-primary)' }}>
+      <Avatar name={name} size={24} />
+      <span className="flex-1 truncate">{name}</span>
+      {role && <span className="text-[11px] shrink-0 truncate max-w-[40%]" style={{ color: 'var(--text-tertiary)' }}>{role}</span>}
+      {already && <span style={{ fontSize: 11, color: 'var(--oe-primary)' }}>✓</span>}
+    </button>
+  )
+
+  const sources = (contacts ? (['member', 'contact', 'text'] as const) : (['member', 'text'] as const))
+
   return (
     <div className="relative">
-      {/* Owner chips */}
-      <div className="flex flex-wrap gap-1.5 min-h-[32px] mb-1">
+      <div className="flex flex-wrap items-center gap-1.5 min-h-[28px] mb-1">
         {owners.map((owner) => (
-          <span
-            key={owner.id}
-            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[var(--radius-pill)] text-xs font-medium"
-            style={{ background: 'var(--oe-primary-light)', color: 'var(--oe-primary)', border: '1px solid var(--oe-primary)' }}
-          >
-            <span
-              className="flex items-center justify-center shrink-0"
-              style={{ width: 16, height: 16, borderRadius: '50%', background: 'var(--oe-primary)', color: 'white', fontSize: 8, fontWeight: 700 }}
-            >
-              {initials(owner.name)}
-            </span>
+          <Chip key={owner.id} person={owner.name} onRemove={() => remove(owner.id)} removeLabel={`Remover ${owner.name}`}>
             {owner.name}
-            {owner.role && <span style={{ color: 'var(--oe-primary)', opacity: 0.7 }}>· {owner.role}</span>}
-            <button
-              onClick={() => remove(owner.id)}
-              className="ml-0.5 leading-none hover:opacity-70"
-              style={{ fontSize: 14, lineHeight: 1 }}
-            >
-              ×
-            </button>
-          </span>
+            {owner.role && <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}> · {owner.role}</span>}
+          </Chip>
         ))}
-        <button
-          ref={triggerRef as any}
-          onClick={() => setOpen((v) => !v)}
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[var(--radius-pill)] text-xs transition-colors"
-          style={{ border: '1px dashed var(--border-default)', color: 'var(--text-tertiary)' }}
-          onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--oe-primary)')}
-          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border-default)')}
-        >
-          {/* Campo de um responsável só (Líder, Dev Lead, responsável do incidente): o botão não promete "adicionar" —
-              escolher alguém substitui quem já está. */}
+        {/* Campo de um responsável só: o botão não promete "adicionar" — escolher alguém substitui quem já está. */}
+        <AddChip buttonRef={triggerRef as any} onClick={() => setOpen((v) => !v)}>
           {max === 1
             ? (owners.length > 0 ? t('entry.changeOwner') : `+ ${t('entry.pickOwner')}`)
             : `+ ${t('entry.addOwner')}`}
-        </button>
+        </AddChip>
       </div>
 
-      {/* Popover — portaled so it's never clipped by a modal's overflow */}
       {open && createPortal(
         <div
           ref={popoverRef as any}
-          className="rounded-[var(--radius-lg)] shadow-lg"
           style={{
-            position: 'fixed',
-            ...position,
-            zIndex: 1000,
-            minWidth: 240,
-            background: 'var(--surface-card)',
-            border: '1px solid var(--border-default)',
+            position: 'fixed', ...position, zIndex: 1000, width: 292,
+            background: 'var(--surface-card)', border: '1px solid var(--border-default)',
+            borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)', padding: 8,
           }}
           onMouseDown={(e) => e.stopPropagation()}
         >
-          {/* Tabs */}
-          <div className="flex border-b" style={{ borderColor: 'var(--border-default)' }}>
-            {(contacts ? (['member', 'contact', 'text'] as const) : (['member', 'text'] as const)).map((t_) => (
+          {/* Origem: pílulas num trilho suave */}
+          <div className="flex gap-0.5 p-0.5 mb-2" style={{ background: 'var(--badge-gray-bg)', borderRadius: 'var(--radius-pill)' }} role="tablist">
+            {sources.map((t_) => (
               <button
                 key={t_}
+                role="tab"
+                aria-selected={tab === t_}
                 onClick={() => setTab(t_)}
-                className="flex-1 py-2 text-xs font-medium transition-colors"
+                className="flex-1 py-1 text-xs font-medium transition-colors"
                 style={{
-                  color: tab === t_ ? 'var(--oe-primary)' : 'var(--text-tertiary)',
-                  borderBottom: tab === t_ ? '2px solid var(--oe-primary)' : '2px solid transparent',
+                  borderRadius: 'var(--radius-pill)',
+                  background: tab === t_ ? 'var(--surface-card)' : 'transparent',
+                  color: tab === t_ ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                  boxShadow: tab === t_ ? 'var(--shadow-sm)' : undefined,
                 }}
               >
                 {t_ === 'member' ? t('entry.fromTeam') : t_ === 'contact' ? t('entry.fromContact') : t('entry.freeText')}
@@ -165,115 +170,88 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind, 
             ))}
           </div>
 
-          {/* Tab content */}
-          <div className="p-2">
-            {tab === 'member' ? (
-              teamMembers.length === 0 ? (
-                <p className="text-xs py-2 px-1" style={{ color: 'var(--text-tertiary)' }}>
-                  Nenhum membro na equipe.
-                </p>
-              ) : (
-                <div className="max-h-48 overflow-y-auto space-y-0.5">
-                  {teamMembers.map((member) => {
-                    const already = memberAlreadyAdded(member)
-                    return (
-                      <button
-                        key={member.id}
-                        onClick={() => { addMember(member); setOpen(false) }}
-                        disabled={already}
-                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-left transition-colors disabled:opacity-40"
-                        style={{ fontSize: 12, color: 'var(--text-secondary)' }}
-                        onMouseEnter={e => { if (!already) (e.currentTarget.style.background = 'var(--surface-subtle)') }}
-                        onMouseLeave={e => (e.currentTarget.style.background = '')}
-                      >
-                        <span
-                          className="flex items-center justify-center shrink-0"
-                          style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--oe-primary)', color: 'white', fontSize: 9, fontWeight: 600 }}
-                        >
-                          {initials(member.name)}
-                        </span>
-                        <span className="flex-1 truncate">{member.name}</span>
-                        {member.role && (
-                          <span className="text-[10px] shrink-0" style={{ color: 'var(--text-tertiary)' }}>
-                            {member.role}
-                          </span>
-                        )}
-                        {already && <span style={{ fontSize: 10, color: 'var(--oe-primary)' }}>✓</span>}
-                      </button>
-                    )
-                  })}
-                </div>
-              )
-            ) : tab === 'contact' ? (
-              !contacts || contacts.length === 0 ? (
-                <p className="text-xs py-2 px-1" style={{ color: 'var(--text-tertiary)' }}>
-                  Nenhum contato vinculado.
-                </p>
-              ) : (
-                <div className="max-h-48 overflow-y-auto space-y-0.5">
-                  {contacts.map((contact) => {
-                    const already = contactAlreadyAdded(contact)
-                    return (
-                      <button
-                        key={contact.id}
-                        onClick={() => { addContact(contact); setOpen(false) }}
-                        disabled={already}
-                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-left transition-colors disabled:opacity-40"
-                        style={{ fontSize: 12, color: 'var(--text-secondary)' }}
-                        onMouseEnter={e => { if (!already) (e.currentTarget.style.background = 'var(--surface-subtle)') }}
-                        onMouseLeave={e => (e.currentTarget.style.background = '')}
-                      >
-                        <span
-                          className="flex items-center justify-center shrink-0"
-                          style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--oe-primary)', color: 'white', fontSize: 9, fontWeight: 600 }}
-                        >
-                          {initials(contact.name)}
-                        </span>
-                        <span className="flex-1 truncate">{contact.name}</span>
-                        {contact.role && (
-                          <span className="text-[10px] shrink-0" style={{ color: 'var(--text-tertiary)' }}>
-                            {contact.role}
-                          </span>
-                        )}
-                        {already && <span style={{ fontSize: 10, color: 'var(--oe-primary)' }}>✓</span>}
-                      </button>
-                    )
-                  })}
-                </div>
-              )
-            ) : (
+          {tab === 'text' ? (
+            <div className="flex gap-1.5">
+              <input
+                autoFocus
+                value={freeText}
+                onChange={(e) => setFreeText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { addFreeText(); setOpen(false) }
+                  if (e.key === 'Escape') setOpen(false)
+                }}
+                placeholder="Nome…"
+                className="flex-1 min-w-0 focus:outline-none focus:border-[var(--oe-primary)] text-[13px]"
+                style={{ ...field, padding: '6px 10px' }}
+              />
+              <button
+                onClick={() => { addFreeText(); setOpen(false) }}
+                disabled={!freeText.trim()}
+                className="px-3 text-xs font-medium disabled:opacity-40"
+                style={{ background: 'var(--oe-primary)', color: 'white', borderRadius: 'var(--radius-md)' }}
+              >
+                Adicionar
+              </button>
+            </div>
+          ) : tab === 'contact' && creating ? (
+            <div className="space-y-1.5">
+              <input autoFocus value={newContact.name} onChange={(e) => setNewContact({ ...newContact, name: e.target.value })} placeholder="Nome do contato" aria-label="Nome do contato"
+                onKeyDown={(e) => { if (e.key === 'Enter') void saveNewContact() }}
+                className="w-full focus:outline-none focus:border-[var(--oe-primary)] text-[13px]" style={{ ...field, padding: '6px 10px' }} />
               <div className="flex gap-1.5">
-                <input
-                  autoFocus
-                  value={freeText}
-                  onChange={(e) => setFreeText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') { addFreeText(); setOpen(false) }
-                    if (e.key === 'Escape') setOpen(false)
-                  }}
-                  placeholder="Nome..."
-                  className="flex-1 focus:outline-none text-sm"
-                  style={{
-                    border: '1px solid var(--border-default)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '5px 8px',
-                    color: 'var(--text-primary)',
-                    background: 'var(--surface-input)',
-                  }}
-                  onFocus={e => (e.currentTarget.style.borderColor = 'var(--oe-primary)')}
-                  onBlur={e => (e.currentTarget.style.borderColor = 'var(--border-default)')}
-                />
-                <button
-                  onClick={() => { addFreeText(); setOpen(false) }}
-                  disabled={!freeText.trim()}
-                  className="px-3 py-1 rounded text-xs font-medium disabled:opacity-40"
-                  style={{ background: 'var(--oe-primary)', color: 'white' }}
-                >
-                  OK
-                </button>
+                <input value={newContact.role} onChange={(e) => setNewContact({ ...newContact, role: e.target.value })} placeholder="Cargo" aria-label="Cargo"
+                  className="flex-1 min-w-0 focus:outline-none focus:border-[var(--oe-primary)] text-[13px]" style={{ ...field, padding: '6px 10px' }} />
+                <input type="email" value={newContact.email} onChange={(e) => setNewContact({ ...newContact, email: e.target.value })} placeholder="E-mail" aria-label="E-mail"
+                  onKeyDown={(e) => { if (e.key === 'Enter') void saveNewContact() }}
+                  className="flex-1 min-w-0 focus:outline-none focus:border-[var(--oe-primary)] text-[13px]" style={{ ...field, padding: '6px 10px' }} />
               </div>
-            )}
-          </div>
+              {newContactClientIds && newContactClientIds.length > 0 && (
+                <p className="text-[11px] px-0.5" style={{ color: 'var(--text-tertiary)' }}>Fica ligado ao(s) cliente(s) deste item.</p>
+              )}
+              <div className="flex justify-end gap-1.5 pt-0.5">
+                <button onClick={() => setCreating(false)} className="px-3 py-1 text-xs font-medium rounded-[var(--radius-md)] hover:bg-[var(--surface-subtle)]" style={{ color: 'var(--text-secondary)' }}>Voltar</button>
+                <button onClick={() => void saveNewContact()} disabled={!newContact.name.trim() || savingContact} className="px-3 py-1 text-xs font-medium disabled:opacity-40"
+                  style={{ background: 'var(--oe-primary)', color: 'white', borderRadius: 'var(--radius-md)' }}>{savingContact ? 'Criando…' : 'Criar e adicionar'}</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <input
+                autoFocus
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false) }}
+                placeholder={tab === 'member' ? 'Buscar pessoa…' : 'Buscar contato…'}
+                aria-label="Buscar"
+                className="w-full mb-1.5 focus:outline-none focus:border-[var(--oe-primary)] text-[13px]"
+                style={{ ...field, padding: '6px 10px' }}
+              />
+              <div className="max-h-52 overflow-y-auto space-y-0.5">
+                {tab === 'member' ? (
+                  teamMembers.filter((m) => matches(m.name, m.role)).map((member) =>
+                    personRow(member.id, member.name, member.role, memberAlreadyAdded(member), () => { addMember(member); setOpen(false) }))
+                ) : (
+                  (contacts ?? []).filter((c) => matches(c.name, c.role)).map((contact) =>
+                    personRow(contact.id, contact.name, contact.role, contactAlreadyAdded(contact), () => { addContact(contact); setOpen(false) }))
+                )}
+                {(tab === 'member' ? teamMembers.filter((m) => matches(m.name, m.role)) : (contacts ?? []).filter((c) => matches(c.name, c.role))).length === 0 && (
+                  <p className="text-xs py-2 px-2" style={{ color: 'var(--text-tertiary)' }}>
+                    {q ? 'Ninguém encontrado.' : tab === 'member' ? 'Nenhum membro na equipe.' : 'Nenhum contato vinculado.'}
+                  </p>
+                )}
+              </div>
+              {tab === 'contact' && (
+                <button
+                  onClick={() => { setNewContact({ name: query.trim(), role: '', email: '' }); setCreating(true) }}
+                  className={`${row} mt-1`}
+                  style={{ fontSize: 13, color: 'var(--oe-primary)' }}
+                >
+                  <span className="inline-flex items-center justify-center shrink-0" style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--oe-primary-light)' }}>+</span>
+                  <span>{query.trim() ? `Criar contato "${query.trim()}"` : 'Criar novo contato'}</span>
+                </button>
+              )}
+            </>
+          )}
         </div>,
         document.body,
       )}

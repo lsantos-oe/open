@@ -1,6 +1,7 @@
 import DocumentationPanel from '@/components/docs/DocumentationPanel'
+import { Badge } from '@/components/ui/Badge'
 import { useState, useMemo, ReactNode } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useAppStore } from '@/store/useAppStore'
 import { ClientContact, ClientCsAssignment, ClientStatus, EntryOwner, TeamMember } from '@/types'
 import { Button } from '@/components/ui/Button'
@@ -9,12 +10,14 @@ import { Modal } from '@/components/ui/Modal'
 import CountrySelect from '@/components/ui/CountrySelect'
 import OwnersField from '@/components/plan/OwnersField'
 import { AnchorNav } from '@/components/ui/AnchorNav'
-import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import {
   RocketIcon, RefreshIcon, PinIcon, WarningIcon, ClockIcon,
   PersonIcon, CalendarIcon, CheckCircleIcon, NoteIcon,
 } from '@/components/ui/icons'
 import { contactsForClient } from '@/utils/contacts'
+import { EntityCode } from '@/components/ui/CodeBadge'
+import { AddToGroupModal } from '@/components/clients/GroupModals'
+import { groupsOfClient } from '@/utils/clientGroups'
 import DocField from '@/components/editor/DocField'
 import { findCountry } from '@/data/countries'
 import { formatDistanceToNow } from 'date-fns'
@@ -46,7 +49,14 @@ export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { clients, projects, teamDirectory, contacts, updateClient, deleteClient, createContact, updateContact, linkContactToClient, unlinkContactFromClient, addCsAssignment, removeCsAssignment } = useAppStore()
-  const [openSections, setOpenSections] = useState<Set<Tab>>(new Set(['overview', 'contacts']))
+  const [searchParams] = useSearchParams()
+  const [tab, setTab] = useState<Tab>(() => {
+    const q = searchParams.get('tab')
+    return (['overview', 'contacts', 'docs', 'csHistory', 'timeline'] as const).find((t) => t === q) ?? 'overview'
+  })
+  const clientGroups = useAppStore((s) => s.clientGroups)
+  const [addToGroup, setAddToGroup] = useState(false)
+  const allowMultipleGroups = useAppStore((s) => s.settings.allowMultipleClientGroups ?? false)
 
   const client = clients.find((c) => c.id === id)
 
@@ -158,18 +168,6 @@ export default function ClientDetailPage() {
     setShowCsModal(false)
   }
 
-  function toggleSection(id: Tab) {
-    setOpenSections((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id); else next.add(id)
-      return next
-    })
-  }
-
-  function openAndScroll(id: string) {
-    setOpenSections((prev) => new Set(prev).add(id as Tab))
-  }
-
   const TABS: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'contacts', label: `Contatos${clientContacts.length ? ` (${clientContacts.length})` : ''}` },
@@ -185,16 +183,25 @@ export default function ClientDetailPage() {
         <div className="flex items-center gap-3 min-w-0">
           <Link to="/wallet" className="text-sm shrink-0" style={{ color: 'var(--text-tertiary)' }}>← Carteira</Link>
           <h1 className="text-base font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{client.name}</h1>
+          <EntityCode table="clients" id={client.id} />
+          {groupsOfClient(clientGroups, client.id).map((g) => (
+            <Link key={g.id} to={`/wallet/groups/${g.id}`} className="shrink-0 hover:opacity-80" title="Abrir o grupo">
+              <Badge variant="primary" size="sm">Grupo · {g.name}</Badge>
+            </Link>
+          ))}
+          {clientGroups.length > 0 && (allowMultipleGroups || groupsOfClient(clientGroups, client.id).length === 0) && (
+            <button className="text-xs shrink-0" style={{ color: 'var(--text-tertiary)' }} onClick={() => setAddToGroup(true)}>+ grupo</button>
+          )}
         </div>
         <Button variant="secondary" size="sm" onClick={() => setShowArchiveConfirm(true)}>Excluir cliente</Button>
       </div>
 
       <div className="px-6 pt-3">
-        <AnchorNav items={TABS} onNavigate={openAndScroll} />
+        <AnchorNav items={TABS} onNavigate={(id) => setTab(id as Tab)} active={tab} />
       </div>
 
       <div className="p-6">
-        <CollapsibleSection id="overview" title="Overview" open={openSections.has('overview')} onToggle={() => toggleSection('overview')}>
+        {tab === 'overview' && (<div className="max-w-5xl">
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <Field label="País">
@@ -248,9 +255,9 @@ export default function ClientDetailPage() {
               )}
             </Field>
           </div>
-        </CollapsibleSection>
+        </div>)}
 
-        <CollapsibleSection id="contacts" title="Contatos" count={clientContacts.length} open={openSections.has('contacts')} onToggle={() => toggleSection('contacts')}>
+        {tab === 'contacts' && (<div className="max-w-5xl">
           <div>
             <div className="flex items-center justify-between mb-3">
               <Link to="/contacts" className="text-xs" style={{ color: 'var(--oe-primary)' }}>Ver todos os contatos →</Link>
@@ -259,7 +266,7 @@ export default function ClientDetailPage() {
             {clientContacts.length === 0 ? (
               <p className="text-sm text-center py-10" style={{ color: 'var(--text-tertiary)' }}>Nenhum contato vinculado ainda.</p>
             ) : (
-              <div className="rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
+              <div className="overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
                 <table className="w-full text-sm">
                   <tbody className="divide-y" style={{ borderColor: 'var(--border-default)' }}>
                     {clientContacts.map((c) => (
@@ -272,9 +279,7 @@ export default function ClientDetailPage() {
                         </td>
                         <td className="px-4 py-2.5 text-right whitespace-nowrap">
                           {c.clientIds.length > 1 && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-[var(--radius-pill)] mr-2" style={{ background: 'var(--surface-subtle)', color: 'var(--text-tertiary)' }}>
-                              {c.clientIds.length} clientes
-                            </span>
+                            <Badge size="sm" className="mr-2">{c.clientIds.length} clientes</Badge>
                           )}
                           <span className="opacity-0 group-hover:opacity-100 transition-opacity">
                             <button onClick={() => openEditContact(c)} className="text-xs mr-2" style={{ color: 'var(--text-tertiary)' }}>editar</button>
@@ -288,13 +293,13 @@ export default function ClientDetailPage() {
               </div>
             )}
           </div>
-        </CollapsibleSection>
+        </div>)}
 
-        <CollapsibleSection id="docs" title="Documentação" open={openSections.has('docs')} onToggle={() => toggleSection('docs')}>
-          {openSections.has('docs') && <DocumentationPanel scope={{ kind: 'client', id: client.id }} />}
-        </CollapsibleSection>
+        {tab === 'docs' && (<div className="max-w-5xl">
+          <DocumentationPanel scope={{ kind: 'client', id: client.id }} />
+        </div>)}
 
-        <CollapsibleSection id="csHistory" title="Histórico de CS" open={openSections.has('csHistory')} onToggle={() => toggleSection('csHistory')}>
+        {tab === 'csHistory' && (<div className="max-w-5xl">
           <div>
             <div className="flex justify-end mb-3">
               <Button size="sm" onClick={openAddCs}>+ Atribuir CS</Button>
@@ -317,9 +322,9 @@ export default function ClientDetailPage() {
               </div>
             )}
           </div>
-        </CollapsibleSection>
+        </div>)}
 
-        <CollapsibleSection id="timeline" title="Timeline" open={openSections.has('timeline')} onToggle={() => toggleSection('timeline')}>
+        {tab === 'timeline' && (<div className="max-w-5xl">
           <div>
             {timelineEvents.length === 0 ? (
               <p className="text-sm text-center py-10" style={{ color: 'var(--text-tertiary)' }}>Nenhum evento ainda — a timeline agrega o histórico dos projetos vinculados.</p>
@@ -350,7 +355,7 @@ export default function ClientDetailPage() {
               </div>
             )}
           </div>
-        </CollapsibleSection>
+        </div>)}
       </div>
 
       {/* Add/Edit Contact Modal */}
@@ -501,6 +506,8 @@ export default function ClientDetailPage() {
             : `Excluir "${client.name}"? Esta ação não pode ser desfeita.`}
         </p>
       </Modal>
+
+      <AddToGroupModal open={addToGroup} onClose={() => setAddToGroup(false)} clientIds={[client.id]} />
     </div>
   )
 }

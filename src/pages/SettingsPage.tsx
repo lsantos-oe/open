@@ -236,6 +236,25 @@ export default function SettingsPage() {
             />
           </Section>
 
+          <Section title="Grupos de clientes" description="Define se um mesmo cliente pode participar de mais de um grupo. Quem já está em vários grupos continua; a regra vale para novas inclusões.">
+            <ToggleGroup<'one' | 'many'>
+              value={settings.allowMultipleClientGroups ? 'many' : 'one'}
+              onChange={(v) => updateSettings({ allowMultipleClientGroups: v === 'many' })}
+              options={[
+                { value: 'one', label: 'Um grupo por cliente' },
+                { value: 'many', label: 'Vários grupos por cliente' },
+              ]}
+            />
+          </Section>
+
+          <Section title="Open API e MCP" description="Acesse o Open por outros sistemas e por assistentes de IA. A documentação e a página da sua chave abrem em outra aba.">
+            <div className="flex flex-wrap gap-2">
+              <a href="/api/docs" target="_blank" rel="noopener noreferrer"><Button variant="secondary" size="sm">Documentação da API ↗</Button></a>
+              <a href="/api/minha-chave" target="_blank" rel="noopener noreferrer"><Button variant="secondary" size="sm">Minha chave de acesso ↗</Button></a>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/guide')}>Guia de uso →</Button>
+            </div>
+          </Section>
+
           <Section title="Importação em massa" description="Importe clientes, projetos, incidentes e tarefas de uma planilha Excel — baixe o modelo pronto (com listas e instruções), preencha e envie.">
             <Button variant="secondary" size="sm" onClick={() => navigate('/import')}>Abrir importação →</Button>
           </Section>

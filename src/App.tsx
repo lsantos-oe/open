@@ -13,7 +13,9 @@ import ProjectDetailPage from '@/pages/ProjectDetailPage'
 import SettingsPage from '@/pages/SettingsPage'
 import TemplateEditorPage from '@/pages/TemplateEditorPage'
 import TasksPage from '@/pages/TasksPage'
+import ClientGroupDetailPage from '@/pages/ClientGroupDetailPage'
 import ClientsPage from '@/pages/ClientsPage'
+import ResolveCodePage from '@/pages/ResolveCodePage'
 import ClientDetailPage from '@/pages/ClientDetailPage'
 import ContactsPage from '@/pages/ContactsPage'
 import IncidentsPage from '@/pages/IncidentsPage'
@@ -69,6 +71,7 @@ export default function App() {
         await timedLoad('clientes', () => app.loadClients())
         await timedLoad('incidentes', () => app.loadIncidents())
         await timedLoad('contatos', () => app.loadContacts())
+        await timedLoad('grupos de clientes', () => app.loadClientGroups())
         await timedLoad('tarefas soltas', () => app.loadStandaloneTasks())
         await timedLoad('assistente', () => useAiStore.getState().loadHasKey())
       }
@@ -116,7 +119,9 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/portfolio" element={<ProjectsPage />} />
+          <Route path="/r/:code" element={<ResolveCodePage />} />
           <Route path="/wallet" element={<ClientsPage />} />
+          <Route path="/wallet/groups/:id" element={<ClientGroupDetailPage />} />
           <Route path="/wallet/:id" element={<ClientDetailPage />} />
           <Route path="/contacts" element={<ContactsPage />} />
           <Route path="/support" element={<IncidentsPage />} />
