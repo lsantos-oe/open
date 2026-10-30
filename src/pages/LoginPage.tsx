@@ -32,7 +32,7 @@ export default function LoginPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
           <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.01em' }}>
             <span style={{ color: 'var(--text-primary)' }}>op</span>
-            <span style={{ color: 'var(--text-secondary)' }}>en</span>
+            <span style={{ color: 'var(--oe-primary)' }}>en</span>
           </span>
         </div>
 

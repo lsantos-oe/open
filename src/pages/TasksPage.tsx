@@ -29,7 +29,7 @@ import { EmptyState as SharedEmptyState } from '@/components/ui/EmptyState'
 import { Field, Select } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { SearchInput } from '@/components/ui/SearchInput'
-import { MineToggle } from '@/components/ui/MineToggle'
+import { SortMenu } from '@/components/ui/SortMenu'
 import { useBacklogTasksPref } from '@/stores/useBacklogTasksPref'
 import { ViewToggle } from '@/components/ui/ViewToggle'
 import { ListIcon, KanbanIcon, CheckCircleIcon, ChatBubbleIcon, LinkIcon, ExternalLinkIcon, UsersGroupIcon } from '@/components/ui/icons'
@@ -859,40 +859,31 @@ export default function TasksPage() {
             { value: 'capacity', label: 'Carga', icon: <UsersGroupIcon className="w-3.5 h-3.5" /> },
           ]}
         />
-        <MineToggle active={onlyMine} onClick={() => setOnlyMine((v) => !v)} />
-        <MineToggle
-          active={showBacklogProjectTasks}
-          onClick={() => setShowBacklogProjectTasks(!showBacklogProjectTasks)}
-          label="Incluir projetos em backlog"
-        />
-        {view !== 'capacity' && (
-          <Select value={dateSortMode} onChange={(e) => setDateSortMode(e.target.value as typeof dateSortMode)} aria-label="Ordenar por data" className="!py-1.5">
-            <option value="none">Sem ordenar por data</option>
-            <option value="task">Ordenar por data da tarefa</option>
-            <option value="parent">Ordenar por data do projeto/incidente</option>
-          </Select>
-        )}
         <div style={{ flex: 1 }} />
 
-        {view === 'table' && (
-          <>
-            <Select value={groupBy} onChange={(e) => setGroupBy(e.target.value as typeof groupBy)} aria-label="Agrupar por" className="!py-1.5">
-              <option value="responsible">Agrupar por responsável</option>
-              <option value="origin">Agrupar por origem</option>
-              <option value="none">Sem agrupamento</option>
-            </Select>
-            {groupBy === 'responsible' && (
-              <Select value={responsibleRole} onChange={(e) => setResponsibleRole(e.target.value as typeof responsibleRole)} aria-label="Papel considerado no agrupamento" className="!py-1.5">
-                <option value="executor">Executor</option>
-                <option value="validator">Validador</option>
-                <option value="both">Ambos</option>
-              </Select>
-            )}
-            <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />
-          </>
+        {view === 'table' && <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />}
+        {view !== 'capacity' && (
+          <SortMenu
+            title="Ordenar e agrupar"
+            groups={[
+              { label: 'Ordenar por data', value: dateSortMode, neutral: 'none', onChange: (v) => setDateSortMode(v as typeof dateSortMode), options: [
+                { value: 'none', label: 'Sem ordenação' }, { value: 'task', label: 'Data da tarefa' }, { value: 'parent', label: 'Data do projeto/incidente' } ] },
+              ...(view === 'table' ? [
+                { label: 'Agrupar por', value: groupBy, onChange: (v: string) => setGroupBy(v as typeof groupBy), options: [
+                  { value: 'responsible', label: 'Responsável' }, { value: 'origin', label: 'Origem' }, { value: 'none', label: 'Sem agrupamento' } ] },
+                ...(groupBy === 'responsible' ? [{ label: 'Papel no agrupamento', value: responsibleRole, onChange: (v: string) => setResponsibleRole(v as typeof responsibleRole), options: [
+                  { value: 'executor', label: 'Executor' }, { value: 'validator', label: 'Validador' }, { value: 'both', label: 'Ambos' } ] }] : []),
+              ] : []),
+            ]}
+          />
         )}
         <FilterMenu
-          activeCount={filterScope.length + filterMember.length + filterStatus.length + filterClientId.length + (onlyOverdue ? 1 : 0)}
+          toggles={[
+            { label: 'Só as minhas', checked: onlyMine, onChange: setOnlyMine },
+            { label: 'Incluir projetos em backlog', checked: showBacklogProjectTasks, onChange: setShowBacklogProjectTasks },
+            { label: 'Somente atrasadas', checked: onlyOverdue, onChange: setOnlyOverdue },
+          ]}
+          activeCount={filterScope.length + filterMember.length + filterStatus.length + filterClientId.length}
           onClear={() => { setFilterScope([]); setFilterMember([]); setFilterStatus([]); setFilterClientId([]); setOnlyOverdue(false) }}
         >
           <Field label={t('tasks.filterProject')}>
@@ -934,15 +925,6 @@ export default function TasksPage() {
             />
           </Field>
 
-          <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
-            <input
-              type="checkbox"
-              className="rounded border-[var(--border-default)] accent-[var(--text-primary)]"
-              checked={onlyOverdue}
-              onChange={(e) => setOnlyOverdue(e.target.checked)}
-            />
-            Somente atrasadas
-          </label>
         </FilterMenu>
       </div>
 

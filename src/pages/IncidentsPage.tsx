@@ -17,7 +17,6 @@ import { SortableHeader } from '@/components/ui/SortableHeader'
 import { MultiSelect } from '@/components/ui/MultiSelect'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SearchInput } from '@/components/ui/SearchInput'
-import { MineToggle } from '@/components/ui/MineToggle'
 import { ViewToggle } from '@/components/ui/ViewToggle'
 import { ListIcon, KanbanIcon, SupportIcon } from '@/components/ui/icons'
 import { isIncidentMine, ownerKey } from '@/utils/involvement'
@@ -379,10 +378,10 @@ export default function IncidentsPage() {
               { value: 'kanban', label: t('actions.viewKanban'), icon: <KanbanIcon className="w-3.5 h-3.5" /> },
             ]}
           />
-          <MineToggle active={onlyMine} onClick={() => setOnlyMine((v) => !v)} />
           <div className="flex-1" />
           {view === 'list' && <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />}
           <FilterMenu
+          toggles={[{ label: 'Só os meus', checked: onlyMine, onChange: setOnlyMine }]}
             activeCount={statusFilter.length + priorityFilter.length + clientFilter.length + ownerFilter.length}
             onClear={() => { setStatusFilter([]); setPriorityFilter([]); setClientFilter([]); setOwnerFilter([]) }}
           >

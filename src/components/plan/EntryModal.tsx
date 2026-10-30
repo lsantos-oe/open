@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, CSSProperties, ReactNode } from 'react'
-import { Select } from '@/components/ui/Input'
+import { Select, Input, Field } from '@/components/ui/Input'
 import { EntityCode } from '@/components/ui/CodeBadge'
 import RichTextInput from '@/components/editor/RichTextInput'
 import EntryComments from './EntryComments'
@@ -259,6 +259,8 @@ export default function EntryModal({
   const [newLinkLabel, setNewLinkLabel] = useState('')
   const [newLinkUrl, setNewLinkUrl] = useState('')
   const [depsOpen, setDepsOpen] = useState(false)
+  const [showMore, setShowMore] = useState(false)
+  const [showDesc, setShowDesc] = useState(false)
   // O editor da descrição só lê o texto inicial ao montar: cada reinício do formulário o remonta (key).
   const [descEpoch, setDescEpoch] = useState(0)
 
@@ -661,6 +663,217 @@ export default function EntryModal({
     </div>
   )
 
+  // ── CRIAR: formulário curto. O essencial (nome, onde, quem, quando) fica à vista; o resto abre em "Mais opções". ──
+  if (mode === 'create') {
+    const canPickType = !isSubtask && !defaultParentEntryId && !!form.projectId
+    const noProject = !form.projectId
+    const pill = (on: boolean) => ({
+      display: 'inline-flex', alignItems: 'center', gap: 6, height: 30, padding: '0 14px', borderRadius: 999, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: 'none',
+      background: on ? 'var(--text-primary)' : 'var(--surface-subtle)', color: on ? 'var(--surface-page)' : 'var(--text-secondary)',
+    }) as CSSProperties
+    return (
+      <Modal open={open} title={title} onClose={onClose} size="md" footer={footer}>
+        <div className="space-y-5">
+          {canPickType && (
+            <div style={{ display: 'flex', gap: 6 }} role="radiogroup" aria-label="Tipo">
+              {(['task', 'milestone', 'meeting'] as EntryType[]).map((type) => (
+                <button key={type} role="radio" aria-checked={form.type === type} onClick={() => set('type', type)} style={pill(form.type === type)}>
+                  {TYPE_ICONS[type]} {t(`entry.${type}` as any)}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <input
+            autoFocus
+            value={form.name}
+            onChange={(e) => set('name', e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveCreate() }}
+            placeholder={t('entry.name')}
+            aria-label={t('entry.name')}
+            style={{ width: '100%', fontSize: 18, fontWeight: 600, border: 'none', outline: 'none', background: 'transparent', color: 'var(--text-primary)', padding: '4px 0' }}
+          />
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={t('entry.project' as any)}>
+              <SearchableSelect
+                value={form.projectId}
+                onChange={handleProjectChange}
+                options={[
+                  ...(allowStandalone ? [{ id: '', label: t('entry.noProject' as any) }] : []),
+                  ...visibleProjects.map((p) => ({ id: p.id, label: p.name, sublabel: p.client || undefined })),
+                ]}
+                disabled={lockProject}
+              />
+            </Field>
+            {noProject ? (
+              <Field label={t('entry.client' as any)}>
+                <MultiSelect
+                  values={clientFilter}
+                  onChange={handleClientFilterChange}
+                  options={clients.map((c) => ({ id: c.id, label: c.name }))}
+                  placeholder={`— ${t('entry.allClients' as any)} —`}
+                  disabled={lockProject}
+                />
+              </Field>
+            ) : !isSubtask ? (
+              <Field label={t('plan.phase')}>
+                <Select value={selectedProject?.phases.find((ph) => ph.id === form.phaseId)?.isUnassigned ? '' : form.phaseId} onChange={(e) => set('phaseId', e.target.value)}>
+                  {form.hiddenFromPlan && <option value="">— {t('entry.noPhase' as any)} —</option>}
+                  {visiblePhases.map((ph) => <option key={ph.id} value={ph.id}>{ph.name}</option>)}
+                </Select>
+              </Field>
+            ) : <div />}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Responsável">
+              <OwnersField
+                owners={form.owners.filter((o) => o.kind === 'executor')}
+                onChange={(next) => set('owners', [...next, ...form.owners.filter((o) => o.kind !== 'executor')])}
+                teamMembers={selectedTeam}
+                contacts={selectedContacts}
+                newContactClientIds={selectedProject?.clientIds.length ? selectedProject.clientIds : !form.projectId ? clientFilter : undefined}
+                kind="executor"
+              />
+            </Field>
+            <Field label={form.type === 'task' ? 'Prazo' : 'Data'}>
+              {form.type === 'task' ? (
+                <>
+                  <Input type="date" value={form.plannedEnd} onChange={(e) => { set('plannedEnd', e.target.value); setEndDateError('') }} />
+                  {endDateError && <p className="text-xs mt-1" style={{ color: 'var(--color-danger-text)' }}>{endDateError}</p>}
+                </>
+              ) : (
+                <Input type="date" value={form.plannedDate} onChange={(e) => set('plannedDate', e.target.value)} />
+              )}
+            </Field>
+          </div>
+
+          {showDesc || form.description ? (
+            <Field label={t('entry.description')}>
+              <RichTextInput key={descEpoch} initialMarkdown={form.description} onChange={(md) => set('description', md)} uploadScope="entry_new" minHeight={90} />
+            </Field>
+          ) : (
+            <button type="button" onClick={() => setShowDesc(true)} className="text-[13px]" style={{ color: 'var(--text-tertiary)' }}>+ {t('entry.description')}</button>
+          )}
+
+          <div>
+            <button type="button" onClick={() => setShowMore((v) => !v)} aria-expanded={showMore} className="flex items-center gap-1.5 text-[13px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+              <span style={{ display: 'inline-block', transform: showMore ? 'rotate(90deg)' : undefined, transition: 'transform .12s' }}>›</span>
+              Mais opções
+              {(form.owners.some((o) => o.kind === 'validator') || form.dependsOn.length > 0 || form.links.length > 0) && <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--text-tertiary)' }} />}
+            </button>
+
+            {showMore && (
+              <div className="mt-3 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label={t('entry.validator')}>
+                    <OwnersField
+                      owners={form.owners.filter((o) => o.kind === 'validator')}
+                      onChange={(next) => set('owners', [...form.owners.filter((o) => o.kind !== 'validator'), ...next])}
+                      teamMembers={selectedTeam}
+                      contacts={selectedContacts}
+                      newContactClientIds={selectedProject?.clientIds.length ? selectedProject.clientIds : !form.projectId ? clientFilter : undefined}
+                      max={1}
+                      kind="validator"
+                    />
+                  </Field>
+                  <Field label={t('entry.status')}>
+                    <Select value={form.status} onChange={(e) => set('status', e.target.value as EntryStatus)}>
+                      <option value="pending">{t('entry.pending')}</option>
+                      <option value="todo">{t('entry.todo')}</option>
+                      <option value="in_progress">{t('entry.in_progress')}</option>
+                      <option value="validation">{t('entry.validation')}</option>
+                      <option value="done">{t('entry.done')}</option>
+                      <option value="blocked">{t('entry.blocked')}</option>
+                    </Select>
+                  </Field>
+                </div>
+
+                {form.type === 'task' ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label={t('entry.plannedStart')}><Input type="date" value={form.plannedStart} onChange={(e) => set('plannedStart', e.target.value)} /></Field>
+                    <Field label={t('entry.duration')}><Input type="number" min={1} value={form.durationDays} onChange={(e) => set('durationDays', Number(e.target.value))} /></Field>
+                  </div>
+                ) : form.type === 'meeting' ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label={t('entry.durationHours')}><Input type="number" min={0.5} step={0.5} value={form.durationHours} onChange={(e) => set('durationHours', Number(e.target.value))} /></Field>
+                    <Field label={t('plan.linkedTask')}>
+                      <Select value={form.linkedParentId} onChange={(e) => set('linkedParentId', e.target.value)} disabled={!!defaultParentEntryId}>
+                        <option value="">— {t('plan.linkedTaskNone')} —</option>
+                        {availableParentTasks.map((task) => <option key={task.id} value={task.id}>{task.name}</option>)}
+                      </Select>
+                    </Field>
+                  </div>
+                ) : null}
+                {form.type === 'meeting' && parentEndWarning && <p className="text-xs" style={{ color: 'var(--color-warning-text)' }}>⚠ {t('plan.childMeetingOutOfRange')}</p>}
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label={t('entry.riskFlag')}>
+                    <Select value={form.riskFlag} onChange={(e) => set('riskFlag', e.target.value as RiskFlag)}>
+                      <option value="none">{t('entry.none')}</option>
+                      <option value="warning">{t('entry.warning')}</option>
+                      <option value="critical">{t('entry.critical')}</option>
+                    </Select>
+                  </Field>
+                  {form.type === 'task' && !defaultParentId && availableParentTasks.length > 0 ? (
+                    <Field label={t('entry.subtaskOf')}>
+                      <Select value={form.subtaskOf} onChange={(e) => set('subtaskOf', e.target.value)}>
+                        <option value="">— {t('plan.linkedTaskNone')} —</option>
+                        {availableParentTasks.map((task) => <option key={task.id} value={task.id}>{task.name}</option>)}
+                      </Select>
+                    </Field>
+                  ) : <div />}
+                </div>
+
+                {availableDeps.length > 0 && (
+                  <Field label={`${t('plan.dependencies')}${form.dependsOn.length ? ` (${form.dependsOn.length})` : ''}`}>
+                    <div style={{ maxHeight: 140, overflowY: 'auto', borderRadius: 'var(--radius-lg)', background: 'var(--surface-subtle)', padding: 4 }}>
+                      {availableDeps.map((dep) => (
+                        <label key={dep.id} className="flex items-center gap-2 px-2 py-1.5 text-[12.5px] cursor-pointer rounded-[var(--radius-md)] hover:bg-[var(--surface-card)]" style={{ color: 'var(--text-secondary)' }}>
+                          <input type="checkbox" className="accent-[var(--text-primary)]" checked={form.dependsOn.includes(dep.id)} onChange={() => toggleDep(dep.id)} />
+                          <span style={{ color: 'var(--text-tertiary)', fontSize: 11 }}>{dep.phaseName}</span>{dep.name}
+                        </label>
+                      ))}
+                    </div>
+                  </Field>
+                )}
+
+                <Field label="Links">
+                  {form.links.map((l) => (
+                    <div key={l.id} className="flex items-center gap-2 text-[12.5px] mb-1" style={{ color: 'var(--text-secondary)' }}>
+                      <span className="truncate flex-1">{l.label}</span>
+                      <button onClick={() => removeLink(l.id)} aria-label={`Remover ${l.label}`} style={{ color: 'var(--text-tertiary)' }}>×</button>
+                    </div>
+                  ))}
+                  <div className="flex gap-2">
+                    <Input value={newLinkUrl} onChange={(e) => setNewLinkUrl(e.target.value)} placeholder="Cole um link" onKeyDown={(e) => e.key === 'Enter' && addLink()} />
+                    <Button variant="secondary" size="sm" onClick={addLink} disabled={!newLinkUrl.trim()}>{t('actions.add')}</Button>
+                  </div>
+                </Field>
+
+                {!!form.projectId && (
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-[13px] cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+                      <input type="checkbox" className="accent-[var(--text-primary)]" checked={!form.hiddenFromPlan} onChange={handleToggleHiddenFromPlan} />
+                      {t('entry.showInPlan')}
+                    </label>
+                    {form.type === 'task' && (
+                      <label className="flex items-center gap-2 text-[13px] cursor-pointer" style={{ color: 'var(--text-secondary)' }} title="Os links e arquivos desta tarefa aparecem na aba Documentação do projeto e do cliente.">
+                        <input type="checkbox" className="accent-[var(--text-primary)]" checked={form.isDocumentation} onChange={(e) => set('isDocumentation', e.target.checked)} />
+                        Tarefa de documentação
+                      </label>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </Modal>
+    )
+  }
+
   // ── render ────────────────────────────────────────────────────────────────
 
   return (
@@ -690,29 +903,6 @@ export default function EntryModal({
                   </Button>
                 )
               })}
-            </div>
-          )}
-
-          {/* Type selector (create, not subtask, not forced meeting, not standalone) */}
-          {mode === 'create' && !isSubtask && !defaultParentEntryId && !!form.projectId && (
-            <div style={{ display: 'flex', gap: 8 }}>
-              {(['task', 'milestone', 'meeting'] as EntryType[]).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => set('type', type)}
-                  style={{
-                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    gap: 6, padding: '10px 0',
-                    borderRadius: 'var(--radius-lg)',
-                    border: form.type === type ? '2px solid var(--text-primary)' : '2px solid var(--border-default)',
-                    background: form.type === type ? 'var(--color-info-bg)' : 'transparent',
-                    color: form.type === type ? 'var(--color-info-text)' : 'var(--text-secondary)',
-                    fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                  }}
-                >
-                  {TYPE_ICONS[type]} {t(`entry.${type}` as any)}
-                </button>
-              ))}
             </div>
           )}
 
@@ -849,18 +1039,6 @@ export default function EntryModal({
             </FieldBox>
           )}
 
-          {/* Subtask of (create, task, no preset parent) */}
-          {mode === 'create' && form.type === 'task' && !defaultParentId && availableParentTasks.length > 0 && (
-            <FieldBox label={t('entry.subtaskOf')}>
-              <Select value={form.subtaskOf} onChange={e => set('subtaskOf', e.target.value)}>
-                <option value="">— {t('plan.linkedTaskNone')} —</option>
-                {availableParentTasks.map(task => (
-                  <option key={task.id} value={task.id}>{task.name}</option>
-                ))}
-              </Select>
-            </FieldBox>
-          )}
-
           {/* Dependencies (collapsible) */}
           {availableDeps.length > 0 && (
             <div>
@@ -918,7 +1096,7 @@ export default function EntryModal({
               onChange={handleClientFilterChange}
               options={clients.map(c => ({ id: c.id, label: c.name }))}
               placeholder={`— ${t('entry.allClients' as any)} —`}
-              disabled={lockProject && mode === 'create'}
+              disabled={false}
               style={inputStyle}
             />
           </FieldBox>
@@ -932,7 +1110,7 @@ export default function EntryModal({
                 ...(allowStandalone ? [{ id: '', label: t('entry.noProject' as any) }] : []),
                 ...visibleProjects.map(p => ({ id: p.id, label: p.name })),
               ]}
-              disabled={lockProject && mode === 'create'}
+              disabled={false}
               style={inputStyle}
             />
             {projectChanged && (

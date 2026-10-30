@@ -17,7 +17,6 @@ import { MultiSelect } from '@/components/ui/MultiSelect'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SelectionBar } from '@/components/ui/SelectionBar'
 import { SearchInput } from '@/components/ui/SearchInput'
-import { MineToggle } from '@/components/ui/MineToggle'
 import { ViewToggle } from '@/components/ui/ViewToggle'
 import { GroupsTab } from '@/components/clients/GroupsTab'
 import { AddToGroupModal, NewGroupModal } from '@/components/clients/GroupModals'
@@ -216,10 +215,10 @@ export default function ClientsPage() {
             { value: 'kanban', label: t('project.viewKanban'), icon: <KanbanIcon className="w-3.5 h-3.5" /> },
           ]}
         />
-        <MineToggle active={onlyMine} onClick={() => setOnlyMine((v) => !v)} />
         <div className="flex-1" />
         {view === 'list' && <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />}
         <FilterMenu
+          toggles={[{ label: 'Só os meus', checked: onlyMine, onChange: setOnlyMine }]}
           activeCount={countryFilter.length + ownerFilter.length}
           onClear={() => { setCountryFilter([]); setOwnerFilter([]) }}
         >

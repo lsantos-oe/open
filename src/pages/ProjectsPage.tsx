@@ -12,7 +12,7 @@ import { Input, Field, Select } from '@/components/ui/Input'
 import { SelectionBar } from '@/components/ui/SelectionBar'
 import { StatusDot } from '@/components/ui/StatusDot'
 import { AvatarStack } from '@/components/ui/AvatarStack'
-import { FilterMenu } from '@/components/ui/FilterMenu'
+import { FilterMenu, FilterToggleDef } from '@/components/ui/FilterMenu'
 import { ColumnsMenu } from '@/components/ui/ColumnsMenu'
 import { SortableHeader } from '@/components/ui/SortableHeader'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
@@ -106,15 +106,16 @@ interface FilterBarProps {
   setFilters: (f: Filters) => void
   clients: Client[]
   pms: string[]
+  toggles?: FilterToggleDef[]
 }
 
-function FilterBar({ filters, setFilters, clients, pms }: FilterBarProps) {
+function FilterBar({ filters, setFilters, clients, pms, toggles }: FilterBarProps) {
   const { t } = useTranslation()
   const activeCount = filters.clientIds.length + filters.pms.length + filters.statuses.length
     + (filters.type ? 1 : 0) + (filters.dev ? 1 : 0)
 
   return (
-    <FilterMenu activeCount={activeCount} onClear={() => setFilters({ clientIds: [], pms: [], type: '', dev: '', statuses: [] })}>
+    <FilterMenu toggles={toggles} activeCount={activeCount} onClear={() => setFilters({ clientIds: [], pms: [], type: '', dev: '', statuses: [] })}>
       <Field label={t('portfolio.colClient')}>
         <MultiSelect
           values={filters.clientIds}
@@ -1141,21 +1142,9 @@ export default function ProjectsPage() {
               { value: 'kanban', label: t('project.viewKanban'), icon: <KanbanIcon className="w-3.5 h-3.5" /> },
             ]}
           />
-          <MineToggle active={onlyMine} onClick={() => setOnlyMine((v) => !v)} />
-          <button
-            onClick={() => setOnlyDelayed((v) => !v)}
-            className="px-3 py-1.5 text-xs font-medium rounded-[var(--radius-md)] border transition-colors whitespace-nowrap"
-            style={{
-              background: onlyDelayed ? 'var(--color-danger-text)' : 'var(--surface-card)',
-              color: onlyDelayed ? 'white' : 'var(--text-secondary)',
-              borderColor: onlyDelayed ? 'var(--color-danger-text)' : 'var(--border-default)',
-            }}
-          >
-            {t('project.delayed')}
-          </button>
           <div className="flex-1" />
           {view === 'list' && <ColumnsMenu columns={COLUMNS} isVisible={isVisible} onToggle={toggleColumn} />}
-          <FilterBar filters={filters} setFilters={setFilters} clients={storeClients} pms={pms} />
+          <FilterBar filters={filters} setFilters={setFilters} clients={storeClients} pms={pms} toggles={[{ label: 'Só os meus', checked: onlyMine, onChange: setOnlyMine }, { label: t('project.delayed'), checked: onlyDelayed, onChange: setOnlyDelayed }]} />
         </div>
       )}
 
