@@ -55,7 +55,7 @@ export default function AuthCallback() {
       background: 'var(--surface-page)',
     }}>
       <Spinner />
-      <p style={{ fontSize: 14, color: 'var(--text-tertiary)' }}>Autenticando...</p>
+      <p style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>Autenticando...</p>
     </div>
   )
 }

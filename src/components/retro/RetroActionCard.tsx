@@ -23,7 +23,7 @@ interface Props {
 export function StatusPill({ status }: { status: RetroCard['actionStatus'] }) {
   const { t } = useTranslation()
   return (
-    <span className="inline-block whitespace-nowrap text-[10.5px] font-[500] px-1.5 py-[1px]" style={{ ...ACTION_STATUS_STYLE[status], borderRadius: 'var(--radius-pill)' }}>
+    <span className="inline-block whitespace-nowrap text-[11.5px] font-[500] px-1.5 py-[1px]" style={{ ...ACTION_STATUS_STYLE[status], borderRadius: 'var(--radius-pill)' }}>
       {t(`retro.actionStatus_${status}`)}
     </span>
   )
@@ -51,10 +51,10 @@ export default function RetroActionCard({ card, subActions, links, addresses, co
       </div>
 
       {addresses && (
-        <p className="text-[11px] mt-1 truncate" style={{ color: 'var(--text-tertiary)' }}>↳ {addresses}</p>
+        <p className="text-[11.5px] mt-1 truncate" style={{ color: 'var(--text-tertiary)' }}>↳ {addresses}</p>
       )}
 
-      <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-2 text-[11px]" style={{ color: 'var(--text-secondary)' }}>
+      <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-2 text-[11.5px]" style={{ color: 'var(--text-secondary)' }}>
         <AvatarStack people={card.owners.map((o) => ({ name: o.name, avatarUrl: avatarOf(o.memberId) }))} size={20} />
         {card.dueDate && (
           <span style={{ color: overdue ? 'var(--color-danger-text)' : undefined }}>
@@ -76,7 +76,7 @@ export default function RetroActionCard({ card, subActions, links, addresses, co
             <li
               key={s.id}
               onClick={(e) => { e.stopPropagation(); onOpen(s.id) }}
-              className="flex items-center gap-1.5 text-[12px] pl-2 hover:underline"
+              className="flex items-center gap-1.5 text-[13px] pl-2 hover:underline"
               style={{ borderLeft: '2px solid var(--border-default)', color: 'var(--text-secondary)', textDecoration: s.actionStatus === 'dropped' ? 'line-through' : undefined }}
             >
               <span aria-hidden>{s.actionStatus === 'done' ? '✓' : '○'}</span>
@@ -89,7 +89,7 @@ export default function RetroActionCard({ card, subActions, links, addresses, co
       <div className="flex items-center gap-2 mt-2">
         <VoteButton {...vote} />
         {commentCount > 0 && (
-          <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+          <span className="inline-flex items-center gap-1 text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>
             <ChatBubbleIcon className="w-3 h-3" />{commentCount}
           </span>
         )}

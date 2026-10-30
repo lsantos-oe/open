@@ -14,7 +14,7 @@ interface Section {
 }
 
 function Code({ children }: { children: ReactNode }) {
-  return <code className="px-1 py-0.5 rounded text-[12px]" style={{ background: 'var(--surface-subtle)', color: 'var(--text-primary)' }}>{children}</code>
+  return <code className="px-1 py-0.5 rounded text-[13px]" style={{ background: 'var(--surface-subtle)', color: 'var(--text-primary)' }}>{children}</code>
 }
 
 function Ul({ children }: { children: ReactNode }) {

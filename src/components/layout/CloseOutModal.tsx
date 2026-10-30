@@ -69,7 +69,7 @@ export function CloseOutModal() {
     completeTasks(target!, tasks.filter((x) => selected.has(x.id)).map((x) => x.id))
   }
 
-  const th = { padding: '8px 10px', fontSize: 11, fontWeight: 600, textAlign: 'left' as const, color: 'var(--text-tertiary)', textTransform: 'uppercase' as const, letterSpacing: '0.04em' }
+  const th = { padding: '8px 10px', fontSize: 11.5, fontWeight: 600, textAlign: 'left' as const, color: 'var(--text-tertiary)', textTransform: 'uppercase' as const, letterSpacing: '0.04em' }
   const td = { padding: '9px 10px', fontSize: 13, color: 'var(--text-secondary)', verticalAlign: 'top' as const }
 
   return (

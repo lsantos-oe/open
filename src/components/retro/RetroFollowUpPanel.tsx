@@ -88,7 +88,7 @@ export default function RetroFollowUpPanel({ retro, canReview, onOpenAction }: P
                         </button>
                         <StatusPill status={card.actionStatus} />
                         {card.retroId !== previous.id && (
-                          <span className="text-[10.5px]" style={{ color: 'var(--text-tertiary)' }}>{t('retro.followUpInherited', { title: retroTitle(card.retroId) })}</span>
+                          <span className="text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>{t('retro.followUpInherited', { title: retroTitle(card.retroId) })}</span>
                         )}
                       </div>
                       <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-1.5 text-[11.5px]" style={{ color: 'var(--text-secondary)' }}>
@@ -111,7 +111,7 @@ export default function RetroFollowUpPanel({ retro, canReview, onOpenAction }: P
                           {review.note && <span className="ml-2" style={{ color: 'var(--text-secondary)' }}>{review.note}</span>}
                         </div>
                       ) : (
-                        <p className="mt-2 text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{t('retro.notReviewed')}</p>
+                        <p className="mt-2 text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>{t('retro.notReviewed')}</p>
                       )}
                     </div>
                     {canReview && (

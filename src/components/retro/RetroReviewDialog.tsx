@@ -63,7 +63,7 @@ export default function RetroReviewDialog({ card, retroId, existing, onClose }: 
                   key={o}
                   type="button"
                   onClick={() => setOutcome(o)}
-                  className="text-left p-2.5 text-[12.5px] border transition-colors"
+                  className="text-left p-2.5 text-[13px] border transition-colors"
                   style={{
                     borderRadius: 'var(--radius-md)',
                     borderColor: active ? REVIEW_OUTCOME_STYLE[o].color : 'var(--border-default)',

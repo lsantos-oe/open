@@ -118,7 +118,7 @@ export default function ImportJsonModal({ initialTab, projectId, onClose }: Prop
         {/* Target project info (update tab) */}
         {tab === 'update' && targetProject && (
           <div
-            className="px-3 py-2 rounded-[var(--radius-lg)] text-[12px]"
+            className="px-3 py-2 rounded-[var(--radius-lg)] text-[13px]"
             style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border-default)' }}
           >
             <span style={{ color: 'var(--text-tertiary)' }}>{t('import.targetProject')}: </span>
@@ -137,7 +137,7 @@ export default function ImportJsonModal({ initialTab, projectId, onClose }: Prop
             className="w-full focus:outline-none resize-none"
             style={{
               fontFamily: 'monospace',
-              fontSize: 12,
+              fontSize: 13,
               padding: '10px 12px',
               border: `1px solid ${blurError ? 'var(--color-danger-text)' : 'var(--border-default)'}`,
               borderRadius: 'var(--radius-md)',
@@ -148,7 +148,7 @@ export default function ImportJsonModal({ initialTab, projectId, onClose }: Prop
             onFocus={e => { if (!blurError) e.currentTarget.style.borderColor = 'var(--text-tertiary)' }}
           />
           {blurError && (
-            <p className="mt-1 text-[11px]" style={{ color: 'var(--color-danger-text)' }}>{blurError}</p>
+            <p className="mt-1 text-[11.5px]" style={{ color: 'var(--color-danger-text)' }}>{blurError}</p>
           )}
         </div>
 
@@ -163,12 +163,12 @@ export default function ImportJsonModal({ initialTab, projectId, onClose }: Prop
             {t('import.validate')}
           </Button>
           {result && !result.valid && (
-            <span className="text-[12px]" style={{ color: 'var(--color-danger-text)' }}>
+            <span className="text-[13px]" style={{ color: 'var(--color-danger-text)' }}>
               {result.errors.length} {result.errors.length === 1 ? 'erro' : 'erros'} encontrado{result.errors.length !== 1 ? 's' : ''}
             </span>
           )}
           {result?.valid && (
-            <span className="text-[12px]" style={{ color: 'var(--color-success-text)' }}>
+            <span className="text-[13px]" style={{ color: 'var(--color-success-text)' }}>
               ✓ JSON válido
             </span>
           )}
@@ -180,11 +180,11 @@ export default function ImportJsonModal({ initialTab, projectId, onClose }: Prop
             className="rounded-[var(--radius-lg)] p-3 space-y-1"
             style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-text)' }}
           >
-            <p className="text-[11px] font-[600] uppercase tracking-wide mb-1" style={{ color: 'var(--color-danger-text)' }}>
+            <p className="text-[11.5px] font-[600] uppercase tracking-wide mb-1" style={{ color: 'var(--color-danger-text)' }}>
               {t('import.errorTitle')}
             </p>
             {result.errors.map((err, i) => (
-              <p key={i} className="text-[12px]" style={{ color: 'var(--color-danger-text)' }}>· {err}</p>
+              <p key={i} className="text-[13px]" style={{ color: 'var(--color-danger-text)' }}>· {err}</p>
             ))}
           </div>
         )}
@@ -195,27 +195,27 @@ export default function ImportJsonModal({ initialTab, projectId, onClose }: Prop
             className="rounded-[var(--radius-lg)] p-3 space-y-2"
             style={{ background: 'var(--color-success-bg)', border: '1px solid var(--color-success-text)' }}
           >
-            <p className="text-[11px] font-[600] uppercase tracking-wide" style={{ color: 'var(--color-success-text)' }}>
+            <p className="text-[11.5px] font-[600] uppercase tracking-wide" style={{ color: 'var(--color-success-text)' }}>
               {t('import.previewTitle')}
             </p>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[14px] font-[600]" style={{ color: 'var(--text-primary)' }}>
+              <span className="text-[13px] font-[600]" style={{ color: 'var(--text-primary)' }}>
                 {result.preview.name}
               </span>
               {result.preview.client && (
-                <span className="text-[12px]" style={{ color: 'var(--text-secondary)' }}>
+                <span className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
                   — {result.preview.client}
                 </span>
               )}
             </div>
-            <p className="text-[12px]" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
               {result.preview.phases} {t('template.phases')} · {result.preview.entries} {t('template.entries')} · {result.preview.risks} {t('risk.title').toLowerCase()} · {result.preview.teamMembers} {t('team.title').toLowerCase()}
             </p>
-            <p className="text-[12px]" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
               Charter: {result.preview.hasCharter ? '✓' : '—'}
             </p>
             {tab === 'update' && targetProject && (
-              <p className="text-[12px]" style={{ color: 'var(--text-secondary)' }}>
+              <p className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
                 {t('import.targetProject')}: <strong>{targetProject.name}</strong>
               </p>
             )}
@@ -225,7 +225,7 @@ export default function ImportJsonModal({ initialTab, projectId, onClose }: Prop
         {/* Merge options (update tab only) */}
         {tab === 'update' && result?.valid && (
           <div className="space-y-2">
-            <p className="text-[12px] font-[500] uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
+            <p className="text-[13px] font-[500] uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
               {t('import.mergeOptions')}
             </p>
             <label className="flex items-start gap-2.5 cursor-pointer group">
@@ -241,7 +241,7 @@ export default function ImportJsonModal({ initialTab, projectId, onClose }: Prop
                 <p className="text-[13px] text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">
                   {t('import.mergeReplace')}
                 </p>
-                <p className="text-[11px] mt-0.5" style={{ color: 'var(--color-warning-text)' }}>
+                <p className="text-[11.5px] mt-0.5" style={{ color: 'var(--color-warning-text)' }}>
                   {t('import.mergeReplaceWarning')}
                 </p>
               </div>
@@ -259,7 +259,7 @@ export default function ImportJsonModal({ initialTab, projectId, onClose }: Prop
                 <p className="text-[13px] text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">
                   {t('import.mergePatch')}
                 </p>
-                <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                <p className="text-[11.5px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                   {t('import.mergePatchDesc')}
                 </p>
               </div>
@@ -273,7 +273,7 @@ export default function ImportJsonModal({ initialTab, projectId, onClose }: Prop
             className="rounded-[var(--radius-lg)] p-3"
             style={{ background: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-text)' }}
           >
-            <p className="text-[12px]" style={{ color: 'var(--color-danger-text)' }}>
+            <p className="text-[13px]" style={{ color: 'var(--color-danger-text)' }}>
               {importError}
             </p>
           </div>

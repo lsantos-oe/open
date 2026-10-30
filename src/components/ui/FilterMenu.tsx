@@ -108,7 +108,7 @@ export function FilterMenu({ activeCount, onClear, toggles = [], children }: Pro
       >
         <FilterIcon />
         {total > 0 && (
-          <span className="absolute -top-1 -right-1 flex items-center justify-center text-[10px] font-semibold" style={{ minWidth: 16, height: 16, padding: '0 4px', borderRadius: 999, background: 'var(--oe-primary)', color: 'white' }}>{total}</span>
+          <span className="absolute -top-1 -right-1 flex items-center justify-center text-[11.5px] font-semibold" style={{ minWidth: 16, height: 16, padding: '0 4px', borderRadius: 999, background: 'var(--oe-primary)', color: 'white' }}>{total}</span>
         )}
       </button>
 
@@ -132,7 +132,7 @@ export function FilterMenu({ activeCount, onClear, toggles = [], children }: Pro
           {sections}
           {total > 0 && (
             <div className="px-2 pt-2 pb-1">
-              <button onClick={clearAll} className="text-[12px]" style={{ color: 'var(--text-tertiary)' }}>Limpar tudo</button>
+              <button onClick={clearAll} className="text-[13px]" style={{ color: 'var(--text-tertiary)' }}>Limpar tudo</button>
             </div>
           )}
         </div>,

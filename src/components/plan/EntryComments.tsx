@@ -92,14 +92,14 @@ function Conversation({ entry, scope, maxListHeight, fill }: { entry: Entry; sco
           ) : (
             <>
               <div style={{ background: 'var(--surface-subtle)', borderRadius: 14, padding: '7px 12px', display: 'inline-block', maxWidth: '100%' }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{c.author}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{c.author}</div>
                 <DocView markdown={c.text} fontSize={13} />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 3, paddingLeft: 6, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }} title={new Date(c.createdAt).toLocaleString()}>
+                <span style={{ fontSize: 11.5, color: 'var(--text-tertiary)' }} title={new Date(c.createdAt).toLocaleString()}>
                   {timeAgo(c.createdAt)}
                 </span>
-                {c.updatedAt && <span style={{ fontSize: 11, color: 'var(--text-disabled)' }} title={`Editado em ${new Date(c.updatedAt).toLocaleString()}`}>editado</span>}
+                {c.updatedAt && <span style={{ fontSize: 11.5, color: 'var(--text-disabled)' }} title={`Editado em ${new Date(c.updatedAt).toLocaleString()}`}>editado</span>}
                 <button type="button" style={linkBtn} onClick={() => setReplyTo({ rootId, target: c })}>Responder</button>
                 {canEdit(c) && <button type="button" style={linkBtn} onClick={() => setEditingId(c.id)}>Editar</button>}
                 {canDelete(c) && (
@@ -124,13 +124,13 @@ function Conversation({ entry, scope, maxListHeight, fill }: { entry: Entry; sco
 
   return (
     <section aria-label="Comentários" style={fill ? { display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 } : undefined}>
-      <h3 style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)', marginBottom: 10 }}>
+      <h3 style={{ fontSize: 11.5, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)', marginBottom: 10 }}>
         Comentários{total > 0 ? ` (${total})` : ''}
       </h3>
 
       <div ref={listRef} style={{ ...(fill ? { flex: 1, minHeight: 0 } : { maxHeight: maxListHeight }), overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14, paddingRight: 4, marginBottom: 12 }}>
         {threads.length === 0 && (
-          <p style={{ fontSize: 12.5, color: 'var(--text-disabled)', padding: '6px 0' }}>Nenhum comentário ainda. Comece a conversa abaixo — use @ para mencionar alguém.</p>
+          <p style={{ fontSize: 13, color: 'var(--text-disabled)', padding: '6px 0' }}>Nenhum comentário ainda. Comece a conversa abaixo — use @ para mencionar alguém.</p>
         )}
         {threads.map(({ root, replies }) => (
           <div key={root.id} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -157,7 +157,7 @@ function Conversation({ entry, scope, maxListHeight, fill }: { entry: Entry; sco
       </div>
 
       <CommentComposer placeholder="Escreva um comentário… use @ para mencionar alguém" onSubmit={(md) => send(md)} />
-      <p style={{ fontSize: 10.5, color: 'var(--text-disabled)', marginTop: 4, paddingLeft: 6 }}>Enter envia · Shift+Enter quebra a linha</p>
+      <p style={{ fontSize: 11.5, color: 'var(--text-disabled)', marginTop: 4, paddingLeft: 6 }}>Enter envia · Shift+Enter quebra a linha</p>
     </section>
   )
 }

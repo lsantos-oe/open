@@ -108,7 +108,7 @@ export default function CommentComposer({ initialMarkdown, prefillMention, place
           onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border-default)')}
         />
         {onCancel && (
-          <button type="button" onClick={onCancel} style={{ fontSize: 12, color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '6px 4px' }}>
+          <button type="button" onClick={onCancel} style={{ fontSize: 13, color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '6px 4px' }}>
             Cancelar
           </button>
         )}
@@ -117,7 +117,7 @@ export default function CommentComposer({ initialMarkdown, prefillMention, place
           onClick={submit}
           disabled={!text.trim()}
           style={{
-            fontSize: 12, fontWeight: 500, background: 'var(--oe-primary)', color: 'white', border: 'none', cursor: 'pointer',
+            fontSize: 13, fontWeight: 500, background: 'var(--oe-primary)', color: 'white', border: 'none', cursor: 'pointer',
             borderRadius: 16, padding: '7px 14px', opacity: text.trim() ? 1 : 0.4, whiteSpace: 'nowrap',
           }}
         >
@@ -143,12 +143,12 @@ export default function CommentComposer({ initialMarkdown, prefillMention, place
               onMouseDown={(e) => { e.preventDefault(); choose(o) }}
               onMouseEnter={() => setMenuIndex(i)}
               style={{
-                display: 'block', width: '100%', textAlign: 'left', padding: '6px 8px', fontSize: 12.5, border: 'none', cursor: 'pointer',
+                display: 'block', width: '100%', textAlign: 'left', padding: '6px 8px', fontSize: 13, border: 'none', cursor: 'pointer',
                 borderRadius: 'var(--radius-sm, 4px)', color: 'var(--text-primary)', background: i === menuIndex ? 'var(--surface-subtle)' : 'transparent',
               }}
             >
               {o.name}
-              {o.email && <span style={{ color: 'var(--text-tertiary)', marginLeft: 6, fontSize: 11 }}>{o.email}</span>}
+              {o.email && <span style={{ color: 'var(--text-tertiary)', marginLeft: 6, fontSize: 11.5 }}>{o.email}</span>}
             </button>
           ))}
         </div>

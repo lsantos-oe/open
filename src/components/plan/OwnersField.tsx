@@ -115,8 +115,8 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind, 
     <button key={key} onClick={pick} disabled={already} className={row} style={{ fontSize: 13, color: 'var(--text-primary)' }}>
       <Avatar name={name} size={24} />
       <span className="flex-1 truncate">{name}</span>
-      {role && <span className="text-[11px] shrink-0 truncate max-w-[40%]" style={{ color: 'var(--text-tertiary)' }}>{role}</span>}
-      {already && <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>✓</span>}
+      {role && <span className="text-[11.5px] shrink-0 truncate max-w-[40%]" style={{ color: 'var(--text-tertiary)' }}>{role}</span>}
+      {already && <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>✓</span>}
     </button>
   )
 
@@ -206,7 +206,7 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind, 
                   className="flex-1 min-w-0 focus:outline-none focus:border-[var(--text-tertiary)] text-[13px]" style={{ ...field, padding: '6px 10px' }} />
               </div>
               {newContactClientIds && newContactClientIds.length > 0 && (
-                <p className="text-[11px] px-0.5" style={{ color: 'var(--text-tertiary)' }}>Fica ligado ao(s) cliente(s) deste item.</p>
+                <p className="text-[11.5px] px-0.5" style={{ color: 'var(--text-tertiary)' }}>Fica ligado ao(s) cliente(s) deste item.</p>
               )}
               <div className="flex justify-end gap-1.5 pt-0.5">
                 <button onClick={() => setCreating(false)} className="px-3 py-1 text-xs font-medium rounded-[var(--radius-md)] hover:bg-[var(--surface-subtle)]" style={{ color: 'var(--text-secondary)' }}>Voltar</button>

@@ -36,7 +36,7 @@ const TONE: Record<'bad' | 'warn' | 'good', string> = {
 function Kpi({ label, value, sub, tone }: { label: string; value: number | string; sub?: string; tone?: 'bad' | 'warn' }) {
   return (
     <div className="oe-card px-4 py-3 min-w-0">
-      <p className="text-[12px] truncate" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
+      <p className="text-[13px] truncate" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
       <p className="text-[26px] leading-tight font-semibold" style={{ color: tone ? TONE[tone] : 'var(--text-primary)' }}>{value}</p>
       {sub && <p className="text-[11.5px] truncate" style={{ color: 'var(--text-tertiary)' }}>{sub}</p>}
     </div>
@@ -71,7 +71,7 @@ export function CapacityView({ tasks, today, onSeePerson }: Props) {
     return <p className="text-sm py-10 text-center" style={{ color: 'var(--text-tertiary)' }}>Nenhuma tarefa ativa nos filtros atuais.</p>
   }
 
-  const th = 'px-3 py-2 text-[12px] font-medium text-left whitespace-nowrap'
+  const th = 'px-3 py-2 text-[13px] font-medium text-left whitespace-nowrap'
   const weekLabel = (iso: string, i: number) => (i === 0 ? 'Esta sem.' : format(parseISO(iso), 'dd/MM'))
 
   return (
@@ -99,10 +99,10 @@ export function CapacityView({ tasks, today, onSeePerson }: Props) {
       <div className="oe-card overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-3 pb-1">
           <div>
-            <h3 className="text-[14px] font-semibold" style={{ color: 'var(--text-primary)' }}>Carga por pessoa</h3>
-            <p className="text-[12px]" style={{ color: 'var(--text-tertiary)' }}>Tarefas em curso em cada semana (as atrasadas contam na semana atual). Marcos e reuniões ficam de fora.</p>
+            <h3 className="text-[13px] font-semibold" style={{ color: 'var(--text-primary)' }}>Carga por pessoa</h3>
+            <p className="text-[13px]" style={{ color: 'var(--text-tertiary)' }}>Tarefas em curso em cada semana (as atrasadas contam na semana atual). Marcos e reuniões ficam de fora.</p>
           </div>
-          <label className="flex items-center gap-2 text-[12.5px]" style={{ color: 'var(--text-secondary)' }}>
+          <label className="flex items-center gap-2 text-[13px]" style={{ color: 'var(--text-secondary)' }}>
             Limite por pessoa
             <input
               type="number" min={1} max={50} value={limit}
@@ -150,7 +150,7 @@ export function CapacityView({ tasks, today, onSeePerson }: Props) {
                     return (
                       <td key={i} className="px-1 py-2 text-center">
                         <span
-                          className="inline-flex items-center justify-center tabular-nums text-[12.5px] font-medium"
+                          className="inline-flex items-center justify-center tabular-nums text-[13px] font-medium"
                           style={{ width: 40, height: 28, borderRadius: 'var(--radius-md)', background: CELL[lvl].bg, color: CELL[lvl].fg }}
                           title={c ? `${c} ${c === 1 ? 'tarefa' : 'tarefas'} em curso (limite ${limit})` : 'Nada em curso'}
                         >
@@ -160,7 +160,7 @@ export function CapacityView({ tasks, today, onSeePerson }: Props) {
                     )
                   })}
                   <td className="px-3 py-2.5 text-right">
-                    <button onClick={() => onSeePerson(p.key)} className="text-[12px] opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
+                    <button onClick={() => onSeePerson(p.key)} className="text-[13px] opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
                       Ver tarefas →
                     </button>
                   </td>

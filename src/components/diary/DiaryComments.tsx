@@ -43,7 +43,7 @@ export default function DiaryComments({ scope, parentType, parentId, comments }:
         {comments.map((c) => (
           <div key={c.id} className="flex gap-2 group">
             <div
-              className="w-6 h-6 rounded-[var(--radius-pill)] flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5"
+              className="w-6 h-6 rounded-[var(--radius-pill)] flex items-center justify-center text-[11.5px] font-bold shrink-0 mt-0.5"
               style={{ background: 'var(--surface-subtle)', color: 'var(--text-tertiary)' }}
             >
               {c.author.slice(0, 1).toUpperCase()}
@@ -51,12 +51,12 @@ export default function DiaryComments({ scope, parentType, parentId, comments }:
             <div className="flex-1 min-w-0">
               <div className="flex items-baseline gap-2">
                 <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>{c.author}</span>
-                <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                <span className="text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>
                   {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true, locale })}
                 </span>
                 <button
                   onClick={() => deleteDiaryComment(scope, parentType, parentId, c.id)}
-                  className="ml-auto text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="ml-auto text-[11.5px] opacity-0 group-hover:opacity-100 transition-opacity"
                   style={{ color: 'var(--color-danger-text)' }}
                 >
                   ×

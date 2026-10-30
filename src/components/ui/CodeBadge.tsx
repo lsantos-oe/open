@@ -11,7 +11,7 @@ export function CodeBadge({ code, className = '' }: { code?: string; className?:
     setCopied(what)
     setTimeout(() => setCopied(null), 1600)
   }
-  const btn = 'px-1.5 py-0.5 text-[11px] rounded-[var(--radius-sm)] transition-colors hover:bg-[var(--surface-subtle)]'
+  const btn = 'px-1.5 py-0.5 text-[11.5px] rounded-[var(--radius-sm)] transition-colors hover:bg-[var(--surface-subtle)]'
   return (
     <span className={`inline-flex items-center gap-0.5 shrink-0 ${className}`}>
       <button type="button" onClick={() => void copy('code')} className={`${btn} font-mono`} style={{ color: copied === 'code' ? 'var(--color-success-text)' : 'var(--text-tertiary)' }} title="Copiar o ID">

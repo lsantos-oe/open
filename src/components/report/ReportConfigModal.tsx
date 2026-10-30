@@ -98,7 +98,7 @@ export default function ReportConfigModal({ projectId, onGenerate, onGenerateLin
     >
       <div className="space-y-5">
         <div>
-          <p className="text-[12px] font-[500] text-[var(--text-tertiary)] uppercase tracking-wide mb-2.5">
+          <p className="text-[13px] font-[500] text-[var(--text-tertiary)] uppercase tracking-wide mb-2.5">
             {t('report.layout')}
           </p>
           <div className="flex gap-4">
@@ -121,7 +121,7 @@ export default function ReportConfigModal({ projectId, onGenerate, onGenerateLin
         </div>
 
         <div>
-          <p className="text-[12px] font-[500] text-[var(--text-tertiary)] uppercase tracking-wide mb-2.5">
+          <p className="text-[13px] font-[500] text-[var(--text-tertiary)] uppercase tracking-wide mb-2.5">
             {t('report.sections')}
           </p>
           <div className="space-y-1.5">
@@ -143,7 +143,7 @@ export default function ReportConfigModal({ projectId, onGenerate, onGenerateLin
 
         {config.sections.plan && (
           <div>
-            <p className="text-[12px] font-[500] text-[var(--text-tertiary)] uppercase tracking-wide mb-2.5">
+            <p className="text-[13px] font-[500] text-[var(--text-tertiary)] uppercase tracking-wide mb-2.5">
               {t('report.planColumns')}
             </p>
             <div className="space-y-1.5">

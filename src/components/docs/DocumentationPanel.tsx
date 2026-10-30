@@ -176,7 +176,7 @@ export default function DocumentationPanel({ scope }: Props) {
           </div>
           {suggestions.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Etiquetas:</span>
+              <span className="text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>Etiquetas:</span>
               {suggestions.map((t) => {
                 const active = filters.tag?.toLowerCase() === t.toLowerCase()
                 return (
@@ -185,7 +185,7 @@ export default function DocumentationPanel({ scope }: Props) {
                     type="button"
                     aria-pressed={active}
                     onClick={() => setFilters((f) => ({ ...f, tag: active ? null : t }))}
-                    className="text-[11px] px-2 py-0.5 rounded-[var(--radius-pill)] border transition-colors"
+                    className="text-[11.5px] px-2 py-0.5 rounded-[var(--radius-pill)] border transition-colors"
                     style={active
                       ? { background: 'var(--text-primary)', color: 'var(--surface-page)', borderColor: 'var(--text-primary)' }
                       : { background: 'var(--surface-card)', color: 'var(--text-secondary)', borderColor: 'var(--border-default)' }}
@@ -226,13 +226,13 @@ export default function DocumentationPanel({ scope }: Props) {
             <section key={sec.id} aria-label={sec.title || 'Documentos'}>
               {sec.title && (
                 <div className="flex items-center gap-2 mb-2">
-                  <h3 className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>{sec.title}</h3>
-                  <span className="text-[11px]" style={{ color: 'var(--text-disabled)' }}>{sec.items.length}</span>
+                  <h3 className="text-[11.5px] font-semibold uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>{sec.title}</h3>
+                  <span className="text-[11.5px]" style={{ color: 'var(--text-disabled)' }}>{sec.items.length}</span>
                   {sec.projectId && (
-                    <button className="text-[11px] underline" style={{ color: 'var(--text-secondary)' }} onClick={() => navigate(`/projects/${sec.projectId}`)}>Abrir projeto</button>
+                    <button className="text-[11.5px] underline" style={{ color: 'var(--text-secondary)' }} onClick={() => navigate(`/projects/${sec.projectId}`)}>Abrir projeto</button>
                   )}
                   {sec.clientId && (
-                    <button className="text-[11px] underline" style={{ color: 'var(--text-secondary)' }} onClick={() => navigate(`/wallet/${sec.clientId}`)}>Abrir cliente</button>
+                    <button className="text-[11.5px] underline" style={{ color: 'var(--text-secondary)' }} onClick={() => navigate(`/wallet/${sec.clientId}`)}>Abrir cliente</button>
                   )}
                 </div>
               )}
@@ -338,7 +338,7 @@ function DocRow({
           </button>
           <Badge variant={aud} size="sm">{AUDIENCE_LABEL[item.audience]}</Badge>
         </div>
-        {preview && <p className="text-[12.5px] mt-0.5 line-clamp-2 break-words" style={{ color: 'var(--text-tertiary)' }}>{preview}</p>}
+        {preview && <p className="text-[13px] mt-0.5 line-clamp-2 break-words" style={{ color: 'var(--text-tertiary)' }}>{preview}</p>}
         <p className="text-[11.5px] mt-1 flex flex-wrap items-center gap-x-1" style={{ color: 'var(--text-tertiary)' }}>
           <span>{meta}</span>
           {item.code && <CodeBadge code={item.code} />}
@@ -350,7 +350,7 @@ function DocRow({
                 key={t}
                 type="button"
                 onClick={() => onTag(t)}
-                className="text-[11px] px-2 py-0.5 rounded-[var(--radius-pill)] border hover:border-[var(--text-tertiary)]"
+                className="text-[11.5px] px-2 py-0.5 rounded-[var(--radius-pill)] border hover:border-[var(--text-tertiary)]"
                 style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)', background: 'var(--surface-subtle)' }}
                 title={`Filtrar por "${t}"`}
               >

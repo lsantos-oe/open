@@ -77,9 +77,9 @@ function KpiTile({ label, value, sub, tone = 'neutral' }: {
   return (
     <div style={{ position: 'relative', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '12px 13px', background: 'var(--surface-subtle)', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: stripe }} />
-      <p style={{ fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)', marginBottom: 7 }}>{label}</p>
+      <p style={{ fontSize: 11.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)', marginBottom: 7 }}>{label}</p>
       <p style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: valueColor, fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>{value}</p>
-      {sub && <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 3 }}>{sub}</p>}
+      {sub && <p style={{ fontSize: 11.5, color: 'var(--text-tertiary)', marginTop: 3 }}>{sub}</p>}
     </div>
   )
 }
@@ -87,7 +87,7 @@ function KpiTile({ label, value, sub, tone = 'neutral' }: {
 function DateChip({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <span style={{ fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)' }}>{label}</span>
+      <span style={{ fontSize: 11.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)' }}>{label}</span>
       <span style={{ fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: muted ? 'var(--text-tertiary)' : 'var(--text-primary)' }}>{value}</span>
     </div>
   )
@@ -146,7 +146,7 @@ function ReportLinkRow({ link, onDelete }: { link: ReportLink; onDelete: () => v
     <li className="flex items-center gap-2 group">
       <div className="flex-1 min-w-0">
         <p className="text-sm text-[var(--text-primary)] truncate">{link.label}</p>
-        <p className="text-[11px] text-[var(--text-tertiary)]">{fmtGeneratedAt(link.generatedAt)}</p>
+        <p className="text-[11.5px] text-[var(--text-tertiary)]">{fmtGeneratedAt(link.generatedAt)}</p>
       </div>
       <button onClick={copy} className="text-xs font-medium text-[var(--text-secondary)] hover:underline shrink-0">
         {copied ? t('report.linkCopied') : t('report.linkCopy')}
@@ -191,7 +191,7 @@ function EditableClientsField({
 
   return (
     <div>
-      <p className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
+      <p className="text-[11.5px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
       {editing ? (
         <div className="space-y-2 p-3 rounded-[var(--radius-md)]" style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border-default)' }}>
           <div className="max-h-40 overflow-y-auto space-y-1">
@@ -265,7 +265,7 @@ function EditableDevField({ project, onSave }: {
 
   return (
     <div>
-      <p className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('overview.devType')}</p>
+      <p className="text-[11.5px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('overview.devType')}</p>
       {editing ? (
         <div className="space-y-2 p-3 rounded-[var(--radius-md)]" style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border-default)' }}>
           <label className="flex items-center gap-2 text-sm font-medium">
@@ -464,7 +464,7 @@ export default function OverviewTab({ project }: Props) {
                 }}
               />
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('project.pm')}</p>
+                <p className="text-[11.5px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('project.pm')}</p>
                 <OwnersField
                   owners={personToOwner(project.pmMemberId, project.pm)}
                   onChange={(owners) => {
@@ -476,7 +476,7 @@ export default function OverviewTab({ project }: Props) {
                 />
               </div>
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('project.devLead')}</p>
+                <p className="text-[11.5px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('project.devLead')}</p>
                 <OwnersField
                   owners={personToOwner(project.devLeadMemberId, project.devLead)}
                   onChange={(owners) => {
@@ -492,7 +492,7 @@ export default function OverviewTab({ project }: Props) {
 
             <div className="space-y-4">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>Links Ploomes</p>
+                <p className="text-[11.5px] font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>Links Ploomes</p>
                 <div className="space-y-3">
                   <ExternalLinkField
                     label="Proposta"
@@ -511,7 +511,7 @@ export default function OverviewTab({ project }: Props) {
 
               <div className="border-t pt-4" style={{ borderColor: 'var(--border-default)' }}>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>{t('overview.links')}</p>
+                  <p className="text-[11.5px] font-semibold uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>{t('overview.links')}</p>
                   <button onClick={() => setLinkModal(true)} className="text-xs font-medium text-[var(--text-secondary)] hover:underline">+ {t('overview.addLink')}</button>
                 </div>
                 {project.links.length === 0 ? (
@@ -536,7 +536,7 @@ export default function OverviewTab({ project }: Props) {
               </div>
 
               <div className="border-t pt-4" style={{ borderColor: 'var(--border-default)' }}>
-                <p className="text-[11px] font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>{t('report.linksTitle')}</p>
+                <p className="text-[11.5px] font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>{t('report.linksTitle')}</p>
                 {project.reportLinks.length === 0 ? (
                   <p className="text-sm text-[var(--text-tertiary)]">{t('report.noLinks')}</p>
                 ) : (
@@ -553,9 +553,9 @@ export default function OverviewTab({ project }: Props) {
               </div>
 
               <div className="border-t pt-4" style={{ borderColor: 'var(--border-default)' }}>
-                <p className="text-[11px] font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>{t('overview.notes')}</p>
+                <p className="text-[11.5px] font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>{t('overview.notes')}</p>
                 <DocField kind="project.overview" target={{ id: project.id }} value={project.overview} minHeight={90} />
-                <p className="text-[11px] text-[var(--text-disabled)] mt-1.5">{t('overview.autosaved')}</p>
+                <p className="text-[11.5px] text-[var(--text-disabled)] mt-1.5">{t('overview.autosaved')}</p>
               </div>
             </div>
           </div>

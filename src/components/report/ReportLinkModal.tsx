@@ -86,7 +86,7 @@ export default function ReportLinkModal({ project, settings, config, onClose }: 
               readOnly
               value={result.url ?? ''}
               onFocus={(e) => e.currentTarget.select()}
-              className="text-[12px]"
+              className="text-[13px]"
             />
             <Button variant="secondary" onClick={handleCopy}>
               {copied ? t('report.linkCopied') : t('report.linkCopy')}
@@ -96,7 +96,7 @@ export default function ReportLinkModal({ project, settings, config, onClose }: 
             href={result.url}
             target="_blank"
             rel="noreferrer"
-            className="text-[12px] underline inline-block"
+            className="text-[13px] underline inline-block"
             style={{ color: 'var(--text-secondary)' }}
           >
             {t('report.linkOpen')} ↗
@@ -124,7 +124,7 @@ export default function ReportLinkModal({ project, settings, config, onClose }: 
       <div className="space-y-4">
         {existing.length > 0 && (
           <div>
-            <p className="text-[12px] font-[500] text-[var(--text-tertiary)] uppercase tracking-wide mb-2.5">
+            <p className="text-[13px] font-[500] text-[var(--text-tertiary)] uppercase tracking-wide mb-2.5">
               {t('report.linkChooseTarget')}
             </p>
             <div className="space-y-1.5">
@@ -159,7 +159,7 @@ export default function ReportLinkModal({ project, settings, config, onClose }: 
               ))}
             </div>
             {atLimit && (
-              <p className="text-[12px] mt-2" style={{ color: 'var(--text-tertiary)' }}>
+              <p className="text-[13px] mt-2" style={{ color: 'var(--text-tertiary)' }}>
                 {t('report.linkLimitReached')}
               </p>
             )}
@@ -170,7 +170,7 @@ export default function ReportLinkModal({ project, settings, config, onClose }: 
           <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={defaultLabel()} />
         </Field>
 
-        {error && <p className="text-[12px]" style={{ color: 'var(--color-danger-text)' }}>{error}</p>}
+        {error && <p className="text-[13px]" style={{ color: 'var(--color-danger-text)' }}>{error}</p>}
       </div>
     </Modal>
   )

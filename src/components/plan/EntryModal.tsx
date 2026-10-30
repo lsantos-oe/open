@@ -168,7 +168,7 @@ const inputStyle: CSSProperties = {
 
 function FieldLabel({ children }: { children: string }) {
   return (
-    <p style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)', marginBottom: 5 }}>
+    <p style={{ fontSize: 11.5, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)', marginBottom: 5 }}>
       {children}
     </p>
   )
@@ -632,7 +632,7 @@ export default function EntryModal({
           ) : (
             <>
               {dependentCount > 0 && (
-                <span style={{ fontSize: 12, color: 'var(--color-warning-text)' }}>
+                <span style={{ fontSize: 13, color: 'var(--color-warning-text)' }}>
                   ⚠ {t('entry.hasDependents', { count: dependentCount })}
                 </span>
               )}
@@ -830,9 +830,9 @@ export default function EntryModal({
                   <Field label={`${t('plan.dependencies')}${form.dependsOn.length ? ` (${form.dependsOn.length})` : ''}`}>
                     <div style={{ maxHeight: 140, overflowY: 'auto', borderRadius: 'var(--radius-lg)', background: 'var(--surface-subtle)', padding: 4 }}>
                       {availableDeps.map((dep) => (
-                        <label key={dep.id} className="flex items-center gap-2 px-2 py-1.5 text-[12.5px] cursor-pointer rounded-[var(--radius-md)] hover:bg-[var(--surface-card)]" style={{ color: 'var(--text-secondary)' }}>
+                        <label key={dep.id} className="flex items-center gap-2 px-2 py-1.5 text-[13px] cursor-pointer rounded-[var(--radius-md)] hover:bg-[var(--surface-card)]" style={{ color: 'var(--text-secondary)' }}>
                           <input type="checkbox" className="accent-[var(--text-primary)]" checked={form.dependsOn.includes(dep.id)} onChange={() => toggleDep(dep.id)} />
-                          <span style={{ color: 'var(--text-tertiary)', fontSize: 11 }}>{dep.phaseName}</span>{dep.name}
+                          <span style={{ color: 'var(--text-tertiary)', fontSize: 11.5 }}>{dep.phaseName}</span>{dep.name}
                         </label>
                       ))}
                     </div>
@@ -841,7 +841,7 @@ export default function EntryModal({
 
                 <Field label="Links">
                   {form.links.map((l) => (
-                    <div key={l.id} className="flex items-center gap-2 text-[12.5px] mb-1" style={{ color: 'var(--text-secondary)' }}>
+                    <div key={l.id} className="flex items-center gap-2 text-[13px] mb-1" style={{ color: 'var(--text-secondary)' }}>
                       <span className="truncate flex-1">{l.label}</span>
                       <button onClick={() => removeLink(l.id)} aria-label={`Remover ${l.label}`} style={{ color: 'var(--text-tertiary)' }}>×</button>
                     </div>
@@ -916,7 +916,7 @@ export default function EntryModal({
             }}
             placeholder={t('entry.name')}
             style={{
-              width: '100%', fontSize: 16, fontWeight: 500,
+              width: '100%', fontSize: 15, fontWeight: 500,
               border: 'none', borderBottom: '2px solid var(--border-default)',
               outline: 'none', background: 'transparent',
               color: 'var(--text-primary)', paddingBottom: 8, boxSizing: 'border-box',
@@ -982,7 +982,7 @@ export default function EntryModal({
                   onChange={e => { set('plannedEnd', e.target.value); setEndDateError('') }}
                   style={{ ...inputStyle, ...(endDateError ? { borderColor: 'var(--color-danger-text)' } : {}) }}
                 />
-                {endDateError && <p style={{ fontSize: 11, color: 'var(--color-danger-text)', marginTop: 3 }}>{endDateError}</p>}
+                {endDateError && <p style={{ fontSize: 11.5, color: 'var(--color-danger-text)', marginTop: 3 }}>{endDateError}</p>}
               </FieldBox>
               <FieldBox label={t('entry.duration')}>
                 <input
@@ -1032,7 +1032,7 @@ export default function EntryModal({
                 ))}
               </Select>
               {parentEndWarning && (
-                <p style={{ fontSize: 11, color: 'var(--color-warning-text)', marginTop: 3 }}>
+                <p style={{ fontSize: 11.5, color: 'var(--color-warning-text)', marginTop: 3 }}>
                   ⚠ {t('plan.childMeetingOutOfRange')}
                 </p>
               )}
@@ -1045,14 +1045,14 @@ export default function EntryModal({
               <button
                 onClick={() => setDepsOpen(v => !v)}
                 style={{
-                  fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em',
+                  fontSize: 11.5, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em',
                   color: 'var(--text-tertiary)', cursor: 'pointer', background: 'none', border: 'none',
                   padding: 0, display: 'flex', alignItems: 'center', gap: 5,
                 }}
               >
                 {depsOpen ? '▾' : '▸'} {t('plan.dependencies')}
                 {form.dependsOn.length > 0 && (
-                  <span style={{ fontSize: 10, background: 'var(--oe-primary-light)', color: 'var(--text-secondary)', borderRadius: 'var(--radius-pill)', padding: '1px 6px' }}>
+                  <span style={{ fontSize: 11.5, background: 'var(--oe-primary-light)', color: 'var(--text-secondary)', borderRadius: 'var(--radius-pill)', padding: '1px 6px' }}>
                     {form.dependsOn.length}
                   </span>
                 )}
@@ -1062,7 +1062,7 @@ export default function EntryModal({
                   {availableDeps.map(dep => (
                     <label
                       key={dep.id}
-                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', cursor: 'pointer', fontSize: 12 }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', cursor: 'pointer', fontSize: 13 }}
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--surface-subtle)' }}
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '' }}
                     >
@@ -1071,7 +1071,7 @@ export default function EntryModal({
                         checked={form.dependsOn.includes(dep.id)}
                         onChange={() => toggleDep(dep.id)}
                       />
-                      <span style={{ fontSize: 10, color: 'var(--text-tertiary)', flexShrink: 0 }}>{dep.phaseName}</span>
+                      <span style={{ fontSize: 11.5, color: 'var(--text-tertiary)', flexShrink: 0 }}>{dep.phaseName}</span>
                       <span style={{ color: 'var(--text-secondary)' }}>{dep.name}</span>
                     </label>
                   ))}
@@ -1114,7 +1114,7 @@ export default function EntryModal({
               style={inputStyle}
             />
             {projectChanged && (
-              <p style={{ fontSize: 11, color: 'var(--color-warning-text)', marginTop: 4 }}>
+              <p style={{ fontSize: 11.5, color: 'var(--color-warning-text)', marginTop: 4 }}>
                 ⚠ {t('entry.moveWarning')}
               </p>
             )}
@@ -1132,7 +1132,7 @@ export default function EntryModal({
                 ))}
               </Select>
               {phaseChanged && (
-                <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 4 }}>
+                <p style={{ fontSize: 11.5, color: 'var(--text-tertiary)', marginTop: 4 }}>
                   ↳ {t('entry.moveToPhase', { phase: visiblePhases.find(p => p.id === form.phaseId)?.name ?? t('entry.noPhase' as any) })}
                 </p>
               )}
@@ -1174,7 +1174,7 @@ export default function EntryModal({
                   {t('entry.showInPlan')}
                 </span>
                 {form.hiddenFromPlan && (
-                  <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>
+                  <p style={{ fontSize: 11.5, color: 'var(--text-tertiary)', marginTop: 2 }}>
                     {t('entry.hiddenFromPlanHint')}
                   </p>
                 )}
@@ -1193,7 +1193,7 @@ export default function EntryModal({
               />
               <div>
                 <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>Tarefa de documentação</span>
-                <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>
+                <p style={{ fontSize: 11.5, color: 'var(--text-tertiary)', marginTop: 2 }}>
                   Os links e arquivos desta tarefa aparecem na aba Documentação do projeto e do cliente.
                 </p>
               </div>
@@ -1219,14 +1219,14 @@ export default function EntryModal({
                       href={l.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ flex: 1, fontSize: 12, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                      style={{ flex: 1, fontSize: 13, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                     >
                       {l.label}
                     </a>
                     <button
                       className="rm-link"
                       onClick={() => removeLink(l.id)}
-                      style={{ fontSize: 14, color: 'var(--text-disabled)', lineHeight: 1, background: 'none', border: 'none', cursor: 'pointer', opacity: 0, transition: 'opacity 0.15s', flexShrink: 0 }}
+                      style={{ fontSize: 13, color: 'var(--text-disabled)', lineHeight: 1, background: 'none', border: 'none', cursor: 'pointer', opacity: 0, transition: 'opacity 0.15s', flexShrink: 0 }}
                       onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-danger-text)')}
                       onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-disabled)')}
                     >×</button>
@@ -1253,7 +1253,7 @@ export default function EntryModal({
                   onClick={addLink}
                   disabled={!newLinkUrl.trim()}
                   style={{
-                    fontSize: 12, background: 'var(--oe-primary)', color: 'white',
+                    fontSize: 13, background: 'var(--oe-primary)', color: 'white',
                     borderRadius: 'var(--radius-md)', padding: '5px 10px',
                     border: 'none', cursor: 'pointer', opacity: newLinkUrl.trim() ? 1 : 0.4,
                     whiteSpace: 'nowrap', flexShrink: 0,
@@ -1274,12 +1274,12 @@ export default function EntryModal({
           {mode === 'edit' && entry && (entry.createdAt || entry.updatedAt) && (
             <div style={{ paddingTop: 10, borderTop: '1px solid var(--border-default)', marginTop: 'auto' }}>
               {entry.createdAt && (
-                <p style={{ fontSize: 11, color: 'var(--text-disabled)' }}>
+                <p style={{ fontSize: 11.5, color: 'var(--text-disabled)' }}>
                   Criado em {new Date(entry.createdAt).toLocaleDateString()}
                 </p>
               )}
               {entry.updatedAt && (
-                <p style={{ fontSize: 11, color: 'var(--text-disabled)', marginTop: 2 }}>
+                <p style={{ fontSize: 11.5, color: 'var(--text-disabled)', marginTop: 2 }}>
                   Atualizado em {new Date(entry.updatedAt).toLocaleDateString()}
                 </p>
               )}

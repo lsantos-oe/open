@@ -99,12 +99,12 @@ export default function RetroCardItem({ card, mine, canEditText, canLink, links,
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               {vote && <VoteButton {...vote} />}
               {actions && actions.count > 0 && (
-                <span className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
+                <span className="text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>
                   {actions.count === 1 ? t('retro.actionsCountOne') : t('retro.actionsCount', { n: actions.count })}
                 </span>
               )}
               {actions?.canAdd && !addingAction && (
-                <button type="button" onClick={() => setAddingAction(true)} className="text-[11px] hover:underline" style={{ color: 'var(--text-secondary)' }}>
+                <button type="button" onClick={() => setAddingAction(true)} className="text-[11.5px] hover:underline" style={{ color: 'var(--text-secondary)' }}>
                   {t('retro.addAction')}
                 </button>
               )}
@@ -124,12 +124,12 @@ export default function RetroCardItem({ card, mine, canEditText, canLink, links,
             </div>
           )}
           <div className="flex items-center justify-between gap-2 mt-1.5 min-h-[18px]">
-            <span className="text-[10.5px]" style={{ color: 'var(--text-tertiary)' }}>
+            <span className="text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>
               {authorName ?? (mine ? t('retro.mineBadge') : secret ? t('retro.secretBadge') : '')}
               {authorName && mine ? ` · ${t('retro.mineBadge')}` : ''}
             </span>
             {(canEditText || canLink) && (
-              <span className="flex gap-2 text-[11px]">
+              <span className="flex gap-2 text-[11.5px]">
                 <button onClick={startEditing} className="hover:underline" style={{ color: 'var(--text-tertiary)' }}>
                   {canEditText ? t('retro.editCard') : t('retro.editLinks')}
                 </button>

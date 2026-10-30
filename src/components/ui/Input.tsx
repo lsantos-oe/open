@@ -43,7 +43,7 @@ function HintIcon({ hint }: { hint: string }) {
       ref={triggerRef as React.RefObject<HTMLSpanElement>}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
-      className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-[var(--radius-pill)] text-[10px] font-semibold cursor-help shrink-0"
+      className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-[var(--radius-pill)] text-[11.5px] font-semibold cursor-help shrink-0"
       style={{ background: 'var(--surface-subtle)', color: 'var(--text-tertiary)', border: '1px solid var(--border-default)' }}
     >
       ?
@@ -70,7 +70,7 @@ interface FieldProps { label: string; children: React.ReactNode; required?: bool
 export function Field({ label, children, required, className = '', hint }: FieldProps) {
   return (
     <div className={`space-y-1 ${className}`}>
-      <label className="flex items-center gap-1 text-[12px] font-[500] text-[var(--text-secondary)]">
+      <label className="flex items-center gap-1 text-[13px] font-[500] text-[var(--text-secondary)]">
         {label}{required && <span className="text-[var(--color-danger-text)] ml-0.5">*</span>}
         {hint && <HintIcon hint={hint} />}
       </label>

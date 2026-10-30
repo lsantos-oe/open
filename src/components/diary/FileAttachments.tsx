@@ -126,7 +126,7 @@ export default function FileAttachments({ scopeId, parentId, attachments, onAdd,
                 {att.name}
               </a>
               {att.size && (
-                <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                <span className="text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>
                   {formatBytes(att.size)}
                 </span>
               )}

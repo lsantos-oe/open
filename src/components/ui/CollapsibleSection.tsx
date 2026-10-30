@@ -20,7 +20,7 @@ export function CollapsibleSection({ id, title, count, open, onToggle, children,
         onClick={onToggle}
         className="flex items-center justify-between py-3.5 cursor-pointer"
       >
-        <span className="flex items-center gap-2 text-[14px] font-semibold" style={{ color: 'var(--text-primary)' }}>
+        <span className="flex items-center gap-2 text-[13px] font-semibold" style={{ color: 'var(--text-primary)' }}>
           <ChevronIcon open={open} />
           {title}
         </span>

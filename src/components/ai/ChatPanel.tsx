@@ -167,7 +167,7 @@ export function ChatPanel() {
           flexShrink: 0,
         }}
       >
-        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
           {view === 'history' ? 'Conversas' : 'Assistente de IA'}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -182,14 +182,14 @@ export function ChatPanel() {
           <button
             onClick={() => setView(view === 'history' ? 'chat' : 'history')}
             title={view === 'history' ? 'Voltar à conversa' : 'Conversas anteriores'}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: view === 'history' ? 'var(--oe-primary)' : 'var(--text-tertiary)', fontSize: 11, fontWeight: 500, padding: '2px 6px' }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: view === 'history' ? 'var(--oe-primary)' : 'var(--text-tertiary)', fontSize: 11.5, fontWeight: 500, padding: '2px 6px' }}
           >
             {view === 'history' ? 'Voltar' : 'Histórico'}
           </button>
           <button
             onClick={() => { setOpen(false); navigate('/settings/assistant') }}
             title="Memória do assistente"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 11, fontWeight: 500, padding: '2px 6px' }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 11.5, fontWeight: 500, padding: '2px 6px' }}
           >
             Memória
           </button>
@@ -227,13 +227,13 @@ export function ChatPanel() {
                 style={{ flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
               >
                 <div style={{ fontSize: 13, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.title}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{new Date(c.updatedAt).toLocaleString()}</div>
+                <div style={{ fontSize: 11.5, color: 'var(--text-tertiary)' }}>{new Date(c.updatedAt).toLocaleString()}</div>
               </button>
               <button
                 onClick={() => { if (window.confirm('Apagar esta conversa?')) void deleteConversation(c.id) }}
                 disabled={isStreaming && c.id === conversationId}
                 title="Apagar conversa"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 16, lineHeight: 1 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 15, lineHeight: 1 }}
               >
                 ×
               </button>
@@ -279,7 +279,7 @@ export function ChatPanel() {
           </div>
         )}
         {isStreaming && !streamingText && (
-          <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Pensando...</div>
+          <div style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>Pensando...</div>
         )}
 
         {pendingConfirmation && (
@@ -295,7 +295,7 @@ export function ChatPanel() {
           >
             <p style={{ marginBottom: 10, lineHeight: 1.5 }}>{pendingConfirmation.summary}</p>
             {queuedConfirmations.length > 0 && (
-              <p style={{ marginBottom: 10, fontSize: 11, color: 'var(--text-tertiary)' }}>
+              <p style={{ marginBottom: 10, fontSize: 11.5, color: 'var(--text-tertiary)' }}>
                 +{queuedConfirmations.length} ação{queuedConfirmations.length !== 1 ? 'ões' : ''} aguardando depois desta
               </p>
             )}
@@ -303,14 +303,14 @@ export function ChatPanel() {
               <button
                 onClick={() => rejectConfirmation()}
                 disabled={approving}
-                style={{ fontSize: 12, padding: '5px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-default)', background: 'var(--surface-card)', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                style={{ fontSize: 13, padding: '5px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-default)', background: 'var(--surface-card)', color: 'var(--text-secondary)', cursor: 'pointer' }}
               >
                 Cancelar
               </button>
               <button
                 onClick={handleApprove}
                 disabled={approving}
-                style={{ fontSize: 12, padding: '5px 10px', borderRadius: 'var(--radius-md)', border: 'none', background: 'var(--oe-primary)', color: 'white', cursor: 'pointer' }}
+                style={{ fontSize: 13, padding: '5px 10px', borderRadius: 'var(--radius-md)', border: 'none', background: 'var(--oe-primary)', color: 'white', cursor: 'pointer' }}
               >
                 {approving ? 'Aplicando...' : 'Aprovar'}
               </button>
@@ -323,7 +323,7 @@ export function ChatPanel() {
             <button
               onClick={() => { navigate(actionLink.to); setActionLink(null); setOpen(false) }}
               style={{
-                fontSize: 12.5, fontWeight: 500, padding: '6px 12px', borderRadius: 'var(--radius-pill)',
+                fontSize: 13, fontWeight: 500, padding: '6px 12px', borderRadius: 'var(--radius-pill)',
                 border: '1px solid var(--border-strong)', background: 'var(--oe-primary-light)', color: 'var(--text-secondary)',
                 cursor: 'pointer',
               }}
@@ -340,10 +340,10 @@ export function ChatPanel() {
           {attachments.map((a) => (
             <span
               key={a.id}
-              style={{ fontSize: 11, padding: '3px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--surface-subtle)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}
+              style={{ fontSize: 11.5, padding: '3px 8px', borderRadius: 'var(--radius-pill)', background: 'var(--surface-subtle)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}
             >
               {a.kind === 'image' ? <ImageIcon className="w-3 h-3" /> : <FileIcon className="w-3 h-3" />} {a.name ?? a.kind}
-              <button onClick={() => removeAttachment(a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 12, lineHeight: 1 }}>×</button>
+              <button onClick={() => removeAttachment(a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 13, lineHeight: 1 }}>×</button>
             </span>
           ))}
         </div>
@@ -385,7 +385,7 @@ export function ChatPanel() {
           disabled={isStreaming || !!pendingConfirmation || (!input.trim() && attachments.length === 0)}
           style={{
             flexShrink: 0, height: 32, padding: '0 12px', borderRadius: 'var(--radius-md)', border: 'none',
-            background: 'var(--oe-primary)', color: 'white', fontSize: 12, fontWeight: 500, cursor: 'pointer',
+            background: 'var(--oe-primary)', color: 'white', fontSize: 13, fontWeight: 500, cursor: 'pointer',
             opacity: (isStreaming || !!pendingConfirmation || (!input.trim() && attachments.length === 0)) ? 0.5 : 1,
           }}
         >

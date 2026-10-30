@@ -61,7 +61,7 @@ export default function RetrosPage() {
             <thead>
               <tr style={{ borderBottom: '0.5px solid var(--border-default)' }}>
                 {[t('retro.colTitle'), t('retro.colDate'), t('retro.colPeriod'), t('retro.colConductor'), t('retro.colPhase'), t('retro.colParticipants')].map((h) => (
-                  <th key={h} className="text-left px-3 py-2 text-[11px] font-[600] uppercase tracking-wide whitespace-nowrap" style={{ color: 'var(--text-tertiary)' }}>{h}</th>
+                  <th key={h} className="text-left px-3 py-2 text-[11.5px] font-[600] uppercase tracking-wide whitespace-nowrap" style={{ color: 'var(--text-tertiary)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -78,7 +78,7 @@ export default function RetrosPage() {
                     <td className="px-3 py-2.5">
                       <div className="font-medium" style={{ color: 'var(--text-primary)' }}>{r.title}</div>
                       {previous && (
-                        <div className="text-[11px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                        <div className="text-[11.5px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                           ↳ {t('retro.followUpOf', { title: previous.title })}
                         </div>
                       )}

@@ -158,7 +158,7 @@ export function Sidebar() {
               className="shrink-0"
               style={{
                 color: 'var(--sidebar-text-muted)',
-                fontSize: 10,
+                fontSize: 11.5,
                 fontWeight: 500,
                 letterSpacing: '0.05em',
                 textTransform: 'uppercase',
@@ -181,7 +181,7 @@ export function Sidebar() {
                     style={{ color: isActive ? 'white' : 'var(--sidebar-text)' }}
                   >
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: RETRO_PHASE_STYLE[retro.phase].color, flexShrink: 0 }} />
-                    {!collapsed && <span className="truncate text-[12px] text-left">{retro.title}</span>}
+                    {!collapsed && <span className="truncate text-[13px] text-left">{retro.title}</span>}
                   </button>
                 )
               })
@@ -198,7 +198,7 @@ export function Sidebar() {
                     style={{ color: isActive ? 'white' : 'var(--sidebar-text)' }}
                   >
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                    {!collapsed && <span className="truncate text-[12px] text-left">{project.name}</span>}
+                    {!collapsed && <span className="truncate text-[13px] text-left">{project.name}</span>}
                   </button>
                 )
               })
@@ -213,7 +213,7 @@ export function Sidebar() {
                     style={{ color: isActive ? 'white' : 'var(--sidebar-text)' }}
                   >
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: INCIDENT_STATUS_COLOR[incident.status], flexShrink: 0 }} />
-                    {!collapsed && <span className="truncate text-[12px] text-left">{incident.title}</span>}
+                    {!collapsed && <span className="truncate text-[13px] text-left">{incident.title}</span>}
                   </button>
                 )
               })}

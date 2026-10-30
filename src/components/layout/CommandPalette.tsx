@@ -170,7 +170,7 @@ export function CommandPalette() {
             >
               <span className="truncate">{r.label}{r.sublabel && <span style={{ color: 'var(--text-tertiary)' }}> · {r.sublabel}</span>}</span>
               <span
-                className="shrink-0 ml-3 text-[10px] font-medium px-1.5 py-0.5 rounded-[var(--radius-pill)]"
+                className="shrink-0 ml-3 text-[11.5px] font-medium px-1.5 py-0.5 rounded-[var(--radius-pill)]"
                 style={{ background: 'var(--oe-primary-light)', color: 'var(--text-secondary)' }}
               >
                 {r.type}

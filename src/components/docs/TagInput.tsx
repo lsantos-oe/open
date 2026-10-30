@@ -52,13 +52,13 @@ export function TagInput({ value, onChange, suggestions = [] }: Props) {
       </div>
       {remaining.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-          <span className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>Já usadas:</span>
+          <span className="text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>Já usadas:</span>
           {remaining.map((s) => (
             <button
               key={s}
               type="button"
               onClick={() => onChange(normalizeTags([...value, s]))}
-              className="text-[11px] px-2 py-0.5 rounded-[var(--radius-pill)] border hover:border-[var(--text-tertiary)]"
+              className="text-[11.5px] px-2 py-0.5 rounded-[var(--radius-pill)] border hover:border-[var(--text-tertiary)]"
               style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)', background: 'var(--surface-card)' }}
             >
               + {s}

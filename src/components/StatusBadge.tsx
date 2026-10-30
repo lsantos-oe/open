@@ -61,7 +61,7 @@ export default function StatusBadge({ value, onChange, options, readonly = false
           gap: 6,
           padding: '3px 10px',
           borderRadius: 20,
-          fontSize: 11,
+          fontSize: 11.5,
           fontWeight: 500,
           whiteSpace: 'nowrap',
           userSelect: 'none',
@@ -112,7 +112,7 @@ export default function StatusBadge({ value, onChange, options, readonly = false
                   flex: 1,
                   padding: '2px 8px',
                   borderRadius: 20,
-                  fontSize: 11,
+                  fontSize: 11.5,
                   fontWeight: 500,
                   background: s.background,
                   color: s.color,
@@ -120,7 +120,7 @@ export default function StatusBadge({ value, onChange, options, readonly = false
                   {opt.label}
                 </span>
                 {isCurrent && (
-                  <span style={{ fontSize: 11, color: 'var(--text-tertiary)', flexShrink: 0 }}>✓</span>
+                  <span style={{ fontSize: 11.5, color: 'var(--text-tertiary)', flexShrink: 0 }}>✓</span>
                 )}
               </button>
             )

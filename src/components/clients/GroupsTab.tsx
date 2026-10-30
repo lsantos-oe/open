@@ -58,7 +58,7 @@ export function GroupsTab({ newOpen, onNew, onNewClose }: { newOpen: boolean; on
             <thead>
               <tr style={{ background: 'var(--surface-subtle)' }}>
                 {['Grupo', 'Clientes', 'Contatos diretos', 'Projetos', 'Incidentes abertos'].map((h) => (
-                  <th key={h} className="text-left px-4 py-2 font-medium text-[12.5px]" style={{ color: 'var(--text-tertiary)' }}>{h}</th>
+                  <th key={h} className="text-left px-4 py-2 font-medium text-[13px]" style={{ color: 'var(--text-tertiary)' }}>{h}</th>
                 ))}
               </tr>
             </thead>

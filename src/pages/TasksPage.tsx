@@ -187,16 +187,16 @@ function TaskCard({ card, onClick, ghost = false }: {
     >
       {/* Project badge + indicators */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-        <span style={{ flex: 1, fontSize: 10, color: 'var(--text-tertiary)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ flex: 1, fontSize: 11.5, color: 'var(--text-tertiary)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {scopeLabel(card)}
         </span>
         {hasComments && (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 10, color: 'var(--text-disabled)' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 11.5, color: 'var(--text-disabled)' }}>
             <ChatBubbleIcon className="w-3 h-3" />{card.comments.length}
           </span>
         )}
         {hasLinks && (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 10, color: 'var(--text-disabled)' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 11.5, color: 'var(--text-disabled)' }}>
             <LinkIcon className="w-3 h-3" />{card.links.length}
           </span>
         )}
@@ -220,13 +220,13 @@ function TaskCard({ card, onClick, ghost = false }: {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <AvatarStack people={entryOwners(card)} size={22} />
           {card.hiddenFromPlan && (
-            <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 'var(--radius-pill)', background: 'var(--surface-subtle)', color: 'var(--text-disabled)', border: '0.5px solid var(--border-default)', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: 11.5, padding: '1px 5px', borderRadius: 'var(--radius-pill)', background: 'var(--surface-subtle)', color: 'var(--text-disabled)', border: '0.5px solid var(--border-default)', whiteSpace: 'nowrap' }}>
               {t('entry.hiddenBadge')}
             </span>
           )}
         </div>
         {endDate && (
-          <span style={{ fontSize: 11, color: isOverdue ? 'var(--color-danger-text)' : 'var(--text-tertiary)', flexShrink: 0 }}>
+          <span style={{ fontSize: 11.5, color: isOverdue ? 'var(--color-danger-text)' : 'var(--text-tertiary)', flexShrink: 0 }}>
             {fmtDate(endDate)}
           </span>
         )}
@@ -280,10 +280,10 @@ function KanbanColumn({ status, labelKey, cards, onEdit, onAdd }: {
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 12px 8px' }}>
-        <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: style.header }}>
+        <span style={{ fontSize: 11.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: style.header }}>
           {t(labelKey as any)}
         </span>
-        <span style={{ minWidth: 20, height: 20, borderRadius: 'var(--radius-pill)', background: 'var(--surface-card)', color: style.header, fontSize: 11, fontWeight: 600, padding: '0 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ minWidth: 20, height: 20, borderRadius: 'var(--radius-pill)', background: 'var(--surface-card)', color: style.header, fontSize: 11.5, fontWeight: 600, padding: '0 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {cards.length}
         </span>
       </div>
@@ -292,7 +292,7 @@ function KanbanColumn({ status, labelKey, cards, onEdit, onAdd }: {
           <DraggableCard key={card.id} card={card} onEdit={onEdit} />
         ))}
         {cards.length === 0 && (
-          <span style={{ fontSize: 11, color: 'var(--text-disabled)', textAlign: 'center', padding: '16px 4px' }}>{t('plan.dblClickToAdd')}</span>
+          <span style={{ fontSize: 11.5, color: 'var(--text-disabled)', textAlign: 'center', padding: '16px 4px' }}>{t('plan.dblClickToAdd')}</span>
         )}
       </div>
     </div>

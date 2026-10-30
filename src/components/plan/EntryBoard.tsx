@@ -83,7 +83,7 @@ function OwnerAvatars({ entry }: { entry: Entry }) {
         </span>
       ))}
       {overflow > 0 && (
-        <span style={{ fontSize: 10, color: 'var(--text-tertiary)', marginLeft: 4 }}>+{overflow}</span>
+        <span style={{ fontSize: 11.5, color: 'var(--text-tertiary)', marginLeft: 4 }}>+{overflow}</span>
       )}
     </div>
   )
@@ -100,7 +100,7 @@ function TypeBadge({ type }: { type: Entry['type'] }) {
   }
   const s = styles[type]
   return (
-    <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 'var(--radius-pill)', background: s.bg, color: s.color, fontWeight: 500, border: '0.5px solid var(--border-default)', flexShrink: 0, whiteSpace: 'nowrap' }}>
+    <span style={{ fontSize: 11.5, padding: '1px 5px', borderRadius: 'var(--radius-pill)', background: s.bg, color: s.color, fontWeight: 500, border: '0.5px solid var(--border-default)', flexShrink: 0, whiteSpace: 'nowrap' }}>
       {t(`entry.${type}` as any)}
     </span>
   )
@@ -137,17 +137,17 @@ function BoardEntryCard({ card, onClick, ghost = false }: {
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
         <TypeBadge type={card.type} />
         {card._phaseName && (
-          <span style={{ flex: 1, fontSize: 10, color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ flex: 1, fontSize: 11.5, color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {card._phaseName}
           </span>
         )}
         {hasComments && (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 10, color: 'var(--text-disabled)' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 11.5, color: 'var(--text-disabled)' }}>
             <ChatBubbleIcon className="w-3 h-3" />{card.comments.length}
           </span>
         )}
         {hasLinks && (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 10, color: 'var(--text-disabled)' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 11.5, color: 'var(--text-disabled)' }}>
             <LinkIcon className="w-3 h-3" />{card.links.length}
           </span>
         )}
@@ -171,13 +171,13 @@ function BoardEntryCard({ card, onClick, ghost = false }: {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <OwnerAvatars entry={card} />
           {card.hiddenFromPlan && (
-            <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 'var(--radius-pill)', background: 'var(--surface-subtle)', color: 'var(--text-disabled)', border: '0.5px solid var(--border-default)', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: 11.5, padding: '1px 5px', borderRadius: 'var(--radius-pill)', background: 'var(--surface-subtle)', color: 'var(--text-disabled)', border: '0.5px solid var(--border-default)', whiteSpace: 'nowrap' }}>
               {t('entry.hiddenBadge')}
             </span>
           )}
         </div>
         {endDate && (
-          <span style={{ fontSize: 11, color: isOverdue ? 'var(--color-danger-text)' : 'var(--text-tertiary)', flexShrink: 0 }}>
+          <span style={{ fontSize: 11.5, color: isOverdue ? 'var(--color-danger-text)' : 'var(--text-tertiary)', flexShrink: 0 }}>
             {fmtDate(endDate)}
           </span>
         )}
@@ -233,11 +233,11 @@ function BoardColumn({ status, cards, onEdit, onAdd, droppableId }: {
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 12px 8px' }}>
-        <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: colStyle.header, flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>
+        <span style={{ fontSize: 11.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: colStyle.header, flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}>
           {t(KANBAN_COLS.find(c => c.status === status)?.labelKey as any)}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, marginLeft: 6 }}>
-          <span style={{ minWidth: 20, height: 20, borderRadius: 'var(--radius-pill)', background: 'var(--surface-card)', color: colStyle.header, fontSize: 11, fontWeight: 600, padding: '0 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ minWidth: 20, height: 20, borderRadius: 'var(--radius-pill)', background: 'var(--surface-card)', color: colStyle.header, fontSize: 11.5, fontWeight: 600, padding: '0 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {cards.length}
           </span>
         </div>
@@ -247,7 +247,7 @@ function BoardColumn({ status, cards, onEdit, onAdd, droppableId }: {
           <DraggableCard key={card.id} card={card} onEdit={onEdit} />
         ))}
         {onAdd && cards.length === 0 && (
-          <span style={{ fontSize: 11, color: 'var(--text-disabled)', textAlign: 'center', padding: '16px 4px' }}>{t('plan.dblClickToAdd')}</span>
+          <span style={{ fontSize: 11.5, color: 'var(--text-disabled)', textAlign: 'center', padding: '16px 4px' }}>{t('plan.dblClickToAdd')}</span>
         )}
       </div>
     </div>
@@ -271,7 +271,7 @@ function InternalTasksSection({ cards, onEdit }: {
       <button
         onClick={() => setOpen(v => !v)}
         style={{
-          fontSize: 12, fontWeight: 500, color: 'var(--text-tertiary)',
+          fontSize: 13, fontWeight: 500, color: 'var(--text-tertiary)',
           background: 'none', border: 'none', cursor: 'pointer',
           display: 'flex', alignItems: 'center', gap: 6, padding: 0,
         }}
@@ -292,7 +292,7 @@ function InternalTasksSection({ cards, onEdit }: {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}
               >
-                <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>0</span>
+                <span style={{ fontSize: 11.5, color: 'var(--text-disabled)' }}>0</span>
               </div>
             )
             return (

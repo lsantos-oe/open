@@ -222,14 +222,14 @@ export default function RetroDetailPage() {
               {retro.participantIds.map((uid) => (
                 <li key={uid} className="text-[13px] flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
                   <span
-                    className="w-6 h-6 flex items-center justify-center text-[10px] font-semibold shrink-0"
+                    className="w-6 h-6 flex items-center justify-center text-[11.5px] font-semibold shrink-0"
                     style={{ borderRadius: 'var(--radius-pill)', background: 'var(--surface-subtle)', color: 'var(--text-secondary)' }}
                   >
                     {nameOf(uid).slice(0, 2).toUpperCase()}
                   </span>
                   <span className="truncate">{nameOf(uid)}</span>
                   {uid === conductorId && (
-                    <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>· {t('retro.conductor').toLowerCase()}</span>
+                    <span className="text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>· {t('retro.conductor').toLowerCase()}</span>
                   )}
                 </li>
               ))}

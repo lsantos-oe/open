@@ -203,7 +203,7 @@ export default function RetroActionModal({ retro, cardId, userId, isAdmin, nameO
                 <li key={s.id}>
                   <button type="button" onClick={() => onOpenAction(s.id)} className="text-[13px] text-left hover:underline" style={{ color: 'var(--text-primary)' }}>
                     <span aria-hidden>{s.actionStatus === 'done' ? '✓ ' : '○ '}</span>{s.text}
-                    <span className="ml-2 text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{t(`retro.actionStatus_${s.actionStatus}`)}</span>
+                    <span className="ml-2 text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>{t(`retro.actionStatus_${s.actionStatus}`)}</span>
                   </button>
                 </li>
               ))}
@@ -234,14 +234,14 @@ export default function RetroActionModal({ retro, cardId, userId, isAdmin, nameO
               <h3 className="text-xs font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>{t('retro.reviewHistory')}</h3>
               <ul className="space-y-2">
                 {history.map((r) => (
-                  <li key={r.id} className="text-[12.5px]">
-                    <span className="inline-block px-1.5 py-[1px] text-[10.5px] font-[500]" style={{ ...REVIEW_OUTCOME_STYLE[r.outcome], borderRadius: 'var(--radius-pill)' }}>
+                  <li key={r.id} className="text-[13px]">
+                    <span className="inline-block px-1.5 py-[1px] text-[11.5px] font-[500]" style={{ ...REVIEW_OUTCOME_STYLE[r.outcome], borderRadius: 'var(--radius-pill)' }}>
                       {t(`retro.outcomeDone_${r.outcome}`)}
                     </span>
-                    <span className="ml-1.5 text-[11px]" style={{ color: 'var(--text-tertiary)' }}>{t('retro.reviewedIn', { title: retroTitle(r.retroId) })}</span>
+                    <span className="ml-1.5 text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>{t('retro.reviewedIn', { title: retroTitle(r.retroId) })}</span>
                     {r.result && <p className="mt-0.5" style={{ color: 'var(--text-primary)' }}>{t('retro.successResult')}: {r.result}</p>}
                     {r.note && <p className="mt-0.5 whitespace-pre-wrap break-words" style={{ color: 'var(--text-secondary)' }}>{r.note}</p>}
-                    <p className="text-[10.5px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                    <p className="text-[11.5px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                       {t('retro.reviewedByAt', { name: nameOf(r.reviewedBy), when: formatDistanceToNow(new Date(r.createdAt), { addSuffix: true, locale: ptBR }) })}
                     </p>
                   </li>
@@ -255,16 +255,16 @@ export default function RetroActionModal({ retro, cardId, userId, isAdmin, nameO
             {myComments.length === 0 && <p className="text-xs mb-2" style={{ color: 'var(--text-tertiary)' }}>{t('retro.noComments')}</p>}
             <ul className="space-y-2 mb-2">
               {myComments.map((c) => (
-                <li key={c.id} className="text-[12.5px] p-2 rounded-[var(--radius-md)]" style={{ background: 'var(--surface-subtle)' }}>
+                <li key={c.id} className="text-[13px] p-2 rounded-[var(--radius-md)]" style={{ background: 'var(--surface-subtle)' }}>
                   <div className="flex items-center justify-between gap-2 mb-0.5">
                     <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>{nameOf(c.authorId)}</span>
-                    <span className="text-[10.5px]" style={{ color: 'var(--text-tertiary)' }}>
+                    <span className="text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>
                       {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true, locale: ptBR })}
                     </span>
                   </div>
                   <DocView markdown={c.text} fontSize={12} />
                   {(c.authorId === userId || isAdmin) && (
-                    <button type="button" onClick={() => deleteComment(c.id)} className="text-[10.5px] mt-1 hover:underline" style={{ color: 'var(--color-danger-text)' }}>{t('retro.deleteComment')}</button>
+                    <button type="button" onClick={() => deleteComment(c.id)} className="text-[11.5px] mt-1 hover:underline" style={{ color: 'var(--color-danger-text)' }}>{t('retro.deleteComment')}</button>
                   )}
                 </li>
               ))}

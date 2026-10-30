@@ -22,7 +22,7 @@ function scoreClass(s: number) {
 }
 
 function FlagDot({ score }: { score: number }) {
-  const cls = score >= 6 ? 'bg-red-500' : score >= 3 ? 'bg-orange-400' : 'bg-green-400'
+  const cls = score >= 6 ? 'bg-[var(--color-danger-text)]' : score >= 3 ? 'bg-[var(--color-warning-text)]' : 'bg-[var(--color-success-text)]'
   return <span className={`inline-block w-2.5 h-2.5 rounded-[var(--radius-pill)] ${cls}`} />
 }
 

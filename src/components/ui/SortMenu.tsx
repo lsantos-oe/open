@@ -60,7 +60,7 @@ export function SortMenu({ groups, title = 'Ordenar' }: { groups: SortGroup[]; t
                   style={{ color: 'var(--text-primary)' }}
                 >
                   {o.label}
-                  {g.value === o.value && <span aria-hidden="true" style={{ fontSize: 12 }}>✓</span>}
+                  {g.value === o.value && <span aria-hidden="true" style={{ fontSize: 13 }}>✓</span>}
                 </button>
               ))}
             </div>

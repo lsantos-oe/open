@@ -343,7 +343,7 @@ function KanbanView({ projects, holidays, onOpen, selected, onToggle, onCreate }
             </div>
             <div className="space-y-2">
               {cards.length === 0 && (
-                <p className="text-[11px] text-center py-4 text-[var(--text-disabled)]">{t('plan.dblClickToAdd')}</p>
+                <p className="text-[11.5px] text-center py-4 text-[var(--text-disabled)]">{t('plan.dblClickToAdd')}</p>
               )}
               {cards.map((p) => {
                 const dur = projectDurationDays(p, holidays)
@@ -366,11 +366,11 @@ function KanbanView({ projects, holidays, onOpen, selected, onToggle, onCreate }
                     <p className="text-xs text-[var(--text-tertiary)] mb-2">{p.client}</p>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        <Badge variant={p.type === 'nova_conta' ? 'blue' : 'purple'} className="text-[10px]">
+                        <Badge variant={p.type === 'nova_conta' ? 'blue' : 'purple'} className="text-[11.5px]">
                           {p.type === 'nova_conta' ? 'NC' : 'NP'}
                         </Badge>
                         {isProjectDelayed(p, holidays) && (
-                          <Badge variant="red" className="text-[10px]">{t('project.delayed')}</Badge>
+                          <Badge variant="red" className="text-[11.5px]">{t('project.delayed')}</Badge>
                         )}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-[var(--text-tertiary)]">
@@ -659,7 +659,7 @@ function NewProjectModal({ open, onClose, clients, teamMembers, templates, onCre
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={selectedType === 'nova_conta' ? 'Implementação ' + (primaryClientName || 'Cliente') : 'Projeto ' + (primaryClientName || 'Cliente')}
-                className={errors.name ? 'border-red-400' : ''}
+                className={errors.name ? 'border-[var(--color-danger-text)]' : ''}
               />
               {errors.name && <p className="text-xs text-[var(--color-danger-text)] mt-1">{errors.name}</p>}
             </Field>
@@ -765,7 +765,7 @@ const CLIENT_STATUS_LABEL: Record<ClientStatus, string> = {
 function KpiCard({ label, value, danger }: { label: string; value: string | number; danger?: boolean }) {
   return (
     <div className="oe-card p-3">
-      <p className="text-[11px] mb-1" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
+      <p className="text-[11.5px] mb-1" style={{ color: 'var(--text-tertiary)' }}>{label}</p>
       <p className="text-xl font-bold" style={{ color: danger ? 'var(--color-danger-text)' : 'var(--text-primary)' }}>{value}</p>
     </div>
   )
@@ -889,9 +889,9 @@ function PmoDashboard({ projects, clients, holidays }: { projects: Project[]; cl
           ) : (
             <div className="space-y-2">
               <div className="flex h-2 rounded-[var(--radius-pill)] overflow-hidden gap-px" style={{ background: 'var(--surface-subtle)' }}>
-                {risksBySeverity.high > 0 && <div className="bg-red-500" style={{ width: `${(risksBySeverity.high / openRisksTotal) * 100}%` }} />}
-                {risksBySeverity.medium > 0 && <div className="bg-orange-400" style={{ width: `${(risksBySeverity.medium / openRisksTotal) * 100}%` }} />}
-                {risksBySeverity.low > 0 && <div className="bg-green-400" style={{ width: `${(risksBySeverity.low / openRisksTotal) * 100}%` }} />}
+                {risksBySeverity.high > 0 && <div className="bg-[var(--color-danger-text)]" style={{ width: `${(risksBySeverity.high / openRisksTotal) * 100}%` }} />}
+                {risksBySeverity.medium > 0 && <div className="bg-[var(--color-warning-text)]" style={{ width: `${(risksBySeverity.medium / openRisksTotal) * 100}%` }} />}
+                {risksBySeverity.low > 0 && <div className="bg-[var(--color-success-text)]" style={{ width: `${(risksBySeverity.low / openRisksTotal) * 100}%` }} />}
               </div>
               <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
                 <span>🔴 Alto: {risksBySeverity.high}</span>

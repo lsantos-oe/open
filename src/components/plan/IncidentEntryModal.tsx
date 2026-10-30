@@ -54,7 +54,7 @@ const inputStyle: CSSProperties = {
 
 function FieldLabel({ children }: { children: string }) {
   return (
-    <p style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)', marginBottom: 5 }}>
+    <p style={{ fontSize: 11.5, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)', marginBottom: 5 }}>
       {children}
     </p>
   )
@@ -301,7 +301,7 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, defa
           onChange={(e) => set('name', e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') mode === 'edit' ? handleSaveEdit() : handleSaveCreate() }}
           placeholder={t('entry.name')}
-          style={{ width: '100%', fontSize: 16, fontWeight: 500, border: 'none', borderBottom: '2px solid var(--border-default)', outline: 'none', background: 'transparent', color: 'var(--text-primary)', paddingBottom: 8, boxSizing: 'border-box' }}
+          style={{ width: '100%', fontSize: 15, fontWeight: 500, border: 'none', borderBottom: '2px solid var(--border-default)', outline: 'none', background: 'transparent', color: 'var(--text-primary)', paddingBottom: 8, boxSizing: 'border-box' }}
         />
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -347,7 +347,7 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, defa
             </FieldBox>
             <FieldBox label={t('entry.plannedEnd')}>
               <input type="date" value={form.plannedEnd} onChange={(e) => { set('plannedEnd', e.target.value); setEndDateError('') }} style={{ ...inputStyle, ...(endDateError ? { borderColor: 'var(--color-danger-text)' } : {}) }} />
-              {endDateError && <p style={{ fontSize: 11, color: 'var(--color-danger-text)', marginTop: 3 }}>{endDateError}</p>}
+              {endDateError && <p style={{ fontSize: 11.5, color: 'var(--color-danger-text)', marginTop: 3 }}>{endDateError}</p>}
             </FieldBox>
             <FieldBox label={t('entry.duration')}>
               <input type="number" min={1} value={form.durationDays} onChange={(e) => set('durationDays', Number(e.target.value))} style={inputStyle} />
@@ -392,7 +392,7 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, defa
           <FieldBox label={t('plan.dependencies')}>
             <div style={{ border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', maxHeight: 140, overflowY: 'auto' }}>
               {availableDeps.map((dep) => (
-                <label key={dep.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', cursor: 'pointer', fontSize: 12 }}>
+                <label key={dep.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', cursor: 'pointer', fontSize: 13 }}>
                   <input type="checkbox" checked={form.dependsOn.includes(dep.id)} onChange={() => toggleDep(dep.id)} />
                   <span style={{ color: 'var(--text-secondary)' }}>{dep.name}</span>
                 </label>
@@ -407,8 +407,8 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, defa
             <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
               {form.links.map((l) => (
                 <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <a href={l.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1, fontSize: 12, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.label}</a>
-                  <button onClick={() => removeLink(l.id)} style={{ fontSize: 14, color: 'var(--text-disabled)', background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
+                  <a href={l.url} target="_blank" rel="noopener noreferrer" style={{ flex: 1, fontSize: 13, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.label}</a>
+                  <button onClick={() => removeLink(l.id)} style={{ fontSize: 13, color: 'var(--text-disabled)', background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
                 </div>
               ))}
             </div>
@@ -416,7 +416,7 @@ export default function IncidentEntryModal({ open, mode, incidentId, entry, defa
           <div style={{ display: 'flex', gap: 6 }}>
             <input value={newLinkLabel} onChange={(e) => setNewLinkLabel(e.target.value)} placeholder="Label" style={inputStyle} />
             <input value={newLinkUrl} onChange={(e) => setNewLinkUrl(e.target.value)} placeholder="URL" style={inputStyle} onKeyDown={(e) => e.key === 'Enter' && addLink()} />
-            <button onClick={addLink} disabled={!newLinkUrl.trim()} style={{ fontSize: 12, background: 'var(--oe-primary)', color: 'white', borderRadius: 'var(--radius-md)', padding: '5px 10px', border: 'none', cursor: 'pointer', opacity: newLinkUrl.trim() ? 1 : 0.4, whiteSpace: 'nowrap' }}>
+            <button onClick={addLink} disabled={!newLinkUrl.trim()} style={{ fontSize: 13, background: 'var(--oe-primary)', color: 'white', borderRadius: 'var(--radius-md)', padding: '5px 10px', border: 'none', cursor: 'pointer', opacity: newLinkUrl.trim() ? 1 : 0.4, whiteSpace: 'nowrap' }}>
               {t('actions.add')}
             </button>
           </div>

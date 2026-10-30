@@ -223,7 +223,7 @@ export default function AddEntryModal({
                   type="date"
                   value={form.plannedEnd}
                   onChange={(e) => { set('plannedEnd', e.target.value); setEndDateError('') }}
-                  className={endDateError ? 'border-red-500' : ''}
+                  className={endDateError ? 'border-[var(--color-danger-text)]' : ''}
                 />
                 {endDateError && <p className="text-xs text-[var(--color-danger-text)] mt-1">{endDateError}</p>}
               </Field>
@@ -258,7 +258,7 @@ export default function AddEntryModal({
                 ))}
               </Select>
               {parentEndWarning && (
-                <p className="text-xs text-amber-600 mt-1">
+                <p className="text-xs text-[var(--color-warning-text)] mt-1">
                   ⚠ {t('plan.childMeetingOutOfRange')}
                 </p>
               )}

@@ -190,7 +190,7 @@ export default function ClientsPage() {
               ? { background: 'var(--surface-subtle)', color: 'var(--text-primary)' }
               : { color: 'var(--text-tertiary)' }}
           >
-            {label} <span className="text-[11px] font-normal ml-0.5" style={{ color: 'var(--text-tertiary)' }}>{n}</span>
+            {label} <span className="text-[11.5px] font-normal ml-0.5" style={{ color: 'var(--text-tertiary)' }}>{n}</span>
           </button>
         ))}
       </div>

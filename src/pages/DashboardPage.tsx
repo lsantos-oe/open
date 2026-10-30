@@ -147,7 +147,7 @@ export default function DashboardPage() {
       </div>
 
       {dueSoon.length > 0 && (
-        <div className="rounded-[var(--radius-lg)] border p-4 mb-6" style={{ borderColor: 'var(--color-warning-text)', background: 'var(--color-warning-bg)' }}>
+        <div className="rounded-[var(--radius-xl)] p-4 mb-6" style={{ background: 'var(--color-warning-bg)' }}>
           <p className="text-sm font-semibold mb-2" style={{ color: 'var(--color-warning-text)' }}>{t('dashboard.dueSoon')}</p>
           <div className="space-y-1.5">
             {dueSoon.map((item, i) => (

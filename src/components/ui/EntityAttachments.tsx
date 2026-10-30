@@ -180,7 +180,7 @@ export function EntityAttachments({ entityType, entityId }: Props) {
                 {att.name}
               </a>
               {!!att.size && (
-                <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{formatBytes(att.size)}</span>
+                <span className="text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>{formatBytes(att.size)}</span>
               )}
               <button
                 onClick={() => handleRemove(att)}

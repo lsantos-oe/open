@@ -70,7 +70,7 @@ export default function CountrySelect({ value, onChange }: Props) {
             {grouped.map((g) => (
               <div key={g.continent}>
                 <p
-                  className="text-[10px] font-semibold uppercase tracking-wide px-3 pt-2 pb-1"
+                  className="text-[11.5px] font-semibold uppercase tracking-wide px-3 pt-2 pb-1"
                   style={{ color: 'var(--text-tertiary)' }}
                 >
                   {g.continent}

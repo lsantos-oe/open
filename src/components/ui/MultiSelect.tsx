@@ -20,7 +20,7 @@ const DEFAULT_CLASS = 'flex items-center justify-between gap-2 w-full border bor
 function rowStyle(): CSSProperties {
   return {
     display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',
-    padding: '6px 8px', fontSize: 12.5, borderRadius: 'var(--radius-sm)',
+    padding: '6px 8px', fontSize: 13, borderRadius: 'var(--radius-sm)',
     border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-primary)',
   }
 }
@@ -112,14 +112,14 @@ export function MultiSelect({ values, onChange, options, placeholder, disabled, 
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar..."
               style={{
-                width: '100%', fontSize: 12.5, border: 'none', outline: 'none',
+                width: '100%', fontSize: 13, border: 'none', outline: 'none',
                 padding: '6px 8px', background: 'transparent', color: 'var(--text-primary)',
               }}
             />
           </div>
           <div style={{ overflowY: 'auto', padding: 4 }}>
             {filtered.length === 0 ? (
-              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', padding: '6px 8px' }}>Nada encontrado.</p>
+              <p style={{ fontSize: 13, color: 'var(--text-tertiary)', padding: '6px 8px' }}>Nada encontrado.</p>
             ) : (
               filtered.map((o) => {
                 const checked = values.includes(o.id)
@@ -137,7 +137,7 @@ export function MultiSelect({ values, onChange, options, placeholder, disabled, 
                       className="rounded border-[var(--border-default)] accent-[var(--text-primary)]"
                     />
                     <span style={{ flex: 1 }}>{o.label}</span>
-                    {o.sublabel && <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{o.sublabel}</span>}
+                    {o.sublabel && <span style={{ fontSize: 11.5, color: 'var(--text-tertiary)' }}>{o.sublabel}</span>}
                   </label>
                 )
               })

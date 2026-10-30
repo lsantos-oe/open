@@ -241,7 +241,7 @@ export default function ClientGroupDetailPage() {
             <div className="space-y-4">
               {notes.map((c) => (
                 <div key={c.id}>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                  <p className="text-[11.5px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--text-tertiary)' }}>
                     {c.name} <button className="normal-case font-normal underline ml-2" style={{ color: 'var(--text-secondary)' }} onClick={() => navigate(`/wallet/${c.id}`)}>editar no cliente</button>
                   </p>
                   <div className="text-[13px] whitespace-pre-wrap break-words" style={{ color: 'var(--text-secondary)' }}>{c.notes}</div>

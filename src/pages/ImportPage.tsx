@@ -38,7 +38,7 @@ const fmtDate = (iso?: string) => (iso ? iso.split('-').reverse().join('/') : ''
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="text-left px-2 py-1.5 text-[11px] font-[600] uppercase tracking-wide whitespace-nowrap" style={{ color: 'var(--text-tertiary)', borderBottom: '1px solid var(--border-default)' }}>
+    <th className="text-left px-2 py-1.5 text-[11.5px] font-[600] uppercase tracking-wide whitespace-nowrap" style={{ color: 'var(--text-tertiary)', borderBottom: '1px solid var(--border-default)' }}>
       {children}
     </th>
   )
@@ -202,7 +202,7 @@ export default function ImportPage() {
     const batch = rows.clients.filter((c) => c.include && c.action === 'create' && c.name.trim())
     const canCreate = !!sheetName?.trim() && !activeClients.some((c) => fold(c.name) === fold(sheetName))
     return (
-      <Select className="!py-1 !text-[12px] min-w-[150px]" value={value} onChange={(e) => onChange(e.target.value)}>
+      <Select className="!py-1 !text-[13px] min-w-[150px]" value={value} onChange={(e) => onChange(e.target.value)}>
         <option value="">{sheetName ? `⚠ ${sheetName} (escolha)` : '— escolha —'}</option>
         {canCreate && <option value={`new:${sheetName!.trim()}`}>+ Criar cliente “{sheetName!.trim()}”</option>}
         {batch.map((c) => <option key={c.name} value={`batch:${fold(c.name)}`}>(novo neste arquivo) {c.name}</option>)}
@@ -212,7 +212,7 @@ export default function ImportPage() {
   }
 
   const actionSelect = (value: RowAction, canUpdate: boolean, onChange: (a: RowAction) => void) => (
-    <Select className="!py-1 !text-[12px] min-w-[96px]" value={value} onChange={(e) => onChange(e.target.value as RowAction)}>
+    <Select className="!py-1 !text-[13px] min-w-[96px]" value={value} onChange={(e) => onChange(e.target.value as RowAction)}>
       <option value="create">Criar</option>
       <option value="update" disabled={!canUpdate}>Atualizar</option>
       <option value="skip">Ignorar</option>
@@ -306,17 +306,17 @@ export default function ImportPage() {
             Clientes ({rows.clients.filter((r) => r.include).length}/{rows.clients.length})
           </h2>
           <div className="oe-card overflow-x-auto">
-            <table className="w-full text-[12px]" style={{ background: 'var(--surface-card)' }}>
+            <table className="w-full text-[13px]" style={{ background: 'var(--surface-card)' }}>
               <thead><tr><Th>{' '}</Th><Th>Ação</Th><Th>Nome</Th><Th>País</Th><Th>Status</Th><Th>Responsável</Th><Th>Avisos</Th></tr></thead>
               <tbody>
                 {rows.clients.map((r, i) => (
                   <tr key={i}>
                     <Td><input type="checkbox" checked={r.include} onChange={(e) => patch('clients', i, { include: e.target.checked })} /></Td>
                     <Td>{actionSelect(r.action, !!r.matchClientId, (action) => patch('clients', i, { action }))}</Td>
-                    <Td><Input className="!py-1 !text-[12px] min-w-[200px]" value={r.name} onChange={(e) => patch('clients', i, { name: e.target.value })} /></Td>
+                    <Td><Input className="!py-1 !text-[13px] min-w-[200px]" value={r.name} onChange={(e) => patch('clients', i, { name: e.target.value })} /></Td>
                     <Td>{findCountry(r.row.pais)?.name ?? <span style={{ color: 'var(--text-disabled)' }}>—</span>}</Td>
                     <Td>
-                      <Select className="!py-1 !text-[12px]" value={r.status} onChange={(e) => patch('clients', i, { status: e.target.value as ClientStatus })}>
+                      <Select className="!py-1 !text-[13px]" value={r.status} onChange={(e) => patch('clients', i, { status: e.target.value as ClientStatus })}>
                         {CLIENT_STATUSES.map((s, k) => <option key={s} value={s}>{CLIENT_STATUS_LABELS[k]}</option>)}
                       </Select>
                     </Td>
@@ -337,7 +337,7 @@ export default function ImportPage() {
             Projetos ({rows.projects.filter((r) => r.include).length}/{rows.projects.length})
           </h2>
           <div className="oe-card overflow-x-auto">
-            <table className="w-full text-[12px]" style={{ background: 'var(--surface-card)' }}>
+            <table className="w-full text-[13px]" style={{ background: 'var(--surface-card)' }}>
               <thead><tr><Th>{' '}</Th><Th>Ação</Th><Th>Cliente</Th><Th>Nome</Th><Th>Status</Th><Th>Avisos</Th></tr></thead>
               <tbody>
                 {rows.projects.map((r, i) => (
@@ -345,9 +345,9 @@ export default function ImportPage() {
                     <Td><input type="checkbox" checked={r.include} onChange={(e) => patch('projects', i, { include: e.target.checked })} /></Td>
                     <Td>{actionSelect(r.action, !!r.matchProjectId, (action) => patch('projects', i, { action }))}</Td>
                     <Td>{clientSelect(r.clientId, r.row.cliente, (clientId) => patch('projects', i, { clientId }))}</Td>
-                    <Td><Input className="!py-1 !text-[12px] min-w-[180px]" value={r.name} onChange={(e) => patch('projects', i, { name: e.target.value })} /></Td>
+                    <Td><Input className="!py-1 !text-[13px] min-w-[180px]" value={r.name} onChange={(e) => patch('projects', i, { name: e.target.value })} /></Td>
                     <Td>
-                      <Select className="!py-1 !text-[12px]" value={r.status} onChange={(e) => patch('projects', i, { status: e.target.value as ProjectStatus })}>
+                      <Select className="!py-1 !text-[13px]" value={r.status} onChange={(e) => patch('projects', i, { status: e.target.value as ProjectStatus })}>
                         {PROJECT_STATUSES.map((s) => <option key={s} value={s}>{t(`status.${s}`)}</option>)}
                       </Select>
                     </Td>
@@ -367,7 +367,7 @@ export default function ImportPage() {
             Incidentes ({rows.incidents.filter((r) => r.include).length}/{rows.incidents.length})
           </h2>
           <div className="oe-card overflow-x-auto">
-            <table className="w-full text-[12px]" style={{ background: 'var(--surface-card)' }}>
+            <table className="w-full text-[13px]" style={{ background: 'var(--surface-card)' }}>
               <thead><tr><Th>{' '}</Th><Th>Ação</Th><Th>Cliente</Th><Th>Título</Th><Th>Prioridade</Th><Th>Status</Th><Th>Responsável</Th><Th>Avisos</Th></tr></thead>
               <tbody>
                 {rows.incidents.map((r, i) => (
@@ -375,14 +375,14 @@ export default function ImportPage() {
                     <Td><input type="checkbox" checked={r.include} onChange={(e) => patch('incidents', i, { include: e.target.checked })} /></Td>
                     <Td>{actionSelect(r.action, !!r.matchIncidentId, (action) => patch('incidents', i, { action }))}</Td>
                     <Td>{clientSelect(r.clientId, r.row.cliente, (clientId) => patch('incidents', i, { clientId }))}</Td>
-                    <Td><Input className="!py-1 !text-[12px] min-w-[180px]" value={r.title} onChange={(e) => patch('incidents', i, { title: e.target.value })} /></Td>
+                    <Td><Input className="!py-1 !text-[13px] min-w-[180px]" value={r.title} onChange={(e) => patch('incidents', i, { title: e.target.value })} /></Td>
                     <Td>
-                      <Select className="!py-1 !text-[12px]" value={r.priority} onChange={(e) => patch('incidents', i, { priority: e.target.value as Probability })}>
+                      <Select className="!py-1 !text-[13px]" value={r.priority} onChange={(e) => patch('incidents', i, { priority: e.target.value as Probability })}>
                         {PRIORITIES.map((p) => <option key={p} value={p}>{t(`risk.${p}`)}</option>)}
                       </Select>
                     </Td>
                     <Td>
-                      <Select className="!py-1 !text-[12px]" value={r.status} onChange={(e) => patch('incidents', i, { status: e.target.value as IncidentStatus })}>
+                      <Select className="!py-1 !text-[13px]" value={r.status} onChange={(e) => patch('incidents', i, { status: e.target.value as IncidentStatus })}>
                         {INCIDENT_STATUSES.map((s) => <option key={s} value={s}>{t(`incident.status_${s}`)}</option>)}
                       </Select>
                     </Td>
@@ -403,7 +403,7 @@ export default function ImportPage() {
             Tarefas ({rows.tasks.filter((r) => r.include).length}/{rows.tasks.length})
           </h2>
           <div className="oe-card overflow-x-auto">
-            <table className="w-full text-[12px]" style={{ background: 'var(--surface-card)' }}>
+            <table className="w-full text-[13px]" style={{ background: 'var(--surface-card)' }}>
               <thead><tr><Th>{' '}</Th><Th>Origem</Th><Th>Nome</Th><Th>Responsável</Th><Th>Status</Th><Th>Prioridade</Th><Th>Plano</Th><Th>Avisos</Th></tr></thead>
               <tbody>
                 {rows.tasks.map((r, i) => {
@@ -418,7 +418,7 @@ export default function ImportPage() {
                       <Td><input type="checkbox" checked={r.include} onChange={(e) => patch('tasks', i, { include: e.target.checked })} /></Td>
                       <Td>
                         <div className="flex flex-col gap-1 min-w-[170px]">
-                          <Select className="!py-1 !text-[12px]" value={r.scope} onChange={(e) => patch('tasks', i, { scope: e.target.value as TaskScope })}>
+                          <Select className="!py-1 !text-[13px]" value={r.scope} onChange={(e) => patch('tasks', i, { scope: e.target.value as TaskScope })}>
                             <option value="projeto">Projeto</option>
                             <option value="incidente">Incidente</option>
                             <option value="solta">Tarefa solta</option>
@@ -427,16 +427,16 @@ export default function ImportPage() {
                           {r.scope === 'solta' && clientSelect(r.clientId, r.row.cliente, (clientId) => patch('tasks', i, { clientId }))}
                         </div>
                       </Td>
-                      <Td><Input className="!py-1 !text-[12px] min-w-[180px]" value={r.name} onChange={(e) => patch('tasks', i, { name: e.target.value })} /></Td>
-                      <Td><Input className="!py-1 !text-[12px] min-w-[120px]" value={r.responsavel} onChange={(e) => patch('tasks', i, { responsavel: e.target.value })} placeholder="—" /></Td>
+                      <Td><Input className="!py-1 !text-[13px] min-w-[180px]" value={r.name} onChange={(e) => patch('tasks', i, { name: e.target.value })} /></Td>
+                      <Td><Input className="!py-1 !text-[13px] min-w-[120px]" value={r.responsavel} onChange={(e) => patch('tasks', i, { responsavel: e.target.value })} placeholder="—" /></Td>
                       <Td>
-                        <Select className="!py-1 !text-[12px]" value={r.status} onChange={(e) => patch('tasks', i, { status: e.target.value as EntryStatus })}>
+                        <Select className="!py-1 !text-[13px]" value={r.status} onChange={(e) => patch('tasks', i, { status: e.target.value as EntryStatus })}>
                           {TASK_STATUSES.map((s) => <option key={s} value={s}>{t(`status.${s}`)}</option>)}
                         </Select>
                       </Td>
                       <Td>
                         <Select
-                          className="!py-1 !text-[12px]"
+                          className="!py-1 !text-[13px]"
                           value={r.riskFlag === 'critical' ? 'high' : r.riskFlag === 'warning' ? 'medium' : 'low'}
                           onChange={(e) => {
                             const v = e.target.value as Probability

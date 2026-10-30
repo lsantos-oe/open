@@ -165,7 +165,7 @@ function DateCell({ iso, isActual, isOverdue, isBaseline, editable = true, onCom
         type="date"
         autoFocus
         defaultValue={iso ?? ''}
-        className="text-[11px] rounded px-1 py-0.5 w-28 focus:outline-none"
+        className="text-[11.5px] rounded px-1 py-0.5 w-28 focus:outline-none"
         style={{ border: '1px solid var(--border-strong)', color: 'var(--text-primary)' }}
         onBlur={(e) => { if (e.target.value) onCommit(e.target.value); setEditing(false) }}
         onKeyDown={(e) => { if (e.key === 'Escape') setEditing(false) }}
@@ -174,14 +174,14 @@ function DateCell({ iso, isActual, isOverdue, isBaseline, editable = true, onCom
   }
 
   if (!iso) {
-    if (!editable) return <span style={{ color: 'var(--text-disabled)', fontSize: 11 }}>—</span>
+    if (!editable) return <span style={{ color: 'var(--text-disabled)', fontSize: 11.5 }}>—</span>
     return (
       <button
         onClick={() => setEditing(true)}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         className="transition-colors"
-        style={{ color: hovered ? 'var(--oe-primary)' : 'var(--text-disabled)', fontSize: 11 }}
+        style={{ color: hovered ? 'var(--oe-primary)' : 'var(--text-disabled)', fontSize: 11.5 }}
       >
         {hovered ? '+' : '—'}
       </button>
@@ -200,10 +200,10 @@ function DateCell({ iso, isActual, isOverdue, isBaseline, editable = true, onCom
     <button
       onClick={() => editable && setEditing(true)}
       className="transition-colors"
-      style={{ color: textColor, fontSize: 11, cursor: editable ? 'pointer' : 'default' }}
+      style={{ color: textColor, fontSize: 11.5, cursor: editable ? 'pointer' : 'default' }}
     >
       {fmtDate(iso)}
-      {isActual && <span className="ml-1" style={{ fontSize: 9, color: 'var(--color-success-text)' }}>(real)</span>}
+      {isActual && <span className="ml-1" style={{ fontSize: 11.5, color: 'var(--color-success-text)' }}>(real)</span>}
     </button>
   )
 }
@@ -287,7 +287,7 @@ function RiskCell({ flag, linkedRiskId, onChange, onNavigateToRisk }: {
               key={f}
               onClick={() => { onChange(f); setOpen(false) }}
               className="w-full text-left px-3 py-1.5 flex items-center gap-2"
-              style={{ fontSize: 12, color: flag === f ? 'var(--text-primary)' : 'var(--text-secondary)' }}
+              style={{ fontSize: 13, color: flag === f ? 'var(--text-primary)' : 'var(--text-secondary)' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
               onMouseLeave={e => (e.currentTarget.style.background = '')}
             >
@@ -300,7 +300,7 @@ function RiskCell({ flag, linkedRiskId, onChange, onNavigateToRisk }: {
               {f === 'warning' && <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 1, background: 'var(--color-warning-text)', flexShrink: 0 }} />}
               {f === 'critical' && <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 1, background: 'var(--color-danger-text)', flexShrink: 0 }} />}
               <span className="flex-1">{f === 'none' ? 'OK' : t(f === 'warning' ? 'risk.tooltipWarning' : 'risk.tooltipCritical')}</span>
-              {flag === f && <span style={{ color: 'var(--text-secondary)', fontSize: 10 }}>✓</span>}
+              {flag === f && <span style={{ color: 'var(--text-secondary)', fontSize: 11.5 }}>✓</span>}
             </button>
           ))}
         </div>,
@@ -366,7 +366,7 @@ function LinksCell({ entry, projectId }: { entry: Entry; projectId: string }) {
         {count > 0 && (
           <span
             className="absolute -top-1 -right-1 flex items-center justify-center"
-            style={{ minWidth: 13, height: 13, background: 'var(--oe-primary-light)', color: 'var(--text-secondary)', fontSize: 9, borderRadius: 'var(--radius-pill)', padding: '0 3px', fontWeight: 500 }}
+            style={{ minWidth: 13, height: 13, background: 'var(--oe-primary-light)', color: 'var(--text-secondary)', fontSize: 11.5, borderRadius: 'var(--radius-pill)', padding: '0 3px', fontWeight: 500 }}
           >
             {count}
           </span>
@@ -380,14 +380,14 @@ function LinksCell({ entry, projectId }: { entry: Entry; projectId: string }) {
           className="p-3 w-72"
           onMouseDown={(e) => e.stopPropagation()}
         >
-          <p className="mb-2" style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-tertiary)' }}>Links</p>
+          <p className="mb-2" style={{ fontSize: 11.5, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-tertiary)' }}>Links</p>
           {entry.links.length === 0 && (
-            <p className="mb-2" style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Nenhum link adicionado.</p>
+            <p className="mb-2" style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>Nenhum link adicionado.</p>
           )}
           {entry.links.map((l) => (
             <div key={l.id} className="flex items-center gap-2 group mb-1">
               <a href={l.url} target="_blank" rel="noopener noreferrer"
-                className="flex-1 truncate hover:underline" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{l.label}</a>
+                className="flex-1 truncate hover:underline" style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{l.label}</a>
               <button onClick={() => removeEntryLink(projectId, entry.id, l.id)}
                 className="opacity-0 group-hover:opacity-100 text-xs transition-opacity"
                 style={{ color: 'var(--text-disabled)' }}
@@ -399,13 +399,13 @@ function LinksCell({ entry, projectId }: { entry: Entry; projectId: string }) {
             <input value={addLabel} onChange={(e) => setAddLabel(e.target.value)}
               placeholder="Label (opcional)"
               className="w-full focus:outline-none"
-              style={{ fontSize: 12, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '4px 8px', color: 'var(--text-primary)' }}
+              style={{ fontSize: 13, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '4px 8px', color: 'var(--text-primary)' }}
               onFocus={e => (e.currentTarget.style.borderColor = 'var(--text-tertiary)')}
               onBlur={e => (e.currentTarget.style.borderColor = 'var(--border-default)')} />
             <input value={addUrl} onChange={(e) => setAddUrl(e.target.value)}
               placeholder="URL *"
               className="w-full focus:outline-none"
-              style={{ fontSize: 12, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '4px 8px', color: 'var(--text-primary)' }}
+              style={{ fontSize: 13, border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '4px 8px', color: 'var(--text-primary)' }}
               onFocus={e => (e.currentTarget.style.borderColor = 'var(--text-tertiary)')}
               onBlur={e => (e.currentTarget.style.borderColor = 'var(--border-default)')}
               onKeyDown={(e) => e.key === 'Enter' && handleAdd()} />
@@ -413,7 +413,7 @@ function LinksCell({ entry, projectId }: { entry: Entry; projectId: string }) {
               onClick={handleAdd}
               disabled={!addUrl.trim()}
               className="w-full disabled:opacity-40 transition-colors"
-              style={{ fontSize: 12, background: 'var(--oe-primary)', color: 'white', borderRadius: 'var(--radius-md)', padding: '4px 8px' }}
+              style={{ fontSize: 13, background: 'var(--oe-primary)', color: 'white', borderRadius: 'var(--radius-md)', padding: '4px 8px' }}
               onMouseEnter={e => { if (addUrl.trim()) (e.currentTarget.style.background = 'var(--oe-primary-hover)') }}
               onMouseLeave={e => (e.currentTarget.style.background = 'var(--oe-primary)')}
             >
@@ -446,7 +446,7 @@ function CommentsCell({ entry, onOpen }: { entry: Entry; onOpen: () => void }) {
       {count > 0 && (
         <span
           className="absolute -top-1 -right-1 flex items-center justify-center"
-          style={{ minWidth: 13, height: 13, background: 'var(--oe-primary-light)', color: 'var(--text-secondary)', fontSize: 9, borderRadius: 'var(--radius-pill)', padding: '0 3px', fontWeight: 500 }}
+          style={{ minWidth: 13, height: 13, background: 'var(--oe-primary-light)', color: 'var(--text-secondary)', fontSize: 11.5, borderRadius: 'var(--radius-pill)', padding: '0 3px', fontWeight: 500 }}
         >
           {count > 9 ? '9+' : count}
         </span>
@@ -529,7 +529,7 @@ function DepsCell({ entry, phases, projectId }: {
     ? (
       <span
         className="opacity-0 group-hover/row:opacity-60 transition-opacity cursor-pointer select-none"
-        style={{ fontSize: 11, color: 'var(--text-disabled)' }}
+        style={{ fontSize: 11.5, color: 'var(--text-disabled)' }}
       >+</span>
     )
     : (
@@ -542,14 +542,14 @@ function DepsCell({ entry, phases, projectId }: {
             <span
               key={id}
               className="truncate"
-              style={{ fontSize: 10, background: 'var(--surface-subtle)', border: '0.5px solid var(--border-default)', borderRadius: 'var(--radius-sm)', padding: '1px 6px', maxWidth: 80, color: 'var(--text-secondary)' }}
+              style={{ fontSize: 11.5, background: 'var(--surface-subtle)', border: '0.5px solid var(--border-default)', borderRadius: 'var(--radius-sm)', padding: '1px 6px', maxWidth: 80, color: 'var(--text-secondary)' }}
               title={name ? `${name} (Finish-to-Start)` : id}
             >
               {prefix}{name ?? '?'}
             </span>
           )
         })}
-        {deps.length > 2 && <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>+{deps.length - 2}</span>}
+        {deps.length > 2 && <span style={{ fontSize: 11.5, color: 'var(--text-tertiary)' }}>+{deps.length - 2}</span>}
       </div>
     )
 
@@ -563,7 +563,7 @@ function DepsCell({ entry, phases, projectId }: {
           className="py-2 w-60 max-h-80 overflow-y-auto"
           onMouseDown={(e) => e.stopPropagation()}
         >
-          <p className="px-3 pb-1" style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-tertiary)' }}>
+          <p className="px-3 pb-1" style={{ fontSize: 11.5, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-tertiary)' }}>
             {t('plan.dependencies')}
           </p>
           {phases.map((ph) => {
@@ -571,7 +571,7 @@ function DepsCell({ entry, phases, projectId }: {
             if (candidates.length === 0) return null
             return (
               <div key={ph.id}>
-                <p className="px-3 py-1 mt-1" style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', background: 'var(--surface-subtle)' }}>
+                <p className="px-3 py-1 mt-1" style={{ fontSize: 11.5, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', background: 'var(--surface-subtle)' }}>
                   {ph.name}
                 </p>
                 {candidates.map((candidate) => {
@@ -582,7 +582,7 @@ function DepsCell({ entry, phases, projectId }: {
                     <label
                       key={candidate.id}
                       className={`flex items-center gap-2 px-3 py-1.5 ${circular ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
-                      style={{ fontSize: 12, color: 'var(--text-secondary)' }}
+                      style={{ fontSize: 13, color: 'var(--text-secondary)' }}
                       onMouseEnter={e => { if (!circular) (e.currentTarget.style.background = 'var(--surface-subtle)') }}
                       onMouseLeave={e => (e.currentTarget.style.background = '')}
                       title={circular ? t('errors.circularDep') : undefined}
@@ -621,7 +621,7 @@ function TypePill({ type }: { type: EntryType }) {
   }
   const s = styles[type]
   return (
-    <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 'var(--radius-pill)', background: s.bg, color: s.color, fontWeight: 500, flexShrink: 0, whiteSpace: 'nowrap', border: '0.5px solid var(--border-default)' }}>
+    <span style={{ fontSize: 11.5, padding: '1px 6px', borderRadius: 'var(--radius-pill)', background: s.bg, color: s.color, fontWeight: 500, flexShrink: 0, whiteSpace: 'nowrap', border: '0.5px solid var(--border-default)' }}>
       {t(`entry.${type}`)}
     </span>
   )
@@ -656,7 +656,7 @@ function NameCell({ entry, depth, projectId, linkedRisk, onOpenComments, onNavig
       <span
         onDoubleClick={onOpenEdit}
         className="flex-1 min-w-0 truncate cursor-default select-none"
-        style={{ fontSize: 12, color: 'var(--text-primary)' }}
+        style={{ fontSize: 13, color: 'var(--text-primary)' }}
         title="Duplo clique para editar"
       >
         {entry.name}
@@ -692,7 +692,7 @@ function ResponsibleCell({ entry }: { entry: Entry }) {
       : []
 
   if (owners.length === 0) {
-    return <span className="opacity-0 group-hover/row:opacity-60 transition-opacity" style={{ fontSize: 11, color: 'var(--text-disabled)' }}>—</span>
+    return <span className="opacity-0 group-hover/row:opacity-60 transition-opacity" style={{ fontSize: 11.5, color: 'var(--text-disabled)' }}>—</span>
   }
 
   const MAX = 3
@@ -720,10 +720,10 @@ function ResponsibleCell({ entry }: { entry: Entry }) {
         </span>
       ))}
       {overflow > 0 && (
-        <span style={{ fontSize: 10, color: 'var(--text-tertiary)', marginLeft: 2 }}>+{overflow}</span>
+        <span style={{ fontSize: 11.5, color: 'var(--text-tertiary)', marginLeft: 2 }}>+{overflow}</span>
       )}
       {owners.length === 1 && (
-        <span className="truncate" style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 4 }}>
+        <span className="truncate" style={{ fontSize: 11.5, color: 'var(--text-secondary)', marginLeft: 4 }}>
           {owners[0].name}
         </span>
       )}
@@ -860,32 +860,32 @@ function PhaseHeader({ phase, phaseNumber, colSpan, collapsed, onToggle, onAdd, 
               onChange={(e) => setDraft(e.target.value)}
               onBlur={() => { onRename(draft); setEditing(false) }}
               onKeyDown={(e) => { if (e.key === 'Enter') { onRename(draft); setEditing(false) } if (e.key === 'Escape') { setDraft(phase.name); setEditing(false) } }}
-              className="text-[11px] rounded px-2 py-0.5 outline-none min-w-0 flex-1"
+              className="text-[11.5px] rounded px-2 py-0.5 outline-none min-w-0 flex-1"
               style={{ background: 'var(--surface-card)', border: '1px solid var(--border-strong)', color: 'var(--text-primary)' }}
             />
           ) : (
             <span
               onDoubleClick={() => { setDraft(phase.name); setEditing(true) }}
               className="flex-1 cursor-default"
-              style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}
+              style={{ fontSize: 11.5, fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}
               title="Clique duplo para renomear"
             >
               {phaseNumber}. {phase.name}
             </span>
           )}
 
-          <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{entryCount} {t('template.entries')}</span>
+          <span className="text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>{entryCount} {t('template.entries')}</span>
 
           <div className="flex items-center gap-1 ml-auto">
             <button onClick={onAdd}
-              className="text-[11px] px-2 py-0.5 rounded transition-colors"
+              className="text-[11.5px] px-2 py-0.5 rounded transition-colors"
               style={{ color: 'var(--text-tertiary)' }}
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}>
               {t('plan.addEntry')}
             </button>
             <button onClick={onDelete}
-              className="text-[11px] px-1 py-0.5 rounded transition-colors"
+              className="text-[11.5px] px-1 py-0.5 rounded transition-colors"
               style={{ color: 'var(--text-disabled)' }}
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-danger-text)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-disabled)')}
@@ -1274,7 +1274,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
       id: 'number', size: 60,
       header: () => <span>{t('plan.colNumber')}</span>,
       cell: ({ row }) => (
-        <span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontVariantNumeric: 'tabular-nums' }}>
+        <span style={{ fontSize: 11.5, color: 'var(--text-tertiary)', fontVariantNumeric: 'tabular-nums' }}>
           {hierarchyNumberMap.get(row.original.id) ?? ''}
         </span>
       ),
@@ -1336,7 +1336,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
       header: () => <span>{t('plan.colEnd')}</span>,
       cell: ({ row }) => {
         const e = row.original
-        if (e.type !== 'task') return <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>—</span>
+        if (e.type !== 'task') return <span style={{ fontSize: 11.5, color: 'var(--text-disabled)' }}>—</span>
         const { iso, isActual, editField } = displayEnd(e)
         const isOverdue = !isActual && isLate(e, today)
         return <DateCell iso={iso} isActual={isActual} isOverdue={isOverdue} onCommit={(v) => requestDateChange(e, editField, v)} />
@@ -1348,7 +1348,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
       header: () => <span>{t('entry.baselineStart')}</span>,
       cell: ({ row }) => {
         const e = row.original
-        if (!project.baselineSetAt || e.type !== 'task') return <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>—</span>
+        if (!project.baselineSetAt || e.type !== 'task') return <span style={{ fontSize: 11.5, color: 'var(--text-disabled)' }}>—</span>
         return <DateCell iso={e.baselineStart} isBaseline editable={false} onCommit={() => {}} />
       },
     },
@@ -1358,7 +1358,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
       header: () => <span>{t('entry.baselineEnd')}</span>,
       cell: ({ row }) => {
         const e = row.original
-        if (!project.baselineSetAt) return <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>—</span>
+        if (!project.baselineSetAt) return <span style={{ fontSize: 11.5, color: 'var(--text-disabled)' }}>—</span>
         const blDate = e.type === 'task' ? e.baselineEnd : e.baselineDate
         return <DateCell iso={blDate} isBaseline editable={false} onCommit={() => {}} />
       },
@@ -1368,12 +1368,12 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
       id: 'variance', size: 72,
       header: () => <span>{t('entry.variance')}</span>,
       cell: ({ row }) => {
-        if (!project.baselineSetAt) return <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>—</span>
+        if (!project.baselineSetAt) return <span style={{ fontSize: 11.5, color: 'var(--text-disabled)' }}>—</span>
         const v = computeDisplayVariance(row.original, settings.holidays)
-        if (v === undefined) return <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>—</span>
-        if (v === 0) return <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>0</span>
+        if (v === undefined) return <span style={{ fontSize: 11.5, color: 'var(--text-disabled)' }}>—</span>
+        if (v === 0) return <span style={{ fontSize: 11.5, color: 'var(--text-tertiary)' }}>0</span>
         return (
-          <span style={{ fontSize: 11, fontWeight: 500, color: v > 0 ? 'var(--color-danger-text)' : 'var(--color-success-text)' }}>
+          <span style={{ fontSize: 11.5, fontWeight: 500, color: v > 0 ? 'var(--color-danger-text)' : 'var(--color-success-text)' }}>
             {v > 0 ? '+' : ''}{v}d
           </span>
         )
@@ -1387,11 +1387,11 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
         const e = row.original
         if (e.type === 'task') {
           const d = computeDisplayDuration(e, settings.holidays)
-          if (d !== undefined) return <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{d}d</span>
+          if (d !== undefined) return <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>{d}d</span>
         }
         if (e.type === 'meeting' && e.durationHours)
-          return <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{e.durationHours}h</span>
-        return <span style={{ fontSize: 11, color: 'var(--text-disabled)' }}>—</span>
+          return <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>{e.durationHours}h</span>
+        return <span style={{ fontSize: 11.5, color: 'var(--text-disabled)' }}>—</span>
       },
     },
     // Status
@@ -1420,7 +1420,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
               <button
                 onClick={() => resetStatusOverride(projectId, e.id)}
                 title={t('status.manualOverride')}
-                className="text-amber-500 hover:text-amber-700 shrink-0"
+                className="text-[var(--color-warning-text)] hover:text-[var(--color-warning-text)] shrink-0"
               >
                 <PinIcon className="w-3.5 h-3.5" />
               </button>
@@ -1450,7 +1450,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
               <button
                 onClick={() => setAddModal({ type: 'task', phaseId, parentId: e.id })}
                 className="w-5 h-5 flex items-center justify-center rounded transition-colors"
-                style={{ fontSize: 12, color: 'var(--text-tertiary)' }}
+                style={{ fontSize: 13, color: 'var(--text-tertiary)' }}
                 onMouseEnter={ev => { ev.currentTarget.style.color = 'var(--text-primary)'; ev.currentTarget.style.background = 'var(--oe-primary-light)' }}
                 onMouseLeave={ev => { ev.currentTarget.style.color = 'var(--text-tertiary)'; ev.currentTarget.style.background = '' }}
                 title={t('entry.addSubtask')}
@@ -1460,7 +1460,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
               <button
                 onClick={() => setAddModal({ type: 'meeting', phaseId, parentEntryId: e.id })}
                 className="w-5 h-5 flex items-center justify-center rounded transition-colors"
-                style={{ fontSize: 11, color: 'var(--text-tertiary)' }}
+                style={{ fontSize: 11.5, color: 'var(--text-tertiary)' }}
                 onMouseEnter={ev => { ev.currentTarget.style.color = '#7C3AED'; ev.currentTarget.style.background = '#EDE9FE' }}
                 onMouseLeave={ev => { ev.currentTarget.style.color = 'var(--text-tertiary)'; ev.currentTarget.style.background = '' }}
                 title={t('plan.addChildMeeting')}
@@ -1469,7 +1469,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
             <button
               onClick={() => deleteEntry(projectId, phaseId, e.id)}
               className="w-5 h-5 flex items-center justify-center rounded transition-colors"
-              style={{ fontSize: 12, color: 'var(--text-disabled)' }}
+              style={{ fontSize: 13, color: 'var(--text-disabled)' }}
               onMouseEnter={ev => { ev.currentTarget.style.color = 'var(--color-danger-text)'; ev.currentTarget.style.background = 'var(--color-danger-bg)' }}
               onMouseLeave={ev => { ev.currentTarget.style.color = 'var(--text-disabled)'; ev.currentTarget.style.background = '' }}
               title="Excluir"
@@ -1529,7 +1529,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
         {/* Baseline */}
         {project.baselineSetAt ? (
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] px-2 py-1 rounded-[var(--radius-sm)]" style={{ background: 'var(--color-success-bg)', color: 'var(--color-success-text)', border: '1px solid #bbf7d0' }}>
+            <span className="text-[11.5px] px-2 py-1 rounded-[var(--radius-sm)]" style={{ background: 'var(--color-success-bg)', color: 'var(--color-success-text)', border: '1px solid #bbf7d0' }}>
               BL: {fmtDate(project.baselineSetAt.split('T')[0])}
             </span>
             <Button size="sm" variant="secondary"
@@ -1586,7 +1586,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
                   <th
                     key={header.id}
                     className="text-left px-2 py-2 whitespace-nowrap"
-                    style={{ width: header.getSize(), minWidth: header.getSize(), fontSize: 10, fontWeight: 500, letterSpacing: '0.03em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}
+                    style={{ width: header.getSize(), minWidth: header.getSize(), fontSize: 11.5, fontWeight: 500, letterSpacing: '0.03em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
                   </th>
@@ -1692,7 +1692,7 @@ export default function PlanPage({ projectId, onNavigateToRisk }: { projectId: s
             const col = table.getColumn(id)
             if (!col) return null
             return (
-              <label key={id} className="flex items-center gap-2 px-3 py-1.5 cursor-pointer text-[12px]" style={{ color: 'var(--text-secondary)' }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')} onMouseLeave={e => (e.currentTarget.style.background = '')}>
+              <label key={id} className="flex items-center gap-2 px-3 py-1.5 cursor-pointer text-[13px]" style={{ color: 'var(--text-secondary)' }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')} onMouseLeave={e => (e.currentTarget.style.background = '')}>
                 <input type="checkbox" checked={col.getIsVisible()} onChange={col.getToggleVisibilityHandler()} className="rounded" />
                 {t(key as any)}
               </label>

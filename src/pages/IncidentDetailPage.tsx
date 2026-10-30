@@ -229,11 +229,11 @@ export default function IncidentDetailPage() {
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <div className="p-3 rounded-[var(--radius-lg)]" style={{ background: 'var(--surface-subtle)' }}>
-                <p className="text-[10px] uppercase font-semibold tracking-wide mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('incident.daysOpen')}</p>
+                <p className="text-[11.5px] uppercase font-semibold tracking-wide mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('incident.daysOpen')}</p>
                 <p className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{daysOpen}</p>
               </div>
               <div className="p-3 rounded-[var(--radius-lg)]" style={{ background: 'var(--surface-subtle)' }}>
-                <p className="text-[10px] uppercase font-semibold tracking-wide mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('incident.daysInStatus')}</p>
+                <p className="text-[11.5px] uppercase font-semibold tracking-wide mb-1" style={{ color: 'var(--text-tertiary)' }}>{t('incident.daysInStatus')}</p>
                 <p className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{daysInStatus}</p>
               </div>
             </div>

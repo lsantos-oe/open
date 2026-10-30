@@ -93,9 +93,9 @@ export function Topbar() {
           }}
         >
           <span className="shrink-0 w-3.5 h-3.5 flex items-center justify-center"><SearchIcon /></span>
-          <span className="flex-1 text-left text-[12.5px]">Buscar...</span>
+          <span className="flex-1 text-left text-[13px]">Buscar...</span>
           <span
-            className="shrink-0 text-[10.5px]"
+            className="shrink-0 text-[11.5px]"
             style={{ background: 'var(--surface-card)', border: '1px solid var(--border-default)', borderRadius: 4, padding: '1px 5px', color: 'var(--text-disabled)' }}
           >
             ⌘K
@@ -110,7 +110,7 @@ export function Topbar() {
             title="Importar de uma planilha Excel"
             className="flex items-center gap-1.5 transition-colors"
             style={{
-              height: 28, padding: '0 10px', borderRadius: 'var(--radius-md)', fontSize: 12.5,
+              height: 28, padding: '0 10px', borderRadius: 'var(--radius-md)', fontSize: 13,
               background: showImport ? 'var(--text-primary)' : 'var(--surface-subtle)',
               color: showImport ? 'white' : 'var(--text-secondary)',
               border: '1px solid var(--border-default)',
@@ -126,7 +126,7 @@ export function Topbar() {
               background: 'var(--surface-card)', border: '0.5px solid var(--border-default)',
               borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', zIndex: 100, overflow: 'hidden', padding: 4,
             }}>
-              <p style={{ padding: '6px 8px 4px', fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)' }}>
+              <p style={{ padding: '6px 8px 4px', fontSize: 11.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-tertiary)' }}>
                 Importar do Excel
               </p>
               {IMPORT_OPTIONS.map(({ entity, label, Icon }) => (
@@ -134,7 +134,7 @@ export function Topbar() {
                   key={entity}
                   onClick={() => goImport(entity)}
                   className="w-full text-left flex items-center gap-2.5 rounded-[var(--radius-md)]"
-                  style={{ padding: '7px 8px', fontSize: 12.5, color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                  style={{ padding: '7px 8px', fontSize: 13, color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                 >
@@ -146,13 +146,13 @@ export function Topbar() {
               <button
                 onClick={() => goImport('tudo')}
                 className="w-full text-left rounded-[var(--radius-md)]"
-                style={{ padding: '7px 8px', fontSize: 12.5, color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                style={{ padding: '7px 8px', fontSize: 13, color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer' }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'none')}
               >
                 Tudo em um arquivo
               </button>
-              <p style={{ padding: '4px 8px 6px', fontSize: 10.5, color: 'var(--text-tertiary)' }}>
+              <p style={{ padding: '4px 8px 6px', fontSize: 11.5, color: 'var(--text-tertiary)' }}>
                 Em cada opção você baixa o modelo em Excel e envia a planilha preenchida.
               </p>
             </div>
@@ -185,7 +185,7 @@ export function Topbar() {
                   key={to}
                   onClick={() => goCreate(to)}
                   className="w-full text-left flex items-center gap-2.5 rounded-[var(--radius-md)]"
-                  style={{ padding: '7px 8px', fontSize: 12.5, color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                  style={{ padding: '7px 8px', fontSize: 13, color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                 >
@@ -211,7 +211,7 @@ export function Topbar() {
               <img src={avatarUrl} alt={displayName} style={{ width: 26, height: 26, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
             ) : (
               <span style={{
-                background: 'var(--oe-primary)', borderRadius: '50%', color: 'white', fontSize: 10, fontWeight: 600,
+                background: 'var(--oe-primary)', borderRadius: '50%', color: 'white', fontSize: 11.5, fontWeight: 600,
                 width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}>{initials}</span>
             )}
@@ -231,7 +231,7 @@ export function Topbar() {
               <button
                 onClick={() => { setShowMenu(false); setShowEditProfile(true) }}
                 className="w-full text-left flex items-center gap-2"
-                style={{ padding: '8px 12px', fontSize: 12.5, color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer' }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'none')}
               >
@@ -240,7 +240,7 @@ export function Topbar() {
               <button
                 onClick={() => { setShowMenu(false); signOut() }}
                 className="w-full text-left flex items-center gap-2"
-                style={{ padding: '8px 12px', fontSize: 12.5, color: 'var(--color-danger-text)', background: 'none', border: 'none', cursor: 'pointer' }}
+                style={{ padding: '8px 12px', fontSize: 13, color: 'var(--color-danger-text)', background: 'none', border: 'none', cursor: 'pointer' }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'none')}
               >

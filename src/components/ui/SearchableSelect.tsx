@@ -26,7 +26,7 @@ const DEFAULT_CLASS = 'block w-full border border-transparent bg-[var(--surface-
 function optionStyle(active: boolean): CSSProperties {
   return {
     display: 'block', width: '100%', textAlign: 'left',
-    padding: '6px 8px', fontSize: 12.5, borderRadius: 'var(--radius-sm)',
+    padding: '6px 8px', fontSize: 13, borderRadius: 'var(--radius-sm)',
     border: 'none', cursor: 'pointer',
     background: active ? 'var(--surface-subtle)' : 'transparent',
     color: 'var(--text-primary)',
@@ -104,7 +104,7 @@ export function SearchableSelect({ value, onChange, options, placeholder, emptyO
             </button>
           )}
           {filtered.length === 0 ? (
-            <p style={{ fontSize: 12, color: 'var(--text-tertiary)', padding: '6px 8px' }}>Nada encontrado.</p>
+            <p style={{ fontSize: 13, color: 'var(--text-tertiary)', padding: '6px 8px' }}>Nada encontrado.</p>
           ) : (
             filtered.map((o) => (
               <button
@@ -116,7 +116,7 @@ export function SearchableSelect({ value, onChange, options, placeholder, emptyO
                 onMouseLeave={(e) => { if (o.id !== value) e.currentTarget.style.background = 'transparent' }}
               >
                 {o.label}
-                {o.sublabel && <span style={{ fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 6 }}>{o.sublabel}</span>}
+                {o.sublabel && <span style={{ fontSize: 11.5, color: 'var(--text-tertiary)', marginLeft: 6 }}>{o.sublabel}</span>}
               </button>
             ))
           )}

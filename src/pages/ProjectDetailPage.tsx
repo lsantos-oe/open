@@ -59,14 +59,14 @@ function findCurrentPhase(project: Project): string | undefined {
 function InfoChip({ label, value }: { label: string; value: string }) {
   return (
     <span className="flex items-center gap-1.5">
-      <span style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>{label}</span>
-      <span style={{ color: 'var(--text-secondary)', fontSize: 12, fontWeight: 500 }}>{value}</span>
+      <span style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>{label}</span>
+      <span style={{ color: 'var(--text-secondary)', fontSize: 13, fontWeight: 500 }}>{value}</span>
     </span>
   )
 }
 
 function ChipSep() {
-  return <span style={{ color: 'var(--border-strong)', padding: '0 10px', fontSize: 12 }}>·</span>
+  return <span style={{ color: 'var(--border-strong)', padding: '0 10px', fontSize: 13 }}>·</span>
 }
 
 // ─── GhostBtn ─────────────────────────────────────────────────────────────────
@@ -76,7 +76,7 @@ function GhostBtn({ onClick, disabled, children }: { onClick: () => void; disabl
     <button
       onClick={onClick}
       disabled={disabled}
-      className="flex items-center gap-1.5 text-[12px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      className="flex items-center gap-1.5 text-[13px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       style={{ color: 'var(--text-tertiary)', padding: '4px 8px', borderRadius: 'var(--radius-md)' }}
       onMouseEnter={e => { if (!disabled) { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.background = 'var(--surface-subtle)' } }}
       onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-tertiary)'; e.currentTarget.style.background = '' }}
@@ -115,7 +115,7 @@ function MoreMenu({ onImportUpdate, onExportJson, onDuplicate, onArchive }: { on
   const menuItem = (onClick: () => void, danger: boolean, icon: React.ReactNode, label: string) => (
     <button
       onClick={() => { setOpen(false); onClick() }}
-      className="w-full flex items-center gap-2 px-3 py-2 text-left text-[12px] transition-colors"
+      className="w-full flex items-center gap-2 px-3 py-2 text-left text-[13px] transition-colors"
       style={{ color: danger ? 'var(--color-danger-text)' : 'var(--text-secondary)' }}
       onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-subtle)')}
       onMouseLeave={e => (e.currentTarget.style.background = '')}
@@ -266,7 +266,7 @@ function DuplicateModal({ open, project, onClose }: { open: boolean; project: Pr
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className={errors.name ? 'border-red-400' : ''}
+              className={errors.name ? 'border-[var(--color-danger-text)]' : ''}
             />
             {errors.name && <p className="text-xs text-[var(--color-danger-text)] mt-1">{errors.name}</p>}
           </Field>
@@ -481,14 +481,14 @@ export default function ProjectDetailPage() {
         <div className="flex items-center gap-1.5 min-w-0">
           <button
             onClick={() => navigate('/portfolio')}
-            className="text-[11px] transition-colors whitespace-nowrap shrink-0"
+            className="text-[11.5px] transition-colors whitespace-nowrap shrink-0"
             style={{ color: 'var(--text-tertiary)' }}
             onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
             onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}
           >
             ← {t('nav.portfolio')}
           </button>
-          <span style={{ color: 'var(--border-strong)', fontSize: 11 }}>·</span>
+          <span style={{ color: 'var(--border-strong)', fontSize: 11.5 }}>·</span>
           {editingName ? (
             <input
               autoFocus

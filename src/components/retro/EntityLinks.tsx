@@ -52,7 +52,7 @@ export function EntityLinksPicker({ value, onChange }: { value: RetroLinkRef[]; 
       onChange={(keys) => onChange(keys.map(parseKey))}
       options={options}
       placeholder={t('retro.linksPlaceholder')}
-      className="flex items-center justify-between gap-2 w-full border border-[var(--border-default)] bg-[var(--surface-input)] px-2.5 py-1.5 text-[12px] text-left focus:border-[var(--text-tertiary)] focus:outline-none transition-colors"
+      className="flex items-center justify-between gap-2 w-full border border-[var(--border-default)] bg-[var(--surface-input)] px-2.5 py-1.5 text-[13px] text-left focus:border-[var(--text-tertiary)] focus:outline-none transition-colors"
     />
   )
 }
@@ -71,7 +71,7 @@ export function EntityLinkChips({ links }: { links: RetroLinkRef[] }) {
           type="button"
           onClick={() => navigate(ROUTE[l.type](l.id))}
           title={t(`retro.linkType_${l.type}`)}
-          className="text-[10.5px] px-1.5 py-[1px] max-w-full truncate hover:opacity-80"
+          className="text-[11.5px] px-1.5 py-[1px] max-w-full truncate hover:opacity-80"
           style={{ ...TYPE_STYLE[l.type], borderRadius: 'var(--radius-pill)' }}
         >
           {t(`retro.linkType_${l.type}`)} · {nameOf(l) ?? '—'}

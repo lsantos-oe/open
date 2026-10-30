@@ -22,10 +22,10 @@ const RESPONSIBILITY_VARIANT: Record<DelayResponsibility, 'blue' | 'orange' | 'p
 }
 
 const RESPONSIBILITY_BAR_COLOR: Record<DelayResponsibility, string> = {
-  internal: 'bg-blue-400',
-  client_business: 'bg-orange-400',
-  client_it: 'bg-purple-400',
-  client_provider: 'bg-yellow-400',
+  internal: 'bg-[var(--text-tertiary)]',
+  client_business: 'bg-[var(--color-warning-text)]',
+  client_it: 'bg-[var(--text-secondary)]',
+  client_provider: 'bg-[var(--color-warning-text)]',
 }
 
 function getAllEntries(phases: Phase[]) {
@@ -110,8 +110,8 @@ function DelayModal({ projectId, allEntries, initial, onClose }: DelayModalProps
     >
       <div className="space-y-4">
         {isCascade && (
-          <div className="flex items-center gap-2 rounded-[var(--radius-lg)] border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800">
-            <svg className="w-3.5 h-3.5 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <div className="flex items-center gap-2 rounded-[var(--radius-lg)] border border-transparent bg-[var(--color-warning-bg)] px-3 py-2.5 text-xs text-[var(--color-warning-text)]">
+            <svg className="w-3.5 h-3.5 shrink-0 text-[var(--color-warning-text)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
             </svg>
             {t('delay.autoWarning')}
@@ -228,8 +228,8 @@ export default function DelayLogPage({ projectId }: DelayLogPageProps) {
 
       {/* No-baseline warning */}
       {!hasBaseline && (
-        <div className="flex items-center gap-2 rounded-[var(--radius-lg)] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          <svg className="w-4 h-4 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <div className="flex items-center gap-2 rounded-[var(--radius-lg)] border border-transparent bg-[var(--color-warning-bg)] px-4 py-3 text-sm text-[var(--color-warning-text)]">
+          <svg className="w-4 h-4 shrink-0 text-[var(--color-warning-text)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
           </svg>
           {t('delay.noBaseline')}
@@ -239,9 +239,9 @@ export default function DelayLogPage({ projectId }: DelayLogPageProps) {
       {/* Summary cards */}
       {log.length > 0 && (
         <div className="grid grid-cols-5 gap-3">
-          <div className={`rounded-[var(--radius-lg)] border p-4 ${totalDays > 0 ? 'border-red-200 bg-red-50' : totalDays < 0 ? 'border-green-200 bg-green-50' : 'border-[var(--border-default)] bg-[var(--surface-card)]'}`}>
+          <div className={`rounded-[var(--radius-xl)] p-4 ${totalDays > 0 ? 'bg-[var(--color-danger-bg)]' : totalDays < 0 ? 'bg-[var(--color-success-bg)]' : 'bg-[var(--surface-card)]'}`}>
             <p className="text-xs text-[var(--text-tertiary)] mb-1">{t('delay.total')}</p>
-            <p className={`text-2xl font-bold ${totalDays > 0 ? 'text-red-600' : totalDays < 0 ? 'text-green-600' : 'text-[var(--text-tertiary)]'}`}>
+            <p className={`text-2xl font-bold ${totalDays > 0 ? 'text-[var(--color-danger-text)]' : totalDays < 0 ? 'text-[var(--color-success-text)]' : 'text-[var(--text-tertiary)]'}`}>
               {totalDays > 0 ? '+' : ''}{totalDays}d
             </p>
           </div>
@@ -305,7 +305,7 @@ export default function DelayLogPage({ projectId }: DelayLogPageProps) {
                     <span className="flex items-center gap-1.5">
                       {entry.date.split('-').reverse().join('/')}
                       {entry.triggeredBy === 'cascade' && (
-                        <span className="bg-[var(--surface-subtle)] text-[var(--text-tertiary)] text-[10px] px-1 rounded">auto</span>
+                        <span className="bg-[var(--surface-subtle)] text-[var(--text-tertiary)] text-[11.5px] px-1 rounded">auto</span>
                       )}
                     </span>
                   </td>
@@ -313,7 +313,7 @@ export default function DelayLogPage({ projectId }: DelayLogPageProps) {
                     {entry.entryName}
                   </td>
                   <td className="px-3 py-2.5">
-                    <span className={`font-semibold text-sm ${entry.days > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    <span className={`font-semibold text-sm ${entry.days > 0 ? 'text-[var(--color-danger-text)]' : 'text-[var(--color-success-text)]'}`}>
                       {entry.days > 0 ? '+' : ''}{entry.days}d
                     </span>
                   </td>

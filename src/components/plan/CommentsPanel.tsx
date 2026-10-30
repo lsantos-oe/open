@@ -75,14 +75,14 @@ export default function CommentsPanel({ projectId, entry, onClose }: Props) {
           style={{ borderTop: '0.5px solid var(--border-default)', background: 'var(--surface-subtle)' }}
         >
           {entry.createdAt && (
-            <p style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+            <p style={{ fontSize: 11.5, color: 'var(--text-tertiary)' }}>
               {t('audit.createdBy')}
               {creatorName ? ` ${creatorName}` : ''}
               {' '}{t('audit.at')} {formatDate(entry.createdAt)}
             </p>
           )}
           {entry.updatedAt && entry.updatedAt !== entry.createdAt && (
-            <p style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+            <p style={{ fontSize: 11.5, color: 'var(--text-tertiary)' }}>
               {t('audit.updatedAt')}
               {updaterName ? ` ${t('audit.by')} ${updaterName}` : ''}
               {' '}{t('audit.at')} {formatDate(entry.updatedAt)}

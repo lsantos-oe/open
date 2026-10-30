@@ -55,7 +55,7 @@ function MemoryRow({ memory }: { memory: AiMemory }) {
         </div>
       ) : (
         <div className="flex items-start gap-3">
-          <span className="text-[11px] font-medium px-2 py-0.5 shrink-0 mt-0.5" style={{ borderRadius: 'var(--radius-pill)', ...KIND_STYLE[memory.kind] }}>
+          <span className="text-[11.5px] font-medium px-2 py-0.5 shrink-0 mt-0.5" style={{ borderRadius: 'var(--radius-pill)', ...KIND_STYLE[memory.kind] }}>
             {MEMORY_KIND_LABEL[memory.kind]}
           </span>
           <div className="flex-1 min-w-0">

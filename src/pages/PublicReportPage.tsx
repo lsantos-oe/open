@@ -35,7 +35,7 @@ export default function PublicReportPage() {
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh',
         fontFamily: '-apple-system, BlinkMacSystemFont, Inter, Segoe UI, sans-serif',
-        color: '#5A5347', background: '#FBFAF8', fontSize: 14,
+        color: '#5A5347', background: '#FBFAF8', fontSize: 13,
       }}>
         <p>{error}</p>
       </div>
@@ -47,7 +47,7 @@ export default function PublicReportPage() {
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh',
         fontFamily: '-apple-system, BlinkMacSystemFont, Inter, Segoe UI, sans-serif',
-        color: '#8A8177', background: '#FBFAF8', fontSize: 14,
+        color: '#8A8177', background: '#FBFAF8', fontSize: 13,
       }}>
         <p>Carregando relatório…</p>
       </div>

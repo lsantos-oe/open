@@ -9,7 +9,7 @@ const variants: Record<Variant, string> = {
   primary:   'bg-[var(--oe-primary)] text-white hover:bg-[var(--oe-primary-hover)]',
   secondary: 'bg-[var(--surface-card)] text-[var(--text-secondary)] border border-[var(--border-default)] hover:bg-[var(--surface-subtle)]',
   ghost:     'text-[var(--text-tertiary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-secondary)]',
-  danger:    'bg-[var(--color-danger-bg)] text-[var(--color-danger-text)] border border-[var(--border-default)] hover:bg-red-100',
+  danger:    'bg-[var(--color-danger-bg)] text-[var(--color-danger-text)] border border-[var(--border-default)] hover:opacity-80',
   pill:      'bg-[var(--surface-card)] text-[var(--text-secondary)] border border-[var(--border-default)] hover:text-[var(--text-secondary)] hover:border-[var(--oe-primary-mid)]',
 }
 
@@ -22,8 +22,8 @@ const radii: Record<Variant, string> = {
 }
 
 const sizes: Record<Size, string> = {
-  xs: 'px-3 py-[3px] text-[11px]',
-  sm: 'px-3.5 py-[5px] text-[12px]',
+  xs: 'px-3 py-[3px] text-[11.5px]',
+  sm: 'px-3.5 py-[5px] text-[13px]',
   md: 'px-4 py-[7px] text-[13px]',
 }
 

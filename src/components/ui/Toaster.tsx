@@ -38,7 +38,7 @@ export function Toaster() {
           }}
         >
           <span style={{ flex: 1 }}>{toast.message}</span>
-          <span style={{ opacity: 0.6, fontSize: 16, lineHeight: 1, flexShrink: 0 }}>×</span>
+          <span style={{ opacity: 0.6, fontSize: 15, lineHeight: 1, flexShrink: 0 }}>×</span>
         </div>
       ))}
     </div>,

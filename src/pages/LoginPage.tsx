@@ -77,7 +77,7 @@ export default function LoginPage() {
             border: '0.5px solid var(--border-default)',
             background: 'var(--surface-card)',
             color: 'var(--text-primary)',
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: 500,
             cursor: loading ? 'not-allowed' : 'pointer',
             opacity: loading ? 0.6 : 1,
@@ -92,7 +92,7 @@ export default function LoginPage() {
       </div>
 
       {/* Footer */}
-      <p style={{ marginTop: 24, fontSize: 12, color: 'var(--text-disabled)' }}>
+      <p style={{ marginTop: 24, fontSize: 13, color: 'var(--text-disabled)' }}>
         Apenas usuários autorizados
       </p>
     </div>
