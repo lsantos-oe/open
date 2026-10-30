@@ -53,7 +53,7 @@ export function GroupsTab({ newOpen, onNew, onNewClose }: { newOpen: boolean; on
       ) : rows.length === 0 ? (
         <EmptyState icon={<FolderIcon className="w-9 h-9" />} title="Nenhum grupo encontrado" />
       ) : (
-        <div className="rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
+        <div className="oe-card overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr style={{ background: 'var(--surface-subtle)' }}>

@@ -202,7 +202,7 @@ export function UsersManagementPanel() {
 
       {/* Pending invites */}
       {invitedUsers.length > 0 && (
-        <div className="rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
+        <div className="oe-card overflow-hidden">
           <div className="px-4 py-2" style={{ background: 'var(--surface-subtle)' }}>
             <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Convites pendentes</span>
           </div>

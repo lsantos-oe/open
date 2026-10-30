@@ -162,7 +162,7 @@ export default function ContactsPage() {
           action={contacts.length === 0 ? { label: t('contacts.createFirst'), onClick: openAdd } : undefined}
         />
       ) : (
-        <div className="rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
+        <div className="oe-card overflow-hidden">
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10">
               <tr style={{ background: 'var(--surface-subtle)' }}>

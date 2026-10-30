@@ -456,7 +456,7 @@ export default function IncidentsPage() {
           </DragOverlay>
         </DndContext>
       ) : (
-        <div className="rounded-[var(--radius-lg)] border overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
+        <div className="oe-card overflow-hidden">
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10">
               <tr style={{ background: 'var(--surface-subtle)' }}>

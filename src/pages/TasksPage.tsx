@@ -187,7 +187,6 @@ function TaskCard({ card, onClick, ghost = false }: {
     >
       {/* Project badge + indicators */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-        <span style={{ width: 6, height: 6, borderRadius: '50%', background: card._scopeColor, flexShrink: 0 }} />
         <span style={{ flex: 1, fontSize: 10, color: 'var(--text-tertiary)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {scopeLabel(card)}
         </span>
@@ -969,7 +968,7 @@ export default function TasksPage() {
           action={{ label: t('tasks.newTask'), onClick: () => setNewTaskOpen(true) }}
         />
       ) : view === 'table' ? (
-        <div className="rounded-[var(--radius-lg)] border overflow-hidden overflow-x-auto" style={{ borderColor: 'var(--border-default)' }}>
+        <div className="oe-card overflow-hidden overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10">
               <tr style={{ background: 'var(--surface-subtle)' }}>

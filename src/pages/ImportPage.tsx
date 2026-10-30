@@ -305,7 +305,7 @@ export default function ImportPage() {
           <h2 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>
             Clientes ({rows.clients.filter((r) => r.include).length}/{rows.clients.length})
           </h2>
-          <div className="overflow-x-auto rounded-[var(--radius-lg)] border" style={{ borderColor: 'var(--border-default)' }}>
+          <div className="oe-card overflow-x-auto">
             <table className="w-full text-[12px]" style={{ background: 'var(--surface-card)' }}>
               <thead><tr><Th>{' '}</Th><Th>Ação</Th><Th>Nome</Th><Th>País</Th><Th>Status</Th><Th>Responsável</Th><Th>Avisos</Th></tr></thead>
               <tbody>
@@ -336,7 +336,7 @@ export default function ImportPage() {
           <h2 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>
             Projetos ({rows.projects.filter((r) => r.include).length}/{rows.projects.length})
           </h2>
-          <div className="overflow-x-auto rounded-[var(--radius-lg)] border" style={{ borderColor: 'var(--border-default)' }}>
+          <div className="oe-card overflow-x-auto">
             <table className="w-full text-[12px]" style={{ background: 'var(--surface-card)' }}>
               <thead><tr><Th>{' '}</Th><Th>Ação</Th><Th>Cliente</Th><Th>Nome</Th><Th>Status</Th><Th>Avisos</Th></tr></thead>
               <tbody>
@@ -366,7 +366,7 @@ export default function ImportPage() {
           <h2 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>
             Incidentes ({rows.incidents.filter((r) => r.include).length}/{rows.incidents.length})
           </h2>
-          <div className="overflow-x-auto rounded-[var(--radius-lg)] border" style={{ borderColor: 'var(--border-default)' }}>
+          <div className="oe-card overflow-x-auto">
             <table className="w-full text-[12px]" style={{ background: 'var(--surface-card)' }}>
               <thead><tr><Th>{' '}</Th><Th>Ação</Th><Th>Cliente</Th><Th>Título</Th><Th>Prioridade</Th><Th>Status</Th><Th>Responsável</Th><Th>Avisos</Th></tr></thead>
               <tbody>
@@ -402,7 +402,7 @@ export default function ImportPage() {
           <h2 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>
             Tarefas ({rows.tasks.filter((r) => r.include).length}/{rows.tasks.length})
           </h2>
-          <div className="overflow-x-auto rounded-[var(--radius-lg)] border" style={{ borderColor: 'var(--border-default)' }}>
+          <div className="oe-card overflow-x-auto">
             <table className="w-full text-[12px]" style={{ background: 'var(--surface-card)' }}>
               <thead><tr><Th>{' '}</Th><Th>Origem</Th><Th>Nome</Th><Th>Responsável</Th><Th>Status</Th><Th>Prioridade</Th><Th>Plano</Th><Th>Avisos</Th></tr></thead>
               <tbody>
