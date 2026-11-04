@@ -334,8 +334,8 @@ export function scopeOf(row: { project_id?: string | null; incident_id?: string 
   return { kind: "standalone", id: null };
 }
 
-export function linkFor(row: { project_id?: string | null; incident_id?: string | null }): string {
-  if (row.project_id) return `/projects/${row.project_id}`;
-  if (row.incident_id) return `/support/${row.incident_id}`;
-  return "/tasks";
+/** Link da tarefa (?task= abre a tarefa por cima da página), como o do app (src/utils/notificationLinks.ts). */
+export function linkFor(row: { id?: string | null; project_id?: string | null; incident_id?: string | null }): string {
+  const base = row.project_id ? `/projects/${row.project_id}` : row.incident_id ? `/support/${row.incident_id}` : "/tasks";
+  return row.id ? `${base}?task=${row.id}` : base;
 }

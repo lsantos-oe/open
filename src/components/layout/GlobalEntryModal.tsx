@@ -39,15 +39,18 @@ export function GlobalEntryModal() {
   const close = useEntryOpenerStore((s) => s.close)
   const { projects, incidents, standaloneTasks, changeEntryDate } = useAppStore()
 
-  // Link direto para uma tarefa (?task=<id>), como o das notificações de comentário: abre o modal por cima da página.
-  // O id fica guardado até os dados carregarem; o parâmetro sai da URL para não reabrir ao recarregar/voltar.
+  // Link direto para uma tarefa (?task=<id>), como o das notificações: abre o modal por cima da página. Com
+  // &comment=<id>, a conversa rola até esse comentário e o destaca.
+  // O id fica guardado até os dados carregarem; os parâmetros saem da URL para não reabrir ao recarregar/voltar.
   const [searchParams, setSearchParams] = useSearchParams()
   const taskParam = searchParams.get('task')
+  const commentParam = searchParams.get('comment')
   useEffect(() => {
     if (!taskParam) return
-    useEntryOpenerStore.getState().open(taskParam)
+    useEntryOpenerStore.getState().open(taskParam, commentParam ?? undefined)
     const next = new URLSearchParams(searchParams)
     next.delete('task')
+    next.delete('comment')
     setSearchParams(next, { replace: true })
   }, [taskParam]) // eslint-disable-line react-hooks/exhaustive-deps
 

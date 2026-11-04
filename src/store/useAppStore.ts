@@ -1,3 +1,4 @@
+import { taskLink } from '@/utils/notificationLinks'
 import { isDocumentationName } from '@/utils/documentation'
 import { CloseOutTarget, isClosingIncidentStatus, localTodayISO, openTasksOfIncident, openTasksOfProject } from '@/utils/closeOut'
 import { normalizeEntryClients } from '@/utils/entryClients'
@@ -1670,7 +1671,7 @@ export const useAppStore = create<AppStore>()(
         const project = get().projects.find((p) => p.id === projectId)
         if (project) {
           for (const clientId of project.clientIds) {
-            notifyClientCsAndOwners(get().clients, clientId, `Nova fase "${name}" criada em "${project.name}"`, `/projects/${projectId}`)
+            notifyClientCsAndOwners(get().clients, clientId, `Nova fase "${name}" criada em "${project.name}"`, `/projects/${projectId}?tab=plan`)
           }
         }
         sync(async () => {
@@ -1698,7 +1699,7 @@ export const useAppStore = create<AppStore>()(
           const project = get().projects.find((p) => p.id === projectId)
           if (project) {
             for (const clientId of project.clientIds) {
-              notifyClientCsAndOwners(get().clients, clientId, `Fase "${prevPhase?.name ?? ''}" renomeada para "${patch.name}" em "${project.name}"`, `/projects/${projectId}`)
+              notifyClientCsAndOwners(get().clients, clientId, `Fase "${prevPhase?.name ?? ''}" renomeada para "${patch.name}" em "${project.name}"`, `/projects/${projectId}?tab=plan`)
             }
           }
         }
@@ -1946,11 +1947,11 @@ export const useAppStore = create<AppStore>()(
         }, () => set({ projects: prev }))
         if (patch.owners) {
           const entryName = patch.name ?? prevEntry?.name ?? 'uma tarefa'
-          notifyNewOwners(prevEntry?.owners, patch.owners, `Você foi adicionado como responsável em "${entryName}"`, `/projects/${projectId}`)
+          notifyNewOwners(prevEntry?.owners, patch.owners, `Você foi adicionado como responsável em "${entryName}"`, taskLink({ projectId }, entryId))
         }
         if (patch.status) {
           const entryName = patch.name ?? prevEntry?.name ?? 'uma tarefa'
-          notifyValidatorOnValidationEntry(prevEntry?.status, patch.status, patch.owners ?? prevEntry?.owners, entryName, `/projects/${projectId}`)
+          notifyValidatorOnValidationEntry(prevEntry?.status, patch.status, patch.owners ?? prevEntry?.owners, entryName, taskLink({ projectId }, entryId))
         }
       },
 
@@ -2151,7 +2152,7 @@ export const useAppStore = create<AppStore>()(
         // auto-history: status changed
         const entry = findEntryDeep(get().projects.find((p) => p.id === projectId)?.phases ?? [], entryId)
         if (entry) get().addHistoryEntry({ type: 'project', id: projectId }, { event: 'status_changed', title: entry.name, detail: status, linkedId: entryId, linkedType: 'entry' })
-        if (entry) notifyValidatorOnValidationEntry(prevEntry?.status, status, entry.owners, entry.name, `/projects/${projectId}`)
+        if (entry) notifyValidatorOnValidationEntry(prevEntry?.status, status, entry.owners, entry.name, taskLink({ projectId }, entryId))
 
         sync(async () => {
           const project = get().projects.find((p) => p.id === projectId)
@@ -3802,11 +3803,11 @@ export const useAppStore = create<AppStore>()(
         }, () => set({ incidents: prev }))
         if (patch.owners) {
           const entryName = patch.name ?? prevEntry?.name ?? 'uma tarefa'
-          notifyNewOwners(prevEntry?.owners, patch.owners, `Você foi adicionado como responsável em "${entryName}"`, `/support/${incidentId}`)
+          notifyNewOwners(prevEntry?.owners, patch.owners, `Você foi adicionado como responsável em "${entryName}"`, taskLink({ incidentId }, entryId))
         }
         if (patch.status) {
           const entryName = patch.name ?? prevEntry?.name ?? 'uma tarefa'
-          notifyValidatorOnValidationEntry(prevEntry?.status, patch.status, patch.owners ?? prevEntry?.owners, entryName, `/support/${incidentId}`)
+          notifyValidatorOnValidationEntry(prevEntry?.status, patch.status, patch.owners ?? prevEntry?.owners, entryName, taskLink({ incidentId }, entryId))
         }
       },
 
@@ -3837,7 +3838,7 @@ export const useAppStore = create<AppStore>()(
             }),
           })),
         }))
-        if (prevEntry) notifyValidatorOnValidationEntry(prevEntry.status, status, prevEntry.owners, prevEntry.name, `/support/${incidentId}`)
+        if (prevEntry) notifyValidatorOnValidationEntry(prevEntry.status, status, prevEntry.owners, prevEntry.name, taskLink({ incidentId }, entryId))
         sync(async () => {
           const incident = get().incidents.find((i) => i.id === incidentId)
           if (!incident) return

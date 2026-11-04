@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore, CommentScope } from '@/store/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useEntryOpenerStore } from '@/stores/useEntryOpenerStore'
 import type { Entry, EntryComment } from '@/types'
 import { buildThreads, MentionRef, timeAgo } from '@/utils/commentThread'
 import DocView from '@/components/editor/DocView'
@@ -57,6 +58,7 @@ function Conversation({ entry, scope, maxListHeight, fill }: { entry: Entry; sco
   const [replyTo, setReplyTo] = useState<{ rootId: string; target: EntryComment } | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
+  const [flashId, setFlashId] = useState<string | null>(null)
 
   const threads = useMemo(() => buildThreads(entry.comments), [entry.comments])
   const total = entry.comments.length
@@ -66,6 +68,22 @@ function Conversation({ entry, scope, maxListHeight, fill }: { entry: Entry; sco
 
   // Abre rolado até o fim (o mais recente) e acompanha comentários novos.
   useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight }) }, [entry.id, total])
+
+  // Veio de um aviso de comentário: rola até ele e o destaca por um instante (espera o comentário aparecer, se preciso).
+  const targetCommentId = useEntryOpenerStore((s) => s.commentId)
+  useEffect(() => {
+    if (!targetCommentId || !entry.comments.some((c) => c.id === targetCommentId)) return
+    const el = listRef.current?.querySelector(`[data-comment-id="${targetCommentId}"]`)
+    if (!el) return
+    el.scrollIntoView({ block: 'center' })
+    setFlashId(targetCommentId)
+    useEntryOpenerStore.getState().clearComment()
+  }, [targetCommentId, entry.comments])
+  useEffect(() => {
+    if (!flashId) return
+    const t = setTimeout(() => setFlashId(null), 2600)
+    return () => clearTimeout(t)
+  }, [flashId])
 
   const canEdit = (c: EntryComment) => (c.authorId ? c.authorId === user?.id : true)
   const canDelete = (c: EntryComment) => canEdit(c) || isAdmin
@@ -78,7 +96,7 @@ function Conversation({ entry, scope, maxListHeight, fill }: { entry: Entry; sco
   function renderComment(c: EntryComment, rootId: string, isReply: boolean) {
     const editing = editingId === c.id
     return (
-      <div key={c.id} style={{ display: 'flex', gap: 8 }}>
+      <div key={c.id} data-comment-id={c.id} style={{ display: 'flex', gap: 8 }}>
         <Avatar name={c.author} src={c.authorAvatar} size={isReply ? 24 : 30} />
         <div style={{ flex: 1, minWidth: 0 }}>
           {editing ? (
@@ -91,7 +109,7 @@ function Conversation({ entry, scope, maxListHeight, fill }: { entry: Entry; sco
             />
           ) : (
             <>
-              <div style={{ background: 'var(--surface-subtle)', borderRadius: 14, padding: '7px 12px', display: 'inline-block', maxWidth: '100%' }}>
+              <div style={{ background: flashId === c.id ? 'var(--oe-primary-light)' : 'var(--surface-subtle)', borderRadius: 14, padding: '7px 12px', display: 'inline-block', maxWidth: '100%', boxShadow: flashId === c.id ? '0 0 0 2px var(--oe-primary)' : undefined, transition: 'background .4s, box-shadow .4s' }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{c.author}</div>
                 <DocView markdown={c.text} fontSize={13} />
               </div>

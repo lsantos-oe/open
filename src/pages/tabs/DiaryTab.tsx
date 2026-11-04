@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Project } from '@/types'
 import OpenPointsTab from './diary/OpenPointsTab'
@@ -14,7 +15,19 @@ interface Props {
 
 export default function DiaryTab({ project }: Props) {
   const { t } = useTranslation()
-  const [sub, setSub] = useState<DiarySubTab>('openPoints')
+  // ?sub= (links de notificação de menções) abre direto a seção certa do diário.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const subParam = searchParams.get('sub')
+  const isSub = (v: string | null): v is DiarySubTab => v === 'openPoints' || v === 'meetings' || v === 'delayLog' || v === 'history'
+  const [sub, setSub] = useState<DiarySubTab>(isSub(subParam) ? subParam : 'openPoints')
+  useEffect(() => {
+    if (!isSub(subParam)) return
+    setSub(subParam)
+    // Consumido: sai da URL, para o mesmo link funcionar de novo depois de trocar de seção na tela.
+    const next = new URLSearchParams(searchParams)
+    next.delete('sub')
+    setSearchParams(next, { replace: true })
+  }, [subParam]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const openPoints = project.openPoints ?? []
   const meetings = project.meetings ?? []

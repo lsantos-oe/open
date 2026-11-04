@@ -386,7 +386,7 @@ async function notifyClients(ctx: Ctx, projectId: string, message: string) {
               order by h.assigned_at desc limit 1)
         from project_clients pc where pc.project_id = ${projectId}
     ) x where x.uid is not null`;
-  for (const p of people) await notify(ctx, p.uid, message, `/projects/${projectId}`);
+  for (const p of people) await notify(ctx, p.uid, message, `/projects/${projectId}?tab=plan`);
 }
 
 export async function createPhase(ctx: Ctx, body: unknown): Promise<string> {

@@ -4,12 +4,17 @@ import { create } from 'zustand'
  *  no Layout) descobre a que projeto, incidente ou "tarefa solta" ela pertence. */
 interface EntryOpenerState {
   entryId: string | null
-  open: (entryId: string) => void
+  /** Comentário a destacar quando a tarefa abre (link de notificação de comentário). */
+  commentId: string | null
+  open: (entryId: string, commentId?: string) => void
+  clearComment: () => void
   close: () => void
 }
 
 export const useEntryOpenerStore = create<EntryOpenerState>((set) => ({
   entryId: null,
-  open: (entryId) => set({ entryId }),
-  close: () => set({ entryId: null }),
+  commentId: null,
+  open: (entryId, commentId) => set({ entryId, commentId: commentId ?? null }),
+  clearComment: () => set({ commentId: null }),
+  close: () => set({ entryId: null, commentId: null }),
 }))

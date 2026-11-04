@@ -432,7 +432,7 @@ export default function ProjectDetailPage() {
   const { id, pending } = useRouteEntityId('projects')
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { projects, settings, updateProject, renameProject, archiveProject, clients: storeClients } = useAppStore()
   const queryTab = searchParams.get('tab')
   const defaultTab = localStorage.getItem('pb-default-project-tab')
@@ -465,8 +465,28 @@ export default function ProjectDetailPage() {
   const goLiveDate = useMemo(() => (project ? findGoLiveDate(project) : undefined), [project])
   const currentPhase = useMemo(() => (project ? findCurrentPhase(project) : undefined), [project])
 
+  // Links de notificação e de IDs trazem ?tab= (e ?risk=): vale também com a página já aberta. A aba escolhida na tela
+  // volta para a URL, para que um link igual ao endereço atual nunca "pareça" não mudar nada.
+  useEffect(() => {
+    if ((TAB_IDS as readonly string[]).includes(queryTab ?? '')) setActiveTab(queryTab as TabId)
+  }, [queryTab])
+  const queryRisk = searchParams.get('risk')
+  useEffect(() => {
+    if (!queryRisk) return
+    setActiveTab('risks')
+    setFocusRiskId(queryRisk)
+    const next = new URLSearchParams(searchParams)
+    next.delete('risk')
+    setSearchParams(next, { replace: true })
+  }, [queryRisk]) // eslint-disable-line react-hooks/exhaustive-deps
+
   function selectTab(id: string) {
     setActiveTab(id as TabId)
+    if (searchParams.get('tab') !== id) {
+      const next = new URLSearchParams(searchParams)
+      next.set('tab', id)
+      setSearchParams(next, { replace: true })
+    }
   }
 
   function startEditName() {
@@ -593,7 +613,7 @@ export default function ProjectDetailPage() {
       <div className="flex-1 overflow-auto min-w-0 px-5 pt-5 pb-8" style={{ background: 'var(--surface-page)' }}>
         {activeTab === 'overview' && <OverviewTab project={project} />}
         {activeTab === 'plan' && (
-          <PlanPage projectId={project.id} onNavigateToRisk={(riskId) => { setActiveTab('risks'); setFocusRiskId(riskId) }} />
+          <PlanPage projectId={project.id} onNavigateToRisk={(riskId) => { selectTab('risks'); setFocusRiskId(riskId) }} />
         )}
         {activeTab === 'kanban' && <KanbanPage projectId={project.id} />}
         {activeTab === 'risks' && (
