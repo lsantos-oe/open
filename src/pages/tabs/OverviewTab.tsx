@@ -9,8 +9,6 @@ import {
 import { Button } from '@/components/ui/Button'
 import { Input, Field } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
-import { AnchorNav } from '@/components/ui/AnchorNav'
-import { EntityAttachments } from '@/components/ui/EntityAttachments'
 import OwnersField from '@/components/plan/OwnersField'
 import TeamTab from './TeamTab'
 import { charterTemplateMarkdown, legacyCharterToMarkdown } from '@/utils/charterDoc'
@@ -321,7 +319,6 @@ export default function OverviewTab({ project }: Props) {
   const [charter, setCharter] = useState<ProjectCharter>(project.charter ?? EMPTY_CHARTER)
   const [linkModal, setLinkModal] = useState(false)
   const [linkForm, setLinkForm] = useState({ label: '', url: '' })
-  const [section, setSection] = useState<'dashboard' | 'team' | 'attachments' | 'charter'>('dashboard')
   const charterTimer = useRef<ReturnType<typeof setTimeout>>()
 
   useEffect(() => {
@@ -381,22 +378,9 @@ export default function OverviewTab({ project }: Props) {
   const dateRange = projectDateRange(project)
 
   return (
-    <div className="p-6">
-      <div className="mb-3 -mt-2">
-        <AnchorNav
-          items={[
-            { id: 'dashboard', label: 'Dashboard' },
-            { id: 'team', label: `Equipe${project.team.length ? ` (${project.team.length})` : ''}` },
-            { id: 'attachments', label: 'Anexos' },
-            { id: 'charter', label: t('charter.title') },
-          ]}
-          onNavigate={(id) => setSection(id as typeof section)}
-          active={section}
-          background="var(--surface-card)"
-        />
-      </div>
-
-      {section === 'dashboard' && (<div>
+    <div className="p-6 space-y-12">
+      {/* Visão geral numa página só: dashboard, equipe e charter, nessa ordem. */}
+      <section aria-label="Dashboard">
         <div className="space-y-5">
           {/* KPIs */}
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
@@ -560,13 +544,14 @@ export default function OverviewTab({ project }: Props) {
             </div>
           </div>
         </div>
-      </div>)}
+      </section>
 
-      {section === 'team' && <TeamTab project={project} />}
+      <section aria-label="Equipe">
+        <TeamTab project={project} heading={`Equipe${project.team.length ? ` (${project.team.length})` : ''}`} />
+      </section>
 
-      {section === 'attachments' && <EntityAttachments entityType="project" entityId={project.id} />}
-
-      {section === 'charter' && (<div>
+      <section aria-label={t('charter.title')}>
+        <h2 className="text-[15px] font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>{t('charter.title')}</h2>
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <Field label={t('charter.sponsor')}>
@@ -596,7 +581,7 @@ export default function OverviewTab({ project }: Props) {
             </Suspense>
           </div>
         </div>
-      </div>)}
+      </section>
 
       {/* Add link modal */}
       <Modal

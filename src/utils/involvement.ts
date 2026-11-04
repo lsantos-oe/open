@@ -27,6 +27,16 @@ export function isEntryMine(entry: Entry, userId?: string): boolean {
   return (entry.owners ?? []).some((o) => o.memberId === userId)
 }
 
+/** Papel que a pessoa tem numa tarefa: 'both' no filtro = executor ou validador (qualquer um dos dois). */
+export type MyRole = 'executor' | 'validator' | 'both'
+
+/** Minhas tarefas pelo papel. Responsáveis antigos, sem `kind`, contam como executor. */
+export function isEntryMineAs(entry: Entry, userId: string | undefined, role: MyRole): boolean {
+  if (!userId) return false
+  const owners = entry.owners ?? []
+  return owners.some((o) => o.memberId === userId && (role === 'both' || (o.kind ?? 'executor') === role))
+}
+
 export function isClientMine(client: Client, userId?: string): boolean {
   if (!userId) return false
   return client.owners.some((o) => o.memberId === userId)

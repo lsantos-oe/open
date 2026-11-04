@@ -37,7 +37,7 @@ import { ListIcon, KanbanIcon, CheckCircleIcon, ChatBubbleIcon, LinkIcon, Extern
 import { SignalBadges, signalRowTint } from '@/components/ui/SignalBadges'
 import { computeEntrySignals } from '@/utils/signals'
 import { findGoLiveDate } from '@/utils/projectStats'
-import { isEntryMine, ownerKey } from '@/utils/involvement'
+import { isEntryMineAs, ownerKey, MyRole } from '@/utils/involvement'
 import { contactsForClients } from '@/utils/contacts'
 import { useSort } from '@/hooks/useSort'
 import { useColumnVisibility, ColumnDef } from '@/hooks/useColumnVisibility'
@@ -330,8 +330,9 @@ export default function TasksPage() {
   const [filterStatus, setFilterStatus] = useState<string[]>([])
   const [filterClientId, setFilterClientId] = useState<string[]>([])
   const [onlyOverdue, setOnlyOverdue] = useState(false)
-  const [onlyMine, setOnlyMine] = useState(false)
-  useAppliedQuery((q) => { if (q.get('mine') === '1') setOnlyMine(true); if (q.get('overdue') === '1') setOnlyOverdue(true) }, { watchView: false })
+  // Minhas tarefas: em qual papel eu apareço (executor, validador ou qualquer um dos dois).
+  const [mineRole, setMineRole] = useState<MyRole | 'all'>('all')
+  useAppliedQuery((q) => { if (q.get('mine') === '1') setMineRole('both'); if (q.get('overdue') === '1') setOnlyOverdue(true) }, { watchView: false })
   const [activeId, setActiveId] = useState<string | null>(null)
   const [newTaskOpen, setNewTaskOpen] = useState(false)
   /** Raia onde o duplo clique aconteceu: a tarefa nova já nasce nesse status. */
@@ -429,7 +430,7 @@ export default function TasksPage() {
 
   const filteredCards = useMemo(() => {
     return allCards.filter(c => {
-      if (onlyMine && !isEntryMine(c, user?.id)) return false
+      if (mineRole !== 'all' && !isEntryMineAs(c, user?.id, mineRole)) return false
       if (onlyOverdue && !isCardOverdue(c)) return false
       if (search.trim() && !c.name.toLowerCase().includes(search.trim().toLowerCase())) return false
       if (filterScope.length > 0 && !filterScope.includes(c._scopeId)) return false
@@ -441,7 +442,7 @@ export default function TasksPage() {
       if (filterStatus.length > 0 && !filterStatus.includes(c.status)) return false
       return true
     })
-  }, [allCards, onlyMine, onlyOverdue, user?.id, search, filterScope, filterClientId, filterMember, filterStatus])
+  }, [allCards, mineRole, onlyOverdue, user?.id, search, filterScope, filterClientId, filterMember, filterStatus])
 
   const { sortField, sortDir, toggleSort, sortItems } = useSort<GlobalCard>({
     name: (c) => c.name,
@@ -893,13 +894,21 @@ export default function TasksPage() {
         )}
         <FilterMenu
           toggles={[
-            { label: 'Só as minhas', checked: onlyMine, onChange: setOnlyMine },
             { label: 'Incluir projetos em backlog', checked: showBacklogProjectTasks, onChange: setShowBacklogProjectTasks },
             { label: 'Somente atrasadas', checked: onlyOverdue, onChange: setOnlyOverdue },
           ]}
-          activeCount={filterScope.length + filterMember.length + filterStatus.length + filterClientId.length}
-          onClear={() => { setFilterScope([]); setFilterMember([]); setFilterStatus([]); setFilterClientId([]); setOnlyOverdue(false) }}
+          activeCount={filterScope.length + filterMember.length + filterStatus.length + filterClientId.length + (mineRole !== 'all' ? 1 : 0)}
+          onClear={() => { setMineRole('all'); setFilterScope([]); setFilterMember([]); setFilterStatus([]); setFilterClientId([]); setOnlyOverdue(false) }}
         >
+          <Field label="Minhas tarefas">
+            <Select value={mineRole} onChange={(e) => setMineRole(e.target.value as MyRole | 'all')}>
+              <option value="all">Todas as tarefas</option>
+              <option value="executor">Sou executor</option>
+              <option value="validator">Sou validador</option>
+              <option value="both">Executor ou validador</option>
+            </Select>
+          </Field>
+
           <Field label={t('tasks.filterProject')}>
             <MultiSelect
               values={filterScope}

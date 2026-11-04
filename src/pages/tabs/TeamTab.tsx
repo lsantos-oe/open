@@ -9,7 +9,7 @@ import { Modal } from '@/components/ui/Modal'
 import { UsersGroupIcon } from '@/components/ui/icons'
 import OwnersField from '@/components/plan/OwnersField'
 
-interface Props { project: Project }
+interface Props { project: Project; /** Título da seção quando a equipe aparece dentro da Visão geral (o botão de adicionar fica na mesma linha). */ heading?: string }
 
 const ROLES = ['PM', 'Dev Lead', 'Desenvolvedor', 'Consultor', 'Analista', 'Cliente (Champion)', 'Patrocinador']
 
@@ -18,7 +18,7 @@ function memberToOwner(m: Omit<TeamMember, 'id'>): EntryOwner[] {
   return [{ id: 'pending', type: m.userId ? 'member' : 'text', memberId: m.userId, name: m.name }]
 }
 
-export default function TeamTab({ project }: Props) {
+export default function TeamTab({ project, heading }: Props) {
   const { t } = useTranslation()
   const { addTeamMember, updateTeamMember, removeTeamMember, teamDirectory, contacts } = useAppStore()
   const [open, setOpen] = useState(false)
@@ -88,8 +88,9 @@ export default function TeamTab({ project }: Props) {
 
   return (
     <>
-      <div className="flex justify-end mb-3">
-        <Button size="sm" onClick={openAdd}>{t('addBtn.member')}</Button>
+      <div className={`flex items-center mb-3 ${heading ? 'justify-between' : 'justify-end'}`}>
+        {heading && <h2 className="text-[15px] font-semibold" style={{ color: 'var(--text-primary)' }}>{heading}</h2>}
+        <Button size="sm" variant={heading ? 'secondary' : undefined} onClick={openAdd}>{t('addBtn.member')}</Button>
       </div>
 
       {project.team.length === 0 ? (
