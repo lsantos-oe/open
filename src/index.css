@@ -8,6 +8,9 @@
   --oe-primary-hover: #B8440A;
   --oe-primary-light: rgba(28, 24, 21, 0.06);
   --oe-primary-mid: #E8905F;
+  /* Faixa lateral do tipo de projeto nos cards (Nova Conta / Novo Projeto) */
+  --type-nc: #3B7BBF;
+  --type-np: #8A5CC4;
 
   /* Surfaces — warm neutrals instead of pure gray */
   --surface-page: #FBFAF8;
@@ -75,6 +78,8 @@
     --oe-primary-hover: #F27A44;
     --oe-primary-light: rgba(255, 255, 255, 0.08);
     --oe-primary-mid: #C96A3E;
+    --type-nc: #6EA8E4;
+    --type-np: #B48EEA;
 
     /* Surfaces — each one step lighter, warm-tinted. Steps widened vs the
        original palette: --surface-card was only ~6-8 rgb points above
@@ -127,6 +132,8 @@
   --oe-primary-hover: #F27A44;
   --oe-primary-light: rgba(255, 255, 255, 0.08);
   --oe-primary-mid: #C96A3E;
+  --type-nc: #6EA8E4;
+  --type-np: #B48EEA;
 
   /* Surfaces — each one step lighter, warm-tinted. Steps widened vs the
      original palette: --surface-card was only ~6-8 rgb points above

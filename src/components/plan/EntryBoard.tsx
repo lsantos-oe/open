@@ -10,6 +10,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { Entry, EntryOwner, EntryStatus } from '@/types'
 import { ChatBubbleIcon, LinkIcon } from '@/components/ui/icons'
 import { SignalBadges } from '@/components/ui/SignalBadges'
+import { AvatarStack } from '@/components/ui/AvatarStack'
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -37,13 +38,6 @@ export type BoardCard = Entry & { _phaseName?: string }
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-function cardInitials(name: string): string {
-  const parts = name.trim().split(/\s+/)
-  return parts.length >= 2
-    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-    : name.slice(0, 2).toUpperCase()
-}
-
 function fmtDate(iso: string): string {
   const [y, m, d] = iso.split('-')
   return `${d}/${m}/${y}`
@@ -60,33 +54,7 @@ function entryOwners(entry: Entry): EntryOwner[] {
 function OwnerAvatars({ entry }: { entry: Entry }) {
   const owners = entryOwners(entry)
   if (owners.length === 0) return null
-  const MAX = 3
-  const visible = owners.slice(0, MAX)
-  const overflow = owners.length - MAX
-  const tooltip = owners.map(o => o.name).join(', ')
-  return (
-    <div style={{ display: 'flex', alignItems: 'center' }} title={tooltip}>
-      {visible.map((owner, i) => (
-        <span
-          key={owner.id}
-          style={{
-            width: 20, height: 20, borderRadius: '50%',
-            background: 'var(--badge-gray-bg)', color: 'var(--text-secondary)',
-            fontSize: 8, fontWeight: 600, display: 'flex',
-            alignItems: 'center', justifyContent: 'center',
-            marginLeft: i > 0 ? -6 : 0,
-            border: '1.5px solid var(--surface-card)',
-            zIndex: MAX - i, position: 'relative', flexShrink: 0,
-          }}
-        >
-          {cardInitials(owner.name)}
-        </span>
-      ))}
-      {overflow > 0 && (
-        <span style={{ fontSize: 11.5, color: 'var(--text-tertiary)', marginLeft: 4 }}>+{overflow}</span>
-      )}
-    </div>
-  )
+  return <AvatarStack people={owners} size={20} />
 }
 
 // ─── TypeBadge ────────────────────────────────────────────────────────────────

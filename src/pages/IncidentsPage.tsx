@@ -88,7 +88,7 @@ function IncidentCard({ incident, clientLabel, onClick, ghost = false }: {
       </div>
       <p className="font-medium text-[13px] mb-2 line-clamp-2" style={{ color: 'var(--text-primary)' }}>{incident.title}</p>
       <div className="flex items-center justify-between">
-        <AvatarStack people={incident.owner ? [{ name: incident.owner.name }] : []} size={18} />
+        <AvatarStack people={incident.owner ? [incident.owner] : []} size={18} />
         <span className="text-[11.5px]" style={{ color: 'var(--text-tertiary)' }}>{t(`risk.${incident.priority}`)}</span>
       </div>
     </div>
@@ -519,7 +519,7 @@ export default function IncidentsPage() {
                   )}
                   {isVisible('owner') && (
                     <td className="px-4 py-3">
-                      <AvatarStack people={i.owner ? [{ name: i.owner.name }] : []} size={20} />
+                      <AvatarStack people={i.owner ? [i.owner] : []} size={20} />
                     </td>
                   )}
                   {isVisible('status') && (

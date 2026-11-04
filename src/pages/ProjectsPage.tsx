@@ -243,7 +243,7 @@ function ListView({ projects, holidays, onOpen, selected, onToggle, sortField, s
                 {isVisible('pm') && (
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <AvatarStack people={[{ name: p.pm }]} size={20} />
+                      <AvatarStack people={[{ name: p.pm, memberId: p.pmMemberId }]} size={20} />
                       <span className="text-[var(--text-secondary)]">{p.pm}</span>
                     </div>
                   </td>
@@ -332,6 +332,12 @@ function KanbanView({ projects, holidays, onOpen, selected, onToggle, onCreate }
                     role="button"
                     className="relative w-full text-left bg-[var(--surface-card)] rounded-[var(--radius-lg)] p-3 shadow-sm border border-[var(--border-default)] hover:border-[var(--text-tertiary)] hover:shadow transition-all cursor-pointer"
                   >
+                    {/* Tipo do projeto: faixa colorida na lateral (azul = Nova Conta, roxo = Novo Projeto) */}
+                    <span
+                      title={t(`project.${p.type}`)}
+                      className="absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-r-full"
+                      style={{ background: p.type === 'nova_conta' ? 'var(--type-nc)' : 'var(--type-np)' }}
+                    />
                     <input
                       type="checkbox"
                       checked={selected.has(p.id)}
@@ -343,9 +349,6 @@ function KanbanView({ projects, holidays, onOpen, selected, onToggle, onCreate }
                     <p className="text-xs text-[var(--text-tertiary)] mb-2">{p.client}</p>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        <Badge variant={p.type === 'nova_conta' ? 'blue' : 'purple'} className="text-[11.5px]">
-                          {p.type === 'nova_conta' ? 'NC' : 'NP'}
-                        </Badge>
                         {isProjectDelayed(p, holidays) && (
                           <Badge variant="red" className="text-[11.5px]">{t('project.delayed')}</Badge>
                         )}
@@ -358,7 +361,7 @@ function KanbanView({ projects, holidays, onOpen, selected, onToggle, onCreate }
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 mt-1.5">
-                      <AvatarStack people={[{ name: p.pm }]} size={16} />
+                      <AvatarStack people={[{ name: p.pm, memberId: p.pmMemberId }]} size={18} />
                       <span className="text-xs text-[var(--text-tertiary)]">{p.pm}</span>
                     </div>
                   </div>
