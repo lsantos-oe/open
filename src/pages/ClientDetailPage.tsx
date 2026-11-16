@@ -64,6 +64,16 @@ export default function ClientDetailPage() {
 
   const client = clients.find((c) => c.id === id)
 
+  // ── Nome do cliente (clique no título para editar) ──
+  const [editingName, setEditingName] = useState(false)
+  const [nameDraft, setNameDraft] = useState('')
+  const nameTaken = nameDraft.trim() !== '' && clients.some((c) => c.id !== client?.id && !c.archived && c.name.trim().toLowerCase() === nameDraft.trim().toLowerCase())
+  function saveName() {
+    const next = nameDraft.trim()
+    if (client && next && next !== client.name && !nameTaken) updateClient(client.id, { name: next })
+    setEditingName(false)
+  }
+
   // ── Overview local state ──
   const [editingLink, setEditingLink] = useState(false)
   const [linkDraft, setLinkDraft] = useState(client?.ploomesLink ?? '')
@@ -186,7 +196,33 @@ export default function ClientDetailPage() {
       {/* Topbar */}
       <div className="flex items-center justify-between gap-3 px-6 pt-5 pb-1">
         <div className="flex items-center gap-3 min-w-0">
-          <h1 className="text-xl font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{client.name}</h1>
+          {editingName ? (
+            <div className="min-w-0">
+              <input
+                autoFocus
+                value={nameDraft}
+                onChange={(e) => setNameDraft(e.target.value)}
+                onBlur={saveName}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') e.currentTarget.blur()
+                  if (e.key === 'Escape') { setNameDraft(client.name); setEditingName(false) }
+                }}
+                aria-label="Nome do cliente"
+                className="text-xl font-semibold bg-transparent outline-none border-b"
+                style={{ color: 'var(--text-primary)', borderColor: nameTaken ? 'var(--color-danger-text)' : 'var(--text-tertiary)', width: `${Math.min(60, Math.max(10, nameDraft.length + 2))}ch` }}
+              />
+              {nameTaken && <p className="text-xs mt-1" role="alert" style={{ color: 'var(--color-danger-text)' }}>Já existe um cliente com esse nome.</p>}
+            </div>
+          ) : (
+            <h1
+              onClick={() => { setNameDraft(client.name); setEditingName(true) }}
+              className="text-xl font-semibold truncate cursor-text hover:opacity-70 transition-opacity"
+              style={{ color: 'var(--text-primary)' }}
+              title="Clique para editar o nome do cliente"
+            >
+              {client.name}
+            </h1>
+          )}
           <EntityCodeLink table="clients" id={client.id} />
           {groupsOfClient(clientGroups, client.id).map((g) => (
             <Link key={g.id} to={`/wallet/groups/${g.id}`} className="shrink-0 hover:opacity-80" title="Abrir o grupo">

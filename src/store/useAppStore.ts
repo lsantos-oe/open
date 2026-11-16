@@ -3327,11 +3327,18 @@ export const useAppStore = create<AppStore>()(
       updateClient(id, patch) {
         const prev = get().clients
         const notesChanged = patch.notes !== undefined && patch.notes !== prev.find((c) => c.id === id)?.notes
-        set((s) => ({ clients: mutateClient(s.clients, id, (c) => ({ ...c, ...patch })) }))
+        // O nome do cliente também fica copiado nos projetos dele (projects.client, o "cliente principal"): renomear atualiza os dois.
+        const renamed = patch.name !== undefined ? patch.name.trim() : undefined
+        if (renamed === '') { const { name: _blank, ...rest } = patch; patch = rest }
+        const prevProjects = get().projects
+        set((s) => ({
+          clients: mutateClient(s.clients, id, (c) => ({ ...c, ...patch })),
+          projects: renamed ? s.projects.map((p) => (p.clientId === id ? { ...p, client: renamed } : p)) : s.projects,
+        }))
         sync(async () => {
           if (notesChanged) await resetCollabDoc('client.notes', id)
           const fields: Record<string, unknown> = {}
-          if (patch.name !== undefined) fields.name = patch.name
+          if (patch.name !== undefined) fields.name = renamed
           if (patch.country !== undefined) fields.country = patch.country
           if (patch.ploomesLink !== undefined) fields.ploomes_link = patch.ploomesLink
           if (patch.notes !== undefined) fields.notes = patch.notes
@@ -3340,7 +3347,11 @@ export const useAppStore = create<AppStore>()(
           if (Object.keys(fields).length === 0) return
           const { error } = await supabase.from('clients').update(fields).eq('id', id)
           if (error) throw new Error(error.message)
-        }, () => set({ clients: prev }))
+          if (renamed) {
+            const { error: pe } = await supabase.from('projects').update({ client: renamed }).eq('client_id', id)
+            if (pe) throw new Error(pe.message)
+          }
+        }, () => set({ clients: prev, projects: prevProjects }))
       },
 
       deleteClient(id) {

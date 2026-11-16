@@ -96,7 +96,14 @@ export async function updateClient(ctx: Ctx, id: string, body: unknown, ifMatch?
   await checkEtag(ctx, "clients", id, ifMatch);
   const row = await ensureClient(ctx, id);
   const set: Row = {};
-  if (d.Name !== undefined) set.name = d.Name;
+  if (d.Name !== undefined && d.Name !== row.name) {
+    await lockName(ctx, "client", d.Name);
+    const [dup] = await ctx.tx`select id from clients where lower(name) = lower(${d.Name}) and not archived and id <> ${id}`;
+    if (dup) throw validation(`Já existe um cliente chamado '${d.Name}' (Id ${dup.id}).`, "Name");
+    set.name = d.Name;
+    // o nome também fica copiado nos projetos do cliente (projects.client), como o app faz ao renomear
+    await ctx.tx`update projects set client = ${d.Name} where client_id = ${id}`;
+  }
   if (d.Country !== undefined) set.country = d.Country;
   if (d.Status !== undefined) set.status = d.Status;
   if (d.PloomesLink !== undefined) set.ploomes_link = d.PloomesLink;
