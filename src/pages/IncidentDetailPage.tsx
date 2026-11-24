@@ -1,3 +1,4 @@
+import { entryOwnersOf as entryOwners } from '@/utils/involvement'
 import { useState, useMemo } from 'react'
 import { ViewToggle } from '@/components/ui/ViewToggle'
 import { TrashButton } from '@/components/ui/TrashButton'
@@ -42,11 +43,6 @@ const ENTRY_STATUS_COLOR: Record<EntryStatus, string> = {
   overdue: 'var(--color-warning-text)',
 }
 
-function entryOwners(entry: Entry) {
-  if (entry.owners && entry.owners.length > 0) return entry.owners
-  if (entry.responsible) return [{ id: entry.responsible, type: 'text' as const, name: entry.responsible }]
-  return []
-}
 
 function fmtEntryDate(iso: string): string {
   const [y, m, d] = iso.split('-')

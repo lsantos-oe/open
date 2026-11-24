@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { ClientContact, EntryOwner, TeamMember } from '@/types'
 import { useSmartPosition } from '@/hooks/useSmartPosition'
 import { useAppStore } from '@/store/useAppStore'
+import { ownerResolver } from '@/utils/involvement'
 import { AddChip, Avatar, Chip } from '@/components/ui/Chip'
 
 interface Props {
@@ -37,6 +38,8 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind, 
   const [newContact, setNewContact] = useState({ name: '', role: '', email: '' })
   const [savingContact, setSavingContact] = useState(false)
   const createContactNow = useAppStore((st) => st.createContactNow)
+  const teamDirectory = useAppStore((st) => st.teamDirectory)
+  const resolver = useMemo(() => ownerResolver(teamDirectory), [teamDirectory])
   const { triggerRef, popoverRef, position } = useSmartPosition(open)
 
   useEffect(() => {
@@ -55,9 +58,19 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind, 
     return max ? next.slice(next.length - max) : next
   }
 
+  /** Perfil de uma pessoa da equipe do projeto que não está ligada a um usuário: pelo e-mail ou por um nome único.
+   *  Sem isso, "Leonardo Papst" escolhido na equipe virava um nome solto, diferente do usuário Leonardo Papst. */
+  function profileIdOf(member: TeamMember): string | undefined {
+    if (member.userId) return member.userId
+    const email = member.email?.trim().toLowerCase()
+    const byEmail = email ? teamDirectory.find((p) => p.active && p.email?.trim().toLowerCase() === email)?.id : undefined
+    return byEmail ?? resolver.userIdOf({ id: '', type: 'text', name: member.name })
+  }
+
   function memberAlreadyAdded(member: TeamMember): boolean {
-    return member.userId
-      ? owners.some((o) => o.memberId === member.userId)
+    const userId = profileIdOf(member)
+    return userId
+      ? owners.some((o) => o.memberId === userId)
       : owners.some((o) => o.type === 'text' && o.name === member.name)
   }
 
@@ -66,10 +79,11 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind, 
     // Only a team member linked to a real registered user (userId) can be stored as
     // type:'member' — entries.responsible_member_id has a FK to profiles(id), so an
     // unlinked (external/free-text) team member must fall back to type:'text' instead.
+    const userId = profileIdOf(member)
     onChange(withMax([
       ...owners,
-      member.userId
-        ? { id: crypto.randomUUID(), type: 'member', memberId: member.userId, name: member.name, role: member.role, kind }
+      userId
+        ? { id: crypto.randomUUID(), type: 'member', memberId: userId, name: teamDirectory.find((p) => p.id === userId)?.name ?? member.name, role: member.role, kind }
         : { id: crypto.randomUUID(), type: 'text', name: member.name, role: member.role, kind },
     ]))
   }
@@ -87,8 +101,17 @@ export default function OwnersField({ owners, onChange, teamMembers, max, kind, 
   }
 
   function addFreeText() {
-    if (!freeText.trim()) return
-    onChange(withMax([...owners, { id: crypto.randomUUID(), type: 'text', name: freeText.trim(), kind }]))
+    const name = freeText.trim()
+    if (!name) return
+    // Digitar o nome de um usuário é escolher o usuário (senão a mesma pessoa viraria duas).
+    const userId = resolver.userIdOf({ id: '', type: 'text', name })
+    if (userId && owners.some((o) => o.memberId === userId)) { setFreeText(''); return }
+    onChange(withMax([
+      ...owners,
+      userId
+        ? { id: crypto.randomUUID(), type: 'member', memberId: userId, name: teamDirectory.find((p) => p.id === userId)?.name ?? name, kind }
+        : { id: crypto.randomUUID(), type: 'text', name, kind },
+    ]))
     setFreeText('')
   }
 

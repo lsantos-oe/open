@@ -1,3 +1,4 @@
+import { entryOwnersOf as entryOwners } from '@/utils/involvement'
 import { boardStatus } from '@/utils/statusCalc'
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -43,11 +44,6 @@ function fmtDate(iso: string): string {
   return `${d}/${m}/${y}`
 }
 
-function entryOwners(entry: Entry): EntryOwner[] {
-  if (entry.owners && entry.owners.length > 0) return entry.owners
-  if (entry.responsible) return [{ id: entry.responsible, type: 'text', name: entry.responsible }]
-  return []
-}
 
 // ─── OwnerAvatars ─────────────────────────────────────────────────────────────
 

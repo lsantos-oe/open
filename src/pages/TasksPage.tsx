@@ -37,7 +37,7 @@ import { ListIcon, KanbanIcon, CheckCircleIcon, ChatBubbleIcon, LinkIcon, Extern
 import { SignalBadges, signalRowTint } from '@/components/ui/SignalBadges'
 import { computeEntrySignals } from '@/utils/signals'
 import { findGoLiveDate } from '@/utils/projectStats'
-import { isEntryMineAs, ownerKey, MyRole } from '@/utils/involvement'
+import { isEntryMineAs, entryOwnersOf as entryOwners, ownerResolver, MyRole } from '@/utils/involvement'
 import { contactsForClients } from '@/utils/contacts'
 import { useSort } from '@/hooks/useSort'
 import { useColumnVisibility, ColumnDef } from '@/hooks/useColumnVisibility'
@@ -105,12 +105,6 @@ function isCardOverdue(card: GlobalCard): boolean {
   const today = new Date().toISOString().split('T')[0]
   const endDate = card.type === 'task' ? card.plannedEnd : card.plannedDate
   return !!endDate && endDate < today && card.status !== 'done'
-}
-
-function entryOwners(entry: Entry): EntryOwner[] {
-  if (entry.owners && entry.owners.length > 0) return entry.owners
-  if (entry.responsible) return [{ id: entry.responsible, type: 'text', name: entry.responsible }]
-  return []
 }
 
 function buildCards(projects: Project[], incidents: Incident[], standaloneTasks: Entry[], clients: Client[], includeBacklogProjects: boolean): GlobalCard[] {
@@ -418,15 +412,23 @@ export default function TasksPage() {
     return clientIds.size > 0 ? contactsForClients(contacts, [...clientIds]) : []
   }, [allCards, selected, projects, incidents, contacts])
 
+  // A mesma pessoa gravada como usuário e como nome solto é uma só (ver ownerResolver).
+  const { keyOf: ownerKey, userIdOf } = useMemo(() => ownerResolver(teamDirectory), [teamDirectory])
+
   // Options come from owners actually assigned on cards (project + incident +
   // standalone) — a project's own team roster misses incident/standalone owners.
   const allMemberOptions = useMemo(() => {
     const seen = new Map<string, string>()
     for (const c of allCards) {
-      for (const o of entryOwners(c)) seen.set(ownerKey(o), o.name)
+      for (const o of entryOwners(c)) {
+        const key = ownerKey(o)
+        // com o usuário cadastrado, o nome mostrado é o do cadastro
+        const profile = key.startsWith('member:') ? teamDirectory.find((p) => p.id === key.slice(7)) : undefined
+        seen.set(key, profile?.name ?? o.name)
+      }
     }
     return [...seen.entries()].map(([id, name]) => ({ id, label: name })).sort((a, b) => a.label.localeCompare(b.label))
-  }, [allCards])
+  }, [allCards, ownerKey, teamDirectory])
 
   const filteredCards = useMemo(() => {
     return allCards.filter(c => {
@@ -442,7 +444,7 @@ export default function TasksPage() {
       if (filterStatus.length > 0 && !filterStatus.includes(c.status)) return false
       return true
     })
-  }, [allCards, mineRole, onlyOverdue, user?.id, search, filterScope, filterClientId, filterMember, filterStatus])
+  }, [allCards, mineRole, onlyOverdue, user?.id, search, filterScope, filterClientId, filterMember, filterStatus, ownerKey])
 
   const { sortField, sortDir, toggleSort, sortItems } = useSort<GlobalCard>({
     name: (c) => c.name,
@@ -660,7 +662,7 @@ export default function TasksPage() {
       }
       for (const o of roles) {
         const key = ownerKey(o)
-        if (!map.has(key)) map.set(key, { key, label: o.name, cards: [] })
+        if (!map.has(key)) map.set(key, { key, label: teamDirectory.find((p) => key === `member:${p.id}`)?.name ?? o.name, cards: [] })
         map.get(key)!.cards.push(c)
       }
     }
@@ -673,7 +675,7 @@ export default function TasksPage() {
       return bActive - aActive
     })
     return result
-  }, [groupBy, responsibleRole, filteredCards, sortedCards, today, dateSortMode, projects, incidents])
+  }, [groupBy, responsibleRole, filteredCards, sortedCards, today, dateSortMode, projects, incidents, ownerKey])
 
   // Visão "Carga": cada tarefa ativa vira um item mínimo (executor, validadores, datas) e a análise de capacidade
   // (utils/capacity.ts) calcula pessoa a pessoa. Respeita os mesmos filtros da tabela.
@@ -684,7 +686,7 @@ export default function TasksPage() {
     const executor = owners.find((o) => o.kind === 'executor') ?? (owners.every((o) => !o.kind) ? owners[0] : undefined)
     // Capacidade é do time: só conta quem é usuário ativo do Open. Contato do cliente (stakeholder) e nome em texto
     // livre não são capacidade; a tarefa deles cai em "Sem responsável do time".
-    const isUser = (o?: EntryOwner) => !!o && o.type === 'member' && !!o.memberId && activeUserIds.has(o.memberId)
+    const isUser = (o?: EntryOwner) => { const id = o && userIdOf(o); return !!id && activeUserIds.has(id) }
     return {
       id: c.id, type: c.type, status: c.status,
       start: c.type === 'task' ? c.plannedStart : c.plannedDate,
@@ -693,7 +695,7 @@ export default function TasksPage() {
       executorName: isUser(executor) ? executor!.name : undefined,
       validatorKeys: owners.filter((o) => o.kind === 'validator' && isUser(o)).map(ownerKey),
     }
-  }), [filteredCards, activeUserIds])
+  }), [filteredCards, activeUserIds, ownerKey, userIdOf])
 
   // ── One row of the tracking table — inline-editable per §4 of the proposal.
   // Nome/Previsto/Duração real are simple controlled-on-blur inputs gated by
